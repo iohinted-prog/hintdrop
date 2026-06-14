@@ -148,3 +148,17 @@ export default function HomePage() {
             <div className="rounded-3xl bg-[#f8eef0] p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                 Memory
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-slate-900">
+                Remember the little things.
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Keep track of notes, context, and details that matter later.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
