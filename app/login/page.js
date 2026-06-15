@@ -134,7 +134,7 @@ export default function LoginPage() {
       <div className="relative mx-auto w-full max-w-[1320px] px-5 pb-11 pt-6 md:px-8">
         <header className="flex flex-wrap items-center justify-between gap-6 pb-7">
           <div className="flex items-center gap-3.5">
-            <div className="relative flex h-13 w-13 items-center justify-center rounded-[18px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-2xl text-white shadow-[0_14px_30px_rgba(243,111,100,0.22)]">
+            <div className="relative flex h-[52px] w-[52px] items-center justify-center rounded-[18px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-2xl text-white shadow-[0_14px_30px_rgba(243,111,100,0.22)]">
               🎁
               <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-[#ff875d]/30 bg-transparent" />
             </div>
@@ -372,4 +372,58 @@ export default function LoginPage() {
                             {item.title}
                           </div>
                           <div className="mt-0.5 text-[13px] text-slate-400">{item.date}</div>
-                        </
+                        </div>
+                        <div className="grid h-6 w-6 place-items-center rounded-full bg-[#fff2ea] text-[14px] text-[#f36f64]">
+                          🎁
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="relative mt-4 min-h-[142px] overflow-hidden rounded-[22px] bg-[radial-gradient(circle_at_88%_78%,rgba(255,157,124,0.28),transparent_24%),linear-gradient(180deg,#fff7f2_0%,#fff1e8_100%)] p-4">
+                    <div className="text-[16px] font-semibold tracking-[-0.02em] text-slate-900">
+                      Need gift ideas?
+                    </div>
+                    <p className="mt-1.5 max-w-[170px] text-[13px] leading-5 text-slate-500">
+                      Get inspired with personalized suggestions.
+                    </p>
+                    <div className="mt-4 inline-flex rounded-full border border-[#f36f64]/20 bg-white/70 px-3 py-2 text-[12px] font-bold text-[#eb7b58]">
+                      Explore ideas
+                    </div>
+                    <div className="absolute bottom-2 right-3 text-[58px] opacity-75">🎁</div>
+                  </div>
+                </aside>
+              </div>
+
+              <div className="mt-4 rounded-[24px] border border-slate-200/50 bg-white/95 p-4 shadow-[0_24px_50px_rgba(15,23,42,0.10)] backdrop-blur lg:absolute lg:-bottom-7 lg:left-[170px] lg:mt-0 lg:w-[374px]">
+                <div className="flex items-center gap-3.5">
+                  <div className="flex items-center">
+                    <span className="h-8 w-8 rounded-full border-2 border-white bg-gradient-to-b from-[#efc3af] to-[#ae6e57]" />
+                    <span className="-ml-2 h-8 w-8 rounded-full border-2 border-white bg-gradient-to-b from-[#809168] to-[#41512e]" />
+                    <span className="-ml-2 h-8 w-8 rounded-full border-2 border-white bg-gradient-to-b from-[#c1a79a] to-[#765549]" />
+                    <span className="-ml-2 grid h-[30px] w-[30px] place-items-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] text-[13px] text-white shadow-[0_10px_20px_rgba(243,111,100,0.20)]">
+                      ❤
+                    </span>
+                  </div>
+
+                  <div>
+                    <div className="text-[15px] font-semibold leading-[1.35] text-slate-900">
+                      Friends often add the best ideas.
+                    </div>
+                    <div className="mt-1 text-[14px] text-slate-500">
+                      Collaborate and make gifting meaningful.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pointer-events-none absolute -bottom-14 right-4 hidden rotate-12 text-[44px] text-[#f36f64]/40 lg:block">
+              ↝
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
