@@ -4,11 +4,6 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-export const metadata = {
-  title: "Create account | Hinted.io",
-  description: "Create your Hinted account and set up your profile.",
-};
-
 const steps = [
   { id: 1, label: "Account", required: true },
   { id: 2, label: "Birthday", required: false },
@@ -111,6 +106,22 @@ export default function OnboardingPage() {
         ? prev.filter((item) => item !== interest)
         : [...prev, interest]
     );
+  }
+
+  function addSuggestion(item) {
+    setForm((prev) => {
+      const current = prev.people.trim();
+      const parts = current
+        ? current.split(",").map((entry) => entry.trim()).filter(Boolean)
+        : [];
+
+      if (parts.includes(item)) return prev;
+
+      return {
+        ...prev,
+        people: parts.length ? `${parts.join(", ")}, ${item}` : item,
+      };
+    });
   }
 
   function validateStep() {
@@ -222,9 +233,7 @@ export default function OnboardingPage() {
                           : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
                       }`}
                     />
-                    {errors.name ? (
-                      <p className="mt-2 text-xs text-red-500">{errors.name}</p>
-                    ) : null}
+                    {errors.name ? <p className="mt-2 text-xs text-red-500">{errors.name}</p> : null}
                   </div>
 
                   <div>
@@ -244,9 +253,7 @@ export default function OnboardingPage() {
                           : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
                       }`}
                     />
-                    {errors.email ? (
-                      <p className="mt-2 text-xs text-red-500">{errors.email}</p>
-                    ) : null}
+                    {errors.email ? <p className="mt-2 text-xs text-red-500">{errors.email}</p> : null}
                   </div>
 
                   <div>
@@ -383,6 +390,7 @@ export default function OnboardingPage() {
                     <button
                       key={item}
                       type="button"
+                      onClick={() => addSuggestion(item)}
                       className="rounded-full border border-slate-200 bg-[#fffdfa] px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
                     >
                       + {item}
