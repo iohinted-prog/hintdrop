@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
 export const metadata = {
   title: "Feed | Hinted.io",
@@ -9,11 +12,10 @@ const demoMode = true;
 const hasContacts = false;
 
 const filters = [
-  { label: "All activity", active: true },
-  { label: "Reminders", active: false },
-  { label: "Hints", active: false },
-  { label: "Circles", active: false },
-  { label: "Celebrations", active: false },
+  { label: "All activity", value: "all", active: true },
+  { label: "Reminders", value: "reminders", active: false },
+  { label: "Hints", value: "hints", active: false },
+  { label: "Circles", value: "circles", active: false },
 ];
 
 const onboardingSteps = [
@@ -37,7 +39,7 @@ const onboardingSteps = [
 const feedItems = [
   {
     id: 1,
-    type: "reminder",
+    category: "reminders",
     avatar: "S",
     avatarColors: "from-[#efc3af] to-[#ae6e57]",
     name: "Sarah",
@@ -54,7 +56,7 @@ const feedItems = [
   },
   {
     id: 2,
-    type: "hint",
+    category: "hints",
     avatar: "M",
     avatarColors: "from-[#eac8b8] to-[#9d6957]",
     name: "Mum",
@@ -63,14 +65,12 @@ const feedItems = [
     time: "12m ago",
     icon: "🎁",
     badge: "Hint",
-    comments: [
-      { id: 1, name: "You", text: "This is actually a very solid option." },
-    ],
+    comments: [{ id: 1, name: "You", text: "This is actually a very solid option." }],
     reactions: ["✨", "😍", "👏"],
   },
   {
     id: 3,
-    type: "circle",
+    category: "circles",
     avatar: "MF",
     avatarColors: "from-[#809168] to-[#41512e]",
     name: "Max & Fiona",
@@ -79,22 +79,20 @@ const feedItems = [
     time: "1h ago",
     icon: "💍",
     badge: "Circle",
-    comments: [
-      { id: 1, name: "James", text: "Nearly there — I’ll add the last bit tonight." },
-    ],
+    comments: [{ id: 1, name: "James", text: "Nearly there — I’ll add the last bit tonight." }],
     reactions: ["🥂", "💚", "🎉"],
   },
   {
     id: 4,
-    type: "celebration",
+    category: "circles",
     avatar: "J",
-    avatarColors: "from-[#4e596d] to-[#212a3c]",
+    avatarColors: "from-[#d7c0b2] to-[#b88974]",
     name: "James",
     action: "reacted to a shared hint in your circle",
     detail: "Weekend cabin stay · Marked as a top pick.",
     time: "3h ago",
     icon: "⭐",
-    badge: "Celebration",
+    badge: "Circle",
     comments: [],
     reactions: ["🔥", "🙌", "💛"],
   },
@@ -121,7 +119,51 @@ const reminders = [
   },
 ];
 
-const calendarDays = [
+const initialMonth = "July 2026";
+
+const initialCalendarEvents = {
+  "16": [
+    { id: 1, title: "Sarah Birthday", type: "birthday", time: "All day" },
+    { id: 2, title: "Mom reminder", type: "mothers-day", time: "All day" },
+  ],
+  "24": [{ id: 3, title: "James Promotion", type: "promotion", time: "12:30" }],
+  "29": [{ id: 4, title: "Fiona wedding", type: "wedding", time: "18:00" }],
+};
+
+const eventTypes = [
+  "birthday",
+  "christmas",
+  "easter",
+  "valentines",
+  "fathers-day",
+  "mothers-day",
+  "wedding",
+  "promotion",
+];
+
+const eventTypeLabels = {
+  birthday: "Birthday",
+  christmas: "Christmas",
+  easter: "Easter",
+  valentines: "Valentines",
+  "fathers-day": "Father's Day",
+  "mothers-day": "Mother's Day",
+  wedding: "Wedding",
+  promotion: "Promotion",
+};
+
+const eventTypeColors = {
+  birthday: "bg-[#efc3af] text-[#8b4d3a] border-[#e6c1b2]",
+  christmas: "bg-[#dfe9dd] text-[#43653d] border-[#cad7c5]",
+  easter: "bg-[#f3dff0] text-[#8a5b83] border-[#e5cbdf]",
+  valentines: "bg-[#f6d6dc] text-[#9d4d5e] border-[#ebb7c4]",
+  "fathers-day": "bg-[#dfe7f2] text-[#5b6f8f] border-[#c8d3e2]",
+  "mothers-day": "bg-[#f4dce6] text-[#9c5678] border-[#e8c5d5]",
+  wedding: "bg-[#e1e8d8] text-[#5a6e4b] border-[#cedabc]",
+  promotion: "bg-[#f7e7c9] text-[#9b6b15] border-[#ecd8a7]",
+};
+
+const monthDays = [
   "30", "1", "2", "3", "4", "5", "6",
   "7", "8", "9", "10", "11", "12", "13",
   "14", "15", "16", "17", "18", "19", "20",
@@ -141,7 +183,7 @@ function AvatarMenu() {
   return (
     <div className="relative group">
       <button
-        className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b from-[#4e596d] to-[#212a3c] text-sm font-bold text-white ring-4 ring-white/70"
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbd] to-[#d7a88f] text-sm font-bold text-white ring-4 ring-white/70"
         aria-label="Open account menu"
       >
         CG
@@ -164,32 +206,25 @@ function AvatarMenu() {
 
 function FeedItem({ item }) {
   const typeStyles =
-    item.type === "reminder"
+    item.category === "reminders"
       ? {
           chip: "bg-[#fff3ee] text-[#e07c54]",
           border: "border-[#f6ddd2]",
         }
-      : item.type === "circle"
+      : item.category === "circles"
         ? {
             chip: "bg-[#edf6eb] text-[#4a7a3a]",
             border: "border-[#deebda]",
           }
-        : item.type === "celebration"
-          ? {
-              chip: "bg-[#fff7e8] text-[#af7b14]",
-              border: "border-[#f3e3b8]",
-            }
-          : {
-              chip: "bg-[#f5f3ff] text-[#7c5cbf]",
-              border: "border-[#e5defa]",
-            };
+        : {
+            chip: "bg-[#f5f3ff] text-[#7c5cbf]",
+            border: "border-[#e5defa]",
+          };
 
   return (
     <article className={`rounded-[28px] border bg-white p-5 shadow-sm ${typeStyles.border}`}>
       <div className="flex items-start gap-4">
-        <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b text-[12px] font-bold text-white ${item.avatarColors}`}
-        >
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b text-[12px] font-bold text-white ${item.avatarColors}`}>
           {item.avatar}
         </div>
 
@@ -242,7 +277,7 @@ function FeedItem({ item }) {
             ))}
 
             <div className="flex gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#4e596d] to-[#212a3c] text-[11px] font-bold text-white">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbd] to-[#d7a88f] text-[11px] font-bold text-white">
                 Y
               </div>
               <input
@@ -258,24 +293,194 @@ function FeedItem({ item }) {
   );
 }
 
-function MiniCalendar() {
+function EventModal({ open, onClose, selectedDay, events, onAddEvent }) {
+  const [title, setTitle] = useState("");
+  const [type, setType] = useState("birthday");
+  const [time, setTime] = useState("All day");
+  const [inviteEmail, setInviteEmail] = useState("");
+
+  if (!open) return null;
+
+  const handleSave = () => {
+    if (!title.trim()) return;
+    onAddEvent({
+      title: title.trim(),
+      type,
+      time,
+      inviteEmail: type === "birthday" ? inviteEmail.trim() : "",
+    });
+    setTitle("");
+    setType("birthday");
+    setTime("All day");
+    setInviteEmail("");
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/20 px-4 py-6 backdrop-blur-sm">
+      <div className="mx-auto mt-16 w-full max-w-[520px] rounded-[28px] border border-[#eadad0] bg-white p-5 shadow-[0_24px_80px_rgba(92,64,50,0.18)]">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Add event</p>
+            <h3 className="mt-1 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">
+              {selectedDay ? `Day ${selectedDay}` : "New event"}
+            </h3>
+            {events.length > 0 && (
+              <p className="mt-2 text-sm text-slate-500">
+                This day already has {events.length} event{events.length === 1 ? "" : "s"}.
+              </p>
+            )}
+          </div>
+          <button onClick={onClose} className="rounded-full border border-slate-200 px-3 py-2 text-sm text-slate-500">
+            Close
+          </button>
+        </div>
+
+        {events.length > 0 && (
+          <div className="mt-4 space-y-2 rounded-[22px] border border-[#f0dfd6] bg-[#fffaf7] p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Existing events</p>
+            {events.map((event) => (
+              <div key={event.id} className={`rounded-[18px] border px-3 py-2 text-sm ${eventTypeColors[event.type] || eventTypeColors.birthday}`}>
+                <span className="font-semibold">{event.title}</span> · {event.time}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-4 grid gap-3">
+          <label className="grid gap-2">
+            <span className="text-sm font-medium text-slate-800">Event name</span>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="h-11 rounded-[16px] border border-slate-200 px-4 text-sm outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
+              placeholder="Birthday, wedding, promotion..."
+            />
+          </label>
+
+          <label className="grid gap-2">
+            <span className="text-sm font-medium text-slate-800">Event type</span>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="h-11 rounded-[16px] border border-slate-200 px-4 text-sm outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
+            >
+              {eventTypes.map((eventType) => (
+                <option key={eventType} value={eventType}>
+                  {eventTypeLabels[eventType]}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="grid gap-2">
+            <span className="text-sm font-medium text-slate-800">Time</span>
+            <input
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              className="h-11 rounded-[16px] border border-slate-200 px-4 text-sm outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
+              placeholder="All day"
+            />
+          </label>
+
+          {type === "birthday" && (
+            <label className="grid gap-2">
+              <span className="text-sm font-medium text-slate-800">Invite them by email</span>
+              <input
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                className="h-11 rounded-[16px] border border-slate-200 px-4 text-sm outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
+                placeholder="name@email.com"
+              />
+            </label>
+          )}
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          <button
+            onClick={handleSave}
+            className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f3b2d] px-5 text-sm font-semibold text-white"
+          >
+            Save event
+          </button>
+          <p className="text-xs text-slate-500">
+            Birthday events can optionally send an invite by email.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DayCell({ day, events, onClick }) {
+  const hasEvents = events.length > 0;
+  const primary = events[0];
+
+  return (
+    <button
+      onClick={onClick}
+      className={`min-h-[90px] rounded-[16px] border p-2 text-left transition hover:bg-[#fff7f2] ${
+        day === "16" ? "border-[#f2b39a] bg-[#fff2ea]" : "border-slate-100 bg-[#fffdfa]"
+      }`}
+    >
+      <div className={`text-[13px] font-semibold ${["30", "1", "2", "3"].includes(day) ? "text-slate-300" : "text-slate-700"}`}>
+        {day}
+      </div>
+
+      {hasEvents ? (
+        <div className={`mt-2 rounded-[12px] border px-2 py-1 text-[11px] font-semibold ${eventTypeColors[primary.type]}`}>
+          {primary.title}
+        </div>
+      ) : null}
+    </button>
+  );
+}
+
+function CalendarPanel() {
+  const [monthIndex, setMonthIndex] = useState(6);
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [eventsByDay, setEventsByDay] = useState(initialCalendarEvents);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const currentMonth = monthIndex === 6 ? "July 2026" : monthIndex === 5 ? "June 2026" : "August 2026";
+
+  const openDay = (day) => {
+    setSelectedDay(day);
+    setModalOpen(true);
+  };
+
+  const addEvent = (payload) => {
+    if (!selectedDay) return;
+    setEventsByDay((prev) => {
+      const current = prev[selectedDay] || [];
+      return {
+        ...prev,
+        [selectedDay]: [
+          ...current,
+          { id: Date.now(), title: payload.title, type: payload.type, time: payload.time },
+        ],
+      };
+    });
+
+    if (payload.type === "birthday" && payload.inviteEmail) {
+      window.alert(`Invite prompt would be sent to ${payload.inviteEmail}`);
+    }
+
+    setModalOpen(false);
+  };
+
   return (
     <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-            Planner
-          </p>
-          <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
-            July
-          </h2>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Planner</p>
+          <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">{currentMonth}</h2>
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500">
+          <button onClick={() => setMonthIndex((m) => m - 1)} className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500">
             ←
           </button>
-          <button className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500">
+          <button onClick={() => setMonthIndex((m) => m + 1)} className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500">
             →
           </button>
         </div>
@@ -286,55 +491,56 @@ function MiniCalendar() {
       </div>
 
       <div className="mt-2 grid grid-cols-7 gap-2">
-        {calendarDays.map((day, index) => {
-          const highlighted = ["10", "16", "24", "29"].includes(day);
-          const active = day === "16";
-
-          return (
-            <div
-              key={`${day}-${index}`}
-              className={`min-h-[58px] rounded-[16px] border p-2 ${
-                active ? "border-[#f2b39a] bg-[#fff2ea]" : "border-slate-100 bg-[#fffdfa]"
-              }`}
-            >
-              <div className={`text-[13px] font-semibold ${index < 1 || index > 31 ? "text-slate-300" : "text-slate-700"}`}>
-                {day}
-              </div>
-              {highlighted ? <div className="mt-1.5 h-2 w-2 rounded-full bg-[#b78671]" /> : null}
-            </div>
-          );
-        })}
+        {monthDays.map((day, index) => (
+          <DayCell
+            key={`${day}-${index}`}
+            day={day}
+            events={eventsByDay[day] || []}
+            onClick={() => openDay(day)}
+          />
+        ))}
       </div>
+
+      <EventModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        selectedDay={selectedDay}
+        events={selectedDay ? eventsByDay[selectedDay] || [] : []}
+        onAddEvent={addEvent}
+      />
     </section>
   );
 }
 
 export default function FeedPage() {
+  const [activeFilter, setActiveFilter] = useState("all");
   const showDemoGuide = demoMode && !hasContacts;
+
+  const visibleItems = useMemo(() => {
+    if (activeFilter === "all") return feedItems;
+    return feedItems.filter((item) => item.category === activeFilter);
+  }, [activeFilter]);
 
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
-          <div className="flex items-center gap-8">
-            <Link href="/feed" className="flex items-center gap-3.5">
-              <LogoMark />
-              <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
-                Hinted<span className="text-[#f36f64]">.io</span>
-              </div>
+          <Link href="/feed" className="flex items-center gap-3.5">
+            <LogoMark />
+            <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
+              Hinted<span className="text-[#f36f64]">.io</span>
+            </div>
+          </Link>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/hints"
+              className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0]"
+            >
+              Hints
             </Link>
-
-            <nav className="flex items-center gap-3">
-              <Link
-                href="/hints"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0]"
-              >
-                Hints
-              </Link>
-            </nav>
+            <AvatarMenu />
           </div>
-
-          <AvatarMenu />
         </div>
       </header>
 
@@ -363,8 +569,9 @@ export default function FeedPage() {
                 {filters.map((filter) => (
                   <button
                     key={filter.label}
+                    onClick={() => setActiveFilter(filter.value)}
                     className={`rounded-[18px] px-4 py-3 text-left text-sm font-medium ${
-                      filter.active
+                      activeFilter === filter.value
                         ? "bg-[#2f3b2d] text-white"
                         : "border border-[#efe4dd] bg-[#fffdfa] text-slate-600 hover:bg-[#faf7f5]"
                     }`}
@@ -411,16 +618,6 @@ export default function FeedPage() {
                 </Link>
               </section>
             )}
-
-            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <h2 className="text-base font-semibold text-slate-900">What shows up here</h2>
-              <ul className="mt-4 space-y-3 text-[14px] leading-6 text-slate-600">
-                <li>Birthdays and milestones approaching.</li>
-                <li>New hints saved by your people.</li>
-                <li>Circle pot progress and reactions.</li>
-                <li>Shared activity you can comment on or celebrate.</li>
-              </ul>
-            </section>
           </aside>
 
           <section className="min-w-0">
@@ -447,7 +644,7 @@ export default function FeedPage() {
                 </div>
 
                 <div className="mt-5 space-y-4">
-                  {feedItems.map((item) => (
+                  {visibleItems.map((item) => (
                     <FeedItem key={item.id} item={item} />
                   ))}
                 </div>
@@ -456,7 +653,7 @@ export default function FeedPage() {
           </section>
 
           <aside className="space-y-5">
-            <MiniCalendar />
+            <CalendarPanel />
 
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between gap-3">
