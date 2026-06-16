@@ -135,11 +135,11 @@ const lowerReminders = [
 ];
 
 const calendarDays = [
-  "25","26","27","28","29","30","31",
-  "1","2","3","4","5","6","7",
-  "8","9","10","11","12","13","14",
-  "15","16","17","18","19","20","21",
-  "22","23","24","25","26","27","28",
+  "25", "26", "27", "28", "29", "30", "31",
+  "1", "2", "3", "4", "5", "6", "7",
+  "8", "9", "10", "11", "12", "13", "14",
+  "15", "16", "17", "18", "19", "20", "21",
+  "22", "23", "24", "25", "26", "27", "28",
 ];
 
 function AvatarStack() {
@@ -177,7 +177,7 @@ function HintCard({ title, text, image, tag, tag2, starred, rotate }) {
       </div>
 
       <div className="flex flex-1 flex-col p-3.5">
-        <h3 className="text-[13px] font-semibold tracking-[-0.02em] text-slate-900 leading-tight">
+        <h3 className="text-[13px] font-semibold leading-tight tracking-[-0.02em] text-slate-900">
           {title}
         </h3>
         <p className="mt-1 text-[12px] text-slate-400">{text}</p>
@@ -277,9 +277,9 @@ export default function HomePage() {
           </nav>
 
           <div className="flex items-center justify-start gap-4 whitespace-nowrap sm:justify-end">
-            <Link href="/login" className="shrink-0 text-[15px] font-semibold text-slate-800">
+            <a href="#signin" className="shrink-0 text-[15px] font-semibold text-slate-800">
               Log in
-            </Link>
+            </a>
             <Link
               href="/onboarding"
               className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-6 text-[15px] font-bold text-white shadow-lg"
@@ -307,7 +307,10 @@ export default function HomePage() {
               gift ideas with a little help from your friends.
             </p>
 
-            <div className="mt-8 max-w-[540px] rounded-[28px] border border-slate-200 bg-white p-6 shadow-xl md:p-7">
+            <div
+              id="signin"
+              className="mt-8 max-w-[540px] rounded-[28px] border border-slate-200 bg-white p-6 shadow-xl md:p-7"
+            >
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
@@ -322,35 +325,39 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <form className="space-y-4">
+              <form action="/feed" className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-900" htmlFor="email">
                     Email
                   </label>
                   <input
                     id="email"
+                    name="email"
                     type="email"
                     placeholder="you@example.com"
                     className="mt-2 h-[54px] w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
                   />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-slate-900" htmlFor="password">
                     Password
                   </label>
                   <input
                     id="password"
+                    name="password"
                     type="password"
                     placeholder="Your password"
                     className="mt-2 h-[54px] w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
                   />
                 </div>
+
                 <div className="flex flex-wrap gap-3 pt-2">
                   <button
                     type="submit"
                     className="inline-flex h-[52px] min-w-[145px] items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg"
                   >
-                    Sign in
+                    Log in
                   </button>
                   <Link
                     href="/onboarding"
@@ -362,7 +369,7 @@ export default function HomePage() {
               </form>
 
               <p className="mt-4 text-xs leading-5 text-slate-500">
-                You can use an email and password now, then connect other sign-in methods later.
+                New here? Create your account and set up your Hinted profile in a few quick steps.
               </p>
             </div>
 
@@ -433,7 +440,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* CALENDAR + FEED SECTION */}
         <section className="mt-20 rounded-[36px] border border-[#eeddd3] bg-[#fff7f2] px-5 py-8 shadow-[0_18px_60px_rgba(173,101,72,0.1)] md:px-8 md:py-10">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
@@ -453,8 +459,6 @@ export default function HomePage() {
           </div>
 
           <div className="mt-8 grid gap-6 xl:grid-cols-[1fr_2fr_300px]">
-
-            {/* FEED COLUMN */}
             <div className="rounded-[28px] border border-[#f0dfd6] bg-white p-4 sm:p-5">
               <div className="mb-4 flex items-center justify-between">
                 <div>
@@ -481,7 +485,6 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* CALENDAR COLUMN */}
             <div className="rounded-[28px] border border-[#f0dfd6] bg-white p-4 sm:p-5">
               <div className="mb-4 flex items-center justify-between">
                 <div>
@@ -510,7 +513,7 @@ export default function HomePage() {
                       day === "13" ? "border-[#f5b49a] bg-[#fff1ea]" : "border-slate-100 bg-[#fffdfa]"
                     }`}
                   >
-                    <div className={`text-sm font-semibold ${index < 7 || index > 30 ? "text-slate-300" : "text-slate-700"}`}>
+                    <div className={`text-sm font-semibold ${index < 7 ? "text-slate-300" : "text-slate-700"}`}>
                       {day}
                     </div>
                     {["29", "6", "10", "16", "24"].includes(day) ? (
@@ -521,7 +524,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* REMINDERS COLUMN */}
             <div className="rounded-[28px] border border-[#f0dfd6] bg-white p-4 sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="text-base font-semibold text-slate-900">Upcoming reminders</h3>
