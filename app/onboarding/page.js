@@ -26,6 +26,17 @@ const interestOptions = [
   "Art",
 ];
 
+const relationshipOptions = [
+  "Sibling",
+  "Partner",
+  "Friend",
+  "Family",
+  "Parent",
+  "Work friend",
+  "Best friend",
+  "Flatmate",
+];
+
 function StepPill({ active, complete, number, label }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
@@ -56,7 +67,8 @@ export default function OnboardingPage() {
   const router = useRouter();
 
   const [step, setStep] = useState(1);
-  const [selectedInterests, setSelectedInterests] = useState(["Travel", "Food", "Home"]);
+  const [selectedInterests, setSelectedInterests] = useState(["Travel", "Food"]);
+  const [selectedRelationship, setSelectedRelationship] = useState("");
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -80,7 +92,10 @@ export default function OnboardingPage() {
         ? prev.filter((item) => item !== interest)
         : [...prev, interest]
     );
-    setErrors((prev) => ({ ...prev, interests: "" }));
+  }
+
+  function toggleRelationship(option) {
+    setSelectedRelationship((prev) => (prev === option ? "" : option));
   }
 
   function validateStep() {
@@ -94,10 +109,6 @@ export default function OnboardingPage() {
 
     if (step === 2) {
       if (!form.birthday.trim()) nextErrors.birthday = "Please add your birthday.";
-    }
-
-    if (step === 3) {
-      if (selectedInterests.length === 0) nextErrors.interests = "Pick at least one interest.";
     }
 
     if (step === 4) {
@@ -121,6 +132,10 @@ export default function OnboardingPage() {
 
   function previousStep() {
     setStep((prev) => Math.max(prev - 1, 1));
+  }
+
+  function skipInterestsStep() {
+    setStep(4);
   }
 
   function skipInviteStep() {
@@ -253,7 +268,7 @@ export default function OnboardingPage() {
               </h1>
 
               <p className="mt-3 text-[15px] leading-7 text-slate-600">
-                We need this so Hinted can start your reminders and important dates properly.
+                So we can remind people, and you don’t have to 🤫
               </p>
 
               <div className="mt-7">
@@ -289,7 +304,7 @@ export default function OnboardingPage() {
               </h1>
 
               <p className="mt-3 text-[15px] leading-7 text-slate-600">
-                Pick at least one interest so your ideas and reminders feel more relevant.
+                Pick 2-3 that interests you, so we can improve your experience
               </p>
 
               <div className="mt-7 flex flex-wrap gap-2.5">
@@ -313,13 +328,9 @@ export default function OnboardingPage() {
                 })}
               </div>
 
-              {errors.interests ? (
-                <p className="mt-4 text-xs text-red-500">{errors.interests}</p>
-              ) : (
-                <p className="mt-4 text-xs leading-5 text-slate-500">
-                  Choose a few that feel most like you.
-                </p>
-              )}
+              <p className="mt-4 text-xs leading-5 text-slate-500">
+                Choose a few now, or skip and do it later.
+              </p>
             </div>
           )}
 
@@ -334,7 +345,7 @@ export default function OnboardingPage() {
               </h1>
 
               <p className="mt-3 text-[15px] leading-7 text-slate-600">
-                This step is optional. Add one person now, or skip and do it later from your feed.
+                Add someone now, or do it later from your feed.
               </p>
 
               <div className="mt-7 space-y-4">
@@ -379,6 +390,33 @@ export default function OnboardingPage() {
                     <p className="mt-2 text-xs text-red-500">{errors.inviteEmail}</p>
                   ) : null}
                 </div>
+
+                <div>
+                  <p className="block text-sm font-medium text-slate-900">Who are they to you?</p>
+                  <div className="mt-3 flex flex-wrap gap-2.5">
+                    {relationshipOptions.map((option) => {
+                      const selected = selectedRelationship === option;
+
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => toggleRelationship(option)}
+                          className={`rounded-full px-4 py-2.5 text-sm font-medium transition ${
+                            selected
+                              ? "bg-[#2f3b2d] text-white"
+                              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-slate-500">
+                    Optional, just to help organise your people a bit better.
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -398,6 +436,16 @@ export default function OnboardingPage() {
             </button>
 
             <div className="flex flex-wrap items-center gap-3">
+              {step === 3 ? (
+                <button
+                  type="button"
+                  onClick={skipInterestsStep}
+                  className="inline-flex h-[50px] min-w-[120px] items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Skip for now
+                </button>
+              ) : null}
+
               {step === 4 ? (
                 <button
                   type="button"
