@@ -1,17 +1,19 @@
-"use client";
-
 import Link from "next/link";
-import { useMemo, useState } from "react";
+
+export const metadata = {
+  title: "Feed | Hinted.io",
+  description: "Your Hinted feed with updates, reminders, and activity in one place.",
+};
 
 const demoMode = true;
 const hasContacts = false;
 
-const initialFilters = [
-  { key: "all", label: "All activity" },
-  { key: "reminder", label: "Reminders" },
-  { key: "hint", label: "Hints" },
-  { key: "circle", label: "Circles" },
-  { key: "celebration", label: "Celebrations" },
+const filters = [
+  { label: "All activity", active: true },
+  { label: "Reminders", active: false },
+  { label: "Hints", active: false },
+  { label: "Circles", active: false },
+  { label: "Celebrations", active: false },
 ];
 
 const onboardingSteps = [
@@ -37,7 +39,7 @@ const feedItems = [
     id: 1,
     type: "reminder",
     avatar: "S",
-    avatarColors: "from-[#efcdbf] to-[#c88c73]",
+    avatarColors: "from-[#efc3af] to-[#ae6e57]",
     name: "Sarah",
     action: "has a birthday coming up in 2 weeks",
     detail: "June 29 · She saved a ceramics workshop and linen bedding.",
@@ -54,7 +56,7 @@ const feedItems = [
     id: 2,
     type: "hint",
     avatar: "M",
-    avatarColors: "from-[#e7cab8] to-[#b97d66]",
+    avatarColors: "from-[#eac8b8] to-[#9d6957]",
     name: "Mum",
     action: "saved a new hint",
     detail: "Silk pillowcase set · From John Lewis · Around £45.",
@@ -68,7 +70,7 @@ const feedItems = [
     id: 3,
     type: "circle",
     avatar: "MF",
-    avatarColors: "from-[#98a47d] to-[#5f7046]",
+    avatarColors: "from-[#809168] to-[#41512e]",
     name: "Max & Fiona",
     action: "have a wedding circle that is nearly funded",
     detail: "£320 of £400 raised · 4 contributors · 80% full.",
@@ -82,7 +84,7 @@ const feedItems = [
     id: 4,
     type: "celebration",
     avatar: "J",
-    avatarColors: "from-[#dcc4b5] to-[#b78972]",
+    avatarColors: "from-[#4e596d] to-[#212a3c]",
     name: "James",
     action: "reacted to a shared hint in your circle",
     detail: "Weekend cabin stay · Marked as a top pick.",
@@ -115,48 +117,13 @@ const reminders = [
   },
 ];
 
-const startingEvents = {
-  "2026-07-10": [
-    { id: 1, title: "Mum & Dad Anniversary", type: "anniversary", time: "All day" },
-  ],
-  "2026-07-16": [
-    { id: 2, title: "James Promotion", type: "circle", time: "7:00 PM" },
-  ],
-  "2026-07-24": [
-    { id: 3, title: "Christmas planning note", type: "christmas", time: "6:30 PM" },
-  ],
-  "2026-07-29": [
-    { id: 4, title: "Sarah Birthday", type: "birthday", time: "All day" },
-  ],
-};
-
-const eventTypeStyles = {
-  birthday: {
-    dot: "bg-[#efb39a]",
-    pill: "bg-[#fff1ea] text-[#c96d4f]",
-    label: "Birthday",
-  },
-  christmas: {
-    dot: "bg-[#cf6a6a]",
-    pill: "bg-[#fff0f0] text-[#b04a4a]",
-    label: "Christmas",
-  },
-  anniversary: {
-    dot: "bg-[#d69aae]",
-    pill: "bg-[#fff2f6] text-[#b85c79]",
-    label: "Anniversary",
-  },
-  circle: {
-    dot: "bg-[#87986f]",
-    pill: "bg-[#eef5ea] text-[#5d7243]",
-    label: "Circle",
-  },
-  reminder: {
-    dot: "bg-[#bca7de]",
-    pill: "bg-[#f5f0ff] text-[#7f62b2]",
-    label: "Reminder",
-  },
-};
+const calendarDays = [
+  "30", "1", "2", "3", "4", "5", "6",
+  "7", "8", "9", "10", "11", "12", "13",
+  "14", "15", "16", "17", "18", "19", "20",
+  "21", "22", "23", "24", "25", "26", "27",
+  "28", "29", "30", "31", "1", "2", "3",
+];
 
 function LogoMark() {
   return (
@@ -170,9 +137,8 @@ function AvatarMenu() {
   return (
     <div className="relative group">
       <button
-        className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-sm font-bold text-white ring-4 ring-white/70"
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b from-[#4e596d] to-[#212a3c] text-sm font-bold text-white ring-4 ring-white/70"
         aria-label="Open account menu"
-        type="button"
       >
         CG
       </button>
@@ -230,6 +196,7 @@ function FeedItem({ item }) {
                 <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${typeStyles.chip}`}>
                   {item.icon} {item.badge}
                 </span>
+
                 {demoMode && (
                   <span className="rounded-full border border-[#eadfd7] bg-[#fffaf7] px-2.5 py-1 text-[11px] font-medium text-slate-500">
                     Demo data
@@ -250,7 +217,6 @@ function FeedItem({ item }) {
             {item.reactions.map((reaction) => (
               <button
                 key={reaction}
-                type="button"
                 className="inline-flex h-10 items-center justify-center rounded-full border border-[#ebdfd8] bg-[#fffaf7] px-3 text-sm text-slate-700 hover:bg-[#fff2eb]"
                 aria-label={`React with ${reaction}`}
               >
@@ -258,10 +224,7 @@ function FeedItem({ item }) {
               </button>
             ))}
 
-            <button
-              type="button"
-              className="inline-flex h-10 items-center justify-center rounded-full border border-[#ebdfd8] bg-white px-4 text-sm font-medium text-slate-600 hover:bg-slate-50"
-            >
+            <button className="inline-flex h-10 items-center justify-center rounded-full border border-[#ebdfd8] bg-white px-4 text-sm font-medium text-slate-600 hover:bg-slate-50">
               Comment
             </button>
           </div>
@@ -276,7 +239,7 @@ function FeedItem({ item }) {
             ))}
 
             <div className="flex gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#4e596d] to-[#212a3c] text-[11px] font-bold text-white">
                 Y
               </div>
               <input
@@ -292,226 +255,7 @@ function FeedItem({ item }) {
   );
 }
 
-function getMonthData(date) {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const startDay = (firstDay.getDay() + 6) % 7;
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const daysInPrevMonth = new Date(year, month, 0).getDate();
-  const cells = [];
-
-  for (let i = 0; i < startDay; i++) {
-    const day = daysInPrevMonth - startDay + i + 1;
-    cells.push({
-      key: `prev-${day}`,
-      day,
-      currentMonth: false,
-      date: new Date(year, month - 1, day),
-    });
-  }
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    cells.push({
-      key: `current-${day}`,
-      day,
-      currentMonth: true,
-      date: new Date(year, month, day),
-    });
-  }
-
-  while (cells.length < 35) {
-    const day = cells.length - (startDay + daysInMonth) + 1;
-    cells.push({
-      key: `next-${day}`,
-      day,
-      currentMonth: false,
-      date: new Date(year, month + 1, day),
-    });
-  }
-
-  return cells;
-}
-
-function CalendarPopover({
-  selectedDate,
-  events,
-  onClose,
-  onAddEvent,
-  draft,
-  setDraft,
-}) {
-  if (!selectedDate) return null;
-
-  const prettyDate = selectedDate.toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
-  return (
-    <div className="mt-4 rounded-[24px] border border-[#efdcd2] bg-[#fffaf7] p-4 shadow-[0_18px_45px_rgba(123,84,64,0.12)]">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-            Selected day
-          </p>
-          <h3 className="mt-1 text-[18px] font-semibold tracking-[-0.03em] text-slate-900">
-            {prettyDate}
-          </h3>
-        </div>
-
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-[#eaded6] bg-white text-slate-500 hover:bg-slate-50"
-          aria-label="Close calendar event panel"
-        >
-          ×
-        </button>
-      </div>
-
-      <div className="mt-4 space-y-3">
-        {events.length > 0 ? (
-          events.map((event) => {
-            const style = eventTypeStyles[event.type] || eventTypeStyles.reminder;
-
-            return (
-              <div key={event.id} className="rounded-[18px] border border-[#eee1da] bg-white p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={`h-2.5 w-2.5 rounded-full ${style.dot}`} />
-                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${style.pill}`}>
-                        {style.label}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm font-semibold text-slate-900">{event.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">{event.time}</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="rounded-[18px] bg-white p-4 text-sm text-slate-500">
-            No events yet for this day.
-          </div>
-        )}
-      </div>
-
-      <div className="mt-4 rounded-[20px] border border-[#efe2db] bg-white p-4">
-        <p className="text-sm font-semibold text-slate-900">Create new event</p>
-
-        <div className="mt-3 space-y-3">
-          <input
-            type="text"
-            value={draft.title}
-            onChange={(e) => setDraft((prev) => ({ ...prev, title: e.target.value }))}
-            placeholder="Event title"
-            className="h-11 w-full rounded-[16px] border border-[#eaded6] bg-white px-4 text-sm outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
-          />
-
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="text"
-              value={draft.time}
-              onChange={(e) => setDraft((prev) => ({ ...prev, time: e.target.value }))}
-              placeholder="Time"
-              className="h-11 w-full rounded-[16px] border border-[#eaded6] bg-white px-4 text-sm outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
-            />
-
-            <select
-              value={draft.type}
-              onChange={(e) => setDraft((prev) => ({ ...prev, type: e.target.value }))}
-              className="h-11 w-full rounded-[16px] border border-[#eaded6] bg-white px-4 text-sm outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
-            >
-              <option value="birthday">Birthday</option>
-              <option value="christmas">Christmas</option>
-              <option value="anniversary">Anniversary</option>
-              <option value="circle">Circle gift</option>
-              <option value="reminder">Reminder</option>
-            </select>
-          </div>
-
-          <button
-            type="button"
-            onClick={onAddEvent}
-            className="inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-5 text-sm font-semibold text-white shadow-lg"
-          >
-            Save event
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function MiniCalendar() {
-  const [currentMonth, setCurrentMonth] = useState(new Date(2026, 6, 1));
-  const [selectedDate, setSelectedDate] = useState(new Date(2026, 6, 16));
-  const [openPopover, setOpenPopover] = useState(true);
-  const [eventsByDate, setEventsByDate] = useState(startingEvents);
-  const [draft, setDraft] = useState({
-    title: "",
-    time: "",
-    type: "birthday",
-  });
-
-  const monthLabel = useMemo(
-    () =>
-      currentMonth.toLocaleDateString("en-GB", {
-        month: "long",
-        year: "numeric",
-      }),
-    [currentMonth]
-  );
-
-  const days = useMemo(() => getMonthData(currentMonth), [currentMonth]);
-
-  const toKey = (date) => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  };
-
-  const selectedKey = selectedDate ? toKey(selectedDate) : null;
-  const selectedEvents = selectedKey ? eventsByDate[selectedKey] || [] : [];
-
-  const goMonth = (direction) => {
-    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + direction, 1));
-    setOpenPopover(false);
-  };
-
-  const handleDayClick = (date) => {
-    setSelectedDate(date);
-    setOpenPopover(true);
-  };
-
-  const handleAddEvent = () => {
-    if (!selectedKey || !draft.title.trim()) return;
-
-    const newEvent = {
-      id: Date.now(),
-      title: draft.title.trim(),
-      time: draft.time.trim() || "All day",
-      type: draft.type,
-    };
-
-    setEventsByDate((prev) => ({
-      ...prev,
-      [selectedKey]: [...(prev[selectedKey] || []), newEvent],
-    }));
-
-    setDraft({
-      title: "",
-      time: "",
-      type: "birthday",
-    });
-  };
-
   return (
     <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between">
@@ -519,29 +263,16 @@ function MiniCalendar() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
             Planner
           </p>
-          <h2
-            className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900"
-            aria-live="polite"
-          >
-            {monthLabel}
+          <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
+            July
           </h2>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => goMonth(-1)}
-            aria-label="Previous month"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
-          >
+          <button className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500">
             ←
           </button>
-          <button
-            type="button"
-            onClick={() => goMonth(1)}
-            aria-label="Next month"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
-          >
+          <button className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500">
             →
           </button>
         </div>
@@ -552,96 +283,67 @@ function MiniCalendar() {
       </div>
 
       <div className="mt-2 grid grid-cols-7 gap-2">
-        {days.map((item) => {
-          const key = toKey(item.date);
-          const selected = key === selectedKey;
-          const dayEvents = eventsByDate[key] || [];
-          const leadType = dayEvents[0]?.type;
-          const dotClass = leadType ? eventTypeStyles[leadType].dot : null;
+        {calendarDays.map((day, index) => {
+          const highlighted = ["10", "16", "24", "29"].includes(day);
+          const active = day === "16";
 
           return (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => handleDayClick(item.date)}
-              aria-label={item.date.toLocaleDateString("en-GB", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-              aria-pressed={selected}
-              className={`min-h-[58px] rounded-[16px] border p-2 text-left transition ${
-                selected
-                  ? "border-[#f2b39a] bg-[#fff2ea]"
-                  : "border-slate-100 bg-[#fffdfa] hover:border-[#efc8b6] hover:bg-[#fff7f2]"
+            <div
+              key={`${day}-${index}`}
+              className={`min-h-[58px] rounded-[16px] border p-2 ${
+                active ? "border-[#f2b39a] bg-[#fff2ea]" : "border-slate-100 bg-[#fffdfa]"
               }`}
             >
-              <div className={`text-[13px] font-semibold ${item.currentMonth ? "text-slate-700" : "text-slate-300"}`}>
-                {item.day}
+              <div className={`text-[13px] font-semibold ${index < 1 || index > 31 ? "text-slate-300" : "text-slate-700"}`}>
+                {day}
               </div>
-
-              {dayEvents.length > 0 ? (
-                <div className="mt-1.5 flex items-center gap-1">
-                  <span className={`h-2 w-2 rounded-full ${dotClass}`} />
-                  {dayEvents.length > 1 ? (
-                    <span className="text-[10px] text-slate-400">+{dayEvents.length - 1}</span>
-                  ) : null}
-                </div>
-              ) : null}
-            </button>
+              {highlighted ? <div className="mt-1.5 h-2 w-2 rounded-full bg-[#b78671]" /> : null}
+            </div>
           );
         })}
       </div>
-
-      {openPopover ? (
-        <CalendarPopover
-          selectedDate={selectedDate}
-          events={selectedEvents}
-          onClose={() => setOpenPopover(false)}
-          onAddEvent={handleAddEvent}
-          draft={draft}
-          setDraft={setDraft}
-        />
-      ) : null}
     </section>
   );
 }
 
-export default function FeedClient() {
-  const [activeFilter, setActiveFilter] = useState("all");
+export default function FeedPage() {
   const showDemoGuide = demoMode && !hasContacts;
-
-  const visibleFeedItems = useMemo(() => {
-    if (activeFilter === "all") return feedItems;
-    return feedItems.filter((item) => item.type === activeFilter);
-  }, [activeFilter]);
 
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
-          <Link href="/feed" className="flex items-center gap-3.5">
-            <LogoMark />
-            <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
-              Hinted<span className="text-[#f36f64]">.io</span>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/hints"
-              className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0]"
-            >
-              Hints
+          <div className="flex items-center gap-8">
+            <Link href="/feed" className="flex items-center gap-3.5">
+              <LogoMark />
+              <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
+                Hinted<span className="text-[#f36f64]">.io</span>
+              </div>
             </Link>
-            <AvatarMenu />
+
+            <nav className="flex items-center gap-3" aria-label="Primary">
+              <Link
+                href="/circles"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0]"
+              >
+                Circles
+              </Link>
+
+              <Link
+                href="/hints"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0]"
+              >
+                Hints
+              </Link>
+            </nav>
           </div>
+
+          <AvatarMenu />
         </div>
       </header>
 
       <div className="mx-auto max-w-[1380px] px-5 py-8 md:px-8">
-        <div className="grid gap-6 xl:grid-cols-[260px_minmax(0,1fr)_360px]">
+        <div className="grid gap-6 xl:grid-cols-[260px_minmax(0,1fr)_320px]">
           <aside className="space-y-5">
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
               <div className="flex items-start justify-between gap-3">
@@ -662,25 +364,18 @@ export default function FeedClient() {
               </div>
 
               <div className="mt-4 flex flex-col gap-2">
-                {initialFilters.map((filter) => {
-                  const selected = activeFilter === filter.key;
-
-                  return (
-                    <button
-                      key={filter.key}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => setActiveFilter(filter.key)}
-                      className={`rounded-[18px] px-4 py-3 text-left text-sm font-medium transition ${
-                        selected
-                          ? "bg-[#2f3b2d] text-white shadow-sm"
-                          : "border border-[#efe4dd] bg-[#fffdfa] text-slate-600 hover:bg-[#faf7f5]"
-                      }`}
-                    >
-                      {filter.label}
-                    </button>
-                  );
-                })}
+                {filters.map((filter) => (
+                  <button
+                    key={filter.label}
+                    className={`rounded-[18px] px-4 py-3 text-left text-sm font-medium ${
+                      filter.active
+                        ? "bg-[#2f3b2d] text-white"
+                        : "border border-[#efe4dd] bg-[#fffdfa] text-slate-600 hover:bg-[#faf7f5]"
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
               </div>
             </section>
 
@@ -720,6 +415,16 @@ export default function FeedClient() {
                 </Link>
               </section>
             )}
+
+            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
+              <h2 className="text-base font-semibold text-slate-900">What shows up here</h2>
+              <ul className="mt-4 space-y-3 text-[14px] leading-6 text-slate-600">
+                <li>Birthdays and milestones approaching.</li>
+                <li>New hints saved by your people.</li>
+                <li>Circle pot progress and reactions.</li>
+                <li>Shared activity you can comment on or celebrate.</li>
+              </ul>
+            </section>
           </aside>
 
           <section className="min-w-0">
@@ -746,7 +451,7 @@ export default function FeedClient() {
                 </div>
 
                 <div className="mt-5 space-y-4">
-                  {visibleFeedItems.map((item) => (
+                  {feedItems.map((item) => (
                     <FeedItem key={item.id} item={item} />
                   ))}
                 </div>
@@ -788,10 +493,7 @@ export default function FeedClient() {
               <p className="mt-3 text-sm leading-7 text-white/90">
                 Sarah has recently saved “ceramic dinnerware” and “weekend city break”, so experience-led gifts may be the strongest route.
               </p>
-              <button
-                type="button"
-                className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-800"
-              >
+              <button className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-800">
                 View related hints
               </button>
             </section>
