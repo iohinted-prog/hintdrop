@@ -1,17 +1,21 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "../../lib/supabase/client";
 
 export default function GoogleAuthButtons({ variant = "hero-primary" }) {
   const supabase = createClient();
 
   const handleGoogleAuth = async () => {
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: "https://hinted.io/auth/callback",
       },
     });
+
+    if (error) {
+      console.error("Google sign-in error:", error.message);
+    }
   };
 
   if (variant === "header-login") {
