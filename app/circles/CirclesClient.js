@@ -1,7 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+
+export const metadata = {
+  title: "Circles | Hinted.io",
+  description: "Build gifting circles, invite contacts, and fund shared gift goals together.",
+};
 
 const contacts = [
   {
@@ -104,6 +109,7 @@ const circles = [
       target: 220,
       raised: 95,
       note: "Selected from Sarah’s own hints so the group has a clear goal.",
+      image: "from-[#d5dccc] via-[#b8c4a7] to-[#8fa17b]",
     },
   },
   {
@@ -142,6 +148,7 @@ const circles = [
       target: 180,
       raised: 50,
       note: "A practical family gift with a target everyone can work toward.",
+      image: "from-[#d8d1cb] via-[#bcaea1] to-[#8f7765]",
     },
   },
   {
@@ -173,15 +180,10 @@ const circles = [
       target: 0,
       raised: 0,
       note: "Choose one of James’s saved hints to turn this into a communal goal.",
+      image: "",
     },
   },
 ];
-
-function subtractDays(dateString, days) {
-  const date = new Date(dateString);
-  date.setDate(date.getDate() - days);
-  return date.toISOString().split("T")[0];
-}
 
 function LogoMark() {
   return (
@@ -290,7 +292,7 @@ function MemberPill({ member }) {
   );
 }
 
-function ContributionRing({ raised, target, ringId }) {
+function ContributionRing({ raised, target }) {
   const percentage = target > 0 ? Math.min((raised / target) * 100, 100) : 0;
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
@@ -300,12 +302,19 @@ function ContributionRing({ raised, target, ringId }) {
     <div className="flex flex-col items-center">
       <div className="relative flex h-[148px] w-[148px] items-center justify-center">
         <svg className="h-[148px] w-[148px] -rotate-90" viewBox="0 0 140 140" aria-hidden="true">
-          <circle cx="70" cy="70" r={radius} stroke="#f1e3db" strokeWidth="12" fill="none" />
           <circle
             cx="70"
             cy="70"
             r={radius}
-            stroke={`url(#${ringId})`}
+            stroke="#f1e3db"
+            strokeWidth="12"
+            fill="none"
+          />
+          <circle
+            cx="70"
+            cy="70"
+            r={radius}
+            stroke="url(#circleGradient)"
             strokeWidth="12"
             strokeLinecap="round"
             fill="none"
@@ -313,7 +322,7 @@ function ContributionRing({ raised, target, ringId }) {
             strokeDashoffset={dash}
           />
           <defs>
-            <linearGradient id={ringId} x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id="circleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#ff9b75" />
               <stop offset="100%" stopColor="#f36f64" />
             </linearGradient>
@@ -399,11 +408,7 @@ function CircleCard({ circle }) {
             {circle.pot.active ? (
               <>
                 <div className="mt-5">
-                  <ContributionRing
-                    raised={circle.pot.raised}
-                    target={circle.pot.target}
-                    ringId={`circle-gradient-${circle.id}`}
-                  />
+                  <ContributionRing raised={circle.pot.raised} target={circle.pot.target} />
                 </div>
 
                 <div className="mt-4 flex -space-x-3">
@@ -418,7 +423,9 @@ function CircleCard({ circle }) {
                   ))}
                 </div>
 
-                <p className="mt-4 text-[14px] leading-7 text-slate-600">{circle.pot.note}</p>
+                <p className="mt-4 text-[14px] leading-7 text-slate-600">
+                  {circle.pot.note}
+                </p>
 
                 <button className="mt-5 inline-flex h-10 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-sm font-semibold text-white">
                   Edit pot
@@ -446,6 +453,12 @@ function CircleCard({ circle }) {
   );
 }
 
+function subtractDays(dateString, days) {
+  const date = new Date(dateString);
+  date.setDate(date.getDate() - days);
+  return date.toISOString().split("T")[0];
+}
+
 function CreateCircleModal({
   open,
   onClose,
@@ -462,6 +475,16 @@ function CreateCircleModal({
   latestDeadline,
 }) {
   if (!open) return null;
+
+  const addPerson = (contact) => {
+    setSelectedPeople((prev) =>
+      prev.some((person) => person.id === contact.id) ? prev : [...prev, contact]
+    );
+  };
+
+  const removePerson = (id) => {
+    setSelectedPeople((prev) => prev.filter((person) => person.id !== id));
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(42,26,20,0.38)] px-4 py-6 backdrop-blur-sm">
@@ -657,11 +680,11 @@ function CreateCircleModal({
                         <span className="text-sm font-medium text-slate-700">{person.name}</span>
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
                             setSelectedPeople((prev) =>
                               prev.filter((item) => item.id !== person.id)
-                            )
-                          }
+                            );
+                          }}
                           className="text-slate-400 hover:text-slate-600"
                           aria-label={`Remove ${person.name}`}
                         >
@@ -695,13 +718,13 @@ function CreateCircleModal({
 
                     <button
                       type="button"
-                      onClick={() =>
+                      onClick={() => {
                         setSelectedPeople((prev) =>
                           prev.some((person) => person.id === contact.id)
                             ? prev
                             : [...prev, contact]
-                        )
-                      }
+                        );
+                      }}
                       className="inline-flex h-9 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-3 text-[12px] font-semibold text-slate-700 hover:bg-[#fff5f0]"
                     >
                       Add
@@ -733,7 +756,7 @@ function CreateCircleModal({
   );
 }
 
-export default function CirclesClient() {
+export default function CirclesPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [eventMode, setEventMode] = useState("calendar");
   const [selectedEventId, setSelectedEventId] = useState(String(calendarEvents[0].id));
