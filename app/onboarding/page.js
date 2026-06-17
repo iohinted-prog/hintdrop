@@ -5,10 +5,9 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const steps = [
-  { id: 1, label: "Account" },
-  { id: 2, label: "Birthday" },
-  { id: 3, label: "Interests" },
-  { id: 4, label: "Invite" },
+  { id: 1, label: "Birthday" },
+  { id: 2, label: "Interests" },
+  { id: 3, label: "Invite" },
 ];
 
 const interestOptions = [
@@ -24,17 +23,6 @@ const interestOptions = [
   "Experiences",
   "Music",
   "Art",
-];
-
-const relationshipOptions = [
-  "Sibling",
-  "Partner",
-  "Friend",
-  "Family",
-  "Parent",
-  "Work friend",
-  "Best friend",
-  "Flatmate",
 ];
 
 function StepPill({ active, complete, number, label }) {
@@ -68,11 +56,7 @@ export default function OnboardingPage() {
 
   const [step, setStep] = useState(1);
   const [selectedInterests, setSelectedInterests] = useState(["Travel", "Food"]);
-  const [selectedRelationship, setSelectedRelationship] = useState("");
   const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
     birthday: "",
     inviteName: "",
     inviteEmail: "",
@@ -94,24 +78,14 @@ export default function OnboardingPage() {
     );
   }
 
-  function toggleRelationship(option) {
-    setSelectedRelationship((prev) => (prev === option ? "" : option));
-  }
-
   function validateStep() {
     const nextErrors = {};
 
     if (step === 1) {
-      if (!form.name.trim()) nextErrors.name = "Please enter your name.";
-      if (!form.email.trim()) nextErrors.email = "Please enter your email.";
-      if (!form.password.trim()) nextErrors.password = "Please create a password.";
-    }
-
-    if (step === 2) {
       if (!form.birthday.trim()) nextErrors.birthday = "Please add your birthday.";
     }
 
-    if (step === 4) {
+    if (step === 3) {
       if (form.inviteEmail && !form.inviteName.trim()) {
         nextErrors.inviteName = "Add a name to match the email.";
       }
@@ -135,7 +109,7 @@ export default function OnboardingPage() {
   }
 
   function skipInterestsStep() {
-    setStep(4);
+    setStep(3);
   }
 
   function skipInviteStep() {
@@ -168,7 +142,7 @@ export default function OnboardingPage() {
             />
           </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
             {steps.map((item) => (
               <StepPill
                 key={item.id}
@@ -183,84 +157,7 @@ export default function OnboardingPage() {
           {step === 1 && (
             <div className="mt-8 max-w-[620px]">
               <div className="inline-flex rounded-full bg-[#fff1ea] px-3 py-1 text-xs font-semibold text-[#ea7451]">
-                Step 1 of 4
-              </div>
-
-              <h1 className="mt-4 text-[34px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[42px]">
-                Create your account.
-              </h1>
-
-              <p className="mt-3 text-[15px] leading-7 text-slate-600">
-                Start with the basics, then tailor your Hinted setup in a few quick steps.
-              </p>
-
-              <div className="mt-7 space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-slate-900">
-                    Name
-                  </label>
-                  <input
-                    id="name"
-                    type="text"
-                    value={form.name}
-                    onChange={(e) => updateField("name", e.target.value)}
-                    placeholder="Your name"
-                    className={`mt-2 h-[56px] w-full rounded-[18px] border bg-white px-4 text-sm text-slate-900 outline-none transition focus:ring-4 ${
-                      errors.name
-                        ? "border-red-300 focus:border-red-300 focus:ring-red-100"
-                        : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
-                    }`}
-                  />
-                  {errors.name ? <p className="mt-2 text-xs text-red-500">{errors.name}</p> : null}
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-slate-900">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => updateField("email", e.target.value)}
-                    placeholder="you@example.com"
-                    className={`mt-2 h-[56px] w-full rounded-[18px] border bg-white px-4 text-sm text-slate-900 outline-none transition focus:ring-4 ${
-                      errors.email
-                        ? "border-red-300 focus:border-red-300 focus:ring-red-100"
-                        : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
-                    }`}
-                  />
-                  {errors.email ? <p className="mt-2 text-xs text-red-500">{errors.email}</p> : null}
-                </div>
-
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-slate-900">
-                    Password
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    value={form.password}
-                    onChange={(e) => updateField("password", e.target.value)}
-                    placeholder="Create a password"
-                    className={`mt-2 h-[56px] w-full rounded-[18px] border bg-white px-4 text-sm text-slate-900 outline-none transition focus:ring-4 ${
-                      errors.password
-                        ? "border-red-300 focus:border-red-300 focus:ring-red-100"
-                        : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
-                    }`}
-                  />
-                  {errors.password ? (
-                    <p className="mt-2 text-xs text-red-500">{errors.password}</p>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="mt-8 max-w-[620px]">
-              <div className="inline-flex rounded-full bg-[#fff1ea] px-3 py-1 text-xs font-semibold text-[#ea7451]">
-                Step 2 of 4
+                Step 1 of 3
               </div>
 
               <h1 className="mt-4 text-[34px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[42px]">
@@ -293,10 +190,10 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 2 && (
             <div className="mt-8 max-w-[760px]">
               <div className="inline-flex rounded-full bg-[#fff1ea] px-3 py-1 text-xs font-semibold text-[#ea7451]">
-                Step 3 of 4
+                Step 2 of 3
               </div>
 
               <h1 className="mt-4 text-[34px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[42px]">
@@ -334,10 +231,10 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {step === 4 && (
+          {step === 3 && (
             <div className="mt-8 max-w-[620px]">
               <div className="inline-flex rounded-full bg-[#fff1ea] px-3 py-1 text-xs font-semibold text-[#ea7451]">
-                Step 4 of 4
+                Step 3 of 3
               </div>
 
               <h1 className="mt-4 text-[34px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[42px]">
@@ -390,33 +287,6 @@ export default function OnboardingPage() {
                     <p className="mt-2 text-xs text-red-500">{errors.inviteEmail}</p>
                   ) : null}
                 </div>
-
-                <div>
-                  <p className="block text-sm font-medium text-slate-900">Who are they to you?</p>
-                  <div className="mt-3 flex flex-wrap gap-2.5">
-                    {relationshipOptions.map((option) => {
-                      const selected = selectedRelationship === option;
-
-                      return (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() => toggleRelationship(option)}
-                          className={`rounded-full px-4 py-2.5 text-sm font-medium transition ${
-                            selected
-                              ? "bg-[#2f3b2d] text-white"
-                              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                          }`}
-                        >
-                          {option}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className="mt-3 text-xs leading-5 text-slate-500">
-                    Optional, just to help organise your people a bit better.
-                  </p>
-                </div>
               </div>
             </div>
           )}
@@ -436,7 +306,7 @@ export default function OnboardingPage() {
             </button>
 
             <div className="flex flex-wrap items-center gap-3">
-              {step === 3 ? (
+              {step === 2 ? (
                 <button
                   type="button"
                   onClick={skipInterestsStep}
@@ -446,7 +316,7 @@ export default function OnboardingPage() {
                 </button>
               ) : null}
 
-              {step === 4 ? (
+              {step === 3 ? (
                 <button
                   type="button"
                   onClick={skipInviteStep}
