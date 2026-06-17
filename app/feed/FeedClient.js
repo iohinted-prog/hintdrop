@@ -894,10 +894,10 @@ export default function FeedClient() {
                 Circles
               </Link>
               <Link
-                href="/shopping"
+                href="/shop"
                 className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
               >
-                Shopping
+                Shop
               </Link>
             </nav>
 
@@ -977,14 +977,6 @@ export default function FeedClient() {
                     </div>
                   ))}
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsAddContactOpen(true)}
-                  className="mt-5 inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-5 text-sm font-semibold text-white shadow-lg"
-                >
-                  Add contacts
-                </button>
               </section>
             )}
 
@@ -1017,9 +1009,9 @@ export default function FeedClient() {
               <button
                 type="button"
                 onClick={() => setIsAddContactOpen(true)}
-                className="mt-4 inline-flex h-10 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
+                className="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-sm font-semibold text-white shadow-lg"
               >
-                Add another contact
+                Add contact
               </button>
             </section>
           </aside>
@@ -1064,10 +1056,10 @@ export default function FeedClient() {
                   </Link>
 
                   <Link
-                    href="/shopping"
+                    href="/shop"
                     className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
                   >
-                    Open shopping
+                    Open shop
                   </Link>
                 </div>
 
@@ -1109,20 +1101,20 @@ export default function FeedClient() {
 
             <section className="rounded-[28px] border border-[#e6ddd7] bg-white p-5 shadow-sm">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Shopping next
+                Shop next
               </p>
               <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.04em] text-slate-900">
                 A place for saved gift options
               </h2>
               <p className="mt-2 text-[14px] leading-6 text-slate-600">
-                Shopping can become the home for linked products, saved retailer finds, and the items you might attach to circles later.
+                Shop can become the home for linked products, saved retailer finds, and the items you might attach to circles later.
               </p>
 
               <Link
-                href="/shopping"
+                href="/shop"
                 className="mt-4 inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
               >
-                Go to shopping
+                Go to shop
               </Link>
             </section>
 
