@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 
 const initialContacts = [
@@ -78,7 +78,38 @@ const calendarEvents = [
   { id: 3, title: "James Promotion Dinner", date: "2026-07-16", type: "Milestone" },
 ];
 
-const circles = [
+const hintOptions = [
+  {
+    id: "hint-1",
+    title: "Weekend cabin stay",
+    subtitle: "From Sarah's hints",
+    amount: "£220",
+    owner: "Sarah",
+  },
+  {
+    id: "hint-2",
+    title: "Le Creuset casserole dish",
+    subtitle: "From Mum's hints",
+    amount: "£180",
+    owner: "Mum",
+  },
+  {
+    id: "hint-3",
+    title: "Ceramics workshop",
+    subtitle: "From Sarah's hints",
+    amount: "£95",
+    owner: "Sarah",
+  },
+  {
+    id: "hint-4",
+    title: "Noise-cancelling headphones",
+    subtitle: "From James's hints",
+    amount: "£240",
+    owner: "James",
+  },
+];
+
+const initialCircles = [
   {
     id: 1,
     name: "Sarah Birthday Circle",
@@ -92,6 +123,7 @@ const circles = [
         contributed: true,
         amount: 40,
         colors: "from-[#4e596d] to-[#212a3c]",
+        status: "joined",
       },
       {
         name: "Maya",
@@ -99,6 +131,7 @@ const circles = [
         contributed: true,
         amount: 35,
         colors: "from-[#efc3af] to-[#ae6e57]",
+        status: "joined",
       },
       {
         name: "James",
@@ -106,6 +139,7 @@ const circles = [
         contributed: false,
         amount: 0,
         colors: "from-[#4e596d] to-[#212a3c]",
+        status: "invited",
       },
       {
         name: "Fiona",
@@ -113,6 +147,7 @@ const circles = [
         contributed: true,
         amount: 20,
         colors: "from-[#809168] to-[#41512e]",
+        status: "joined",
       },
     ],
     pot: {
@@ -122,6 +157,8 @@ const circles = [
       target: 220,
       raised: 95,
       note: "Selected from Sarah’s own hints so the group has a clear goal.",
+      fundingMode: "Flexible pot",
+      deadline: "2026-06-29",
     },
   },
   {
@@ -137,6 +174,7 @@ const circles = [
         contributed: true,
         amount: 50,
         colors: "from-[#4e596d] to-[#212a3c]",
+        status: "joined",
       },
       {
         name: "Mum",
@@ -144,6 +182,7 @@ const circles = [
         contributed: false,
         amount: 0,
         colors: "from-[#eac8b8] to-[#9d6957]",
+        status: "invited",
       },
       {
         name: "Sarah",
@@ -151,6 +190,7 @@ const circles = [
         contributed: false,
         amount: 0,
         colors: "from-[#e8b9a7] to-[#bf755f]",
+        status: "invited",
       },
     ],
     pot: {
@@ -160,6 +200,8 @@ const circles = [
       target: 180,
       raised: 50,
       note: "A practical family gift with a target everyone can work toward.",
+      fundingMode: "Organizer covers gap",
+      deadline: "2026-07-10",
     },
   },
   {
@@ -175,6 +217,7 @@ const circles = [
         contributed: false,
         amount: 0,
         colors: "from-[#4e596d] to-[#212a3c]",
+        status: "joined",
       },
       {
         name: "Maya",
@@ -182,6 +225,7 @@ const circles = [
         contributed: false,
         amount: 0,
         colors: "from-[#efc3af] to-[#ae6e57]",
+        status: "invited",
       },
     ],
     pot: {
@@ -190,16 +234,12 @@ const circles = [
       source: "",
       target: 0,
       raised: 0,
-      note: "Choose one of James’s saved hints to turn this into a communal goal.",
+      note: "Choose a saved hint or paste a link to turn this into a communal goal.",
+      fundingMode: "Flexible pot",
+      deadline: "2026-07-16",
     },
   },
 ];
-
-function subtractDays(dateString, days) {
-  const date = new Date(dateString);
-  date.setDate(date.getDate() - days);
-  return date.toISOString().split("T")[0];
-}
 
 function getInitials(name) {
   return name
@@ -214,6 +254,14 @@ function getContactGradient(role) {
   if (role === "Family") return "from-[#eac8b8] to-[#9d6957]";
   if (role === "Partner") return "from-[#e8b9a7] to-[#bf755f]";
   return "from-[#efcdbf] to-[#bb8168]";
+}
+
+function formatDateLabel(dateString) {
+  if (!dateString) return "No date";
+  return new Date(dateString).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+  });
 }
 
 function LogoMark() {
@@ -259,7 +307,7 @@ function AvatarMenu() {
   );
 }
 
-function ModalShell({ open, onClose, title, eyebrow, children, maxWidth = "max-w-[980px]" }) {
+function ModalShell({ open, onClose, title, eyebrow, children, maxWidth = "max-w-[1080px]" }) {
   if (!open) return null;
 
   return (
@@ -329,6 +377,20 @@ function ContactCard({ contact, onAdd }) {
 }
 
 function MemberPill({ member }) {
+  const statusStyles =
+    member.status === "joined"
+      ? member.contributed
+        ? "bg-[#edf6eb] text-[#4a7a3a]"
+        : "bg-[#eef4ff] text-[#5676b3]"
+      : "bg-[#fff3ee] text-[#d57a58]";
+
+  const statusLabel =
+    member.status === "joined"
+      ? member.contributed
+        ? "Contributed"
+        : "Joined"
+      : "Invited";
+
   return (
     <div className="rounded-[20px] border border-[#eee1d9] bg-[#fffdfa] p-3">
       <div className="flex items-center gap-3">
@@ -341,14 +403,8 @@ function MemberPill({ member }) {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900">{member.name}</p>
           <div className="mt-1 flex items-center gap-2">
-            <span
-              className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                member.contributed
-                  ? "bg-[#edf6eb] text-[#4a7a3a]"
-                  : "bg-[#fff3ee] text-[#d57a58]"
-              }`}
-            >
-              {member.contributed ? "Contributed" : "Pending"}
+            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusStyles}`}>
+              {statusLabel}
             </span>
             <span className="text-[11px] text-slate-400">
               {member.contributed ? `£${member.amount}` : "—"}
@@ -408,6 +464,9 @@ function ContributionRing({ raised, target, ringId }) {
 }
 
 function CircleCard({ circle }) {
+  const joinedCount = circle.members.filter((member) => member.status === "joined").length;
+  const invitedCount = circle.members.length;
+
   return (
     <article className="rounded-[30px] border border-[#f0dfd6] bg-white p-5 shadow-sm sm:p-6">
       <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
@@ -422,6 +481,10 @@ function CircleCard({ circle }) {
               </h2>
               <p className="mt-2 text-sm text-slate-500">{circle.subtitle}</p>
             </div>
+
+            <div className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
+              {joinedCount} of {invitedCount} joined
+            </div>
           </div>
 
           <p className="mt-4 max-w-[60ch] text-[14px] leading-7 text-slate-600">
@@ -433,18 +496,18 @@ function CircleCard({ circle }) {
               <div>
                 <p className="text-sm font-semibold text-slate-900">Members</p>
                 <p className="mt-1 text-[13px] text-slate-500">
-                  Drag contacts here to expand the circle, or add someone directly.
+                  People can be invited now and only become full members once they accept.
                 </p>
               </div>
 
               <div className="rounded-full bg-[#fff1ea] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
-                Drop zone
+                Circle invite flow
               </div>
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {circle.members.map((member) => (
-                <MemberPill key={member.name} member={member} />
+                <MemberPill key={`${circle.id}-${member.name}`} member={member} />
               ))}
             </div>
           </div>
@@ -475,7 +538,7 @@ function CircleCard({ circle }) {
                 <div className="mt-4 flex -space-x-3">
                   {circle.members.map((member) => (
                     <div
-                      key={member.name}
+                      key={`${circle.id}-${member.name}-avatar`}
                       className={`flex h-11 w-11 items-center justify-center rounded-full border-4 border-white bg-gradient-to-b text-[11px] font-bold text-white shadow-sm ${member.colors}`}
                       title={member.name}
                     >
@@ -484,24 +547,38 @@ function CircleCard({ circle }) {
                   ))}
                 </div>
 
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  <span className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
+                    {circle.pot.fundingMode}
+                  </span>
+                  <span className="rounded-full bg-[#f3f6fb] px-3 py-1 text-[11px] font-semibold text-slate-600">
+                    Deadline {formatDateLabel(circle.pot.deadline)}
+                  </span>
+                </div>
+
                 <p className="mt-4 text-[14px] leading-7 text-slate-600">{circle.pot.note}</p>
 
-                <button className="mt-5 inline-flex h-10 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-sm font-semibold text-white">
+                <button
+                  type="button"
+                  className="mt-5 inline-flex h-10 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-sm font-semibold text-white"
+                >
                   Edit pot
                 </button>
               </>
             ) : (
               <>
                 <div className="mt-6 rounded-[24px] border border-dashed border-[#e5d8cf] bg-white p-5 text-left">
-                  <p className="text-sm font-semibold text-slate-900">Choose from saved hints</p>
+                  <p className="text-sm font-semibold text-slate-900">Choose from hints or links</p>
                   <p className="mt-2 text-[14px] leading-7 text-slate-600">
-                    Pick one of this contact’s saved hints and turn it into a communal funding
-                    goal for the whole circle.
+                    Pick a saved hint or paste a product link so the circle has one shared goal.
                   </p>
                 </div>
 
-                <button className="mt-5 inline-flex h-10 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]">
-                  Browse hints
+                <button
+                  type="button"
+                  className="mt-5 inline-flex h-10 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
+                >
+                  Add item
                 </button>
               </>
             )}
@@ -515,6 +592,7 @@ function CircleCard({ circle }) {
 function CreateCircleModal({
   open,
   onClose,
+  onSubmit,
   contacts,
   calendarEvents,
   selectedPeople,
@@ -525,14 +603,17 @@ function CreateCircleModal({
   setSelectedEventId,
   form,
   setForm,
-  latestDeadline,
+  linkPreview,
+  setLinkPreview,
+  isFetchingPreview,
+  handleFetchPreview,
 }) {
   if (!open) return null;
 
   return (
     <ModalShell open={open} onClose={onClose} eyebrow="New circle" title="Create a circle around an event">
-      <div className="grid gap-0 lg:grid-cols-[1.08fr_0.92fr]">
-        <div className="space-y-6 p-6">
+      <div className="grid gap-0 lg:grid-cols-[1.06fr_0.94fr]">
+        <div className="max-h-[calc(92vh-90px)] space-y-6 overflow-y-auto p-6">
           <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
             <p className="text-sm font-semibold text-slate-900">1. Choose the event</p>
 
@@ -585,7 +666,12 @@ function CreateCircleModal({
                       checked={String(event.id) === selectedEventId}
                       onChange={() => {
                         setSelectedEventId(String(event.id));
-                        setForm((prev) => ({ ...prev, eventDate: event.date }));
+                        setForm((prev) => ({
+                          ...prev,
+                          eventTitle: event.title,
+                          eventDate: event.date,
+                          deadline: event.date,
+                        }));
                       }}
                     />
                   </label>
@@ -612,7 +698,11 @@ function CreateCircleModal({
                     type="date"
                     value={form.eventDate}
                     onChange={(e) =>
-                      setForm((prev) => ({ ...prev, eventDate: e.target.value }))
+                      setForm((prev) => ({
+                        ...prev,
+                        eventDate: e.target.value,
+                        deadline: e.target.value,
+                      }))
                     }
                     className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
                   />
@@ -637,21 +727,160 @@ function CreateCircleModal({
               </label>
 
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">Deadline</span>
+                <span className="text-sm font-medium text-slate-700">Contribution deadline</span>
                 <input
                   type="date"
                   value={form.deadline}
-                  max={latestDeadline}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, deadline: e.target.value }))
-                  }
+                  onChange={(e) => setForm((prev) => ({ ...prev, deadline: e.target.value }))}
                   className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
                 />
                 <p className="text-[12px] text-slate-400">
-                  Must be at least 7 days before the event.
+                  Defaults to the event day, but you can close contributions earlier.
                 </p>
               </label>
 
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-700">If people do not join</span>
+                <select
+                  value={form.fundingMode}
+                  onChange={(e) => setForm((prev) => ({ ...prev, fundingMode: e.target.value }))}
+                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                >
+                  <option value="flexible">Flexible pot</option>
+                  <option value="all_or_nothing">All-or-nothing</option>
+                  <option value="organizer_covers">Organizer covers gap</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
+            <p className="text-sm font-semibold text-slate-900">3. Choose the item</p>
+
+            <div className="mt-4 flex gap-3">
+              <button
+                type="button"
+                onClick={() =>
+                  setForm((prev) => ({
+                    ...prev,
+                    itemSource: "hint",
+                    itemUrl: "",
+                  }))
+                }
+                className={`inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold ${
+                  form.itemSource === "hint"
+                    ? "bg-[#2f3b2d] text-white"
+                    : "border border-[#ead8ce] bg-white text-slate-700"
+                }`}
+              >
+                From hints
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setForm((prev) => ({
+                    ...prev,
+                    itemSource: "url",
+                    selectedHintId: "",
+                  }))
+                }
+                className={`inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold ${
+                  form.itemSource === "url"
+                    ? "bg-[#2f3b2d] text-white"
+                    : "border border-[#ead8ce] bg-white text-slate-700"
+                }`}
+              >
+                Paste a link
+              </button>
+            </div>
+
+            {form.itemSource === "hint" ? (
+              <div className="mt-4 space-y-3">
+                {hintOptions.map((hint) => (
+                  <label
+                    key={hint.id}
+                    className={`flex cursor-pointer items-center justify-between rounded-[20px] border p-4 ${
+                      form.selectedHintId === hint.id
+                        ? "border-[#f0a384] bg-[#fff4ee]"
+                        : "border-[#efe1d9] bg-[#fffdfa]"
+                    }`}
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{hint.title}</p>
+                      <p className="mt-1 text-[13px] text-slate-500">
+                        {hint.subtitle} · {hint.amount}
+                      </p>
+                    </div>
+
+                    <input
+                      type="radio"
+                      name="selectedHint"
+                      className="h-4 w-4 accent-[#f36f64]"
+                      checked={form.selectedHintId === hint.id}
+                      onChange={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          selectedHintId: hint.id,
+                          goalType: "item",
+                          goalValue: hint.title,
+                        }))
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-4 space-y-3">
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <input
+                    type="url"
+                    value={form.itemUrl}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, itemUrl: e.target.value }))
+                    }
+                    placeholder="Paste product or experience link"
+                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleFetchPreview}
+                    className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg"
+                  >
+                    {isFetchingPreview ? "Fetching..." : "Fetch preview"}
+                  </button>
+                </div>
+
+                {linkPreview ? (
+                  <div className="rounded-[22px] border border-[#eedfd6] bg-[#fffdfa] p-4">
+                    <div className="flex gap-4">
+                      {linkPreview.image ? (
+                        <img
+                          src={linkPreview.image}
+                          alt={linkPreview.title || "Linked item preview"}
+                          className="h-20 w-20 rounded-[18px] object-cover"
+                        />
+                      ) : (
+                        <div className="h-20 w-20 rounded-[18px] bg-[#f5ebe4]" />
+                      )}
+
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900">
+                          {linkPreview.title || "Untitled item"}
+                        </p>
+                        <p className="mt-1 text-[13px] leading-6 text-slate-500">
+                          {linkPreview.description || "Preview pulled from the linked page."}
+                        </p>
+                        <p className="mt-2 text-[12px] font-medium text-[#df7b59]">
+                          {linkPreview.siteName || linkPreview.url}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <label className="space-y-2">
                 <span className="text-sm font-medium text-slate-700">Goal type</span>
                 <select
@@ -664,27 +893,27 @@ function CreateCircleModal({
                 </select>
               </label>
 
-              <label className="space-y-2 sm:col-span-2">
+              <label className="space-y-2">
                 <span className="text-sm font-medium text-slate-700">
-                  {form.goalType === "item" ? "Item to aim for" : "Target amount"}
+                  {form.goalType === "item" ? "Item or label" : "Target amount"}
                 </span>
                 <input
                   type="text"
                   value={form.goalValue}
                   onChange={(e) => setForm((prev) => ({ ...prev, goalValue: e.target.value }))}
                   className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                  placeholder={form.goalType === "item" ? "Le Creuset casserole dish" : "£180"}
+                  placeholder={form.goalType === "item" ? "Weekend cabin stay" : "£220"}
                 />
               </label>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-[#efe0d7] bg-[#fff7f2] p-6 lg:border-l lg:border-t-0">
+        <div className="max-h-[calc(92vh-90px)] overflow-y-auto border-t border-[#efe0d7] bg-[#fff7f2] p-6 lg:border-l lg:border-t-0">
           <div className="rounded-[24px] border border-dashed border-[#e6d7cd] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">3. Add people</p>
+            <p className="text-sm font-semibold text-slate-900">4. Add people</p>
             <p className="mt-1 text-[13px] leading-6 text-slate-500">
-              Drag contacts into this circle, or tap add to include them.
+              Invite people now. They only become full members after they accept.
             </p>
 
             <div className="mt-4 min-h-[120px] rounded-[20px] bg-[#fffaf7] p-4">
@@ -722,38 +951,51 @@ function CreateCircleModal({
             </div>
 
             <div className="mt-5 space-y-3">
-              {contacts.map((contact) => (
-                <div
-                  key={contact.id}
-                  className="flex items-center justify-between rounded-[18px] border border-[#f0dfd6] bg-[#fffdfa] p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b text-[11px] font-bold text-white ${contact.colors}`}
-                    >
-                      {contact.initials}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{contact.name}</p>
-                      <p className="text-[12px] text-slate-500">{contact.role}</p>
-                    </div>
-                  </div>
+              {contacts.map((contact) => {
+                const alreadyAdded = selectedPeople.some((person) => person.id === contact.id);
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSelectedPeople((prev) =>
-                        prev.some((person) => person.id === contact.id)
-                          ? prev
-                          : [...prev, contact]
-                      )
-                    }
-                    className="inline-flex h-9 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-3 text-[12px] font-semibold text-slate-700 hover:bg-[#fff5f0]"
+                return (
+                  <div
+                    key={contact.id}
+                    className="flex items-center justify-between rounded-[18px] border border-[#f0dfd6] bg-[#fffdfa] p-3"
                   >
-                    Add
-                  </button>
-                </div>
-              ))}
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b text-[11px] font-bold text-white ${contact.colors}`}
+                      >
+                        {contact.initials}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{contact.name}</p>
+                        <p className="text-[12px] text-slate-500">{contact.role}</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedPeople((prev) =>
+                          alreadyAdded ? prev : [...prev, contact]
+                        )
+                      }
+                      className={`inline-flex h-9 items-center justify-center rounded-full px-3 text-[12px] font-semibold ${
+                        alreadyAdded
+                          ? "bg-[#edf6eb] text-[#4a7a3a]"
+                          : "border border-[#ead8ce] bg-white text-slate-700 hover:bg-[#fff5f0]"
+                      }`}
+                    >
+                      {alreadyAdded ? "Added" : "Invite"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 rounded-[20px] bg-[#fffaf7] p-4">
+              <p className="text-sm font-semibold text-slate-900">What happens if people do not join?</p>
+              <p className="mt-2 text-[13px] leading-6 text-slate-500">
+                Your funding mode controls the fallback: keep the pot flexible, cancel if the goal is not met, or let the organiser cover the gap.
+              </p>
             </div>
 
             <div className="mt-6 flex gap-3">
@@ -766,6 +1008,7 @@ function CreateCircleModal({
               </button>
               <button
                 type="button"
+                onClick={onSubmit}
                 className="inline-flex h-12 flex-1 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg"
               >
                 Create circle
@@ -778,13 +1021,7 @@ function CreateCircleModal({
   );
 }
 
-function AddContactModal({
-  open,
-  onClose,
-  onSave,
-  form,
-  setForm,
-}) {
+function AddContactModal({ open, onClose, onSave, form, setForm }) {
   if (!open) return null;
 
   const handleSubmit = (e) => {
@@ -884,18 +1121,26 @@ function AddContactModal({
 
 export default function CirclesClient() {
   const [contacts, setContacts] = useState(initialContacts);
+  const [circles, setCircles] = useState(initialCircles);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isAddContactOpen, setIsAddContactOpen] = useState(false);
   const [eventMode, setEventMode] = useState("calendar");
   const [selectedEventId, setSelectedEventId] = useState(String(calendarEvents[0].id));
   const [selectedPeople, setSelectedPeople] = useState([]);
+  const [linkPreview, setLinkPreview] = useState(null);
+  const [isFetchingPreview, setIsFetchingPreview] = useState(false);
+
   const [form, setForm] = useState({
     title: "",
-    eventTitle: "",
+    eventTitle: calendarEvents[0].title,
     eventDate: calendarEvents[0].date,
-    deadline: "",
+    deadline: calendarEvents[0].date,
     goalType: "item",
     goalValue: "",
+    fundingMode: "flexible",
+    itemSource: "hint",
+    selectedHintId: "",
+    itemUrl: "",
   });
 
   const [contactForm, setContactForm] = useState({
@@ -906,12 +1151,10 @@ export default function CirclesClient() {
     phone: "",
   });
 
-  const activeEventDate =
-    eventMode === "calendar"
-      ? calendarEvents.find((event) => String(event.id) === selectedEventId)?.date || ""
-      : form.eventDate;
-
-  const latestDeadline = activeEventDate ? subtractDays(activeEventDate, 7) : "";
+  const activeEvent = useMemo(
+    () => calendarEvents.find((event) => String(event.id) === selectedEventId) || calendarEvents[0],
+    [selectedEventId]
+  );
 
   const resetContactForm = () => {
     setContactForm({
@@ -920,6 +1163,25 @@ export default function CirclesClient() {
       role: "",
       birthday: "",
       phone: "",
+    });
+  };
+
+  const resetCircleForm = () => {
+    setEventMode("calendar");
+    setSelectedEventId(String(calendarEvents[0].id));
+    setSelectedPeople([]);
+    setLinkPreview(null);
+    setForm({
+      title: "",
+      eventTitle: calendarEvents[0].title,
+      eventDate: calendarEvents[0].date,
+      deadline: calendarEvents[0].date,
+      goalType: "item",
+      goalValue: "",
+      fundingMode: "flexible",
+      itemSource: "hint",
+      selectedHintId: "",
+      itemUrl: "",
     });
   };
 
@@ -945,6 +1207,133 @@ export default function CirclesClient() {
     setIsAddContactOpen(false);
   };
 
+  const handleFetchPreview = async () => {
+    if (!form.itemUrl.trim()) return;
+
+    try {
+      setIsFetchingPreview(true);
+
+      const response = await fetch("/api/link-preview", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url: form.itemUrl.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch preview");
+      }
+
+      setLinkPreview(data);
+
+      if (!form.goalValue) {
+        setForm((prev) => ({
+          ...prev,
+          goalType: "item",
+          goalValue: data.title || prev.goalValue,
+        }));
+      }
+    } catch (error) {
+      setLinkPreview({
+        title: "Preview unavailable",
+        description: "We could not pull a preview from that link yet, but you can still use the URL.",
+        image: "",
+        siteName: form.itemUrl,
+        url: form.itemUrl,
+      });
+    } finally {
+      setIsFetchingPreview(false);
+    }
+  };
+
+  const handleCreateCircle = () => {
+    const selectedEvent =
+      eventMode === "calendar"
+        ? calendarEvents.find((event) => String(event.id) === selectedEventId)
+        : null;
+
+    const eventTitle =
+      eventMode === "calendar"
+        ? selectedEvent?.title || form.eventTitle
+        : form.eventTitle.trim();
+
+    const eventDate =
+      eventMode === "calendar"
+        ? selectedEvent?.date || form.eventDate
+        : form.eventDate;
+
+    const title = form.title.trim() || `${eventTitle || "New"} circle`;
+
+    if (!eventDate || !title) return;
+
+    const fundingModeLabel =
+      form.fundingMode === "all_or_nothing"
+        ? "All-or-nothing"
+        : form.fundingMode === "organizer_covers"
+          ? "Organizer covers gap"
+          : "Flexible pot";
+
+    const targetNumber = Number(String(form.goalValue).replace(/[^\d.]/g, "")) || 0;
+
+    const sourceLabel =
+      form.itemSource === "hint"
+        ? hintOptions.find((hint) => hint.id === form.selectedHintId)?.subtitle || "From saved hints"
+        : linkPreview?.siteName || "From pasted link";
+
+    const itemLabel =
+      form.goalType === "amount"
+        ? "Shared contribution pot"
+        : form.goalValue.trim() || linkPreview?.title || "New shared item";
+
+    const newCircle = {
+      id: Date.now(),
+      name: title,
+      subtitle: `${eventMode === "calendar" ? selectedEvent?.type || "Event" : "Event"} · ${formatDateLabel(eventDate)}`,
+      description:
+        "A new shared circle built around one event, one goal, and a clear fallback if invitees do not join.",
+      members: [
+        {
+          name: "You",
+          initials: "Y",
+          contributed: false,
+          amount: 0,
+          colors: "from-[#4e596d] to-[#212a3c]",
+          status: "joined",
+        },
+        ...selectedPeople.map((person) => ({
+          name: person.name,
+          initials: person.initials,
+          contributed: false,
+          amount: 0,
+          colors: person.colors,
+          status: "invited",
+        })),
+      ],
+      pot: {
+        active: true,
+        item: itemLabel,
+        source: sourceLabel,
+        target: targetNumber,
+        raised: 0,
+        note:
+          form.fundingMode === "all_or_nothing"
+            ? "This circle will only proceed if the group reaches the target by the deadline."
+            : form.fundingMode === "organizer_covers"
+              ? "If the full target is not reached, the organiser can choose to cover the gap."
+              : "This circle can stay flexible if fewer people join than expected.",
+        fundingMode: fundingModeLabel,
+        deadline: form.deadline || eventDate,
+      },
+    };
+
+    setCircles((prev) => [newCircle, ...prev]);
+    setIsCreateOpen(false);
+    resetCircleForm();
+  };
+
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur">
@@ -960,13 +1349,13 @@ export default function CirclesClient() {
             <nav className="flex items-center gap-2 sm:gap-3">
               <Link
                 href="/feed"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 sm:px-5 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0]"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
               >
                 Feed
               </Link>
               <Link
                 href="/hints"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 sm:px-5 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0]"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
               >
                 Hints
               </Link>
@@ -990,7 +1379,7 @@ export default function CirclesClient() {
                     People you can add
                   </h1>
                   <p className="mt-2 text-[14px] leading-7 text-slate-600">
-                    Drag people into a circle, or add them directly while you build the group.
+                    Invite people into shared circles, then track who has joined and who is still pending.
                   </p>
 
                   <div className="mt-5 space-y-3">
@@ -1000,9 +1389,7 @@ export default function CirclesClient() {
                         contact={contact}
                         onAdd={(person) => {
                           setSelectedPeople((prev) =>
-                            prev.some((item) => item.id === person.id)
-                              ? prev
-                              : [...prev, person]
+                            prev.some((item) => item.id === person.id) ? prev : [...prev, person]
                           );
                           setIsCreateOpen(true);
                         }}
@@ -1030,8 +1417,7 @@ export default function CirclesClient() {
                       Build circles around the people and moments that matter.
                     </h2>
                     <p className="mt-3 max-w-[760px] text-[15px] leading-7 text-slate-600">
-                      Add members, choose a saved hint from the person the circle is for,
-                      and turn it into a communal pot everyone can work toward together.
+                      Create a circle around an event, invite people, choose a hint or pasted link, and let the pot stay flexible if everyone does not join.
                     </p>
                   </div>
 
@@ -1057,7 +1443,11 @@ export default function CirclesClient() {
 
       <CreateCircleModal
         open={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
+        onClose={() => {
+          setIsCreateOpen(false);
+          resetCircleForm();
+        }}
+        onSubmit={handleCreateCircle}
         contacts={contacts}
         calendarEvents={calendarEvents}
         selectedPeople={selectedPeople}
@@ -1068,7 +1458,10 @@ export default function CirclesClient() {
         setSelectedEventId={setSelectedEventId}
         form={form}
         setForm={setForm}
-        latestDeadline={latestDeadline}
+        linkPreview={linkPreview}
+        setLinkPreview={setLinkPreview}
+        isFetchingPreview={isFetchingPreview}
+        handleFetchPreview={handleFetchPreview}
       />
 
       <AddContactModal
