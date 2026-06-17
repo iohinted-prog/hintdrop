@@ -2,6 +2,12 @@
 
 import { useMemo, useState } from "react";
 
+const currencyOptions = [
+  { code: "GBP", symbol: "£", label: "GBP £" },
+  { code: "USD", symbol: "$", label: "USD $" },
+  { code: "EUR", symbol: "€", label: "EUR €" },
+];
+
 const products = [
   {
     id: "prod-001",
@@ -367,6 +373,26 @@ const railPresets = [
   },
 ];
 
+function formatMoney(value, currencyCode) {
+  if (value == null) return "";
+  const config = currencyOptions.find((item) => item.code === currencyCode) || currencyOptions[0];
+  const rateMap = { GBP: 1, USD: 1.28, EUR: 1.17 };
+  const converted = value * (rateMap[currencyCode] || 1);
+
+  return new Intl.NumberFormat(currencyCode === "GBP" ? "en-GB" : currencyCode === "USD" ? "en-US" : "de-DE", {
+    style: "currency",
+    currency: config.code,
+    maximumFractionDigits: 0,
+  }).format(converted);
+}
+
+function inferHintSize(price) {
+  if (!price) return "Medium";
+  if (price >= 180) return "Large";
+  if (price <= 60) return "Small";
+  return "Medium";
+}
+
 function resolveOutgoingUrl(item) {
   if (item.affiliateUrl) return item.affiliateUrl;
   return item.destinationUrl;
@@ -412,7 +438,7 @@ function FilterPill({ active, onClick, children }) {
       onClick={onClick}
       className={`rounded-full border px-4 py-2 text-sm transition ${
         active
-          ? "border-[#d69b7a] bg-[#f8dfd2] text-[#6f3f24]"
+          ? "border-[#c9a55f] bg-[#f5e5b8] text-[#6b5521]"
           : "border-[#edd8cb] bg-white text-[#6c5d56] hover:border-[#e1c2ae] hover:bg-[#fff7f3]"
       }`}
     >
@@ -423,12 +449,12 @@ function FilterPill({ active, onClick, children }) {
 
 function AddToHintsModal({
   item,
+  currency,
   onClose,
   onSave,
 }) {
   const [note, setNote] = useState("");
   const [visibility, setVisibility] = useState("Public");
-  const [size, setSize] = useState(item.price && item.price >= 150 ? "Large" : "Medium");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1b15]/35 px-4 backdrop-blur-[6px]">
@@ -445,9 +471,9 @@ function AddToHintsModal({
               <span className="rounded-full bg-[#fff7f1]/95 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[#7f5b48]">
                 {item.retailer}
               </span>
-              {item.priceLabel ? (
+              {item.price ? (
                 <span className="rounded-full bg-[#fff7f1]/95 px-3 py-1 text-[11px] text-[#7f5b48]">
-                  {item.priceLabel}
+                  {formatMoney(item.price, currency)}
                 </span>
               ) : null}
             </div>
@@ -496,35 +522,18 @@ function AddToHintsModal({
                 />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-[12px] uppercase tracking-[0.18em] text-[#a28474]">
-                    Visibility
-                  </label>
-                  <select
-                    value={visibility}
-                    onChange={(e) => setVisibility(e.target.value)}
-                    className="h-12 w-full rounded-full border border-[#ead7ca] bg-white px-4 text-sm text-[#5f524b] outline-none"
-                  >
-                    <option>Public</option>
-                    <option>Private</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-[12px] uppercase tracking-[0.18em] text-[#a28474]">
-                    Card size
-                  </label>
-                  <select
-                    value={size}
-                    onChange={(e) => setSize(e.target.value)}
-                    className="h-12 w-full rounded-full border border-[#ead7ca] bg-white px-4 text-sm text-[#5f524b] outline-none"
-                  >
-                    <option>Small</option>
-                    <option>Medium</option>
-                    <option>Large</option>
-                  </select>
-                </div>
+              <div>
+                <label className="mb-2 block text-[12px] uppercase tracking-[0.18em] text-[#a28474]">
+                  Visibility
+                </label>
+                <select
+                  value={visibility}
+                  onChange={(e) => setVisibility(e.target.value)}
+                  className="h-12 w-full rounded-full border border-[#ead7ca] bg-white px-4 text-sm text-[#5f524b] outline-none"
+                >
+                  <option>Public</option>
+                  <option>Private</option>
+                </select>
               </div>
             </div>
 
@@ -536,10 +545,10 @@ function AddToHintsModal({
                     hintId: `hint-${Date.now()}`,
                     note,
                     visibility,
-                    size,
+                    size: inferHintSize(item.price),
                   })
                 }
-                className="rounded-full bg-[#1f3f63] px-5 py-3 text-sm font-medium text-white"
+                className="rounded-full bg-[#2f5d50] px-5 py-3 text-sm font-medium text-white"
               >
                 Add to hints
               </button>
@@ -559,7 +568,7 @@ function AddToHintsModal({
   );
 }
 
-function SavedHintCard({ item }) {
+function SavedHintCard({ item, currency }) {
   const sizeClass =
     item.size === "Large"
       ? "md:col-span-6 lg:col-span-6 min-h-[320px]"
@@ -590,6 +599,11 @@ function SavedHintCard({ item }) {
           <span className="rounded-full bg-[#f6efe9] px-3 py-1 text-[11px] text-[#8d7b70]">
             {item.visibility}
           </span>
+          {item.price ? (
+            <span className="rounded-full bg-[#f6efe9] px-3 py-1 text-[11px] text-[#8d7b70]">
+              {formatMoney(item.price, currency)}
+            </span>
+          ) : null}
         </div>
         <h3 className="mt-3 text-[20px] font-semibold tracking-[-0.02em] text-[#281a15]">
           {item.title}
@@ -609,7 +623,7 @@ function SavedHintCard({ item }) {
   );
 }
 
-function ShopTile({ item, onAddToHints }) {
+function ShopTile({ item, currency, onAddToHints }) {
   const href = resolveOutgoingUrl(item);
   const isEditorial = item.type === "collection" || item.type === "sponsored";
 
@@ -645,16 +659,22 @@ function ShopTile({ item, onAddToHints }) {
             </span>
           ) : null}
         </div>
-        {item.priceLabel ? (
+        {item.price ? (
           <div className="absolute bottom-4 left-4 flex items-center gap-2">
             <span className="rounded-full bg-[#fffaf7]/95 px-3 py-2 text-sm font-semibold text-[#2d1c15]">
-              {item.priceLabel}
+              {formatMoney(item.price, currency)}
             </span>
             {item.originalPriceLabel ? (
               <span className="rounded-full bg-[#f3e4d8]/95 px-3 py-2 text-sm text-[#8c6d5a] line-through">
                 {item.originalPriceLabel}
               </span>
             ) : null}
+          </div>
+        ) : item.priceLabel ? (
+          <div className="absolute bottom-4 left-4">
+            <span className="rounded-full bg-[#fffaf7]/95 px-3 py-2 text-sm font-semibold text-[#2d1c15]">
+              {item.priceLabel}
+            </span>
           </div>
         ) : null}
       </div>
@@ -696,7 +716,7 @@ function ShopTile({ item, onAddToHints }) {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-full bg-[#1f3f63] px-4 py-2.5 text-sm font-medium text-white"
+            className="rounded-full bg-[#2f5d50] px-4 py-2.5 text-sm font-medium text-white"
           >
             View product
           </a>
@@ -710,6 +730,7 @@ function ShopTile({ item, onAddToHints }) {
 }
 
 export default function ShopPage() {
+  const [currency, setCurrency] = useState("GBP");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOccasion, setSelectedOccasion] = useState("All occasions");
   const [selectedBudget, setSelectedBudget] = useState("All budgets");
@@ -786,6 +807,7 @@ export default function ShopPage() {
       {selectedProduct ? (
         <AddToHintsModal
           item={selectedProduct}
+          currency={currency}
           onClose={() => setSelectedProduct(null)}
           onSave={(hint) => {
             setSavedHints((current) => [hint, ...current]);
@@ -800,6 +822,18 @@ export default function ShopPage() {
             <HintedMark />
 
             <div className="flex items-center gap-3 sm:gap-5">
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="h-11 rounded-full border border-[#ebd7ca] bg-[#fff8f4] px-4 text-sm text-[#5e514a] outline-none"
+              >
+                {currencyOptions.map((item) => (
+                  <option key={item.code} value={item.code}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+
               <nav className="flex items-center gap-2 rounded-full border border-[#eeded4] bg-[#fff8f4] p-1">
                 {["Feed", "Hints", "Circles", "Shop"].map((item) => (
                   <a
@@ -807,7 +841,7 @@ export default function ShopPage() {
                     href={item === "Feed" ? "/feed" : `/${item.toLowerCase()}`}
                     className={`rounded-full px-4 py-2 text-sm ${
                       item === "Shop"
-                        ? "bg-[#1f3f63] text-white"
+                        ? "bg-[#2f5d50] text-white"
                         : "text-[#6f625b] hover:bg-white"
                     }`}
                   >
@@ -816,7 +850,7 @@ export default function ShopPage() {
                 ))}
               </nav>
 
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f6d6c7] text-sm font-semibold text-[#7a4930] shadow-[0_10px_24px_rgba(233,149,109,0.25)]">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#e2bb66] text-sm font-semibold text-[#6f5218] shadow-[0_10px_24px_rgba(209,170,79,0.3)]">
                 EH
               </div>
             </div>
@@ -994,7 +1028,7 @@ export default function ShopPage() {
                 onClick={() => rail.apply(setters)}
                 className={`shrink-0 rounded-full px-5 py-3 text-sm transition ${
                   activeRail === rail.id
-                    ? "bg-[#1f3f63] text-white"
+                    ? "bg-[#2f5d50] text-white"
                     : "border border-[#ebd7ca] bg-white text-[#655851] hover:border-[#e0c3b0] hover:bg-[#fff7f2]"
                 }`}
               >
@@ -1030,7 +1064,7 @@ export default function ShopPage() {
             >
               <div className="grid grid-cols-1 gap-4 md:grid-cols-6 lg:grid-cols-12">
                 {savedHints.map((item) => (
-                  <SavedHintCard key={item.hintId} item={item} />
+                  <SavedHintCard key={item.hintId} item={item} currency={currency} />
                 ))}
               </div>
             </div>
@@ -1057,6 +1091,7 @@ export default function ShopPage() {
               <ShopTile
                 key={item.id}
                 item={item}
+                currency={currency}
                 onAddToHints={(product) => setSelectedProduct(product)}
               />
             ))}
