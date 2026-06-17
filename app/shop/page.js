@@ -2,14 +2,6 @@
 
 import { useMemo, useState } from "react";
 
-const curatedRails = [
-  "Picked for Sarah",
-  "Best under £50",
-  "Luxury classics",
-  "Trending at John Lewis",
-  "From your saved hints",
-];
-
 const products = [
   {
     id: "prod-001",
@@ -307,21 +299,76 @@ const budgets = ["All budgets", "Under £50", "£50-£100", "£100+", "Luxury"];
 const categories = ["All categories", "Home", "Fashion", "Beauty", "Tech", "Food", "Experiences", "Editorial"];
 const deliverySpeeds = ["Any delivery", "Instant", "Next day", "Standard", "Mixed"];
 
+const railPresets = [
+  {
+    id: "picked",
+    label: "Picked for Sarah",
+    apply: (setters) => {
+      setters.setSearchTerm("");
+      setters.setSelectedOccasion("Birthday");
+      setters.setSelectedBudget("All budgets");
+      setters.setSelectedCategory("All categories");
+      setters.setSelectedBrand("All brands");
+      setters.setSelectedDelivery("Any delivery");
+      setters.setActiveRail("picked");
+    },
+  },
+  {
+    id: "under50",
+    label: "Best under £50",
+    apply: (setters) => {
+      setters.setSearchTerm("");
+      setters.setSelectedOccasion("All occasions");
+      setters.setSelectedBudget("Under £50");
+      setters.setSelectedCategory("All categories");
+      setters.setSelectedBrand("All brands");
+      setters.setSelectedDelivery("Any delivery");
+      setters.setActiveRail("under50");
+    },
+  },
+  {
+    id: "luxury",
+    label: "Luxury classics",
+    apply: (setters) => {
+      setters.setSearchTerm("");
+      setters.setSelectedOccasion("All occasions");
+      setters.setSelectedBudget("Luxury");
+      setters.setSelectedCategory("All categories");
+      setters.setSelectedBrand("All brands");
+      setters.setSelectedDelivery("Any delivery");
+      setters.setActiveRail("luxury");
+    },
+  },
+  {
+    id: "johnlewis",
+    label: "Trending at John Lewis",
+    apply: (setters) => {
+      setters.setSearchTerm("");
+      setters.setSelectedOccasion("All occasions");
+      setters.setSelectedBudget("All budgets");
+      setters.setSelectedCategory("All categories");
+      setters.setSelectedBrand("John Lewis");
+      setters.setSelectedDelivery("Any delivery");
+      setters.setActiveRail("johnlewis");
+    },
+  },
+  {
+    id: "saved",
+    label: "From your saved hints",
+    apply: (setters) => {
+      setters.setSearchTerm("");
+      setters.setSelectedOccasion("Birthday");
+      setters.setSelectedBudget("All budgets");
+      setters.setSelectedCategory("Home");
+      setters.setSelectedBrand("All brands");
+      setters.setSelectedDelivery("Any delivery");
+      setters.setActiveRail("saved");
+    },
+  },
+];
+
 function resolveOutgoingUrl(item) {
   if (item.affiliateUrl) return item.affiliateUrl;
-
-  if (item.network === "amazon") {
-    return item.destinationUrl;
-  }
-
-  if (item.network === "awin") {
-    return item.destinationUrl;
-  }
-
-  if (item.network === "shopcom") {
-    return item.destinationUrl;
-  }
-
   return item.destinationUrl;
 }
 
@@ -340,6 +387,25 @@ function tileClass(tile) {
   }
 }
 
+function HintedMark() {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="relative flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#ffd8c6] shadow-[0_12px_24px_rgba(233,149,109,0.25)]">
+        <div className="absolute inset-[7px] rounded-[12px] bg-[#fff7f2]" />
+        <div className="relative text-[18px]">🎁</div>
+      </div>
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.22em] text-[#b18b77]">
+          Hinted
+        </p>
+        <p className="text-[22px] font-semibold tracking-[-0.03em] text-[#281a15]">
+          Shop
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function FilterPill({ active, onClick, children }) {
   return (
     <button
@@ -355,18 +421,211 @@ function FilterPill({ active, onClick, children }) {
   );
 }
 
-function ShopTile({ item }) {
+function AddToHintsModal({
+  item,
+  onClose,
+  onSave,
+}) {
+  const [note, setNote] = useState("");
+  const [visibility, setVisibility] = useState("Public");
+  const [size, setSize] = useState(item.price && item.price >= 150 ? "Large" : "Medium");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2b1b15]/35 px-4 backdrop-blur-[6px]">
+      <div className="w-full max-w-[780px] overflow-hidden rounded-[36px] border border-[#ecd8cc] bg-[#fffdfb] shadow-[0_40px_90px_rgba(61,34,23,0.22)]">
+        <div className="grid gap-0 md:grid-cols-[0.95fr_1.05fr]">
+          <div className="relative min-h-[320px] bg-[#f8eee8]">
+            <img
+              src={item.image}
+              alt={item.title}
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#2f1d15]/40 via-transparent to-transparent" />
+            <div className="absolute left-5 top-5 flex gap-2">
+              <span className="rounded-full bg-[#fff7f1]/95 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[#7f5b48]">
+                {item.retailer}
+              </span>
+              {item.priceLabel ? (
+                <span className="rounded-full bg-[#fff7f1]/95 px-3 py-1 text-[11px] text-[#7f5b48]">
+                  {item.priceLabel}
+                </span>
+              ) : null}
+            </div>
+            <div className="absolute bottom-5 left-5 right-5">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-[#ffe9de]">
+                Add to hints
+              </p>
+              <h3 className="mt-2 text-[28px] font-semibold leading-[1.04] tracking-[-0.03em] text-white">
+                {item.title}
+              </h3>
+            </div>
+          </div>
+
+          <div className="p-6 sm:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[#b18c7c]">
+                  Save to your board
+                </p>
+                <h2 className="mt-2 text-[28px] font-semibold tracking-[-0.03em] text-[#281a15]">
+                  Place this on your hints board.
+                </h2>
+              </div>
+              <button
+                onClick={onClose}
+                className="rounded-full border border-[#ead8cd] px-3 py-2 text-sm text-[#6c5d56]"
+              >
+                Close
+              </button>
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-[#6d5f58]">
+              Keep the Pinterest-style flow: save the item now, then drag it into place later on your board.
+            </p>
+
+            <div className="mt-6 space-y-4">
+              <div>
+                <label className="mb-2 block text-[12px] uppercase tracking-[0.18em] text-[#a28474]">
+                  Note
+                </label>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Why do you want this? Add a note for your future self or your circle."
+                  className="min-h-[120px] w-full rounded-[24px] border border-[#ead7ca] bg-[#fff9f5] px-4 py-4 text-sm text-[#2b1c16] outline-none placeholder:text-[#aa9387]"
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-[12px] uppercase tracking-[0.18em] text-[#a28474]">
+                    Visibility
+                  </label>
+                  <select
+                    value={visibility}
+                    onChange={(e) => setVisibility(e.target.value)}
+                    className="h-12 w-full rounded-full border border-[#ead7ca] bg-white px-4 text-sm text-[#5f524b] outline-none"
+                  >
+                    <option>Public</option>
+                    <option>Private</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-[12px] uppercase tracking-[0.18em] text-[#a28474]">
+                    Card size
+                  </label>
+                  <select
+                    value={size}
+                    onChange={(e) => setSize(e.target.value)}
+                    className="h-12 w-full rounded-full border border-[#ead7ca] bg-white px-4 text-sm text-[#5f524b] outline-none"
+                  >
+                    <option>Small</option>
+                    <option>Medium</option>
+                    <option>Large</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-7 flex flex-wrap gap-3">
+              <button
+                onClick={() =>
+                  onSave({
+                    ...item,
+                    hintId: `hint-${Date.now()}`,
+                    note,
+                    visibility,
+                    size,
+                  })
+                }
+                className="rounded-full bg-[#1f3f63] px-5 py-3 text-sm font-medium text-white"
+              >
+                Add to hints
+              </button>
+              <a
+                href={resolveOutgoingUrl(item)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full border border-[#e7d6ca] px-5 py-3 text-sm text-[#5f524b]"
+              >
+                View product
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SavedHintCard({ item }) {
+  const sizeClass =
+    item.size === "Large"
+      ? "md:col-span-6 lg:col-span-6 min-h-[320px]"
+      : item.size === "Small"
+      ? "md:col-span-3 lg:col-span-3 min-h-[220px]"
+      : "md:col-span-4 lg:col-span-4 min-h-[250px]";
+
+  return (
+    <article
+      className={`${sizeClass} group relative overflow-hidden rounded-[30px] border border-[#ecdacf] bg-white shadow-[0_14px_34px_rgba(103,65,45,0.06)]`}
+      style={{
+        transform:
+          item.size === "Large"
+            ? "rotate(-1.1deg)"
+            : item.size === "Small"
+            ? "rotate(0.8deg)"
+            : "rotate(-0.35deg)",
+      }}
+    >
+      <div className="aspect-[4/3] overflow-hidden bg-[#f7eee8]">
+        <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
+      </div>
+      <div className="p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-[#fff1e8] px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-[#875742]">
+            {item.retailer}
+          </span>
+          <span className="rounded-full bg-[#f6efe9] px-3 py-1 text-[11px] text-[#8d7b70]">
+            {item.visibility}
+          </span>
+        </div>
+        <h3 className="mt-3 text-[20px] font-semibold tracking-[-0.02em] text-[#281a15]">
+          {item.title}
+        </h3>
+        {item.note ? (
+          <p className="mt-2 text-sm leading-6 text-[#6e6058]">{item.note}</p>
+        ) : (
+          <p className="mt-2 text-sm leading-6 text-[#9c8a80]">
+            Added from Shop. Drag into place on your board later.
+          </p>
+        )}
+      </div>
+      <div className="pointer-events-none absolute right-4 top-4 rounded-full border border-[#ead8ce] bg-white/88 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[#9b8376]">
+        Drag
+      </div>
+    </article>
+  );
+}
+
+function ShopTile({ item, onAddToHints }) {
   const href = resolveOutgoingUrl(item);
   const isEditorial = item.type === "collection" || item.type === "sponsored";
 
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
+    <div
       className={`${tileClass(item.tile)} group flex h-full flex-col overflow-hidden rounded-[30px] border border-[#efdfd6] bg-white shadow-[0_16px_40px_rgba(120,78,54,0.06)] transition hover:-translate-y-[2px] hover:shadow-[0_22px_52px_rgba(120,78,54,0.1)]`}
     >
-      <div className={`relative ${item.tile === "feature" ? "aspect-[16/9]" : item.tile === "wide" ? "aspect-[16/8]" : "aspect-[4/5]"} overflow-hidden bg-[#f7eee7]`}>
+      <div
+        className={`relative ${
+          item.tile === "feature"
+            ? "aspect-[16/9]"
+            : item.tile === "wide"
+            ? "aspect-[16/8]"
+            : "aspect-[4/5]"
+        } overflow-hidden bg-[#f7eee7]`}
+      >
         <img
           src={item.image}
           alt={item.title}
@@ -426,18 +685,27 @@ function ShopTile({ item }) {
           </span>
         </div>
 
-        <div className="mt-auto pt-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="text-sm text-[#7e7068]">
-              {isEditorial ? "Open curated edit" : "Open partner product"}
-            </div>
-            <div className="rounded-full bg-[#1f3f63] px-4 py-2 text-sm font-medium text-white">
-              View product
-            </div>
+        <div className="mt-auto flex flex-wrap gap-3 pt-5">
+          <button
+            onClick={() => onAddToHints(item)}
+            className="rounded-full bg-[#f6d6c7] px-4 py-2.5 text-sm font-medium text-[#6f3f24]"
+          >
+            Add to hints
+          </button>
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full bg-[#1f3f63] px-4 py-2.5 text-sm font-medium text-white"
+          >
+            View product
+          </a>
+          <div className="ml-auto self-center text-xs text-[#8f8178]">
+            {isEditorial ? "Curated partner edit" : "Affiliate-ready"}
           </div>
         </div>
       </div>
-    </a>
+    </div>
   );
 }
 
@@ -448,7 +716,9 @@ export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState("All categories");
   const [selectedBrand, setSelectedBrand] = useState("All brands");
   const [selectedDelivery, setSelectedDelivery] = useState("Any delivery");
-  const [sponsoredMode, setSponsoredMode] = useState("all");
+  const [activeRail, setActiveRail] = useState("picked");
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [savedHints, setSavedHints] = useState([]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((item) => {
@@ -476,15 +746,12 @@ export default function ShopPage() {
         selectedCategory === "All categories" || item.category === selectedCategory;
 
       const matchesBrand =
-        selectedBrand === "All brands" || item.retailer === selectedBrand || item.brand === selectedBrand;
+        selectedBrand === "All brands" ||
+        item.retailer === selectedBrand ||
+        item.brand === selectedBrand;
 
       const matchesDelivery =
         selectedDelivery === "Any delivery" || item.delivery === selectedDelivery;
-
-      const matchesSponsored =
-        sponsoredMode === "all" ||
-        (sponsoredMode === "only" && item.sponsored) ||
-        (sponsoredMode === "hide" && !item.sponsored);
 
       return (
         matchesSearch &&
@@ -492,8 +759,7 @@ export default function ShopPage() {
         matchesBudget &&
         matchesCategory &&
         matchesBrand &&
-        matchesDelivery &&
-        matchesSponsored
+        matchesDelivery
       );
     });
   }, [
@@ -503,27 +769,35 @@ export default function ShopPage() {
     selectedCategory,
     selectedBrand,
     selectedDelivery,
-    sponsoredMode,
   ]);
+
+  const setters = {
+    setSearchTerm,
+    setSelectedOccasion,
+    setSelectedBudget,
+    setSelectedCategory,
+    setSelectedBrand,
+    setSelectedDelivery,
+    setActiveRail,
+  };
 
   return (
     <main className="min-h-screen bg-[#fffaf7] text-[#241815]">
+      {selectedProduct ? (
+        <AddToHintsModal
+          item={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onSave={(hint) => {
+            setSavedHints((current) => [hint, ...current]);
+            setSelectedProduct(null);
+          }}
+        />
+      ) : null}
+
       <div className="mx-auto max-w-[1440px] px-4 pb-16 pt-6 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-5 rounded-[36px] border border-[#f0dfd5] bg-[#fffdfb] px-5 py-5 shadow-[0_18px_45px_rgba(120,78,54,0.05)] sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#f8dfd2] text-lg font-semibold text-[#7b4b2a]">
-                H
-              </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.22em] text-[#ad8f80]">
-                  Hinted
-                </p>
-                <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-[#241815]">
-                  Shop
-                </h1>
-              </div>
-            </div>
+            <HintedMark />
 
             <div className="flex items-center gap-3 sm:gap-5">
               <nav className="flex items-center gap-2 rounded-full border border-[#eeded4] bg-[#fff8f4] p-1">
@@ -542,7 +816,7 @@ export default function ShopPage() {
                 ))}
               </nav>
 
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#1f3f63] text-sm font-semibold text-white shadow-[0_10px_24px_rgba(31,63,99,0.24)]">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f6d6c7] text-sm font-semibold text-[#7a4930] shadow-[0_10px_24px_rgba(233,149,109,0.25)]">
                 EH
               </div>
             </div>
@@ -571,12 +845,14 @@ export default function ShopPage() {
                   <div className="mt-1 text-2xl font-semibold text-[#2a1b15]">48</div>
                 </div>
                 <div className="rounded-[22px] bg-[#f7f0ea] p-4">
-                  <div className="text-xs text-[#9b8376]">Sponsored edits</div>
-                  <div className="mt-1 text-2xl font-semibold text-[#2a1b15]">6</div>
+                  <div className="text-xs text-[#9b8376]">Saved to hints</div>
+                  <div className="mt-1 text-2xl font-semibold text-[#2a1b15]">
+                    {savedHints.length}
+                  </div>
                 </div>
               </div>
               <p className="mt-3 text-sm leading-6 text-[#71635c]">
-                Use placeholder affiliate-ready products now, then swap in live links once your accounts are approved.
+                Build the board first. Swap in live affiliate links later once your partner accounts are approved.
               </p>
             </div>
           </div>
@@ -589,21 +865,42 @@ export default function ShopPage() {
                 <div className="flex-1">
                   <input
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setActiveRail("");
+                    }}
                     placeholder="Search brands, gifts, categories, or occasions"
                     className="h-14 w-full rounded-full border border-[#ebd7ca] bg-white px-5 text-[15px] text-[#241815] outline-none placeholder:text-[#a58f84] focus:border-[#d9a889]"
                   />
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <FilterPill active={sponsoredMode === "all"} onClick={() => setSponsoredMode("all")}>
-                    All results
+                  <FilterPill
+                    active={selectedOccasion === "Birthday"}
+                    onClick={() => {
+                      setSelectedOccasion("Birthday");
+                      setActiveRail("");
+                    }}
+                  >
+                    Birthday
                   </FilterPill>
-                  <FilterPill active={sponsoredMode === "only"} onClick={() => setSponsoredMode("only")}>
-                    Sponsored only
+                  <FilterPill
+                    active={selectedBudget === "Under £50"}
+                    onClick={() => {
+                      setSelectedBudget("Under £50");
+                      setActiveRail("");
+                    }}
+                  >
+                    Under £50
                   </FilterPill>
-                  <FilterPill active={sponsoredMode === "hide"} onClick={() => setSponsoredMode("hide")}>
-                    Hide sponsored
+                  <FilterPill
+                    active={selectedBrand === "John Lewis"}
+                    onClick={() => {
+                      setSelectedBrand("John Lewis");
+                      setActiveRail("");
+                    }}
+                  >
+                    John Lewis
                   </FilterPill>
                 </div>
               </div>
@@ -612,7 +909,10 @@ export default function ShopPage() {
             <div className="grid gap-3 lg:grid-cols-5">
               <select
                 value={selectedOccasion}
-                onChange={(e) => setSelectedOccasion(e.target.value)}
+                onChange={(e) => {
+                  setSelectedOccasion(e.target.value);
+                  setActiveRail("");
+                }}
                 className="h-12 rounded-full border border-[#ebd7ca] bg-white px-4 text-sm text-[#5e514a] outline-none"
               >
                 {occasions.map((item) => (
@@ -622,7 +922,10 @@ export default function ShopPage() {
 
               <select
                 value={selectedBudget}
-                onChange={(e) => setSelectedBudget(e.target.value)}
+                onChange={(e) => {
+                  setSelectedBudget(e.target.value);
+                  setActiveRail("");
+                }}
                 className="h-12 rounded-full border border-[#ebd7ca] bg-white px-4 text-sm text-[#5e514a] outline-none"
               >
                 {budgets.map((item) => (
@@ -632,7 +935,10 @@ export default function ShopPage() {
 
               <select
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  setActiveRail("");
+                }}
                 className="h-12 rounded-full border border-[#ebd7ca] bg-white px-4 text-sm text-[#5e514a] outline-none"
               >
                 {categories.map((item) => (
@@ -642,7 +948,10 @@ export default function ShopPage() {
 
               <select
                 value={selectedBrand}
-                onChange={(e) => setSelectedBrand(e.target.value)}
+                onChange={(e) => {
+                  setSelectedBrand(e.target.value);
+                  setActiveRail("");
+                }}
                 className="h-12 rounded-full border border-[#ebd7ca] bg-white px-4 text-sm text-[#5e514a] outline-none"
               >
                 {brands.map((item) => (
@@ -652,7 +961,10 @@ export default function ShopPage() {
 
               <select
                 value={selectedDelivery}
-                onChange={(e) => setSelectedDelivery(e.target.value)}
+                onChange={(e) => {
+                  setSelectedDelivery(e.target.value);
+                  setActiveRail("");
+                }}
                 className="h-12 rounded-full border border-[#ebd7ca] bg-white px-4 text-sm text-[#5e514a] outline-none"
               >
                 {deliverySpeeds.map((item) => (
@@ -676,20 +988,54 @@ export default function ShopPage() {
           </div>
 
           <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
-            {curatedRails.map((item, index) => (
+            {railPresets.map((rail) => (
               <button
-                key={item}
-                className={`shrink-0 rounded-full px-5 py-3 text-sm ${
-                  index === 0
+                key={rail.id}
+                onClick={() => rail.apply(setters)}
+                className={`shrink-0 rounded-full px-5 py-3 text-sm transition ${
+                  activeRail === rail.id
                     ? "bg-[#1f3f63] text-white"
-                    : "border border-[#ebd7ca] bg-white text-[#655851]"
+                    : "border border-[#ebd7ca] bg-white text-[#655851] hover:border-[#e0c3b0] hover:bg-[#fff7f2]"
                 }`}
               >
-                {item}
+                {rail.label}
               </button>
             ))}
           </div>
         </section>
+
+        {savedHints.length ? (
+          <section className="mt-8 rounded-[36px] border border-[#efdcd1] bg-[#fffdfb] p-5 shadow-[0_18px_45px_rgba(120,78,54,0.04)]">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[#ab8f81]">
+                  Your hints board
+                </p>
+                <h2 className="mt-2 text-[28px] font-semibold tracking-[-0.03em] text-[#251915]">
+                  Saved from Shop, ready for your board.
+                </h2>
+              </div>
+              <p className="text-sm text-[#7a6d65]">
+                Pinterest-style placement preview
+              </p>
+            </div>
+
+            <div
+              className="mt-5 rounded-[30px] border border-[#efdcd0] bg-[#fffaf7] p-4"
+              style={{
+                backgroundImage:
+                  "linear-gradient(to right, rgba(228, 201, 186, 0.35) 1px, transparent 1px), linear-gradient(to bottom, rgba(228, 201, 186, 0.35) 1px, transparent 1px)",
+                backgroundSize: "28px 28px",
+              }}
+            >
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-6 lg:grid-cols-12">
+                {savedHints.map((item) => (
+                  <SavedHintCard key={item.hintId} item={item} />
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section className="mt-8">
           <div className="mb-4 flex items-end justify-between gap-4">
@@ -708,7 +1054,11 @@ export default function ShopPage() {
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-8 lg:grid-cols-12">
             {filteredProducts.map((item) => (
-              <ShopTile key={item.id} item={item} />
+              <ShopTile
+                key={item.id}
+                item={item}
+                onAddToHints={(product) => setSelectedProduct(product)}
+              />
             ))}
           </div>
         </section>
