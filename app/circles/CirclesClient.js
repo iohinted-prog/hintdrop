@@ -3,6 +3,12 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
+const currencyOptions = [
+  { code: "GBP", symbol: "£", label: "British Pound" },
+  { code: "USD", symbol: "$", label: "US Dollar" },
+  { code: "EUR", symbol: "€", label: "Euro" },
+];
+
 const initialContacts = [
   {
     id: 1,
@@ -80,39 +86,39 @@ const calendarEvents = [
 
 const publicHintsByContact = {
   1: [
-    { id: "maya-1", title: "Silk pillowcase set", subtitle: "£45 · Public hint" },
-    { id: "maya-2", title: "Aesop hand wash duo", subtitle: "£62 · Public hint" },
-    { id: "maya-3", title: "Sunday lunch voucher", subtitle: "£80 · Public hint" },
+    { id: "maya-1", title: "Silk pillowcase set", subtitle: "£45 · Public hint", amount: 45, currency: "GBP" },
+    { id: "maya-2", title: "Aesop hand wash duo", subtitle: "£62 · Public hint", amount: 62, currency: "GBP" },
+    { id: "maya-3", title: "Sunday lunch voucher", subtitle: "£80 · Public hint", amount: 80, currency: "GBP" },
   ],
   2: [
-    { id: "james-1", title: "Noise-cancelling headphones", subtitle: "£240 · Public hint" },
-    { id: "james-2", title: "Leather weekender bag", subtitle: "£175 · Public hint" },
+    { id: "james-1", title: "Noise-cancelling headphones", subtitle: "£240 · Public hint", amount: 240, currency: "GBP" },
+    { id: "james-2", title: "Leather weekender bag", subtitle: "£175 · Public hint", amount: 175, currency: "GBP" },
   ],
   3: [
-    { id: "fiona-1", title: "Ceramics workshop", subtitle: "£95 · Public hint" },
-    { id: "fiona-2", title: "Spa afternoon for two", subtitle: "£140 · Public hint" },
-    { id: "fiona-3", title: "Illustrated recipe book", subtitle: "£28 · Public hint" },
+    { id: "fiona-1", title: "Ceramics workshop", subtitle: "£95 · Public hint", amount: 95, currency: "GBP" },
+    { id: "fiona-2", title: "Spa afternoon for two", subtitle: "£140 · Public hint", amount: 140, currency: "GBP" },
+    { id: "fiona-3", title: "Illustrated recipe book", subtitle: "£28 · Public hint", amount: 28, currency: "GBP" },
   ],
   4: [
-    { id: "mum-1", title: "Le Creuset casserole dish", subtitle: "£180 · Public hint" },
-    { id: "mum-2", title: "Garden centre gift card", subtitle: "£50 · Public hint" },
+    { id: "mum-1", title: "Le Creuset casserole dish", subtitle: "£180 · Public hint", amount: 180, currency: "GBP" },
+    { id: "mum-2", title: "Garden centre gift card", subtitle: "£50 · Public hint", amount: 50, currency: "GBP" },
   ],
   5: [
-    { id: "sarah-1", title: "Weekend cabin stay", subtitle: "£220 · Public hint" },
-    { id: "sarah-2", title: "Linen bedding set", subtitle: "£130 · Public hint" },
-    { id: "sarah-3", title: "Ceramic dinnerware", subtitle: "£85 · Public hint" },
-    { id: "sarah-4", title: "Cooking class for two", subtitle: "£120 · Public hint" },
+    { id: "sarah-1", title: "Weekend cabin stay", subtitle: "£220 · Public hint", amount: 220, currency: "GBP" },
+    { id: "sarah-2", title: "Linen bedding set", subtitle: "£130 · Public hint", amount: 130, currency: "GBP" },
+    { id: "sarah-3", title: "Ceramic dinnerware", subtitle: "£85 · Public hint", amount: 85, currency: "GBP" },
+    { id: "sarah-4", title: "Cooking class for two", subtitle: "£120 · Public hint", amount: 120, currency: "GBP" },
   ],
   6: [
-    { id: "tom-1", title: "Train travel voucher", subtitle: "£60 · Public hint" },
-    { id: "tom-2", title: "Coffee subscription", subtitle: "£38 · Public hint" },
+    { id: "tom-1", title: "Train travel voucher", subtitle: "£60 · Public hint", amount: 60, currency: "GBP" },
+    { id: "tom-2", title: "Coffee subscription", subtitle: "£38 · Public hint", amount: 38, currency: "GBP" },
   ],
 };
 
 const initialCircles = [
   {
     id: 1,
-    name: "Sarah Birthday Circle",
+    name: "Sarah's Birthday",
     subtitle: "Birthday · June 29",
     description:
       "A shared circle for Sarah’s next gift so everyone can contribute without duplicating ideas.",
@@ -155,10 +161,12 @@ const initialCircles = [
       item: "Weekend cabin stay",
       source: "From Sarah’s public hints",
       target: 220,
+      currency: "GBP",
       raised: 95,
       note: "Selected from Sarah’s own hints so the group has a clear goal.",
       fundingMode: "Flexible pot",
       deadline: "2026-06-29",
+      goalType: "item",
     },
   },
   {
@@ -198,15 +206,17 @@ const initialCircles = [
       item: "Le Creuset casserole dish",
       source: "From Mum’s public hints",
       target: 180,
+      currency: "GBP",
       raised: 50,
       note: "A practical family gift with a target everyone can work toward.",
       fundingMode: "Organizer covers gap",
       deadline: "2026-07-10",
+      goalType: "item",
     },
   },
   {
     id: 3,
-    name: "James Promotion Circle",
+    name: "James Promotion Dinner",
     subtitle: "Milestone · July 16",
     description:
       "A smaller shared circle for celebrating James’s promotion with something useful and lasting.",
@@ -233,10 +243,12 @@ const initialCircles = [
       item: "",
       source: "",
       target: 0,
+      currency: "GBP",
       raised: 0,
       note: "Choose a public hint or paste a link to turn this into a communal goal.",
       fundingMode: "Flexible pot",
       deadline: "2026-07-16",
+      goalType: "item",
     },
   },
 ];
@@ -262,6 +274,30 @@ function formatDateLabel(dateString) {
     day: "numeric",
     month: "long",
   });
+}
+
+function getCurrencyMeta(code) {
+  return currencyOptions.find((currency) => currency.code === code) || currencyOptions[0];
+}
+
+function formatMoney(amount, currency = "GBP") {
+  const safeAmount = Number(amount) || 0;
+  try {
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: safeAmount % 1 === 0 ? 0 : 2,
+    }).format(safeAmount);
+  } catch {
+    const fallback = getCurrencyMeta(currency);
+    return `${fallback.symbol}${safeAmount}`;
+  }
+}
+
+function parseAmount(value) {
+  const cleaned = String(value || "").replace(/[^\d.]/g, "");
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function LogoMark() {
@@ -376,7 +412,7 @@ function ContactCard({ contact, onAdd }) {
   );
 }
 
-function MemberPill({ member }) {
+function MemberPill({ member, currency = "GBP" }) {
   const statusStyles =
     member.status === "joined"
       ? member.contributed
@@ -407,7 +443,7 @@ function MemberPill({ member }) {
               {statusLabel}
             </span>
             <span className="text-[11px] text-slate-400">
-              {member.contributed ? `£${member.amount}` : "—"}
+              {member.contributed ? formatMoney(member.amount, currency) : "—"}
             </span>
           </div>
         </div>
@@ -455,137 +491,7 @@ function ContributionRing({ raised, target, ringId }) {
           </span>
         </div>
       </div>
-
-      <p className="mt-3 text-sm text-slate-500">
-        £{raised} of £{target}
-      </p>
     </div>
-  );
-}
-
-function CircleCard({ circle }) {
-  const joinedCount = circle.members.filter((member) => member.status === "joined").length;
-  const invitedCount = circle.members.length;
-
-  return (
-    <article className="rounded-[30px] border border-[#f0dfd6] bg-white p-5 shadow-sm sm:p-6">
-      <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-        <div>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Circle
-              </p>
-              <h2 className="mt-1 text-[26px] font-semibold tracking-[-0.05em] text-slate-900">
-                {circle.name}
-              </h2>
-              <p className="mt-2 text-sm text-slate-500">{circle.subtitle}</p>
-            </div>
-
-            <div className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
-              {joinedCount} of {invitedCount} joined
-            </div>
-          </div>
-
-          <p className="mt-4 max-w-[60ch] text-[14px] leading-7 text-slate-600">
-            {circle.description}
-          </p>
-
-          <div className="mt-5 rounded-[24px] border border-dashed border-[#e6d7cd] bg-[#fffaf7] p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">Members</p>
-                <p className="mt-1 text-[13px] text-slate-500">
-                  People can be invited now and only become full members once they accept.
-                </p>
-              </div>
-
-              <div className="rounded-full bg-[#fff1ea] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
-                Circle invite flow
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {circle.members.map((member) => (
-                <MemberPill key={`${circle.id}-${member.name}`} member={member} />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-[30px] border border-[#eedfd6] bg-[radial-gradient(circle_at_top,_#fff7f2,_#fffdfa_62%)] p-5">
-          <div className="flex flex-col items-center text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Shared pot
-            </p>
-            <h3 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
-              {circle.pot.active ? circle.pot.item : "No pot created yet"}
-            </h3>
-            <p className="mt-2 max-w-[28ch] text-[13px] leading-6 text-slate-500">
-              {circle.pot.active ? circle.pot.source : circle.pot.note}
-            </p>
-
-            {circle.pot.active ? (
-              <>
-                <div className="mt-5">
-                  <ContributionRing
-                    raised={circle.pot.raised}
-                    target={circle.pot.target}
-                    ringId={`circle-gradient-${circle.id}`}
-                  />
-                </div>
-
-                <div className="mt-4 flex -space-x-3">
-                  {circle.members.map((member) => (
-                    <div
-                      key={`${circle.id}-${member.name}-avatar`}
-                      className={`flex h-11 w-11 items-center justify-center rounded-full border-4 border-white bg-gradient-to-b text-[11px] font-bold text-white shadow-sm ${member.colors}`}
-                      title={member.name}
-                    >
-                      {member.initials}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                  <span className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
-                    {circle.pot.fundingMode}
-                  </span>
-                  <span className="rounded-full bg-[#f3f6fb] px-3 py-1 text-[11px] font-semibold text-slate-600">
-                    Deadline {formatDateLabel(circle.pot.deadline)}
-                  </span>
-                </div>
-
-                <p className="mt-4 text-[14px] leading-7 text-slate-600">{circle.pot.note}</p>
-
-                <button
-                  type="button"
-                  className="mt-5 inline-flex h-10 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-sm font-semibold text-white"
-                >
-                  Edit pot
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="mt-6 rounded-[24px] border border-dashed border-[#e5d8cf] bg-white p-5 text-left">
-                  <p className="text-sm font-semibold text-slate-900">Choose from hints or links</p>
-                  <p className="mt-2 text-[14px] leading-7 text-slate-600">
-                    Pick a public hint or paste a product link so the circle has one shared goal.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  className="mt-5 inline-flex h-10 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
-                >
-                  Add item
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </article>
   );
 }
 
@@ -631,6 +537,185 @@ function PotTypeGuide() {
         ))}
       </div>
     </section>
+  );
+}
+
+function CircleCard({ circle, onEditPot }) {
+  const joinedCount = circle.members.filter((member) => member.status === "joined").length;
+  const invitedCount = circle.members.length;
+  const moneyLabel = formatMoney(circle.pot.target, circle.pot.currency);
+  const raisedLabel = formatMoney(circle.pot.raised, circle.pot.currency);
+
+  return (
+    <article className="rounded-[30px] border border-[#f0dfd6] bg-white p-5 shadow-sm sm:p-6">
+      <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
+        <div>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Circle
+              </p>
+              <h2 className="mt-1 text-[26px] font-semibold tracking-[-0.05em] text-slate-900">
+                {circle.name}
+              </h2>
+              <p className="mt-2 text-sm text-slate-500">{circle.subtitle}</p>
+            </div>
+
+            <div className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
+              {joinedCount} of {invitedCount} joined
+            </div>
+          </div>
+
+          <p className="mt-4 max-w-[60ch] text-[14px] leading-7 text-slate-600">
+            {circle.description}
+          </p>
+
+          <div className="mt-5 rounded-[24px] border border-dashed border-[#e6d7cd] bg-[#fffaf7] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Members</p>
+                <p className="mt-1 text-[13px] text-slate-500">
+                  People can be invited now and only become full members once they accept.
+                </p>
+              </div>
+
+              <div className="rounded-full bg-[#fff1ea] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
+                Circle invite flow
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {circle.members.map((member) => (
+                <MemberPill
+                  key={`${circle.id}-${member.name}`}
+                  member={member}
+                  currency={circle.pot.currency}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-[30px] border border-[#eedfd6] bg-[radial-gradient(circle_at_top,_#fff7f2,_#fffdfa_62%)] p-5">
+          <div className="flex flex-col items-center text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Shared pot
+            </p>
+            <h3 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
+              {circle.pot.active ? circle.pot.item : "No pot created yet"}
+            </h3>
+            <p className="mt-2 max-w-[28ch] text-[13px] leading-6 text-slate-500">
+              {circle.pot.active ? circle.pot.source : circle.pot.note}
+            </p>
+
+            {circle.pot.active ? (
+              <>
+                <div className="mt-5">
+                  <ContributionRing
+                    raised={circle.pot.raised}
+                    target={circle.pot.target}
+                    ringId={`circle-gradient-${circle.id}`}
+                  />
+                </div>
+
+                <p className="mt-3 text-sm text-slate-500">
+                  {raisedLabel} of {moneyLabel}
+                </p>
+
+                <div className="mt-4 flex -space-x-3">
+                  {circle.members.map((member) => (
+                    <div
+                      key={`${circle.id}-${member.name}-avatar`}
+                      className={`flex h-11 w-11 items-center justify-center rounded-full border-4 border-white bg-gradient-to-b text-[11px] font-bold text-white shadow-sm ${member.colors}`}
+                      title={member.name}
+                    >
+                      {member.initials}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  <span className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
+                    {circle.pot.fundingMode}
+                  </span>
+                  <span className="rounded-full bg-[#f3f6fb] px-3 py-1 text-[11px] font-semibold text-slate-600">
+                    Deadline {formatDateLabel(circle.pot.deadline)}
+                  </span>
+                  <span className="rounded-full bg-[#edf3ff] px-3 py-1 text-[11px] font-semibold text-slate-600">
+                    {circle.pot.currency}
+                  </span>
+                </div>
+
+                <p className="mt-4 text-[14px] leading-7 text-slate-600">{circle.pot.note}</p>
+
+                <div className="mt-5 flex flex-wrap justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => onEditPot(circle)}
+                    className="inline-flex h-10 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-sm font-semibold text-white"
+                  >
+                    Edit pot
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mt-6 rounded-[24px] border border-dashed border-[#e5d8cf] bg-white p-5 text-left">
+                  <p className="text-sm font-semibold text-slate-900">Choose from hints or links</p>
+                  <p className="mt-2 text-[14px] leading-7 text-slate-600">
+                    Pick a public hint or paste a product link so the circle has one shared goal.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onEditPot(circle)}
+                  className="mt-5 inline-flex h-10 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
+                >
+                  Add item
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function CurrencyAmountInput({
+  currency,
+  amount,
+  onCurrencyChange,
+  onAmountChange,
+  label = "Target amount",
+}) {
+  return (
+    <div className="space-y-2">
+      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <div className="grid gap-3 sm:grid-cols-[140px_minmax(0,1fr)]">
+        <select
+          value={currency}
+          onChange={(e) => onCurrencyChange(e.target.value)}
+          className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+        >
+          {currencyOptions.map((option) => (
+            <option key={option.code} value={option.code}>
+              {option.code} · {option.symbol}
+            </option>
+          ))}
+        </select>
+
+        <input
+          type="text"
+          inputMode="decimal"
+          value={amount}
+          onChange={(e) => onAmountChange(e.target.value)}
+          placeholder="220"
+          className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+        />
+      </div>
+    </div>
   );
 }
 
@@ -772,7 +857,7 @@ function CreateCircleModal({
               <div className="space-y-2 sm:col-span-2">
                 <span className="text-sm font-medium text-slate-700">Circle title</span>
                 <div className="flex h-12 w-full items-center rounded-[18px] border border-[#efe1d9] bg-[#faf7f5] px-4 text-sm font-medium text-slate-700">
-                  {form.eventTitle || activeEvent?.title || "Select or create an event first"}
+                  {form.eventTitle || "Select or create an event first"}
                 </div>
               </div>
 
@@ -821,9 +906,6 @@ function CreateCircleModal({
                       selectedHintId: nextValue === "amount" ? "" : prev.selectedHintId,
                       itemUrl: nextValue === "amount" ? "" : prev.itemUrl,
                     }));
-                    if (nextValue === "amount") {
-                      setLinkPreview(null);
-                    }
                   }}
                   className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
                 >
@@ -832,18 +914,25 @@ function CreateCircleModal({
                 </select>
               </label>
 
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">
-                  {form.goalType === "item" ? "Item or amount" : "Target amount"}
-                </span>
-                <input
-                  type="text"
-                  value={form.goalValue}
-                  onChange={(e) => setForm((prev) => ({ ...prev, goalValue: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                  placeholder={form.goalType === "item" ? "Weekend cabin stay or £220" : "£220"}
+              {form.goalType === "amount" ? (
+                <CurrencyAmountInput
+                  currency={form.currency}
+                  amount={form.goalValue}
+                  onCurrencyChange={(value) => setForm((prev) => ({ ...prev, currency: value }))}
+                  onAmountChange={(value) => setForm((prev) => ({ ...prev, goalValue: value }))}
                 />
-              </label>
+              ) : (
+                <label className="space-y-2">
+                  <span className="text-sm font-medium text-slate-700">Item or amount</span>
+                  <input
+                    type="text"
+                    value={form.goalValue}
+                    onChange={(e) => setForm((prev) => ({ ...prev, goalValue: e.target.value }))}
+                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                    placeholder="Weekend cabin stay or 220"
+                  />
+                </label>
+              )}
             </div>
           </div>
 
@@ -983,6 +1072,7 @@ function CreateCircleModal({
                                       selectedHintId: hint.id,
                                       goalType: "item",
                                       goalValue: hint.title,
+                                      currency: hint.currency || prev.currency,
                                     }))
                                   }
                                 />
@@ -1168,6 +1258,492 @@ function CreateCircleModal({
   );
 }
 
+function EditPotModal({
+  open,
+  onClose,
+  onSave,
+  onDelete,
+  circle,
+  contacts,
+  form,
+  setForm,
+  linkPreview,
+  isFetchingPreview,
+  handleFetchPreview,
+  selectedHintContactId,
+  setSelectedHintContactId,
+}) {
+  if (!open || !circle) return null;
+
+  const selectedHintContact = contacts.find(
+    (contact) => String(contact.id) === String(selectedHintContactId)
+  );
+  const visibleHints = selectedHintContactId
+    ? publicHintsByContact[selectedHintContactId] || []
+    : [];
+  const amountMode = form.goalType === "amount";
+
+  return (
+    <ModalShell open={open} onClose={onClose} eyebrow="Edit pot" title={`Update ${circle.name}`}>
+      <div className="grid gap-0 lg:grid-cols-[1.04fr_0.96fr]">
+        <div className="max-h-[calc(92vh-90px)] space-y-6 overflow-y-auto p-6">
+          <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
+            <p className="text-sm font-semibold text-slate-900">Pot goal</p>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-700">Goal type</span>
+                <select
+                  value={form.goalType}
+                  onChange={(e) => {
+                    const nextValue = e.target.value;
+                    setForm((prev) => ({
+                      ...prev,
+                      goalType: nextValue,
+                      itemSource: nextValue === "amount" ? "" : prev.itemSource || "hint",
+                      selectedHintId: nextValue === "amount" ? "" : prev.selectedHintId,
+                      itemUrl: nextValue === "amount" ? "" : prev.itemUrl,
+                      item:
+                        nextValue === "amount"
+                          ? "Shared contribution pot"
+                          : prev.item || "",
+                    }));
+                  }}
+                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                >
+                  <option value="item">Specific item</option>
+                  <option value="amount">Target amount</option>
+                </select>
+              </label>
+
+              <CurrencyAmountInput
+                currency={form.currency}
+                amount={form.target}
+                onCurrencyChange={(value) => setForm((prev) => ({ ...prev, currency: value }))}
+                onAmountChange={(value) => setForm((prev) => ({ ...prev, target: value }))}
+              />
+
+              {!amountMode ? (
+                <label className="space-y-2 sm:col-span-2">
+                  <span className="text-sm font-medium text-slate-700">Item title</span>
+                  <input
+                    type="text"
+                    value={form.item}
+                    onChange={(e) => setForm((prev) => ({ ...prev, item: e.target.value }))}
+                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                    placeholder="Weekend cabin stay"
+                  />
+                </label>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
+            <p className="text-sm font-semibold text-slate-900">Rules and timing</p>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-700">Contribution deadline</span>
+                <input
+                  type="date"
+                  value={form.deadline}
+                  onChange={(e) => setForm((prev) => ({ ...prev, deadline: e.target.value }))}
+                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                />
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-700">Funding mode</span>
+                <select
+                  value={form.fundingMode}
+                  onChange={(e) => setForm((prev) => ({ ...prev, fundingMode: e.target.value }))}
+                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                >
+                  <option value="Flexible pot">Flexible pot</option>
+                  <option value="All-or-nothing">All-or-nothing</option>
+                  <option value="Organizer covers gap">Organizer covers gap</option>
+                </select>
+              </label>
+
+              <label className="space-y-2 sm:col-span-2">
+                <span className="text-sm font-medium text-slate-700">Pot note</span>
+                <textarea
+                  value={form.note}
+                  onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
+                  rows={4}
+                  className="w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                  placeholder="Add context for the group"
+                />
+              </label>
+            </div>
+          </div>
+
+          {!amountMode ? (
+            <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
+              <p className="text-sm font-semibold text-slate-900">Choose or replace the item</p>
+
+              <div className="mt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      itemSource: "hint",
+                      itemUrl: "",
+                    }))
+                  }
+                  className={`inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold ${
+                    form.itemSource === "hint"
+                      ? "bg-[#2f3b2d] text-white"
+                      : "border border-[#ead8ce] bg-white text-slate-700"
+                  }`}
+                >
+                  From public hints
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      itemSource: "url",
+                      selectedHintId: "",
+                    }))
+                  }
+                  className={`inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold ${
+                    form.itemSource === "url"
+                      ? "bg-[#2f3b2d] text-white"
+                      : "border border-[#ead8ce] bg-white text-slate-700"
+                  }`}
+                >
+                  Paste a link
+                </button>
+              </div>
+
+              {form.itemSource === "hint" ? (
+                <div className="mt-4 grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+                  <div className="rounded-[22px] border border-[#efe1d9] bg-[#fffdfa] p-3">
+                    <p className="px-2 pb-3 text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                      Contacts
+                    </p>
+                    <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
+                      {contacts.map((contact) => {
+                        const selected = String(contact.id) === String(selectedHintContactId);
+
+                        return (
+                          <button
+                            key={contact.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedHintContactId(contact.id);
+                              setForm((prev) => ({
+                                ...prev,
+                                selectedHintId: "",
+                              }));
+                            }}
+                            className={`flex w-full items-center gap-3 rounded-[18px] border px-3 py-3 text-left transition ${
+                              selected
+                                ? "border-[#f0a384] bg-[#fff4ee]"
+                                : "border-[#efe1d9] bg-white hover:bg-[#fff8f4]"
+                            }`}
+                          >
+                            <div
+                              className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b text-[11px] font-bold text-white ${contact.colors}`}
+                            >
+                              {contact.initials}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-slate-900">{contact.name}</p>
+                              <p className="text-[12px] text-slate-500">{contact.role}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="rounded-[22px] border border-[#efe1d9] bg-[#fffdfa] p-4">
+                    {selectedHintContact ? (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b text-[12px] font-bold text-white ${selectedHintContact.colors}`}
+                          >
+                            {selectedHintContact.initials}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">
+                              {selectedHintContact.name}'s public hints
+                            </p>
+                            <p className="text-[13px] text-slate-500">
+                              Replace the current shared goal with one of these.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 max-h-[320px] space-y-3 overflow-y-auto pr-1">
+                          {visibleHints.length ? (
+                            visibleHints.map((hint) => (
+                              <label
+                                key={hint.id}
+                                className={`flex cursor-pointer items-center justify-between rounded-[20px] border p-4 ${
+                                  form.selectedHintId === hint.id
+                                    ? "border-[#f0a384] bg-[#fff4ee]"
+                                    : "border-[#efe1d9] bg-white"
+                                }`}
+                              >
+                                <div>
+                                  <p className="text-sm font-semibold text-slate-900">{hint.title}</p>
+                                  <p className="mt-1 text-[13px] text-slate-500">{hint.subtitle}</p>
+                                </div>
+
+                                <input
+                                  type="radio"
+                                  name="editSelectedHint"
+                                  className="h-4 w-4 accent-[#f36f64]"
+                                  checked={form.selectedHintId === hint.id}
+                                  onChange={() =>
+                                    setForm((prev) => ({
+                                      ...prev,
+                                      selectedHintId: hint.id,
+                                      item: hint.title,
+                                      target: String(hint.amount || prev.target),
+                                      currency: hint.currency || prev.currency,
+                                      source: `From ${selectedHintContact.name}'s public hints`,
+                                    }))
+                                  }
+                                />
+                              </label>
+                            ))
+                          ) : (
+                            <div className="rounded-[18px] bg-white p-4 text-sm text-slate-500">
+                              No public hints available for this contact yet.
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex h-full min-h-[220px] items-center justify-center rounded-[18px] bg-white p-6 text-center text-sm text-slate-500">
+                        Select a contact to view their public hints.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <input
+                      type="url"
+                      value={form.itemUrl}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, itemUrl: e.target.value }))
+                      }
+                      placeholder="Paste product or experience link"
+                      className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleFetchPreview}
+                      className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg"
+                    >
+                      {isFetchingPreview ? "Fetching..." : "Fetch preview"}
+                    </button>
+                  </div>
+
+                  {linkPreview ? (
+                    <div className="rounded-[22px] border border-[#eedfd6] bg-[#fffdfa] p-4">
+                      <div className="flex gap-4">
+                        {linkPreview.image ? (
+                          <img
+                            src={linkPreview.image}
+                            alt={linkPreview.title || "Linked item preview"}
+                            className="h-20 w-20 rounded-[18px] object-cover"
+                          />
+                        ) : (
+                          <div className="h-20 w-20 rounded-[18px] bg-[#f5ebe4]" />
+                        )}
+
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-900">
+                            {linkPreview.title || "Untitled item"}
+                          </p>
+                          <p className="mt-1 text-[13px] leading-6 text-slate-500">
+                            {linkPreview.description || "Preview pulled from the linked page."}
+                          </p>
+                          <p className="mt-2 text-[12px] font-medium text-[#df7b59]">
+                            {linkPreview.siteName || linkPreview.url}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            item: linkPreview.title || prev.item,
+                            source: linkPreview.siteName || "From pasted link",
+                          }))
+                        }
+                        className="mt-4 inline-flex h-10 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
+                      >
+                        Use this preview
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="max-h-[calc(92vh-90px)] overflow-y-auto border-t border-[#efe0d7] bg-[#fff7f2] p-6 lg:border-l lg:border-t-0">
+          <div className="rounded-[24px] border border-dashed border-[#e6d7cd] bg-white p-5">
+            <p className="text-sm font-semibold text-slate-900">Preview</p>
+            <p className="mt-1 text-[13px] leading-6 text-slate-500">
+              Review the updated pot before saving changes.
+            </p>
+
+            <div className="mt-5 rounded-[24px] border border-[#efe1d9] bg-[#fffdfa] p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Shared pot
+              </p>
+              <h3 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
+                {form.goalType === "amount" ? "Shared contribution pot" : form.item || "Untitled item"}
+              </h3>
+              <p className="mt-2 text-[13px] leading-6 text-slate-500">
+                {form.source || "Updated pot source"}
+              </p>
+
+              <div className="mt-5 rounded-[22px] bg-[radial-gradient(circle_at_top,_#fff7f2,_#fffdfa_62%)] p-5 text-center">
+                <ContributionRing
+                  raised={circle.pot.raised}
+                  target={parseAmount(form.target)}
+                  ringId={`edit-ring-${circle.id}`}
+                />
+                <p className="mt-3 text-sm text-slate-500">
+                  {formatMoney(circle.pot.raised, form.currency)} of {formatMoney(parseAmount(form.target), form.currency)}
+                </p>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
+                  {form.fundingMode}
+                </span>
+                <span className="rounded-full bg-[#eef4ff] px-3 py-1 text-[11px] font-semibold text-slate-600">
+                  {form.currency}
+                </span>
+                <span className="rounded-full bg-[#f3f6fb] px-3 py-1 text-[11px] font-semibold text-slate-600">
+                  Deadline {formatDateLabel(form.deadline)}
+                </span>
+              </div>
+
+              <p className="mt-4 text-[14px] leading-7 text-slate-600">
+                {form.note || "No note added yet."}
+              </p>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={onSave}
+                className="inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg"
+              >
+                Save changes
+              </button>
+
+              <button
+                type="button"
+                onClick={onDelete}
+                className="inline-flex h-12 items-center justify-center rounded-full border border-[#efc0ba] bg-white px-6 text-sm font-semibold text-[#b14f43] hover:bg-[#fff4f2]"
+              >
+                Delete pot
+              </button>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex h-12 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-6 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+function DeletePotModal({ open, onClose, onConfirm, circle }) {
+  const [confirmation, setConfirmation] = useState("");
+
+  if (!open || !circle) return null;
+
+  const expected = circle.name;
+  const matches = confirmation.trim() === expected;
+
+  return (
+    <ModalShell
+      open={open}
+      onClose={() => {
+        setConfirmation("");
+        onClose();
+      }}
+      eyebrow="Delete pot"
+      title="Confirm pot deletion"
+      maxWidth="max-w-[640px]"
+    >
+      <div className="p-6">
+        <div className="rounded-[24px] border border-[#f1d6d1] bg-[#fff7f5] p-5">
+          <p className="text-sm font-semibold text-[#a44b42]">This will remove the shared pot from {circle.name}.</p>
+          <p className="mt-2 text-[14px] leading-7 text-slate-600">
+            The circle will remain, but the item, target, funding mode, and pot details will be cleared. To confirm, type the event name exactly.
+          </p>
+        </div>
+
+        <div className="mt-5 space-y-2">
+          <span className="text-sm font-medium text-slate-700">Type {expected}</span>
+          <input
+            type="text"
+            value={confirmation}
+            onChange={(e) => setConfirmation(e.target.value)}
+            className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#d9796e]"
+            placeholder={expected}
+          />
+        </div>
+
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setConfirmation("");
+              onClose();
+            }}
+            className="inline-flex h-12 flex-1 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-6 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={!matches}
+            onClick={() => {
+              onConfirm();
+              setConfirmation("");
+            }}
+            className={`inline-flex h-12 flex-1 items-center justify-center rounded-full px-6 text-sm font-semibold ${
+              matches
+                ? "bg-[#b14f43] text-white"
+                : "cursor-not-allowed border border-[#edd8d4] bg-[#f7f2f0] text-slate-400"
+            }`}
+          >
+            Delete pot
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
 function AddContactModal({ open, onClose, onSave, form, setForm }) {
   if (!open) return null;
 
@@ -1277,6 +1853,12 @@ export default function CirclesClient() {
   const [selectedHintContactId, setSelectedHintContactId] = useState(initialContacts[0].id);
   const [linkPreview, setLinkPreview] = useState(null);
   const [isFetchingPreview, setIsFetchingPreview] = useState(false);
+  const [editingCircle, setEditingCircle] = useState(null);
+  const [isEditPotOpen, setIsEditPotOpen] = useState(false);
+  const [isDeletePotOpen, setIsDeletePotOpen] = useState(false);
+  const [editLinkPreview, setEditLinkPreview] = useState(null);
+  const [isFetchingEditPreview, setIsFetchingEditPreview] = useState(false);
+  const [editSelectedHintContactId, setEditSelectedHintContactId] = useState(initialContacts[0].id);
 
   const [form, setForm] = useState({
     eventTitle: calendarEvents[0].title,
@@ -1284,7 +1866,22 @@ export default function CirclesClient() {
     deadline: calendarEvents[0].date,
     goalType: "item",
     goalValue: "",
+    currency: "GBP",
     fundingMode: "flexible",
+    itemSource: "hint",
+    selectedHintId: "",
+    itemUrl: "",
+  });
+
+  const [editPotForm, setEditPotForm] = useState({
+    goalType: "item",
+    item: "",
+    target: "",
+    currency: "GBP",
+    deadline: "",
+    fundingMode: "Flexible pot",
+    note: "",
+    source: "",
     itemSource: "hint",
     selectedHintId: "",
     itemUrl: "",
@@ -1297,11 +1894,6 @@ export default function CirclesClient() {
     birthday: "",
     phone: "",
   });
-
-  const activeEvent = useMemo(
-    () => calendarEvents.find((event) => String(event.id) === selectedEventId) || calendarEvents[0],
-    [selectedEventId]
-  );
 
   const resetContactForm = () => {
     setContactForm({
@@ -1325,6 +1917,7 @@ export default function CirclesClient() {
       deadline: calendarEvents[0].date,
       goalType: "item",
       goalValue: "",
+      currency: "GBP",
       fundingMode: "flexible",
       itemSource: "hint",
       selectedHintId: "",
@@ -1396,6 +1989,40 @@ export default function CirclesClient() {
     }
   };
 
+  const handleFetchEditPreview = async () => {
+    if (!editPotForm.itemUrl.trim()) return;
+
+    try {
+      setIsFetchingEditPreview(true);
+
+      const response = await fetch("/api/link-preview", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url: editPotForm.itemUrl.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch preview");
+      }
+
+      setEditLinkPreview(data);
+    } catch (error) {
+      setEditLinkPreview({
+        title: "Preview unavailable",
+        description: "We could not pull a preview from that link yet, but you can still use the URL.",
+        image: "",
+        siteName: editPotForm.itemUrl,
+        url: editPotForm.itemUrl,
+      });
+    } finally {
+      setIsFetchingEditPreview(false);
+    }
+  };
+
   const handleCreateCircle = () => {
     const selectedEvent =
       eventMode === "calendar"
@@ -1421,7 +2048,7 @@ export default function CirclesClient() {
           ? "Organizer covers gap"
           : "Flexible pot";
 
-    const targetNumber = Number(String(form.goalValue).replace(/[^\d.]/g, "")) || 0;
+    const targetNumber = parseAmount(form.goalValue);
 
     const selectedHint =
       publicHintsByContact[selectedHintContactId]?.find((hint) => hint.id === form.selectedHintId) || null;
@@ -1437,7 +2064,7 @@ export default function CirclesClient() {
       form.goalType === "amount"
         ? "Amount-based goal"
         : form.itemSource === "hint"
-          ? `From ${selectedHintContact?.name || "contact"}’s public hints`
+          ? `From ${selectedHintContact?.name || "contact"}'s public hints`
           : linkPreview?.siteName || "From pasted link";
 
     const newCircle = {
@@ -1469,6 +2096,7 @@ export default function CirclesClient() {
         item: itemLabel,
         source: sourceLabel,
         target: targetNumber,
+        currency: form.currency,
         raised: 0,
         note:
           form.fundingMode === "all_or_nothing"
@@ -1478,12 +2106,97 @@ export default function CirclesClient() {
               : "This circle can stay flexible if fewer people join than expected.",
         fundingMode: fundingModeLabel,
         deadline: form.deadline || eventDate,
+        goalType: form.goalType,
       },
     };
 
     setCircles((prev) => [newCircle, ...prev]);
     setIsCreateOpen(false);
     resetCircleForm();
+  };
+
+  const openEditPot = (circle) => {
+    setEditingCircle(circle);
+    setEditSelectedHintContactId(initialContacts[0].id);
+    setEditLinkPreview(null);
+    setEditPotForm({
+      goalType: circle.pot.goalType || (circle.pot.item === "Shared contribution pot" ? "amount" : "item"),
+      item: circle.pot.item || "",
+      target: String(circle.pot.target || ""),
+      currency: circle.pot.currency || "GBP",
+      deadline: circle.pot.deadline || "",
+      fundingMode: circle.pot.fundingMode || "Flexible pot",
+      note: circle.pot.note || "",
+      source: circle.pot.source || "",
+      itemSource: "hint",
+      selectedHintId: "",
+      itemUrl: "",
+    });
+    setIsEditPotOpen(true);
+  };
+
+  const handleSavePot = () => {
+    if (!editingCircle) return;
+
+    const updatedTarget = parseAmount(editPotForm.target);
+
+    setCircles((prev) =>
+      prev.map((circle) =>
+        circle.id === editingCircle.id
+          ? {
+              ...circle,
+              pot: {
+                ...circle.pot,
+                active: true,
+                goalType: editPotForm.goalType,
+                item:
+                  editPotForm.goalType === "amount"
+                    ? "Shared contribution pot"
+                    : editPotForm.item || circle.pot.item,
+                source:
+                  editPotForm.goalType === "amount"
+                    ? "Amount-based goal"
+                    : editPotForm.source || circle.pot.source,
+                target: updatedTarget,
+                currency: editPotForm.currency,
+                deadline: editPotForm.deadline,
+                fundingMode: editPotForm.fundingMode,
+                note: editPotForm.note,
+              },
+            }
+          : circle
+      )
+    );
+
+    setIsEditPotOpen(false);
+    setEditingCircle(null);
+  };
+
+  const handleDeletePot = () => {
+    if (!editingCircle) return;
+
+    setCircles((prev) =>
+      prev.map((circle) =>
+        circle.id === editingCircle.id
+          ? {
+              ...circle,
+              pot: {
+                ...circle.pot,
+                active: false,
+                item: "",
+                source: "",
+                target: 0,
+                currency: circle.pot.currency || "GBP",
+                note: "Choose a public hint or paste a link to turn this into a communal goal.",
+              },
+            }
+          : circle
+      )
+    );
+
+    setIsDeletePotOpen(false);
+    setIsEditPotOpen(false);
+    setEditingCircle(null);
   };
 
   return (
@@ -1592,7 +2305,11 @@ export default function CirclesClient() {
 
                 <div className="space-y-5">
                   {circles.map((circle) => (
-                    <CircleCard key={circle.id} circle={circle} />
+                    <CircleCard
+                      key={circle.id}
+                      circle={circle}
+                      onEditPot={openEditPot}
+                    />
                   ))}
                 </div>
               </section>
@@ -1623,6 +2340,32 @@ export default function CirclesClient() {
         handleFetchPreview={handleFetchPreview}
         selectedHintContactId={selectedHintContactId}
         setSelectedHintContactId={setSelectedHintContactId}
+      />
+
+      <EditPotModal
+        open={isEditPotOpen}
+        onClose={() => {
+          setIsEditPotOpen(false);
+          setEditingCircle(null);
+        }}
+        onSave={handleSavePot}
+        onDelete={() => setIsDeletePotOpen(true)}
+        circle={editingCircle}
+        contacts={contacts}
+        form={editPotForm}
+        setForm={setEditPotForm}
+        linkPreview={editLinkPreview}
+        isFetchingPreview={isFetchingEditPreview}
+        handleFetchPreview={handleFetchEditPreview}
+        selectedHintContactId={editSelectedHintContactId}
+        setSelectedHintContactId={setEditSelectedHintContactId}
+      />
+
+      <DeletePotModal
+        open={isDeletePotOpen}
+        onClose={() => setIsDeletePotOpen(false)}
+        onConfirm={handleDeletePot}
+        circle={editingCircle}
       />
 
       <AddContactModal
