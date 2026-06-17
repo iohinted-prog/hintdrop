@@ -6,7 +6,7 @@ import Link from "next/link";
 const initialHints = [
   {
     id: 1,
-    title: "Weekend cabin stay",
+    title: "Weekend cabin",
     retailer: "airbnb.co.uk",
     priceLabel: "From £320",
     numericPrice: 320,
@@ -21,7 +21,7 @@ const initialHints = [
   },
   {
     id: 2,
-    title: "Noise-cancelling headphones",
+    title: "Sony headphones",
     retailer: "amazon.co.uk",
     priceLabel: "About £249",
     numericPrice: 249,
@@ -36,7 +36,7 @@ const initialHints = [
   },
   {
     id: 3,
-    title: "Ceramics workshop for two",
+    title: "Ceramics workshop",
     retailer: "classbento.co.uk",
     priceLabel: "About £78",
     numericPrice: 78,
@@ -51,7 +51,7 @@ const initialHints = [
   },
   {
     id: 4,
-    title: "Silk pillowcase set",
+    title: "Silk pillowcases",
     retailer: "johnlewis.com",
     priceLabel: "About £45",
     numericPrice: 45,
@@ -66,7 +66,7 @@ const initialHints = [
   },
   {
     id: 5,
-    title: "Kindle Paperwhite",
+    title: "Kindle reader",
     retailer: "amazon.co.uk",
     priceLabel: "About £159",
     numericPrice: 159,
@@ -81,7 +81,7 @@ const initialHints = [
   },
   {
     id: 6,
-    title: "Art print for the living room",
+    title: "Art print",
     retailer: "etsy.com",
     priceLabel: "About £38",
     numericPrice: 38,
@@ -96,7 +96,7 @@ const initialHints = [
   },
   {
     id: 7,
-    title: "Cast-iron casserole dish",
+    title: "Casserole dish",
     retailer: "johnlewis.com",
     priceLabel: "About £89",
     numericPrice: 89,
@@ -111,7 +111,7 @@ const initialHints = [
   },
   {
     id: 8,
-    title: "Pourover coffee set",
+    title: "Coffee set",
     retailer: "hasbean.co.uk",
     priceLabel: "About £62",
     numericPrice: 62,
@@ -165,11 +165,14 @@ function normaliseRetailer(url) {
 function extractNumericPrice(value) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (!value || typeof value !== "string") return null;
+
   const cleaned = value.replace(/,/g, "");
   const match =
     cleaned.match(/(?:£|\$|€)\s?(\d+(?:\.\d{1,2})?)/) ||
     cleaned.match(/(\d+(?:\.\d{1,2})?)/);
+
   if (!match) return null;
+
   const parsed = Number(match[1]);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -184,9 +187,11 @@ function getPriceBand(price) {
 
 function getSizeFromPrice(price, allPrices) {
   if (price == null || allPrices.length < 3) return "portrait";
+
   const sorted = [...allPrices].sort((a, b) => a - b);
   const lowCut = sorted[Math.floor(sorted.length * 0.35)];
   const highCut = sorted[Math.floor(sorted.length * 0.75)];
+
   if (price >= highCut) return "tall";
   if (price >= lowCut) return "portrait";
   return "square";
@@ -223,7 +228,211 @@ function getPricePill(priceBand) {
   return "bg-[#f1f5ec] text-[#627f53]";
 }
 
-function HintTile({ hint, index, draggedIndex, setDraggedIndex, moveHint }) {
+function shortenTitle(title = "", retailer = "") {
+  const source = String(title || "").trim();
+  if (!source) return "Saved hint";
+
+  const cleanRetailer = String(retailer || "")
+    .replace(/^www\./i, "")
+    .replace(/\.(co\.uk|com|co|net|org)$/i, "")
+    .trim()
+    .toLowerCase();
+
+  const stopWords = new Set([
+    "the",
+    "and",
+    "with",
+    "for",
+    "from",
+    "new",
+    "latest",
+    "edition",
+    "model",
+    "official",
+    "amazon",
+    "uk",
+    "black",
+    "white",
+    "silver",
+    "blue",
+    "green",
+    "pink",
+    "grey",
+    "gray",
+    "wireless",
+    "bluetooth",
+  ]);
+
+  const categoryWords = [
+    "headphones",
+    "earbuds",
+    "speaker",
+    "kindle",
+    "book",
+    "pillowcase",
+    "pillowcases",
+    "dish",
+    "pan",
+    "mug",
+    "print",
+    "necklace",
+    "ring",
+    "bag",
+    "dress",
+    "trainer",
+    "trainers",
+    "jacket",
+    "candle",
+    "coffee",
+    "set",
+    "workshop",
+    "experience",
+    "voucher",
+    "lego",
+    "camera",
+    "watch",
+    "sofa",
+    "blanket",
+  ];
+
+  let cleaned = source
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\[[^\]]*\]/g, " ")
+    .replace(/[|:;,/]/g, " ")
+    .replace(/\b[A-Z0-9-]{6,}\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  let words = cleaned.split(" ").filter(Boolean);
+
+  words = words.filter((word) => {
+    const lower = word.toLowerCase();
+    if (stopWords.has(lower)) return false;
+    if (lower === cleanRetailer) return false;
+    if (/^\d+$/.test(lower)) return false;
+    return true;
+  });
+
+  if (words.length === 0) return "Saved hint";
+
+  const brand = words[0];
+  const foundCategory = words.find((word) => categoryWords.includes(word.toLowerCase()));
+
+  let finalWords;
+  if (foundCategory && brand.toLowerCase() !== foundCategory.toLowerCase()) {
+    finalWords = [brand, foundCategory];
+  } else {
+    finalWords = words.slice(0, Math.min(4, Math.max(2, words.length >= 2 ? 2 : 1)));
+  }
+
+  const compact = finalWords.slice(0, 4).join(" ").trim();
+  return compact.charAt(0).toUpperCase() + compact.slice(1);
+}
+
+function EditHintModal({
+  isOpen,
+  editForm,
+  setEditForm,
+  onClose,
+  onSave,
+  onRefreshFromLink,
+  onDelete,
+  isRefreshing,
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(33,24,20,0.42)] px-4 py-8 backdrop-blur-sm">
+      <div className="w-full max-w-[560px] rounded-[30px] border border-[#ecdcd2] bg-white p-6 shadow-[0_28px_80px_rgba(75,45,30,0.18)] sm:p-7">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#e08a67]">
+              Edit hint
+            </p>
+            <h2 className="mt-2 text-[28px] font-semibold tracking-[-0.05em] text-slate-900">
+              Update this card
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-[#ead9d0] text-slate-500 hover:bg-[#faf6f3]"
+            aria-label="Close edit modal"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="mt-6 space-y-4">
+          <div>
+            <label htmlFor="edit-link" className="mb-2 block text-sm font-medium text-slate-700">
+              Link
+            </label>
+            <input
+              id="edit-link"
+              type="url"
+              value={editForm.url}
+              onChange={(e) => setEditForm((current) => ({ ...current, url: e.target.value }))}
+              className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-white px-5 text-[15px] text-slate-700 outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="edit-title" className="mb-2 block text-sm font-medium text-slate-700">
+              Name
+            </label>
+            <input
+              id="edit-title"
+              type="text"
+              value={editForm.title}
+              onChange={(e) => setEditForm((current) => ({ ...current, title: e.target.value }))}
+              className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-white px-5 text-[15px] text-slate-700 outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
+            />
+          </div>
+        </div>
+
+        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-between">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="inline-flex h-12 items-center justify-center rounded-full border border-[#f1d4c8] px-5 text-sm font-semibold text-[#d56949] hover:bg-[#fff4ef]"
+          >
+            Delete hint
+          </button>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={onRefreshFromLink}
+              disabled={isRefreshing}
+              className="inline-flex h-12 items-center justify-center rounded-full border border-[#ead9d0] px-5 text-sm font-semibold text-slate-700 hover:bg-[#faf6f3] disabled:opacity-60"
+            >
+              {isRefreshing ? "Refreshing..." : "Replace from link"}
+            </button>
+
+            <button
+              type="button"
+              onClick={onSave}
+              className="inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg"
+            >
+              Save changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HintTile({
+  hint,
+  index,
+  draggedIndex,
+  setDraggedIndex,
+  moveHint,
+  onEdit,
+}) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(hint.image) && !imageFailed;
 
@@ -282,20 +491,31 @@ function HintTile({ hint, index, draggedIndex, setDraggedIndex, moveHint }) {
               )}
             </div>
 
-            <button
-              className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/72 text-[16px] backdrop-blur-sm ${
-                hint.starred ? "text-[#f36f64]" : "text-slate-400 hover:text-[#f36f64]"
-              }`}
-              aria-label={hint.starred ? "Unhighlight hint" : "Highlight hint"}
-              type="button"
-            >
-              ★
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onEdit(hint)}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/72 text-[15px] text-slate-500 backdrop-blur-sm hover:text-slate-800"
+                aria-label="Edit hint"
+              >
+                ✎
+              </button>
+
+              <button
+                className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/72 text-[16px] backdrop-blur-sm ${
+                  hint.starred ? "text-[#f36f64]" : "text-slate-400 hover:text-[#f36f64]"
+                }`}
+                aria-label={hint.starred ? "Unhighlight hint" : "Highlight hint"}
+                type="button"
+              >
+                ★
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="relative -mt-6 px-4 pb-4 sm:px-5 sm:pb-5">
-          <div className={`rounded-[24px] p-4 shadow-sm backdrop-blur-md ${hint.private ? "bg-white/82" : "bg-white/90"}`}>
+        <div className="relative -mt-6 flex flex-1 px-4 pb-4 sm:px-5 sm:pb-5">
+          <div className={`flex w-full flex-1 flex-col rounded-[24px] p-4 shadow-sm backdrop-blur-md ${hint.private ? "bg-white/82" : "bg-white/90"}`}>
             <div className="flex flex-wrap items-center gap-2">
               <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getPricePill(hint.priceBand)}`}>
                 {hint.priceLabel}
@@ -311,21 +531,31 @@ function HintTile({ hint, index, draggedIndex, setDraggedIndex, moveHint }) {
               ))}
             </div>
 
-            <h2 className="mt-3 text-[20px] font-semibold tracking-[-0.04em] text-slate-900">
+            <h2
+              className="mt-3 min-w-0 overflow-hidden text-[20px] font-semibold tracking-[-0.04em] text-slate-900"
+              style={{
+                display: "-webkit-box",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: 2,
+                lineClamp: 2,
+              }}
+            >
               {hint.title}
             </h2>
 
-            <p className="mt-1 text-[13px] text-slate-500">{hint.retailer}</p>
+            <p className="mt-1 truncate text-[13px] text-slate-500">{hint.retailer}</p>
 
-            <div className="mt-4 flex items-center justify-end">
-              <a
-                href={hint.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-full border border-[#eadfd8] bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 hover:bg-[#faf7f4]"
-              >
-                Open
-              </a>
+            <div className="mt-auto pt-4">
+              <div className="flex items-center justify-end">
+                <a
+                  href={hint.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full border border-[#eadfd8] bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 hover:bg-[#faf7f4]"
+                >
+                  Open
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -340,6 +570,9 @@ export default function HintsPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState("");
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [editingHintId, setEditingHintId] = useState(null);
+  const [editForm, setEditForm] = useState({ title: "", url: "" });
+  const [isRefreshingEdit, setIsRefreshingEdit] = useState(false);
 
   const numericPrices = useMemo(
     () => hints.map((hint) => hint.numericPrice).filter((value) => typeof value === "number"),
@@ -360,6 +593,102 @@ export default function HintsPage() {
     });
 
     setDraggedIndex(null);
+  }
+
+  function openEditModal(hint) {
+    setEditingHintId(hint.id);
+    setEditForm({
+      title: hint.title || "",
+      url: hint.url || "",
+    });
+  }
+
+  function closeEditModal() {
+    setEditingHintId(null);
+    setEditForm({ title: "", url: "" });
+    setIsRefreshingEdit(false);
+  }
+
+  function saveEditChanges() {
+    const trimmedTitle = editForm.title.trim();
+    const trimmedUrl = editForm.url.trim();
+
+    setHints((current) =>
+      current.map((hint) =>
+        hint.id === editingHintId
+          ? {
+              ...hint,
+              title: trimmedTitle || hint.title,
+              url: trimmedUrl || hint.url,
+              retailer: trimmedUrl ? normaliseRetailer(trimmedUrl) : hint.retailer,
+            }
+          : hint
+      )
+    );
+
+    closeEditModal();
+  }
+
+  function deleteHint() {
+    setHints((current) => current.filter((hint) => hint.id !== editingHintId));
+    closeEditModal();
+  }
+
+  async function refreshHintFromLink() {
+    const trimmed = editForm.url.trim();
+
+    if (!trimmed || editingHintId == null) return;
+
+    setIsRefreshingEdit(true);
+
+    try {
+      const response = await fetch("/api/link-preview", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url: trimmed }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Could not refresh this link.");
+      }
+
+      setHints((current) =>
+        current.map((hint) => {
+          if (hint.id !== editingHintId) return hint;
+
+          const numericPrice = extractNumericPrice(data.price);
+          const refreshedTitle = shortenTitle(
+            data.title || editForm.title || hint.title,
+            data.siteName || normaliseRetailer(trimmed)
+          );
+
+          return {
+            ...hint,
+            title: refreshedTitle,
+            retailer: data.siteName || normaliseRetailer(trimmed),
+            priceLabel: formatPriceLabel(numericPrice, data.price),
+            numericPrice,
+            priceBand: getPriceBand(numericPrice),
+            image: typeof data.image === "string" && data.image.startsWith("http") ? data.image : hint.image,
+            url: data.url || trimmed,
+          };
+        })
+      );
+
+      setEditForm((current) => ({
+        ...current,
+        title: shortenTitle(data.title || current.title, data.siteName || normaliseRetailer(trimmed)),
+        url: data.url || trimmed,
+      }));
+    } catch (err) {
+      setError(err.message || "Could not refresh this link.");
+    } finally {
+      setIsRefreshingEdit(false);
+    }
   }
 
   async function handleAddHint() {
@@ -394,24 +723,19 @@ export default function HintsPage() {
         [...numericPrices, ...(numericPrice != null ? [numericPrice] : [])]
       );
 
-      const image = data.image || "";
-      const title = data.title || "Saved hint";
       const retailer = data.siteName || normaliseRetailer(trimmed);
-      const cleanDescription =
-        data.description && data.description.toLowerCase() !== retailer.toLowerCase()
-          ? data.description
-          : "";
+      const shortTitle = shortenTitle(data.title || "Saved hint", retailer);
 
       const newHint = {
         id: Date.now(),
-        title,
+        title: shortTitle,
         retailer,
         priceLabel: formatPriceLabel(numericPrice, data.price),
         numericPrice,
         priceBand: getPriceBand(numericPrice),
-        image: typeof image === "string" && image.startsWith("http") ? image : "",
+        image: typeof data.image === "string" && data.image.startsWith("http") ? data.image : "",
         fallbackGradient: buildFallbackGradient(hints.length),
-        tags: cleanDescription ? ["Added from link", "Preview found"] : ["Added from link"],
+        tags: ["Added from link"],
         starred: false,
         private: false,
         size: size === "square" ? "portrait" : size,
@@ -487,7 +811,7 @@ export default function HintsPage() {
               <p className="mt-3 text-sm font-medium text-[#c45c42]">{error}</p>
             ) : (
               <p className="mt-3 text-sm text-slate-500">
-                We’ll pull the title, image, and price from the link, then size it against your other hints.
+                We’ll pull the title, image, and price from the link, then you can edit it any time.
               </p>
             )}
           </div>
@@ -516,12 +840,24 @@ export default function HintsPage() {
                   draggedIndex={draggedIndex}
                   setDraggedIndex={setDraggedIndex}
                   moveHint={moveHint}
+                  onEdit={openEditModal}
                 />
               ))}
             </div>
           </div>
         </section>
       </div>
+
+      <EditHintModal
+        isOpen={editingHintId !== null}
+        editForm={editForm}
+        setEditForm={setEditForm}
+        onClose={closeEditModal}
+        onSave={saveEditChanges}
+        onRefreshFromLink={refreshHintFromLink}
+        onDelete={deleteHint}
+        isRefreshing={isRefreshingEdit}
+      />
     </main>
   );
 }
