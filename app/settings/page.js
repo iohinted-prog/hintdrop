@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 
 export const metadata = {
@@ -10,6 +9,15 @@ export default function SettingsPage() {
   return (
     <main className="min-h-screen bg-[#fffaf7] px-5 py-8 text-slate-800 md:px-8">
       <div className="mx-auto max-w-[920px]">
+        <div className="mb-6">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-full border border-[#ead8ce] bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
+          >
+            ← Back to home
+          </Link>
+        </div>
+
         <div className="mb-8">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#df7b59]">
             settings
