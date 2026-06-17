@@ -442,6 +442,7 @@ function getInitials(name) {
 function getContactGradient(role) {
   if (role === "Family") return "from-[#eac8b8] to-[#9d6957]";
   if (role === "Partner") return "from-[#e8b9a7] to-[#bf755f]";
+  if (role === "Brother") return "from-[#4e596d] to-[#212a3c]";
   return "from-[#efcdbf] to-[#bb8168]";
 }
 
@@ -2441,7 +2442,7 @@ export default function CirclesClient() {
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-4 md:px-8">
+        <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
           <Link href="/feed" className="flex items-center gap-3.5">
             <LogoMark />
             <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
@@ -2469,6 +2470,12 @@ export default function CirclesClient() {
               >
                 Circles
               </Link>
+              <Link
+                href="/shop"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Shop
+              </Link>
             </nav>
 
             <AvatarMenu />
@@ -2476,7 +2483,7 @@ export default function CirclesClient() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1440px] px-5 py-8 md:px-8">
+      <div className="mx-auto max-w-[1380px] px-5 py-8 md:px-8">
         <section className="rounded-[34px] border border-[#eeddd3] bg-[#fff7f2] p-4 shadow-[0_18px_60px_rgba(173,101,72,0.1)] sm:p-5">
           <div className="rounded-[28px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
             <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
