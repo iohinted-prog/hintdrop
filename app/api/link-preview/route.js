@@ -1,15 +1,23 @@
 import { NextResponse } from "next/server";
-import * as cheerio from "cheerio";
 
-function readMeta($, selectors) {
-  for (const selector of selectors) {
-    const value = $(selector).attr("content") || $(selector).attr("href");
-    if (value && value.trim()) return value.trim();
+function extractMeta(html, patterns) {
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match?.[1]) return decodeHtml(match[1].trim());
   }
   return "";
 }
 
-function absoluteUrl(value, base) {
+function decodeHtml(value) {
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function makeAbsoluteUrl(value, base) {
   if (!value) return "";
   try {
     return new URL(value, base).toString();
@@ -27,9 +35,10 @@ export async function POST(request) {
       return NextResponse.json({ error: "Missing URL" }, { status: 400 });
     }
 
-    const targetUrl = rawUrl.startsWith("http://") || rawUrl.startsWith("https://")
-      ? rawUrl
-      : `https://${rawUrl}`;
+    const targetUrl =
+      rawUrl.startsWith("http://") || rawUrl.startsWith("https://")
+        ? rawUrl
+        : `https://${rawUrl}`;
 
     const response = await fetch(targetUrl, {
       headers: {
@@ -43,33 +52,43 @@ export async function POST(request) {
     }
 
     const html = await response.text();
-    const $ = cheerio.load(html);
 
     const title =
-      readMeta($, ['meta[property="og:title"]', 'meta[name="twitter:title"]']) ||
-      $("title").first().text().trim();
+      extractMeta(html, [
+        /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+        /<meta[^>]+name=["']twitter:title["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+        /<title[^>]*>([^<]+)<\/title>/i,
+      ]) || targetUrl;
 
-    const description =
-      readMeta($, [
-        'meta[property="og:description"]',
-        'meta[name="twitter:description"]',
-        'meta[name="description"]',
-      ]) || "";
+    const description = extractMeta(html, [
+      /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+      /<meta[^>]+name=["']twitter:description["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+      /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+    ]);
 
-    const siteName = readMeta($, ['meta[property="og:site_name"]']);
-    const image = absoluteUrl(
-      readMeta($, ['meta[property="og:image"]', 'meta[name="twitter:image"]']),
+    const image = makeAbsoluteUrl(
+      extractMeta(html, [
+        /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+        /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+      ]),
       targetUrl
     );
 
-    const canonical = absoluteUrl(
-      readMeta($, ['link[rel="canonical"]', 'meta[property="og:url"]']) || targetUrl,
+    const siteName = extractMeta(html, [
+      /<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+    ]);
+
+    const canonical = makeAbsoluteUrl(
+      extractMeta(html, [
+        /<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["'][^>]*>/i,
+        /<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+      ]) || targetUrl,
       targetUrl
     );
 
     return NextResponse.json({
       url: canonical,
-      title: title || canonical,
+      title,
       description,
       siteName,
       image,
