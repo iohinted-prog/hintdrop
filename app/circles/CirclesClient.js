@@ -78,36 +78,36 @@ const calendarEvents = [
   { id: 3, title: "James Promotion Dinner", date: "2026-07-16", type: "Milestone" },
 ];
 
-const hintOptions = [
-  {
-    id: "hint-1",
-    title: "Weekend cabin stay",
-    subtitle: "From Sarah's hints",
-    amount: "£220",
-    owner: "Sarah",
-  },
-  {
-    id: "hint-2",
-    title: "Le Creuset casserole dish",
-    subtitle: "From Mum's hints",
-    amount: "£180",
-    owner: "Mum",
-  },
-  {
-    id: "hint-3",
-    title: "Ceramics workshop",
-    subtitle: "From Sarah's hints",
-    amount: "£95",
-    owner: "Sarah",
-  },
-  {
-    id: "hint-4",
-    title: "Noise-cancelling headphones",
-    subtitle: "From James's hints",
-    amount: "£240",
-    owner: "James",
-  },
-];
+const publicHintsByContact = {
+  1: [
+    { id: "maya-1", title: "Silk pillowcase set", subtitle: "£45 · Public hint" },
+    { id: "maya-2", title: "Aesop hand wash duo", subtitle: "£62 · Public hint" },
+    { id: "maya-3", title: "Sunday lunch voucher", subtitle: "£80 · Public hint" },
+  ],
+  2: [
+    { id: "james-1", title: "Noise-cancelling headphones", subtitle: "£240 · Public hint" },
+    { id: "james-2", title: "Leather weekender bag", subtitle: "£175 · Public hint" },
+  ],
+  3: [
+    { id: "fiona-1", title: "Ceramics workshop", subtitle: "£95 · Public hint" },
+    { id: "fiona-2", title: "Spa afternoon for two", subtitle: "£140 · Public hint" },
+    { id: "fiona-3", title: "Illustrated recipe book", subtitle: "£28 · Public hint" },
+  ],
+  4: [
+    { id: "mum-1", title: "Le Creuset casserole dish", subtitle: "£180 · Public hint" },
+    { id: "mum-2", title: "Garden centre gift card", subtitle: "£50 · Public hint" },
+  ],
+  5: [
+    { id: "sarah-1", title: "Weekend cabin stay", subtitle: "£220 · Public hint" },
+    { id: "sarah-2", title: "Linen bedding set", subtitle: "£130 · Public hint" },
+    { id: "sarah-3", title: "Ceramic dinnerware", subtitle: "£85 · Public hint" },
+    { id: "sarah-4", title: "Cooking class for two", subtitle: "£120 · Public hint" },
+  ],
+  6: [
+    { id: "tom-1", title: "Train travel voucher", subtitle: "£60 · Public hint" },
+    { id: "tom-2", title: "Coffee subscription", subtitle: "£38 · Public hint" },
+  ],
+};
 
 const initialCircles = [
   {
@@ -153,7 +153,7 @@ const initialCircles = [
     pot: {
       active: true,
       item: "Weekend cabin stay",
-      source: "From Sarah’s saved hints",
+      source: "From Sarah’s public hints",
       target: 220,
       raised: 95,
       note: "Selected from Sarah’s own hints so the group has a clear goal.",
@@ -196,7 +196,7 @@ const initialCircles = [
     pot: {
       active: true,
       item: "Le Creuset casserole dish",
-      source: "From Mum’s hints",
+      source: "From Mum’s public hints",
       target: 180,
       raised: 50,
       note: "A practical family gift with a target everyone can work toward.",
@@ -234,7 +234,7 @@ const initialCircles = [
       source: "",
       target: 0,
       raised: 0,
-      note: "Choose a saved hint or paste a link to turn this into a communal goal.",
+      note: "Choose a public hint or paste a link to turn this into a communal goal.",
       fundingMode: "Flexible pot",
       deadline: "2026-07-16",
     },
@@ -307,7 +307,7 @@ function AvatarMenu() {
   );
 }
 
-function ModalShell({ open, onClose, title, eyebrow, children, maxWidth = "max-w-[1080px]" }) {
+function ModalShell({ open, onClose, title, eyebrow, children, maxWidth = "max-w-[1120px]" }) {
   if (!open) return null;
 
   return (
@@ -570,7 +570,7 @@ function CircleCard({ circle }) {
                 <div className="mt-6 rounded-[24px] border border-dashed border-[#e5d8cf] bg-white p-5 text-left">
                   <p className="text-sm font-semibold text-slate-900">Choose from hints or links</p>
                   <p className="mt-2 text-[14px] leading-7 text-slate-600">
-                    Pick a saved hint or paste a product link so the circle has one shared goal.
+                    Pick a public hint or paste a product link so the circle has one shared goal.
                   </p>
                 </div>
 
@@ -589,6 +589,51 @@ function CircleCard({ circle }) {
   );
 }
 
+function PotTypeGuide() {
+  const potTypes = [
+    {
+      title: "Flexible pot",
+      text: "Anyone invited can join and contribute what they want. If fewer people join, the group can still continue with a smaller total or switch to a simpler gift.",
+      colors: "bg-[#edf6eb] text-[#4a7a3a]",
+    },
+    {
+      title: "All-or-nothing",
+      text: "The circle only goes ahead if the target is reached by the deadline. This works best when the item only makes sense at the full amount.",
+      colors: "bg-[#fff3ee] text-[#d57a58]",
+    },
+    {
+      title: "Organizer covers gap",
+      text: "The organiser can choose to top up the missing amount if not everyone joins or contributes. Useful when the gift matters more than exact participation.",
+      colors: "bg-[#eef4ff] text-[#5676b3]",
+    },
+  ];
+
+  return (
+    <section className="rounded-[26px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+        Pot guide
+      </p>
+      <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
+        How pot types work
+      </h2>
+      <p className="mt-2 text-[14px] leading-7 text-slate-600">
+        Choose the funding style that best fits the gift and how certain you are that everyone will join.
+      </p>
+
+      <div className="mt-5 space-y-3">
+        {potTypes.map((type) => (
+          <div key={type.title} className="rounded-[20px] bg-[#faf7f4] p-4">
+            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${type.colors}`}>
+              {type.title}
+            </span>
+            <p className="mt-3 text-[13px] leading-6 text-slate-600">{type.text}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function CreateCircleModal({
   open,
   onClose,
@@ -604,18 +649,67 @@ function CreateCircleModal({
   form,
   setForm,
   linkPreview,
-  setLinkPreview,
   isFetchingPreview,
   handleFetchPreview,
+  selectedHintContactId,
+  setSelectedHintContactId,
 }) {
   if (!open) return null;
+
+  const selectedHintContact = contacts.find(
+    (contact) => String(contact.id) === String(selectedHintContactId)
+  );
+  const visibleHints = selectedHintContactId
+    ? publicHintsByContact[selectedHintContactId] || []
+    : [];
+  const amountMode = form.goalType === "amount";
 
   return (
     <ModalShell open={open} onClose={onClose} eyebrow="New circle" title="Create a circle around an event">
       <div className="grid gap-0 lg:grid-cols-[1.06fr_0.94fr]">
         <div className="max-h-[calc(92vh-90px)] space-y-6 overflow-y-auto p-6">
           <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">1. Choose the event</p>
+            <p className="text-sm font-semibold text-slate-900">1. Goal type</p>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-700">What are you aiming for?</span>
+                <select
+                  value={form.goalType}
+                  onChange={(e) => {
+                    const nextValue = e.target.value;
+                    setForm((prev) => ({
+                      ...prev,
+                      goalType: nextValue,
+                      itemSource: nextValue === "amount" ? "" : prev.itemSource || "hint",
+                      selectedHintId: nextValue === "amount" ? "" : prev.selectedHintId,
+                      itemUrl: nextValue === "amount" ? "" : prev.itemUrl,
+                    }));
+                  }}
+                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                >
+                  <option value="item">Specific item</option>
+                  <option value="amount">Target amount</option>
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-700">
+                  {form.goalType === "item" ? "Item or label" : "Target amount"}
+                </span>
+                <input
+                  type="text"
+                  value={form.goalValue}
+                  onChange={(e) => setForm((prev) => ({ ...prev, goalValue: e.target.value }))}
+                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                  placeholder={form.goalType === "item" ? "Weekend cabin stay" : "£220"}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
+            <p className="text-sm font-semibold text-slate-900">2. Choose the event</p>
 
             <div className="mt-4 flex gap-3">
               <button
@@ -712,7 +806,7 @@ function CreateCircleModal({
           </div>
 
           <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">2. Circle details</p>
+            <p className="text-sm font-semibold text-slate-900">3. Circle details</p>
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <label className="space-y-2 sm:col-span-2">
@@ -754,164 +848,236 @@ function CreateCircleModal({
             </div>
           </div>
 
-          <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">3. Choose the item</p>
+          <div
+            className={`rounded-[24px] border p-5 transition ${
+              amountMode
+                ? "border-[#efe4dd] bg-[#faf7f5] opacity-60"
+                : "border-[#eedfd6] bg-white opacity-100"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">4. Choose the item</p>
+                <p className="mt-1 text-[13px] leading-6 text-slate-500">
+                  Pick from a contact’s public hints or paste a link from anywhere on the internet.
+                </p>
+              </div>
 
-            <div className="mt-4 flex gap-3">
-              <button
-                type="button"
-                onClick={() =>
-                  setForm((prev) => ({
-                    ...prev,
-                    itemSource: "hint",
-                    itemUrl: "",
-                  }))
-                }
-                className={`inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold ${
-                  form.itemSource === "hint"
-                    ? "bg-[#2f3b2d] text-white"
-                    : "border border-[#ead8ce] bg-white text-slate-700"
-                }`}
-              >
-                From hints
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setForm((prev) => ({
-                    ...prev,
-                    itemSource: "url",
-                    selectedHintId: "",
-                  }))
-                }
-                className={`inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold ${
-                  form.itemSource === "url"
-                    ? "bg-[#2f3b2d] text-white"
-                    : "border border-[#ead8ce] bg-white text-slate-700"
-                }`}
-              >
-                Paste a link
-              </button>
+              {amountMode ? (
+                <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-slate-500">
+                  Skipped for target amount
+                </span>
+              ) : null}
             </div>
 
-            {form.itemSource === "hint" ? (
-              <div className="mt-4 space-y-3">
-                {hintOptions.map((hint) => (
-                  <label
-                    key={hint.id}
-                    className={`flex cursor-pointer items-center justify-between rounded-[20px] border p-4 ${
-                      form.selectedHintId === hint.id
-                        ? "border-[#f0a384] bg-[#fff4ee]"
-                        : "border-[#efe1d9] bg-[#fffdfa]"
-                    }`}
-                  >
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{hint.title}</p>
-                      <p className="mt-1 text-[13px] text-slate-500">
-                        {hint.subtitle} · {hint.amount}
-                      </p>
-                    </div>
-
-                    <input
-                      type="radio"
-                      name="selectedHint"
-                      className="h-4 w-4 accent-[#f36f64]"
-                      checked={form.selectedHintId === hint.id}
-                      onChange={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          selectedHintId: hint.id,
-                          goalType: "item",
-                          goalValue: hint.title,
-                        }))
-                      }
-                    />
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-4 space-y-3">
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <input
-                    type="url"
-                    value={form.itemUrl}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, itemUrl: e.target.value }))
-                    }
-                    placeholder="Paste product or experience link"
-                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                  />
+            {!amountMode ? (
+              <>
+                <div className="mt-4 flex gap-3">
                   <button
                     type="button"
-                    onClick={handleFetchPreview}
-                    className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        itemSource: "hint",
+                        itemUrl: "",
+                      }))
+                    }
+                    className={`inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold ${
+                      form.itemSource === "hint"
+                        ? "bg-[#2f3b2d] text-white"
+                        : "border border-[#ead8ce] bg-white text-slate-700"
+                    }`}
                   >
-                    {isFetchingPreview ? "Fetching..." : "Fetch preview"}
+                    From public hints
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        itemSource: "url",
+                        selectedHintId: "",
+                      }))
+                    }
+                    className={`inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold ${
+                      form.itemSource === "url"
+                        ? "bg-[#2f3b2d] text-white"
+                        : "border border-[#ead8ce] bg-white text-slate-700"
+                    }`}
+                  >
+                    Paste a link
                   </button>
                 </div>
 
-                {linkPreview ? (
-                  <div className="rounded-[22px] border border-[#eedfd6] bg-[#fffdfa] p-4">
-                    <div className="flex gap-4">
-                      {linkPreview.image ? (
-                        <img
-                          src={linkPreview.image}
-                          alt={linkPreview.title || "Linked item preview"}
-                          className="h-20 w-20 rounded-[18px] object-cover"
-                        />
-                      ) : (
-                        <div className="h-20 w-20 rounded-[18px] bg-[#f5ebe4]" />
-                      )}
+                {form.itemSource === "hint" ? (
+                  <div className="mt-4 grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+                    <div className="rounded-[22px] border border-[#efe1d9] bg-[#fffdfa] p-3">
+                      <p className="px-2 pb-3 text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                        Contacts
+                      </p>
+                      <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
+                        {contacts.map((contact) => {
+                          const selected = String(contact.id) === String(selectedHintContactId);
 
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-900">
-                          {linkPreview.title || "Untitled item"}
-                        </p>
-                        <p className="mt-1 text-[13px] leading-6 text-slate-500">
-                          {linkPreview.description || "Preview pulled from the linked page."}
-                        </p>
-                        <p className="mt-2 text-[12px] font-medium text-[#df7b59]">
-                          {linkPreview.siteName || linkPreview.url}
-                        </p>
+                          return (
+                            <button
+                              key={contact.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedHintContactId(contact.id);
+                                setForm((prev) => ({
+                                  ...prev,
+                                  selectedHintId: "",
+                                }));
+                              }}
+                              className={`flex w-full items-center gap-3 rounded-[18px] border px-3 py-3 text-left transition ${
+                                selected
+                                  ? "border-[#f0a384] bg-[#fff4ee]"
+                                  : "border-[#efe1d9] bg-white hover:bg-[#fff8f4]"
+                              }`}
+                            >
+                              <div
+                                className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b text-[11px] font-bold text-white ${contact.colors}`}
+                              >
+                                {contact.initials}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-slate-900">{contact.name}</p>
+                                <p className="text-[12px] text-slate-500">{contact.role}</p>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
+
+                    <div className="rounded-[22px] border border-[#efe1d9] bg-[#fffdfa] p-4">
+                      {selectedHintContact ? (
+                        <>
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b text-[12px] font-bold text-white ${selectedHintContact.colors}`}
+                            >
+                              {selectedHintContact.initials}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">
+                                {selectedHintContact.name}'s public hints
+                              </p>
+                              <p className="text-[13px] text-slate-500">
+                                Choose one shared goal for this circle.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 max-h-[320px] space-y-3 overflow-y-auto pr-1">
+                            {visibleHints.length ? (
+                              visibleHints.map((hint) => (
+                                <label
+                                  key={hint.id}
+                                  className={`flex cursor-pointer items-center justify-between rounded-[20px] border p-4 ${
+                                    form.selectedHintId === hint.id
+                                      ? "border-[#f0a384] bg-[#fff4ee]"
+                                      : "border-[#efe1d9] bg-white"
+                                  }`}
+                                >
+                                  <div>
+                                    <p className="text-sm font-semibold text-slate-900">{hint.title}</p>
+                                    <p className="mt-1 text-[13px] text-slate-500">{hint.subtitle}</p>
+                                  </div>
+
+                                  <input
+                                    type="radio"
+                                    name="selectedHint"
+                                    className="h-4 w-4 accent-[#f36f64]"
+                                    checked={form.selectedHintId === hint.id}
+                                    onChange={() =>
+                                      setForm((prev) => ({
+                                        ...prev,
+                                        selectedHintId: hint.id,
+                                        goalType: "item",
+                                        goalValue: hint.title,
+                                      }))
+                                    }
+                                  />
+                                </label>
+                              ))
+                            ) : (
+                              <div className="rounded-[18px] bg-white p-4 text-sm text-slate-500">
+                                No public hints available for this contact yet.
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex h-full min-h-[220px] items-center justify-center rounded-[18px] bg-white p-6 text-center text-sm text-slate-500">
+                          Select a contact to view their public hints.
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ) : null}
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <input
+                        type="url"
+                        value={form.itemUrl}
+                        onChange={(e) =>
+                          setForm((prev) => ({ ...prev, itemUrl: e.target.value }))
+                        }
+                        placeholder="Paste product or experience link"
+                        className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleFetchPreview}
+                        className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg"
+                      >
+                        {isFetchingPreview ? "Fetching..." : "Fetch preview"}
+                      </button>
+                    </div>
+
+                    {linkPreview ? (
+                      <div className="rounded-[22px] border border-[#eedfd6] bg-[#fffdfa] p-4">
+                        <div className="flex gap-4">
+                          {linkPreview.image ? (
+                            <img
+                              src={linkPreview.image}
+                              alt={linkPreview.title || "Linked item preview"}
+                              className="h-20 w-20 rounded-[18px] object-cover"
+                            />
+                          ) : (
+                            <div className="h-20 w-20 rounded-[18px] bg-[#f5ebe4]" />
+                          )}
+
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-900">
+                              {linkPreview.title || "Untitled item"}
+                            </p>
+                            <p className="mt-1 text-[13px] leading-6 text-slate-500">
+                              {linkPreview.description || "Preview pulled from the linked page."}
+                            </p>
+                            <p className="mt-2 text-[12px] font-medium text-[#df7b59]">
+                              {linkPreview.siteName || linkPreview.url}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="mt-4 rounded-[20px] border border-dashed border-[#e4d7cf] bg-white p-4 text-sm text-slate-500">
+                Because you chose a target amount rather than a specific item, this section is skipped.
               </div>
             )}
-
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">Goal type</span>
-                <select
-                  value={form.goalType}
-                  onChange={(e) => setForm((prev) => ({ ...prev, goalType: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                >
-                  <option value="item">Specific item</option>
-                  <option value="amount">Target amount</option>
-                </select>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">
-                  {form.goalType === "item" ? "Item or label" : "Target amount"}
-                </span>
-                <input
-                  type="text"
-                  value={form.goalValue}
-                  onChange={(e) => setForm((prev) => ({ ...prev, goalValue: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                  placeholder={form.goalType === "item" ? "Weekend cabin stay" : "£220"}
-                />
-              </label>
-            </div>
           </div>
         </div>
 
         <div className="max-h-[calc(92vh-90px)] overflow-y-auto border-t border-[#efe0d7] bg-[#fff7f2] p-6 lg:border-l lg:border-t-0">
           <div className="rounded-[24px] border border-dashed border-[#e6d7cd] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">4. Add people</p>
+            <p className="text-sm font-semibold text-slate-900">5. Add people</p>
             <p className="mt-1 text-[13px] leading-6 text-slate-500">
               Invite people now. They only become full members after they accept.
             </p>
@@ -1127,6 +1293,7 @@ export default function CirclesClient() {
   const [eventMode, setEventMode] = useState("calendar");
   const [selectedEventId, setSelectedEventId] = useState(String(calendarEvents[0].id));
   const [selectedPeople, setSelectedPeople] = useState([]);
+  const [selectedHintContactId, setSelectedHintContactId] = useState(initialContacts[0].id);
   const [linkPreview, setLinkPreview] = useState(null);
   const [isFetchingPreview, setIsFetchingPreview] = useState(false);
 
@@ -1170,6 +1337,7 @@ export default function CirclesClient() {
     setEventMode("calendar");
     setSelectedEventId(String(calendarEvents[0].id));
     setSelectedPeople([]);
+    setSelectedHintContactId(initialContacts[0].id);
     setLinkPreview(null);
     setForm({
       title: "",
@@ -1278,15 +1446,22 @@ export default function CirclesClient() {
 
     const targetNumber = Number(String(form.goalValue).replace(/[^\d.]/g, "")) || 0;
 
-    const sourceLabel =
-      form.itemSource === "hint"
-        ? hintOptions.find((hint) => hint.id === form.selectedHintId)?.subtitle || "From saved hints"
-        : linkPreview?.siteName || "From pasted link";
+    const selectedHint =
+      publicHintsByContact[selectedHintContactId]?.find((hint) => hint.id === form.selectedHintId) || null;
+    const selectedHintContact =
+      contacts.find((contact) => String(contact.id) === String(selectedHintContactId)) || null;
 
     const itemLabel =
       form.goalType === "amount"
         ? "Shared contribution pot"
-        : form.goalValue.trim() || linkPreview?.title || "New shared item";
+        : form.goalValue.trim() || linkPreview?.title || selectedHint?.title || "New shared item";
+
+    const sourceLabel =
+      form.goalType === "amount"
+        ? "Amount-based goal"
+        : form.itemSource === "hint"
+          ? `From ${selectedHintContact?.name || "contact"}’s public hints`
+          : linkPreview?.siteName || "From pasted link";
 
     const newCircle = {
       id: Date.now(),
@@ -1405,6 +1580,8 @@ export default function CirclesClient() {
                     Add new contact
                   </button>
                 </div>
+
+                <PotTypeGuide />
               </aside>
 
               <section className="min-w-0">
@@ -1417,7 +1594,7 @@ export default function CirclesClient() {
                       Build circles around the people and moments that matter.
                     </h2>
                     <p className="mt-3 max-w-[760px] text-[15px] leading-7 text-slate-600">
-                      Create a circle around an event, invite people, choose a hint or pasted link, and let the pot stay flexible if everyone does not join.
+                      Create a circle around an event, invite people, choose a public hint or pasted link, and let the pot stay flexible if everyone does not join.
                     </p>
                   </div>
 
@@ -1459,9 +1636,10 @@ export default function CirclesClient() {
         form={form}
         setForm={setForm}
         linkPreview={linkPreview}
-        setLinkPreview={setLinkPreview}
         isFetchingPreview={isFetchingPreview}
         handleFetchPreview={handleFetchPreview}
+        selectedHintContactId={selectedHintContactId}
+        setSelectedHintContactId={setSelectedHintContactId}
       />
 
       <AddContactModal
