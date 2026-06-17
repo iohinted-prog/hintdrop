@@ -1,4 +1,8 @@
+"use client";
+
+import { useRef, useState } from "react";
 import Link from "next/link";
+import BackButton from "../components/BackButton";
 
 export const metadata = {
   title: "Account | Hinted.io",
@@ -6,16 +10,33 @@ export const metadata = {
 };
 
 export default function AccountPage() {
+  const fileInputRef = useRef(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+
+  function handleChoosePhoto() {
+    fileInputRef.current?.click();
+  }
+
+  function handlePhotoChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const previewUrl = URL.createObjectURL(file);
+    setPhotoPreview(previewUrl);
+  }
+
+  function handleRemovePhoto() {
+    setPhotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#fffaf7] px-5 py-8 text-slate-800 md:px-8">
       <div className="mx-auto max-w-[920px]">
         <div className="mb-6">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-full border border-[#ead8ce] bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
-          >
-            ← Back to home
-          </Link>
+          <BackButton fallback="/" />
         </div>
 
         <div className="mb-8">
@@ -26,20 +47,40 @@ export default function AccountPage() {
             Personal details
           </h1>
           <p className="mt-3 max-w-[620px] text-[15px] leading-7 text-slate-600">
-            Update your profile photo, name, and contact details.
+            Keep your profile up to date so your circles know they have the right
+            person, details, and photo when planning something thoughtful.
           </p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="rounded-[28px] border border-[#eddacf] bg-white p-5 shadow-sm">
             <h2 className="text-[18px] font-semibold text-slate-900">Profile photo</h2>
+
             <div className="mt-5 flex flex-col items-center">
-              <div className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-2xl font-bold text-white ring-4 ring-[#fff4ee]">
-                CG
+              <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-2xl font-bold text-white ring-4 ring-[#fff4ee]">
+                {photoPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={photoPreview}
+                    alt="Profile preview"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  "CG"
+                )}
               </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp"
+                onChange={handlePhotoChange}
+                className="hidden"
+              />
 
               <button
                 type="button"
+                onClick={handleChoosePhoto}
                 className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-[#2f3b2d] px-5 text-sm font-semibold text-white hover:bg-[#253120]"
               >
                 Upload photo
@@ -47,6 +88,7 @@ export default function AccountPage() {
 
               <button
                 type="button"
+                onClick={handleRemovePhoto}
                 className="mt-3 inline-flex h-10 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
               >
                 Remove
@@ -127,40 +169,25 @@ export default function AccountPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-900" htmlFor="timezone">
-                    Time zone
+                  <label className="block text-sm font-medium text-slate-900" htmlFor="birthday">
+                    Your birthday
                   </label>
-                  <select
-                    id="timezone"
-                    defaultValue="Europe/London"
+                  <input
+                    id="birthday"
+                    type="date"
                     className="mt-2 h-[54px] w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
-                  >
-                    <option value="Europe/London">Europe/London</option>
-                    <option value="America/New_York">America/New_York</option>
-                    <option value="Europe/Paris">Europe/Paris</option>
-                  </select>
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-900" htmlFor="birthday">
-                  Your birthday
-                </label>
-                <input
-                  id="birthday"
-                  type="date"
-                  className="mt-2 h-[54px] w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
-                />
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium text-slate-900" htmlFor="bio">
-                  Short bio
+                  Short note
                 </label>
                 <textarea
                   id="bio"
                   rows={4}
-                  placeholder="A little note about you"
+                  placeholder="Add a few words that help friends recognise you."
                   className="mt-2 w-full rounded-[18px] border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
                 />
               </div>
