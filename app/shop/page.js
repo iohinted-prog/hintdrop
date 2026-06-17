@@ -397,20 +397,28 @@ function AvatarMenu() {
       </button>
 
       <div className="invisible absolute right-0 top-[calc(100%+10px)] z-20 w-56 translate-y-1 rounded-[22px] border border-[#ecdcd2] bg-white p-2 opacity-0 shadow-[0_18px_45px_rgba(123,84,64,0.14)] transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-        <Link href="/account" className="block rounded-[16px] px-4 py-3 text-sm text-slate-700 hover:bg-[#faf6f3]">
-          Account details
+        <Link
+          href="/account"
+          className="block rounded-[16px] px-4 py-3 text-sm text-slate-700 hover:bg-[#faf6f3]"
+        >
+          Accounts
         </Link>
-        <Link href="/settings" className="block rounded-[16px] px-4 py-3 text-sm text-slate-700 hover:bg-[#faf6f3]">
+        <Link
+          href="/billing"
+          className="block rounded-[16px] px-4 py-3 text-sm text-slate-700 hover:bg-[#faf6f3]"
+        >
+          Billing
+        </Link>
+        <Link
+          href="/settings"
+          className="block rounded-[16px] px-4 py-3 text-sm text-slate-700 hover:bg-[#faf6f3]"
+        >
           Settings
-        </Link>
-        <Link href="/billing" className="block rounded-[16px] px-4 py-3 text-sm text-slate-700 hover:bg-[#faf6f3]">
-          Payment details
         </Link>
       </div>
     </div>
   );
 }
-
 function FilterPill({ active, onClick, children }) {
   return (
     <button
