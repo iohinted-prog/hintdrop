@@ -501,10 +501,6 @@ export default function HomePage() {
           </div>
 
           <nav className="hidden items-center justify-center gap-9 text-[15px] text-slate-600 lg:flex">
-            <Link href="/feed">Feed</Link>
-            <Link href="/hints">Hints</Link>
-            <Link href="/circles">Circles</Link>
-            <Link href="/shop">Shop</Link>
           </nav>
 
           <div className="flex items-center justify-start gap-4 whitespace-nowrap sm:justify-end">
