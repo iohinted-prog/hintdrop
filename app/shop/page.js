@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "../../lib/supabase/client";
+import AvatarMenu from "../components/AvatarMenu";
 
 const products = [
   {
@@ -386,105 +387,7 @@ function HintedMark() {
   );
 }
 
-function AvatarMenu() {
-  const supabase = createClient();
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState("");
 
-  useEffect(() => {
-    let isActive = true;
-
-    async function loadAvatar() {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
-
-      if (error || !user || !isActive) return;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, avatar_url")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (!isActive) return;
-
-      const resolvedName =
-        profile?.full_name ||
-        user?.user_metadata?.full_name ||
-        user?.user_metadata?.name ||
-        user?.email ||
-        "";
-
-      const resolvedAvatar =
-        profile?.avatar_url ||
-        user?.user_metadata?.avatar_url ||
-        user?.user_metadata?.picture ||
-        "";
-
-      setDisplayName(resolvedName);
-      setEmail(user.email || "");
-      setAvatarUrl(resolvedAvatar);
-    }
-
-    loadAvatar();
-
-    return () => {
-      isActive = false;
-    };
-  }, [supabase]);
-
-  const initials =
-    (displayName || email)
-      .split(/\s+|@|[._-]/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part.charAt(0).toUpperCase())
-      .join("") || "U";
-
-  return (
-    <div className="relative group">
-      <button
-        className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-sm font-bold text-white ring-4 ring-white/70"
-        aria-label="Open account menu"
-        type="button"
-      >
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt={displayName ? `${displayName}'s profile` : "Profile"}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          initials
-        )}
-      </button>
-
-      <div className="invisible absolute right-0 top-[calc(100%+10px)] z-20 w-56 translate-y-1 rounded-[22px] border border-[#ecdcd2] bg-white p-2 opacity-0 shadow-[0_18px_45px_rgba(123,84,64,0.14)] transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-        <Link
-          href="/account"
-          className="block rounded-[16px] px-4 py-3 text-sm text-slate-700 hover:bg-[#faf6f3]"
-        >
-          Accounts
-        </Link>
-        <Link
-          href="/billing"
-          className="block rounded-[16px] px-4 py-3 text-sm text-slate-700 hover:bg-[#faf6f3]"
-        >
-          Billing
-        </Link>
-        <Link
-          href="/settings"
-          className="block rounded-[16px] px-4 py-3 text-sm text-slate-700 hover:bg-[#faf6f3]"
-        >
-          Settings
-        </Link>
-      </div>
-    </div>
-  );
-}
 function FilterPill({ active, onClick, children }) {
   return (
     <button
