@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "../../lib/supabase/client";
 
 const steps = [
   { id: 1, label: "Birthday" },
