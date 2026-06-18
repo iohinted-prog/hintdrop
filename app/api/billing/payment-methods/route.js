@@ -1,30 +1,12 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import { createClient } from "../../../../lib/supabase/server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export async function GET() {
   try {
-    const authHeader = headers().get("authorization");
-
-    if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      }
-    );
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -42,7 +24,10 @@ export async function GET() {
       .single();
 
     if (profileError) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: profileError.message || "Profile not found" },
+        { status: 404 }
+      );
     }
 
     if (!profile?.stripe_customer_id) {
@@ -65,7 +50,10 @@ export async function GET() {
       exp_year: pm.card?.exp_year ?? null,
     }));
 
-    return NextResponse.json({ paymentMethods: cards });
+    return NextResponse.json({
+      paymentMethods: cards,
+      stripeCustomerId: profile.stripe_customer_id,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error.message || "Failed to load payment methods" },
