@@ -1,11 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { createClient } from "../../lib/supabase/client";
-
-import { useState } from "react";
 import Link from "next/link";
+import { createClient } from "../../lib/supabase/client";
 
 const currencyOptions = [
   { code: "GBP", symbol: "£", label: "British Pound" },
