@@ -54,6 +54,7 @@ function StepPill({ active, complete, number, label }) {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const supabase = createClient();
 
   const [step, setStep] = useState(1);
   const [selectedInterests, setSelectedInterests] = useState(["Travel", "Food"]);
