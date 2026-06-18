@@ -127,10 +127,16 @@ export default function OnboardingPage() {
     return Object.keys(nextErrors).length === 0;
   }
 
-  function nextStep() {
-    if (!validateStep()) return;
-    setStep((prev) => Math.min(prev + 1, steps.length));
+  async function nextStep() {
+  if (!validateStep()) return;
+
+  if (step === 1) {
+    const saved = await saveBirthday();
+    if (!saved) return;
   }
+
+  setStep((prev) => Math.min(prev + 1, steps.length));
+}
 
   function previousStep() {
     setStep((prev) => Math.max(prev - 1, 1));
