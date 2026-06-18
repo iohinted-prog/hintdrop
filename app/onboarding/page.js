@@ -8,7 +8,7 @@ import { createClient } from "../../lib/supabase/client";
 const steps = [
   { id: 1, label: "Birthday" },
   { id: 2, label: "Interests" },
-  { id: 3, label: "Invite" },
+  { id: 3, label: "Your circle" },
 ];
 
 const interestOptions = [
@@ -27,10 +27,18 @@ const interestOptions = [
 ];
 
 const relationshipOptions = [
-  { value: "partner", label: "Partner" },
-  { value: "friend", label: "Friend" },
-  { value: "sister", label: "Sister" },
-  { value: "brother", label: "Brother" },
+  "Partner",
+  "Spouse",
+  "Family",
+  "Friend",
+  "Parent",
+  "Child",
+  "Sibling",
+  "Cousin",
+  "Colleague",
+  "Roommate",
+  "Best friend",
+  "Other",
 ];
 
 function StepPill({ active, complete, number, label }) {
@@ -85,12 +93,12 @@ export default function OnboardingPage() {
 
   const [step, setStep] = useState(1);
   const [selectedInterests, setSelectedInterests] = useState(["Travel", "Food"]);
+  const [selectedRelationships, setSelectedRelationships] = useState(["Friend"]);
   const [form, setForm] = useState({
     fullName: "",
     birthday: "",
     inviteName: "",
     inviteEmail: "",
-    inviteRelationship: "friend",
   });
   const [errors, setErrors] = useState({});
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -99,6 +107,7 @@ export default function OnboardingPage() {
   const [contactResults, setContactResults] = useState([]);
   const [searchingContacts, setSearchingContacts] = useState(false);
   const [contactsMessage, setContactsMessage] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const progress = useMemo(() => `${(step / steps.length) * 100}%`, [step]);
 
@@ -194,6 +203,14 @@ export default function OnboardingPage() {
     );
   }
 
+  function toggleRelationship(relationship) {
+    setSelectedRelationships((prev) =>
+      prev.includes(relationship)
+        ? prev.filter((item) => item !== relationship)
+        : [...prev, relationship]
+    );
+  }
+
   function validateStep() {
     const nextErrors = {};
 
@@ -214,6 +231,10 @@ export default function OnboardingPage() {
 
       if (form.inviteName && !form.inviteEmail.trim()) {
         nextErrors.inviteEmail = "Add an email to match the name.";
+      }
+
+      if ((form.inviteName.trim() || form.inviteEmail.trim()) && selectedRelationships.length === 0) {
+        nextErrors.relationships = "Choose at least one relationship type.";
       }
     }
 
@@ -263,7 +284,7 @@ export default function OnboardingPage() {
       profile_id: profileId,
       name: form.inviteName.trim() || "Unnamed contact",
       email: form.inviteEmail.trim() || null,
-      relationship_type: form.inviteRelationship,
+      relationship_types: selectedRelationships.map((item) => item.toLowerCase().replace(/\s+/g, "_")),
     };
 
     const { error } = await supabase.from("profile_connections").insert(payload);
@@ -288,10 +309,12 @@ export default function OnboardingPage() {
   }
 
   function previousStep() {
+    if (saving) return;
     setStep((prev) => Math.max(prev - 1, 1));
   }
 
   async function skipInterestsStep() {
+    if (saving) return;
     const result = await saveProfile();
     if (!result.ok) return;
     setStep(3);
@@ -302,20 +325,34 @@ export default function OnboardingPage() {
   }
 
   async function finishOnboarding(skippedInvite = false) {
+    if (saving) return;
     if (!skippedInvite && !validateStep()) return;
 
-    const result = await saveProfile({
-      onboarding_completed: true,
-    });
+    setSaving(true);
 
-    if (!result.ok || !result.user) return;
+    try {
+      const result = await saveProfile({
+        onboarding_completed: true,
+      });
 
-    if (!skippedInvite) {
-      const connectionSaved = await saveConnection(result.user.id);
-      if (!connectionSaved) return;
+      if (!result.ok || !result.user) {
+        setSaving(false);
+        return;
+      }
+
+      if (!skippedInvite) {
+        const connectionSaved = await saveConnection(result.user.id);
+        if (!connectionSaved) {
+          setSaving(false);
+          return;
+        }
+      }
+
+      router.push("/feed");
+    } catch (error) {
+      console.error("Error finishing onboarding:", error);
+      setSaving(false);
     }
-
-    router.push("/feed");
   }
 
   async function searchGoogleContacts(query) {
@@ -342,7 +379,7 @@ export default function OnboardingPage() {
         return;
       }
 
-      await fetch(
+      const warmupResponse = await fetch(
         "https://people.googleapis.com/v1/people:searchContacts?query=&pageSize=1&readMask=names,emailAddresses",
         {
           headers: {
@@ -350,6 +387,12 @@ export default function OnboardingPage() {
           },
         }
       );
+
+      if (!warmupResponse.ok) {
+        setContactResults([]);
+        setContactsMessage("We couldn’t access Google contacts right now.");
+        return;
+      }
 
       const url = new URL("https://people.googleapis.com/v1/people:searchContacts");
       url.searchParams.set("query", query);
@@ -425,333 +468,390 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#fffaf7] text-slate-800">
-      <div className="mx-auto max-w-[860px] px-5 py-8 md:px-8 md:py-12">
-        <div className="mb-6">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800"
-          >
-            <span>←</span>
-            <span>Back</span>
-          </Link>
-        </div>
-
-        <section className="rounded-[34px] border border-[#efd8ce] bg-white p-5 shadow-[0_25px_80px_rgba(173,101,72,0.12)] sm:p-7 md:p-8">
-          <div className="rounded-full bg-[#f5eee9] p-1">
-            <div
-              className="h-2 rounded-full bg-gradient-to-r from-[#ff946d] to-[#f36f64] transition-all duration-300"
-              style={{ width: progress }}
-            />
+    <>
+      <main className="min-h-screen bg-[#fffaf7] text-slate-800">
+        <div className="mx-auto max-w-[860px] px-5 py-8 md:px-8 md:py-12">
+          <div className="mb-6">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800"
+            >
+              <span>←</span>
+              <span>Back</span>
+            </Link>
           </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            {steps.map((item) => (
-              <StepPill
-                key={item.id}
-                number={item.id}
-                label={item.label}
-                active={step === item.id}
-                complete={step > item.id}
+          <section className="rounded-[34px] border border-[#efd8ce] bg-white p-5 shadow-[0_25px_80px_rgba(173,101,72,0.12)] sm:p-7 md:p-8">
+            <div className="rounded-full bg-[#f5eee9] p-1">
+              <div
+                className="h-2 rounded-full bg-gradient-to-r from-[#ff946d] to-[#f36f64] transition-all duration-300"
+                style={{ width: progress }}
               />
-            ))}
-          </div>
+            </div>
 
-          {step === 1 && (
-            <div className="mt-8 max-w-[620px]">
-              <div className="inline-flex rounded-full bg-[#fff1ea] px-3 py-1 text-xs font-semibold text-[#ea7451]">
-                Step 1 of 3
-              </div>
+            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              {steps.map((item) => (
+                <StepPill
+                  key={item.id}
+                  number={item.id}
+                  label={item.label}
+                  active={step === item.id}
+                  complete={step > item.id}
+                />
+              ))}
+            </div>
 
-              <h1 className="mt-4 text-[34px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[42px]">
-                Tell us a bit about you.
-              </h1>
-
-              <p className="mt-3 text-[15px] leading-7 text-slate-600">
-                We’ve pulled in what we can from Google, but you can change your name anytime here.
-              </p>
-
-              {avatarUrl ? (
-                <div className="mt-6 flex items-center gap-4 rounded-[22px] border border-[#f1e4dc] bg-[#fffaf7] p-4">
-                  <img
-                    src={avatarUrl}
-                    alt={form.fullName ? `${form.fullName}'s profile` : "Profile"}
-                    className="h-14 w-14 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">
-                      Signed in with Google
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      We’ll use this profile photo on your account when available.
-                    </p>
-                  </div>
+            {step === 1 && (
+              <div className="mt-8 max-w-[620px]">
+                <div className="inline-flex rounded-full bg-[#fff1ea] px-3 py-1 text-xs font-semibold text-[#ea7451]">
+                  Step 1 of 3
                 </div>
-              ) : null}
 
-              <div className="mt-7">
-                <label htmlFor="fullName" className="block text-sm font-medium text-slate-900">
-                  What should you be called?
-                </label>
-                <input
-                  id="fullName"
-                  type="text"
-                  value={form.fullName}
-                  onChange={(e) => updateField("fullName", e.target.value)}
-                  placeholder="Your name"
-                  className={`mt-2 h-[56px] w-full rounded-[18px] border bg-white px-4 text-sm text-slate-900 outline-none transition focus:ring-4 ${
-                    errors.fullName
-                      ? "border-red-300 focus:border-red-300 focus:ring-red-100"
-                      : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
-                  }`}
-                />
-                {errors.fullName ? (
-                  <p className="mt-2 text-xs text-red-500">{errors.fullName}</p>
-                ) : null}
-              </div>
+                <h1 className="mt-4 text-[34px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[42px]">
+                  Tell us a bit about you.
+                </h1>
 
-              <div className="mt-7">
-                <label htmlFor="birthday" className="block text-sm font-medium text-slate-900">
-                  Birthday
-                </label>
-                <input
-                  id="birthday"
-                  type="date"
-                  value={form.birthday}
-                  onChange={(e) => updateField("birthday", e.target.value)}
-                  className={`mt-2 h-[56px] w-full rounded-[18px] border bg-white px-4 text-sm text-slate-900 outline-none transition focus:ring-4 ${
-                    errors.birthday
-                      ? "border-red-300 focus:border-red-300 focus:ring-red-100"
-                      : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
-                  }`}
-                />
-                {errors.birthday ? (
-                  <p className="mt-2 text-xs text-red-500">{errors.birthday}</p>
-                ) : null}
-              </div>
-            </div>
-          )}
+                <p className="mt-3 text-[15px] leading-7 text-slate-600">
+                  We’ve pulled in what we can from Google, but you can change your name anytime here.
+                </p>
 
-          {step === 2 && (
-            <div className="mt-8 max-w-[760px]">
-              <div className="inline-flex rounded-full bg-[#fff1ea] px-3 py-1 text-xs font-semibold text-[#ea7451]">
-                Step 2 of 3
-              </div>
-
-              <h1 className="mt-4 text-[34px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[42px]">
-                What kinds of things are you into?
-              </h1>
-
-              <p className="mt-3 text-[15px] leading-7 text-slate-600">
-                Pick 2-3 that interest you so we can improve your experience.
-              </p>
-
-              <div className="mt-7 flex flex-wrap gap-2.5">
-                {interestOptions.map((interest) => {
-                  const selected = selectedInterests.includes(interest);
-
-                  return (
-                    <button
-                      key={interest}
-                      type="button"
-                      onClick={() => toggleInterest(interest)}
-                      className={`rounded-full px-4 py-2.5 text-sm font-medium transition ${
-                        selected
-                          ? "bg-[#2f3b2d] text-white"
-                          : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                      }`}
-                    >
-                      {interest}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <p className="mt-4 text-xs leading-5 text-slate-500">
-                Choose a few now, or skip and do it later.
-              </p>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="mt-8 max-w-[620px]">
-              <div className="inline-flex rounded-full bg-[#fff1ea] px-3 py-1 text-xs font-semibold text-[#ea7451]">
-                Step 3 of 3
-              </div>
-
-              <h1 className="mt-4 text-[34px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[42px]">
-                Invite someone to get started.
-              </h1>
-
-              <p className="mt-3 text-[15px] leading-7 text-slate-600">
-                Search your Google contacts by name or email, then choose how you know them.
-              </p>
-
-              <div className="mt-7">
-                <label htmlFor="contactSearch" className="block text-sm font-medium text-slate-900">
-                  Search contacts
-                </label>
-                <input
-                  id="contactSearch"
-                  type="text"
-                  value={contactSearch}
-                  onChange={(e) => searchGoogleContacts(e.target.value)}
-                  placeholder="Search a name or email"
-                  className="mt-2 h-[56px] w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
-                />
-
-                {searchingContacts ? (
-                  <p className="mt-2 text-xs text-slate-500">Searching contacts...</p>
-                ) : null}
-
-                {contactResults.length > 0 ? (
-                  <div className="mt-3 overflow-hidden rounded-[18px] border border-slate-200 bg-white">
-                    {contactResults.map((contact) => (
-                      <button
-                        key={contact.id}
-                        type="button"
-                        onClick={() => selectContact(contact)}
-                        className="flex w-full items-center justify-between border-b border-slate-100 px-4 py-3 text-left last:border-b-0 hover:bg-slate-50"
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-slate-900">
-                            {contact.name || "No name"}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {contact.email || "No email"}
-                          </p>
-                        </div>
-                        <span className="text-xs font-semibold text-[#ea7451]">Use</span>
-                      </button>
-                    ))}
+                {avatarUrl ? (
+                  <div className="mt-6 flex items-center gap-4 rounded-[22px] border border-[#f1e4dc] bg-[#fffaf7] p-4">
+                    <img
+                      src={avatarUrl}
+                      alt={form.fullName ? `${form.fullName}'s profile` : "Profile"}
+                      className="h-14 w-14 rounded-full object-cover"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        Signed in with Google
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        We’ll use this profile photo on your account when available.
+                      </p>
+                    </div>
                   </div>
                 ) : null}
 
-                {contactsMessage ? (
-                  <p className="mt-2 text-xs text-slate-500">{contactsMessage}</p>
-                ) : null}
-              </div>
-
-              <div className="mt-7 space-y-4">
-                <div>
-                  <label htmlFor="inviteName" className="block text-sm font-medium text-slate-900">
-                    Name
+                <div className="mt-7">
+                  <label htmlFor="fullName" className="block text-sm font-medium text-slate-900">
+                    What should you be called?
                   </label>
                   <input
-                    id="inviteName"
+                    id="fullName"
                     type="text"
-                    value={form.inviteName}
-                    onChange={(e) => updateField("inviteName", e.target.value)}
-                    placeholder="Sarah"
+                    value={form.fullName}
+                    onChange={(e) => updateField("fullName", e.target.value)}
+                    placeholder="Your name"
                     className={`mt-2 h-[56px] w-full rounded-[18px] border bg-white px-4 text-sm text-slate-900 outline-none transition focus:ring-4 ${
-                      errors.inviteName
+                      errors.fullName
                         ? "border-red-300 focus:border-red-300 focus:ring-red-100"
                         : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
                     }`}
                   />
-                  {errors.inviteName ? (
-                    <p className="mt-2 text-xs text-red-500">{errors.inviteName}</p>
+                  {errors.fullName ? (
+                    <p className="mt-2 text-xs text-red-500">{errors.fullName}</p>
                   ) : null}
                 </div>
 
-                <div>
-                  <label htmlFor="inviteEmail" className="block text-sm font-medium text-slate-900">
-                    Email address
+                <div className="mt-7">
+                  <label htmlFor="birthday" className="block text-sm font-medium text-slate-900">
+                    Birthday
                   </label>
                   <input
-                    id="inviteEmail"
-                    type="email"
-                    value={form.inviteEmail}
-                    onChange={(e) => updateField("inviteEmail", e.target.value)}
-                    placeholder="sarah@example.com"
+                    id="birthday"
+                    type="date"
+                    value={form.birthday}
+                    onChange={(e) => updateField("birthday", e.target.value)}
                     className={`mt-2 h-[56px] w-full rounded-[18px] border bg-white px-4 text-sm text-slate-900 outline-none transition focus:ring-4 ${
-                      errors.inviteEmail
+                      errors.birthday
                         ? "border-red-300 focus:border-red-300 focus:ring-red-100"
                         : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
                     }`}
                   />
-                  {errors.inviteEmail ? (
-                    <p className="mt-2 text-xs text-red-500">{errors.inviteEmail}</p>
+                  {errors.birthday ? (
+                    <p className="mt-2 text-xs text-red-500">{errors.birthday}</p>
+                  ) : null}
+                </div>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="mt-8 max-w-[760px]">
+                <div className="inline-flex rounded-full bg-[#fff1ea] px-3 py-1 text-xs font-semibold text-[#ea7451]">
+                  Step 2 of 3
+                </div>
+
+                <h1 className="mt-4 text-[34px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[42px]">
+                  What kinds of things are you into?
+                </h1>
+
+                <p className="mt-3 text-[15px] leading-7 text-slate-600">
+                  Pick 2-3 that interest you so we can improve your experience.
+                </p>
+
+                <div className="mt-7 flex flex-wrap gap-2.5">
+                  {interestOptions.map((interest) => {
+                    const selected = selectedInterests.includes(interest);
+
+                    return (
+                      <button
+                        key={interest}
+                        type="button"
+                        onClick={() => toggleInterest(interest)}
+                        className={`rounded-full px-4 py-2.5 text-sm font-medium transition ${
+                          selected
+                            ? "bg-[#2f3b2d] text-white"
+                            : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {interest}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <p className="mt-4 text-xs leading-5 text-slate-500">
+                  Choose a few now, or skip and do it later.
+                </p>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="mt-8 max-w-[760px]">
+                <div className="inline-flex rounded-full bg-[#fff1ea] px-3 py-1 text-xs font-semibold text-[#ea7451]">
+                  Step 3 of 3
+                </div>
+
+                <h1 className="mt-4 text-[34px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[42px]">
+                  Who’s in your circle?
+                </h1>
+
+                <p className="mt-3 text-[15px] leading-7 text-slate-600">
+                  Add someone important, then choose the relationship tags that fit best.
+                </p>
+
+                <div className="mt-7">
+                  <label htmlFor="contactSearch" className="block text-sm font-medium text-slate-900">
+                    Search contacts
+                  </label>
+                  <input
+                    id="contactSearch"
+                    type="text"
+                    value={contactSearch}
+                    onChange={(e) => searchGoogleContacts(e.target.value)}
+                    placeholder="Search a name or email"
+                    className="mt-2 h-[56px] w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
+                  />
+
+                  {searchingContacts ? (
+                    <p className="mt-2 text-xs text-slate-500">Searching contacts...</p>
+                  ) : null}
+
+                  {contactResults.length > 0 ? (
+                    <div className="mt-3 overflow-hidden rounded-[18px] border border-slate-200 bg-white">
+                      {contactResults.map((contact) => (
+                        <button
+                          key={contact.id}
+                          type="button"
+                          onClick={() => selectContact(contact)}
+                          className="flex w-full items-center justify-between border-b border-slate-100 px-4 py-3 text-left last:border-b-0 hover:bg-slate-50"
+                        >
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">
+                              {contact.name || "No name"}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {contact.email || "No email"}
+                            </p>
+                          </div>
+                          <span className="text-xs font-semibold text-[#ea7451]">Use</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {contactsMessage ? (
+                    <p className="mt-2 text-xs text-slate-500">{contactsMessage}</p>
                   ) : null}
                 </div>
 
-                <div>
-                  <label htmlFor="inviteRelationship" className="block text-sm font-medium text-slate-900">
+                <div className="mt-7 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="inviteName" className="block text-sm font-medium text-slate-900">
+                      Name
+                    </label>
+                    <input
+                      id="inviteName"
+                      type="text"
+                      value={form.inviteName}
+                      onChange={(e) => updateField("inviteName", e.target.value)}
+                      placeholder="Sarah"
+                      className={`mt-2 h-[56px] w-full rounded-[18px] border bg-white px-4 text-sm text-slate-900 outline-none transition focus:ring-4 ${
+                        errors.inviteName
+                          ? "border-red-300 focus:border-red-300 focus:ring-red-100"
+                          : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
+                      }`}
+                    />
+                    {errors.inviteName ? (
+                      <p className="mt-2 text-xs text-red-500">{errors.inviteName}</p>
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <label htmlFor="inviteEmail" className="block text-sm font-medium text-slate-900">
+                      Email address
+                    </label>
+                    <input
+                      id="inviteEmail"
+                      type="email"
+                      value={form.inviteEmail}
+                      onChange={(e) => updateField("inviteEmail", e.target.value)}
+                      placeholder="sarah@example.com"
+                      className={`mt-2 h-[56px] w-full rounded-[18px] border bg-white px-4 text-sm text-slate-900 outline-none transition focus:ring-4 ${
+                        errors.inviteEmail
+                          ? "border-red-300 focus:border-red-300 focus:ring-red-100"
+                          : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
+                      }`}
+                    />
+                    {errors.inviteEmail ? (
+                      <p className="mt-2 text-xs text-red-500">{errors.inviteEmail}</p>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="mt-7">
+                  <label className="block text-sm font-medium text-slate-900">
                     Relationship
                   </label>
-                  <select
-                    id="inviteRelationship"
-                    value={form.inviteRelationship}
-                    onChange={(e) => updateField("inviteRelationship", e.target.value)}
-                    className="mt-2 h-[56px] w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
-                  >
-                    {relationshipOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+
+                  <div className="mt-3 flex flex-wrap gap-2.5">
+                    {relationshipOptions.map((relationship) => {
+                      const selected = selectedRelationships.includes(relationship);
+
+                      return (
+                        <button
+                          key={relationship}
+                          type="button"
+                          onClick={() => toggleRelationship(relationship)}
+                          className={`rounded-full px-4 py-2.5 text-sm font-medium transition ${
+                            selected
+                              ? "bg-[#2f3b2d] text-white"
+                              : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                          }`}
+                        >
+                          {relationship}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {errors.relationships ? (
+                    <p className="mt-2 text-xs text-red-500">{errors.relationships}</p>
+                  ) : null}
                 </div>
               </div>
+            )}
+
+            <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-[#f1e4dc] pt-6">
+              <button
+                type="button"
+                onClick={previousStep}
+                disabled={step === 1 || saving}
+                className={`inline-flex h-[50px] min-w-[120px] items-center justify-center rounded-full px-5 text-sm font-medium ${
+                  step === 1 || saving
+                    ? "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
+                    : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                Back
+              </button>
+
+              <div className="flex flex-wrap items-center gap-3">
+                {step === 2 ? (
+                  <button
+                    type="button"
+                    onClick={skipInterestsStep}
+                    disabled={saving}
+                    className={`inline-flex h-[50px] min-w-[120px] items-center justify-center rounded-full border px-5 text-sm font-medium ${
+                      saving
+                        ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    Skip for now
+                  </button>
+                ) : null}
+
+                {step === 3 ? (
+                  <button
+                    type="button"
+                    onClick={skipInviteStep}
+                    disabled={saving}
+                    className={`inline-flex h-[50px] min-w-[120px] items-center justify-center rounded-full border px-5 text-sm font-medium ${
+                      saving
+                        ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    Skip for now
+                  </button>
+                ) : null}
+
+                {step < steps.length ? (
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    disabled={saving}
+                    className={`inline-flex h-[50px] min-w-[140px] items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-lg ${
+                      saving
+                        ? "cursor-not-allowed bg-[#e9a48d]"
+                        : "bg-gradient-to-b from-[#ff946d] to-[#f36f64]"
+                    }`}
+                  >
+                    Continue
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => finishOnboarding(false)}
+                    disabled={saving}
+                    className={`inline-flex h-[50px] min-w-[170px] items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-lg ${
+                      saving
+                        ? "cursor-not-allowed bg-[#5d695b]"
+                        : "bg-[#2f3b2d]"
+                    }`}
+                  >
+                    {saving ? "Building your profile..." : "Finish setup"}
+                  </button>
+                )}
+              </div>
             </div>
-          )}
+          </section>
+        </div>
+      </main>
 
-          <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-[#f1e4dc] pt-6">
-            <button
-              type="button"
-              onClick={previousStep}
-              disabled={step === 1}
-              className={`inline-flex h-[50px] min-w-[120px] items-center justify-center rounded-full px-5 text-sm font-medium ${
-                step === 1
-                  ? "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
-                  : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              Back
-            </button>
+      {saving ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fffaf7]/90 px-6 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[30px] border border-[#efd8ce] bg-white p-8 text-center shadow-[0_25px_80px_rgba(173,101,72,0.14)]">
+            <div className="mx-auto h-14 w-14 rounded-full bg-[#fff1ea] p-3">
+              <div className="h-full w-full animate-spin rounded-full border-2 border-[#f6d8ca] border-t-[#f36f64]" />
+            </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              {step === 2 ? (
-                <button
-                  type="button"
-                  onClick={skipInterestsStep}
-                  className="inline-flex h-[50px] min-w-[120px] items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Skip for now
-                </button>
-              ) : null}
+            <h2 className="mt-6 text-[28px] font-semibold tracking-[-0.04em] text-slate-900">
+              We’re building your profile
+            </h2>
 
-              {step === 3 ? (
-                <button
-                  type="button"
-                  onClick={skipInviteStep}
-                  className="inline-flex h-[50px] min-w-[120px] items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Skip for now
-                </button>
-              ) : null}
+            <p className="mt-3 text-[15px] leading-7 text-slate-600">
+              Pulling everything together so your space feels personal from the start.
+            </p>
 
-              {step < steps.length ? (
-                <button
-                  type="button"
-                  onClick={nextStep}
-                  className="inline-flex h-[50px] min-w-[140px] items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg"
-                >
-                  Continue
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => finishOnboarding(false)}
-                  className="inline-flex h-[50px] min-w-[170px] items-center justify-center rounded-full bg-[#2f3b2d] px-6 text-sm font-semibold text-white shadow-lg"
-                >
-                  Finish setup
-                </button>
-              )}
+            <div className="mt-6 rounded-full bg-[#f5eee9] p-1">
+              <div className="h-2 w-2/3 animate-pulse rounded-full bg-gradient-to-r from-[#ff946d] to-[#f36f64]" />
             </div>
           </div>
-        </section>
-      </div>
-    </main>
+        </div>
+      ) : null}
+    </>
   );
 }
