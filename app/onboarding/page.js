@@ -67,6 +67,32 @@ export default function OnboardingPage() {
 
   const progress = useMemo(() => `${(step / steps.length) * 100}%`, [step]);
 
+  async function saveBirthday() {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    console.error("Could not find logged-in user.");
+    return false;
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      birthday: form.birthday,
+    })
+    .eq("id", user.id);
+
+  if (error) {
+    console.error("Error saving birthday:", error.message);
+    return false;
+  }
+
+  return true;
+}
+
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: "" }));
