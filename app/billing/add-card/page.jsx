@@ -10,6 +10,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "../../../lib/supabase/client";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
@@ -57,7 +58,7 @@ function AddCardForm() {
     }
 
     if (result.setupIntent?.status === "succeeded") {
-      router.push("/billing?saved=1");
+      router.replace("/billing?saved=1");
       router.refresh();
       return;
     }
@@ -72,6 +73,7 @@ function AddCardForm() {
         <div className="mb-6">
           <Link
             href="/billing"
+            replace
             className="inline-flex h-11 items-center gap-2 rounded-full border border-[#ead8ce] bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-[#faf6f3]"
           >
             <span aria-hidden="true">←</span>
@@ -112,6 +114,7 @@ function AddCardForm() {
 
               <Link
                 href="/billing"
+                replace
                 className="inline-flex h-[52px] items-center justify-center rounded-full border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-[#faf6f3]"
               >
                 Cancel
@@ -125,6 +128,8 @@ function AddCardForm() {
 }
 
 export default function AddCardPage() {
+  const supabase = createClient();
+
   const [clientSecret, setClientSecret] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -135,14 +140,29 @@ export default function AddCardPage() {
         setLoading(true);
         setError("");
 
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          throw new Error("You must be signed in to add a card.");
+        }
+
         const res = await fetch("/api/billing/setup-intent", {
           method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
         });
 
         const data = await res.json();
 
         if (!res.ok) {
           throw new Error(data.error || "Failed to load card form.");
+        }
+
+        if (!data.clientSecret) {
+          throw new Error("Missing Stripe client secret.");
         }
 
         setClientSecret(data.clientSecret);
@@ -154,7 +174,7 @@ export default function AddCardPage() {
     }
 
     loadSetupIntent();
-  }, []);
+  }, [supabase]);
 
   const options = useMemo(
     () => ({
@@ -187,6 +207,7 @@ export default function AddCardPage() {
           <div className="mt-5">
             <Link
               href="/billing"
+              replace
               className="inline-flex h-[44px] items-center justify-center rounded-full border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-[#faf6f3]"
             >
               Back to billing
@@ -195,6 +216,10 @@ export default function AddCardPage() {
         </div>
       </main>
     );
+  }
+
+  if (!clientSecret) {
+    return null;
   }
 
   return (
