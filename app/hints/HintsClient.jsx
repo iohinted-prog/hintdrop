@@ -5,9 +5,9 @@ import Link from "next/link";
 import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
 
-const initialHints = [
+const demoHints = [
   {
-    id: 1,
+    id: "demo-1",
     title: "Weekend cabin",
     retailer: "airbnb.co.uk",
     priceLabel: "From £320",
@@ -20,9 +20,10 @@ const initialHints = [
     private: false,
     size: "tall",
     url: "https://www.airbnb.co.uk/",
+    position: 1,
   },
   {
-    id: 2,
+    id: "demo-2",
     title: "Sony headphones",
     retailer: "amazon.co.uk",
     priceLabel: "About £249",
@@ -35,9 +36,10 @@ const initialHints = [
     private: false,
     size: "tall",
     url: "https://www.amazon.co.uk/",
+    position: 2,
   },
   {
-    id: 3,
+    id: "demo-3",
     title: "Ceramics workshop",
     retailer: "classbento.co.uk",
     priceLabel: "About £78",
@@ -50,9 +52,10 @@ const initialHints = [
     private: false,
     size: "portrait",
     url: "https://classbento.co.uk/",
+    position: 3,
   },
   {
-    id: 4,
+    id: "demo-4",
     title: "Silk pillowcases",
     retailer: "johnlewis.com",
     priceLabel: "About £45",
@@ -65,66 +68,7 @@ const initialHints = [
     private: true,
     size: "square",
     url: "https://www.johnlewis.com/",
-  },
-  {
-    id: 5,
-    title: "Kindle reader",
-    retailer: "amazon.co.uk",
-    priceLabel: "About £159",
-    numericPrice: 159,
-    priceBand: "premium",
-    image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1200&q=80",
-    fallbackGradient: "from-[#d5dbee] via-[#b3c0df] to-[#8f9fc9]",
-    tags: ["Books", "Everyday"],
-    starred: false,
-    private: false,
-    size: "portrait",
-    url: "https://www.amazon.co.uk/",
-  },
-  {
-    id: 6,
-    title: "Art print",
-    retailer: "etsy.com",
-    priceLabel: "About £38",
-    numericPrice: 38,
-    priceBand: "small",
-    image: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1200&q=80",
-    fallbackGradient: "from-[#eadce8] via-[#d8bfd1] to-[#bb9ab6]",
-    tags: ["Home", "Art"],
-    starred: false,
-    private: false,
-    size: "square",
-    url: "https://www.etsy.com/",
-  },
-  {
-    id: 7,
-    title: "Casserole dish",
-    retailer: "johnlewis.com",
-    priceLabel: "About £89",
-    numericPrice: 89,
-    priceBand: "mid",
-    image: "https://images.unsplash.com/photo-1584990347449-ae7ad4ee2d62?auto=format&fit=crop&w=1200&q=80",
-    fallbackGradient: "from-[#d9d1cb] via-[#bcaea1] to-[#8a7566]",
-    tags: ["Cooking", "Home"],
-    starred: false,
-    private: false,
-    size: "portrait",
-    url: "https://www.johnlewis.com/",
-  },
-  {
-    id: 8,
-    title: "Coffee set",
-    retailer: "hasbean.co.uk",
-    priceLabel: "About £62",
-    numericPrice: 62,
-    priceBand: "mid",
-    image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80",
-    fallbackGradient: "from-[#d6e7eb] via-[#b5ced7] to-[#8fb3c5]",
-    tags: ["Coffee", "Home"],
-    starred: false,
-    private: true,
-    size: "square",
-    url: "https://www.hasbean.co.uk/",
+    position: 4,
   },
 ];
 
@@ -135,7 +79,6 @@ function LogoMark() {
     </div>
   );
 }
-
 
 function normaliseRetailer(url) {
   try {
@@ -222,60 +165,18 @@ function shortenTitle(title = "", retailer = "") {
     .toLowerCase();
 
   const stopWords = new Set([
-    "the",
-    "and",
-    "with",
-    "for",
-    "from",
-    "new",
-    "latest",
-    "edition",
-    "model",
-    "official",
-    "amazon",
-    "uk",
-    "black",
-    "white",
-    "silver",
-    "blue",
-    "green",
-    "pink",
-    "grey",
-    "gray",
-    "wireless",
-    "bluetooth",
+    "the", "and", "with", "for", "from", "new", "latest",
+    "edition", "model", "official", "amazon", "uk",
+    "black", "white", "silver", "blue", "green", "pink", "grey", "gray",
+    "wireless", "bluetooth",
   ]);
 
   const categoryWords = [
-    "headphones",
-    "earbuds",
-    "speaker",
-    "kindle",
-    "book",
-    "pillowcase",
-    "pillowcases",
-    "dish",
-    "pan",
-    "mug",
-    "print",
-    "necklace",
-    "ring",
-    "bag",
-    "dress",
-    "trainer",
-    "trainers",
-    "jacket",
-    "candle",
-    "coffee",
-    "set",
-    "workshop",
-    "experience",
-    "voucher",
-    "lego",
-    "camera",
-    "watch",
-    "sofa",
-    "blanket",
+    "headphones", "earbuds", "speaker", "kindle", "book",
+    "pillowcase", "pillowcases", "dish", "pan", "mug", "print",
+    "necklace", "ring", "bag", "dress", "trainer", "trainers",
+    "jacket", "candle", "coffee", "set", "workshop", "experience",
+    "voucher", "lego", "camera", "watch", "sofa", "blanket",
   ];
 
   let cleaned = source
@@ -320,7 +221,11 @@ function EditHintModal({
   onSave,
   onRefreshFromLink,
   onDelete,
+  onTogglePrivate,
+  onToggleStarred,
   isRefreshing,
+  isSaving,
+  hint,
 }) {
   if (!isOpen) return null;
 
@@ -373,6 +278,34 @@ function EditHintModal({
               className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-white px-5 text-[15px] text-slate-700 outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
             />
           </div>
+
+          <div className="flex items-center gap-6">
+            <button
+              type="button"
+              onClick={onToggleStarred}
+              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${
+                hint.starred
+                  ? "border-[#f36f64] bg-[#fff2ea] text-[#e27956]"
+                  : "border-[#ead9d0] bg-white text-slate-700 hover:bg-[#faf6f3]"
+              }`}
+            >
+              <span>★</span>
+              {hint.starred ? "Starred" : "Star"}
+            </button>
+
+            <button
+              type="button"
+              onClick={onTogglePrivate}
+              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${
+                hint.private
+                  ? "border-[#e08a67] bg-[#fffaf7] text-[#e08a67]"
+                  : "border-[#ead9d0] bg-white text-slate-700 hover:bg-[#faf6f3]"
+              }`}
+            >
+              <span>{hint.private ? "🔒" : "🔓"}</span>
+              {hint.private ? "Private" : "Public"}
+            </button>
+          </div>
         </div>
 
         <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-between">
@@ -397,9 +330,10 @@ function EditHintModal({
             <button
               type="button"
               onClick={onSave}
-              className="inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg"
+              disabled={isSaving}
+              className="inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg disabled:opacity-70"
             >
-              Save changes
+              {isSaving ? "Saving..." : "Save changes"}
             </button>
           </div>
         </div>
@@ -415,6 +349,8 @@ function HintTile({
   setDraggedIndex,
   moveHint,
   onEdit,
+  onToggleStarred,
+  onTogglePrivate,
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(hint.image) && !imageFailed;
@@ -428,14 +364,7 @@ function HintTile({
           ? "border-white/50 bg-white/55 shadow-[0_10px_28px_rgba(176,118,86,0.08)] backdrop-blur-sm"
           : "border-[#f0dfd6] bg-white shadow-sm"
       }`}
-      draggable
-      onDragStart={() => setDraggedIndex(index)}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => {
-        e.preventDefault();
-        moveHint(draggedIndex, index);
-      }}
-      onDragEnd={() => setDraggedIndex(null)}
+      draggable={false}
     >
       <div className="relative flex h-full flex-col">
         <div className="relative min-h-[62%] flex-1 overflow-hidden">
@@ -457,7 +386,10 @@ function HintTile({
 
           <div className="absolute left-4 right-4 top-4 flex items-start justify-between">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="rounded-full bg-white/78 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm">
+              <div
+                className="flex cursor-grab items-center gap-1 rounded-full bg-white/78 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm"
+                title="Drag to reorder"
+              >
                 ⋮⋮ Drag
               </div>
 
@@ -485,6 +417,7 @@ function HintTile({
               </button>
 
               <button
+                onClick={() => onToggleStarred(hint)}
                 className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/72 text-[16px] backdrop-blur-sm ${
                   hint.starred ? "text-[#f36f64]" : "text-slate-400 hover:text-[#f36f64]"
                 }`}
@@ -529,7 +462,14 @@ function HintTile({
             <p className="mt-1 truncate text-[13px] text-slate-500">{hint.retailer}</p>
 
             <div className="mt-auto pt-4">
-              <div className="flex items-center justify-end">
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => onTogglePrivate(hint)}
+                  className="rounded-full border border-[#eadfd8] bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 hover:bg-[#faf7f4]"
+                >
+                  {hint.private ? "🔒 Private" : "🔓 Public"}
+                </button>
                 <a
                   href={hint.url}
                   target="_blank"
@@ -548,7 +488,7 @@ function HintTile({
 }
 
 export default function HintsPage() {
-  const [hints, setHints] = useState(initialHints);
+  const [hints, setHints] = useState([]);
   const [link, setLink] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState("");
@@ -556,11 +496,74 @@ export default function HintsPage() {
   const [editingHintId, setEditingHintId] = useState(null);
   const [editForm, setEditForm] = useState({ title: "", url: "" });
   const [isRefreshingEdit, setIsRefreshingEdit] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const numericPrices = useMemo(
     () => hints.map((hint) => hint.numericPrice).filter((value) => typeof value === "number"),
     [hints]
   );
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    async function loadSession() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setCurrentUser(user);
+    }
+
+    loadSession();
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const supabase = createClient();
+
+    async function loadHints() {
+      setIsLoading(true);
+
+      const { data, error } = await supabase
+        .from("hints")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("position", { ascending: true })
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        setError(error.message);
+        setHints([]);
+        setIsLoading(false);
+        return;
+      }
+
+      setHints(
+        (data || []).map((row, index) => ({
+          id: row.id,
+          title: row.title || "Saved hint",
+          retailer: row.retailer || normaliseRetailer(row.url || ""),
+          priceLabel: row.price_text || formatPriceLabel(row.numeric_price, null),
+          numericPrice: row.numeric_price,
+          priceBand: row.priceBand || getPriceBand(row.numeric_price),
+          image: row.image_url || "",
+          fallbackGradient: buildFallbackGradient(index),
+          tags: [],
+          starred: Boolean(row.starred),
+          private: Boolean(row.is_private),
+          size: row.size || "portrait",
+          url: row.url || "",
+          position: row.position ?? index,
+        }))
+      );
+
+      setIsLoading(false);
+    }
+
+    loadHints();
+  }, [currentUser]);
 
   function moveHint(fromIndex, toIndex) {
     if (fromIndex == null || toIndex == null || fromIndex === toIndex) {
@@ -576,6 +579,26 @@ export default function HintsPage() {
     });
 
     setDraggedIndex(null);
+
+    if (!currentUser) return;
+
+    const supabase = createClient();
+
+    const newHints = [...hints];
+    const [moved] = newHints.splice(fromIndex, 1);
+    newHints.splice(toIndex, 0, moved);
+
+    const updates = newHints.map((hint, idx) => ({
+      id: hint.id,
+      position: idx,
+    }));
+
+    for (const update of updates) {
+      supabase
+        .from("hints")
+        .update({ position: update.position })
+        .eq("id", update.id);
+    }
   }
 
   function openEditModal(hint) {
@@ -590,11 +613,33 @@ export default function HintsPage() {
     setEditingHintId(null);
     setEditForm({ title: "", url: "" });
     setIsRefreshingEdit(false);
+    setIsSavingEdit(false);
   }
 
-  function saveEditChanges() {
+  async function saveEditChanges() {
+    if (!currentUser) return;
+
     const trimmedTitle = editForm.title.trim();
     const trimmedUrl = editForm.url.trim();
+
+    setIsSavingEdit(true);
+
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from("hints")
+      .update({
+        title: trimmedTitle,
+        url: trimmedUrl,
+        retailer: trimmedUrl ? normaliseRetailer(trimmedUrl) : null,
+      })
+      .eq("id", editingHintId);
+
+    if (error) {
+      setError(error.message);
+      setIsSavingEdit(false);
+      return;
+    }
 
     setHints((current) =>
       current.map((hint) =>
@@ -609,12 +654,73 @@ export default function HintsPage() {
       )
     );
 
+    setIsSavingEdit(false);
     closeEditModal();
   }
 
-  function deleteHint() {
+  async function deleteHint() {
+    if (!currentUser) return;
+
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from("hints")
+      .delete()
+      .eq("id", editingHintId);
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
     setHints((current) => current.filter((hint) => hint.id !== editingHintId));
     closeEditModal();
+  }
+
+  async function toggleStarred(hint) {
+    if (!currentUser) return;
+
+    const supabase = createClient();
+    const newStarred = !hint.starred;
+
+    setHints((current) =>
+      current.map((h) => (h.id === hint.id ? { ...h, starred: newStarred } : h))
+    );
+
+    const { error } = await supabase
+      .from("hints")
+      .update({ starred: newStarred })
+      .eq("id", hint.id);
+
+    if (error) {
+      setError(error.message);
+      setHints((current) =>
+        current.map((h) => (h.id === hint.id ? { ...h, starred: hint.starred } : h))
+      );
+    }
+  }
+
+  async function togglePrivate(hint) {
+    if (!currentUser) return;
+
+    const supabase = createClient();
+    const newPrivate = !hint.private;
+
+    setHints((current) =>
+      current.map((h) => (h.id === hint.id ? { ...h, private: newPrivate } : h))
+    );
+
+    const { error } = await supabase
+      .from("hints")
+      .update({ is_private: newPrivate })
+      .eq("id", hint.id);
+
+    if (error) {
+      setError(error.message);
+      setHints((current) =>
+        current.map((h) => (h.id === hint.id ? { ...h, private: hint.private } : h))
+      );
+    }
   }
 
   async function refreshHintFromLink() {
@@ -639,21 +745,21 @@ export default function HintsPage() {
         throw new Error(data?.error || "Could not refresh this link.");
       }
 
+      const numericPrice = extractNumericPrice(data.priceText);
+      const refreshedTitle = shortenTitle(
+        data.title || editForm.title || "",
+        data.siteName || normaliseRetailer(trimmed)
+      );
+
       setHints((current) =>
         current.map((hint) => {
           if (hint.id !== editingHintId) return hint;
-
-          const numericPrice = extractNumericPrice(data.price);
-          const refreshedTitle = shortenTitle(
-            data.title || editForm.title || hint.title,
-            data.siteName || normaliseRetailer(trimmed)
-          );
 
           return {
             ...hint,
             title: refreshedTitle,
             retailer: data.siteName || normaliseRetailer(trimmed),
-            priceLabel: formatPriceLabel(numericPrice, data.price),
+            priceLabel: formatPriceLabel(numericPrice, data.priceText),
             numericPrice,
             priceBand: getPriceBand(numericPrice),
             image: typeof data.image === "string" && data.image.startsWith("http") ? data.image : hint.image,
@@ -664,7 +770,7 @@ export default function HintsPage() {
 
       setEditForm((current) => ({
         ...current,
-        title: shortenTitle(data.title || current.title, data.siteName || normaliseRetailer(trimmed)),
+        title: refreshedTitle,
         url: data.url || trimmed,
       }));
     } catch (err) {
@@ -675,6 +781,11 @@ export default function HintsPage() {
   }
 
   async function handleAddHint() {
+    if (!currentUser) {
+      setError("You must be signed in to add hints.");
+      return;
+    }
+
     const trimmed = link.trim();
 
     if (!trimmed) {
@@ -700,7 +811,7 @@ export default function HintsPage() {
         throw new Error(data?.error || "Could not extract this link.");
       }
 
-      const numericPrice = extractNumericPrice(data.price);
+      const numericPrice = extractNumericPrice(data.priceText);
       const size = getSizeFromPrice(
         numericPrice,
         [...numericPrices, ...(numericPrice != null ? [numericPrice] : [])]
@@ -710,10 +821,10 @@ export default function HintsPage() {
       const shortTitle = shortenTitle(data.title || "Saved hint", retailer);
 
       const newHint = {
-        id: Date.now(),
+        id: crypto.randomUUID(),
         title: shortTitle,
         retailer,
-        priceLabel: formatPriceLabel(numericPrice, data.price),
+        priceLabel: formatPriceLabel(numericPrice, data.priceText),
         numericPrice,
         priceBand: getPriceBand(numericPrice),
         image: typeof data.image === "string" && data.image.startsWith("http") ? data.image : "",
@@ -723,7 +834,28 @@ export default function HintsPage() {
         private: false,
         size: size === "square" ? "portrait" : size,
         url: data.url || trimmed,
+        position: hints.length,
       };
+
+      const supabase = createClient();
+
+      const { error } = await supabase.from("hints").insert({
+        user_id: currentUser.id,
+        title: newHint.title,
+        url: newHint.url,
+        image_url: newHint.image,
+        retailer: newHint.retailer,
+        price_text: newHint.priceLabel,
+        numeric_price: newHint.numericPrice,
+        starred: newHint.starred,
+        is_private: newHint.private,
+        position: newHint.position,
+        source: "user",
+      });
+
+      if (error) {
+        throw new Error(error.message || "Could not save this hint.");
+      }
 
       setHints((current) => [newHint, ...current]);
       setLink("");
@@ -733,6 +865,9 @@ export default function HintsPage() {
       setIsAdding(false);
     }
   }
+
+  const hasRealHints = hints.length > 0;
+  const visibleHints = hasRealHints ? hints : demoHints;
 
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
@@ -761,7 +896,7 @@ export default function HintsPage() {
       <div className="mx-auto max-w-[1380px] px-5 py-10 md:px-8">
         <section className="text-center">
           <h1 className="text-[32px] font-extrabold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
-            Paste a hint to begin...
+            Paste a link here...
           </h1>
 
           <div className="mt-6">
@@ -783,10 +918,10 @@ export default function HintsPage() {
               <button
                 type="button"
                 onClick={handleAddHint}
-                disabled={isAdding}
+                disabled={isAdding || isLoading}
                 className="inline-flex h-[72px] shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-8 text-sm font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[170px]"
               >
-                {isAdding ? "Adding..." : "Add hint"}
+                {isAdding ? "Adding..." : isLoading ? "Loading..." : "Add hint"}
               </button>
             </div>
 
@@ -794,7 +929,7 @@ export default function HintsPage() {
               <p className="mt-3 text-sm font-medium text-[#c45c42]">{error}</p>
             ) : (
               <p className="mt-3 text-sm text-slate-500">
-                We’ll pull the title, image, and price from the link, then you can edit it any time.
+                We'll pull the title, image, and price from the link, then you can edit it any time.
               </p>
             )}
           </div>
@@ -814,19 +949,38 @@ export default function HintsPage() {
               }}
             />
 
-            <div className="relative grid auto-rows-[46px] grid-cols-1 gap-6 md:grid-cols-12">
-              {hints.map((hint, index) => (
-                <HintTile
-                  key={hint.id}
-                  hint={hint}
-                  index={index}
-                  draggedIndex={draggedIndex}
-                  setDraggedIndex={setDraggedIndex}
-                  moveHint={moveHint}
-                  onEdit={openEditModal}
-                />
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="grid auto-rows-[46px] grid-cols-1 gap-6 md:grid-cols-12">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className={`relative flex h-full min-h-[280px] flex-col overflow-hidden rounded-[30px] border border-[#efdfd6] bg-[#f9f8f5] md:col-span-3 ${
+                      i === 1 ? "md:row-span-9" : i === 2 ? "md:row-span-7" : "md:row-span-5"
+                    }`}
+                  >
+                    <div className="relative min-h-[62%] flex-1 overflow-hidden">
+                      <div className="skeleton h-full w-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="relative grid auto-rows-[46px] grid-cols-1 gap-6 md:grid-cols-12">
+                {visibleHints.map((hint, index) => (
+                  <HintTile
+                    key={hint.id}
+                    hint={hint}
+                    index={index}
+                    draggedIndex={draggedIndex}
+                    setDraggedIndex={setDraggedIndex}
+                    moveHint={moveHint}
+                    onEdit={openEditModal}
+                    onToggleStarred={toggleStarred}
+                    onTogglePrivate={togglePrivate}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </div>
@@ -839,7 +993,17 @@ export default function HintsPage() {
         onSave={saveEditChanges}
         onRefreshFromLink={refreshHintFromLink}
         onDelete={deleteHint}
+        onTogglePrivate={() => {
+          const hint = visibleHints.find((h) => h.id === editingHintId);
+          if (hint) togglePrivate(hint);
+        }}
+        onToggleStarred={() => {
+          const hint = visibleHints.find((h) => h.id === editingHintId);
+          if (hint) toggleStarred(hint);
+        }}
         isRefreshing={isRefreshingEdit}
+        isSaving={isSavingEdit}
+        hint={visibleHints.find((h) => h.id === editingHintId)}
       />
     </main>
   );
