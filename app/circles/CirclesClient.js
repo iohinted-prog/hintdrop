@@ -3148,18 +3148,18 @@ async function handleDeletePot() {
       />
 
       <EditPotModal
-        open={isEditPotOpen}
-        onClose={() => {
-          setIsEditPotOpen(false);
-          setEditingCircle(null);
-          setEditingPotError("");
-        }}
-        onSave={handleSavePotEdits}
-        onDelete={() => setIsDeletePotOpen(true)}
-        circle={editingCircle}
-        isSaving={isSavingPot}
-        errorMessage={editingPotError}
-      />
+  open={isEditPotOpen}
+  onClose={() => {
+    setIsEditPotOpen(false);
+    setEditingCircle(null);
+    setEditingPotError("");
+  }}
+  onSave={handleSavePotEdits}
+  onDelete={() => setIsDeletePotOpen(true)}
+  circle={editingCircle}
+  isSaving={isSavingPot}
+  errorMessage={editingPotError}
+/>
       
 
       <AddContactModal
