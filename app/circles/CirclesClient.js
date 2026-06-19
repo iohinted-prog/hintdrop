@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
-
-const supabase = createClient();
 
 const currencyOptions = [
   { code: "GBP", symbol: "£", label: "British Pound" },
@@ -17,70 +15,179 @@ const currencyOptions = [
   { code: "CAD", symbol: "C$", label: "Canadian Dollar" },
 ];
 
-const relationshipOptions = [
-  "Partner",
-  "Family",
-  "Friend",
-  "Brother",
-  "Sister",
-  "Parent",
-  "Colleague",
-  "Child",
+const initialContacts = [
+  {
+    id: 1,
+    name: "Maya",
+    role: "Friend",
+    note: "Saved 8 hints",
+    initials: "M",
+    colors: "from-[#efc3af] to-[#ae6e57]",
+    email: "",
+    phone: "",
+    birthday: "",
+  },
+  {
+    id: 2,
+    name: "James",
+    role: "Brother",
+    note: "Saved 5 hints",
+    initials: "J",
+    colors: "from-[#4e596d] to-[#212a3c]",
+    email: "",
+    phone: "",
+    birthday: "",
+  },
+  {
+    id: 3,
+    name: "Fiona",
+    role: "Friend",
+    note: "Saved 4 hints",
+    initials: "F",
+    colors: "from-[#809168] to-[#41512e]",
+    email: "",
+    phone: "",
+    birthday: "",
+  },
+  {
+    id: 4,
+    name: "Mum",
+    role: "Family",
+    note: "Saved 6 hints",
+    initials: "M",
+    colors: "from-[#eac8b8] to-[#9d6957]",
+    email: "",
+    phone: "",
+    birthday: "",
+  },
+  {
+    id: 5,
+    name: "Sarah",
+    role: "Partner",
+    note: "Saved 10 hints",
+    initials: "S",
+    colors: "from-[#e8b9a7] to-[#bf755f]",
+    email: "",
+    phone: "",
+    birthday: "",
+  },
+  {
+    id: 6,
+    name: "Tom",
+    role: "Friend",
+    note: "Saved 3 hints",
+    initials: "T",
+    colors: "from-[#b7c8db] to-[#6b88a7]",
+    email: "",
+    phone: "",
+    birthday: "",
+  },
 ];
 
 const calendarEvents = [
-  { id: 1, title: "Birthday", date: "2026-06-29", type: "Birthday" },
-  { id: 2, title: "Anniversary", date: "2026-07-10", type: "Anniversary" },
-  { id: 3, title: "Milestone", date: "2026-07-16", type: "Milestone" },
+  { id: 1, title: "Sarah's Birthday", date: "2026-06-29", type: "Birthday" },
+  { id: 2, title: "Mum & Dad Anniversary", date: "2026-07-10", type: "Anniversary" },
+  { id: 3, title: "James Promotion Dinner", date: "2026-07-16", type: "Milestone" },
 ];
 
-const demoCircle = {
-  id: "demo-circle",
-  isDemo: true,
-  title: "Sarah's birthday",
-  occasion_type: "Birthday",
-  event_date: "2026-06-29",
-  deadline_at: "2026-06-27T18:00:00.000Z",
-  source_type: "recipient_public_hint",
-  item_title: "Weekend cabin stay",
-  item_url: "https://example.com/weekend-cabin-stay",
-  item_image_url:
-    "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=900&q=80",
-  item_description:
-    "An example circle built around one saved hint so everyone can contribute toward the same gift.",
-  currency: "GBP",
-  item_target_amount: 220,
-  organising_fee_amount: 8,
-  total_target_amount: 228,
-  funding_mode: "flexible",
-  status: "active",
-  invites: [
-    { id: "demo-1", invite_name: "You", status: "viewed" },
-    { id: "demo-2", invite_name: "Maya", status: "pending" },
-    { id: "demo-3", invite_name: "James", status: "pending" },
+const publicHintsByContact = {
+  1: [
+    {
+      id: "maya-1",
+      title: "Silk pillowcase set",
+      subtitle: "£45 · Public hint",
+      amount: 45,
+      currency: "GBP",
+      description: "A soft silk set that feels elevated, useful, and easy for a group to contribute toward.",
+      image:
+        "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=800&q=80",
+      url: "https://example.com/silk-pillowcase-set",
+    },
+    {
+      id: "maya-2",
+      title: "Aesop hand wash duo",
+      subtitle: "£62 · Public hint",
+      amount: 62,
+      currency: "GBP",
+      description: "A practical but premium home gift with a recognisable brand and easy shared target.",
+      image:
+        "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80",
+      url: "https://example.com/aesop-hand-wash-duo",
+    },
+  ],
+  5: [
+    {
+      id: "sarah-1",
+      title: "Weekend cabin stay",
+      subtitle: "£220 · Public hint",
+      amount: 220,
+      currency: "GBP",
+      description: "A memorable shared experience with a clear target that works naturally as a circle goal.",
+      image:
+        "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
+      url: "https://example.com/weekend-cabin-stay",
+    },
   ],
 };
 
+const initialCircles = [
+  {
+    id: 1,
+    name: "Sarah's Birthday",
+    subtitle: "Birthday · June 29",
+    description:
+      "A shared circle for Sarah’s next gift so everyone can contribute without duplicating ideas.",
+    members: [
+      {
+        name: "You",
+        initials: "Y",
+        contributed: true,
+        amount: 40,
+        colors: "from-[#4e596d] to-[#212a3c]",
+        status: "joined",
+      },
+      {
+        name: "Maya",
+        initials: "M",
+        contributed: true,
+        amount: 35,
+        colors: "from-[#efc3af] to-[#ae6e57]",
+        status: "joined",
+      },
+    ],
+    pot: {
+      active: true,
+      item: "Weekend cabin stay",
+      source: "From Sarah’s public hints",
+      sourceUrl: "https://example.com/weekend-cabin-stay",
+      previewImage:
+        "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
+      previewDescription:
+        "A memorable shared experience with a clear target that works naturally as a circle goal.",
+      target: 220,
+      currency: "GBP",
+      raised: 95,
+      note: "Selected from Sarah’s own hints so the group has a clear goal.",
+      fundingMode: "Flexible pot",
+      deadline: "2026-06-29",
+      goalType: "item",
+    },
+  },
+];
+
 function getInitials(name) {
-  return String(name || "")
+  return name
     .trim()
-    .split(/\s+/)
+    .split(/\\s+/)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() || "")
     .join("");
 }
 
-function getPrimaryRelationship(relationshipTypes) {
-  if (Array.isArray(relationshipTypes) && relationshipTypes.length) return relationshipTypes[0];
-  if (typeof relationshipTypes === "string" && relationshipTypes.trim()) return relationshipTypes;
-  return "Friend";
-}
-
 function getContactGradient(role) {
-  if (["Family", "Parent"].includes(role)) return "from-[#eac8b8] to-[#9d6957]";
+  if (role === "Family") return "from-[#eac8b8] to-[#9d6957]";
   if (role === "Partner") return "from-[#e8b9a7] to-[#bf755f]";
-  if (["Brother", "Sister"].includes(role)) return "from-[#4e596d] to-[#212a3c]";
-  if (role === "Colleague") return "from-[#b7c8db] to-[#6b88a7]";
+  if (role === "Brother") return "from-[#4e596d] to-[#212a3c]";
   return "from-[#efcdbf] to-[#bb8168]";
 }
 
@@ -89,15 +196,6 @@ function formatDateLabel(dateString) {
   return new Date(dateString).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
-  });
-}
-
-function formatDateWithYear(dateString) {
-  if (!dateString) return "No date";
-  return new Date(dateString).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
   });
 }
 
@@ -120,7 +218,7 @@ function formatMoney(amount, currency = "GBP") {
 }
 
 function parseAmount(value) {
-  const cleaned = String(value || "").replace(/[^\d.]/g, "");
+  const cleaned = String(value || "").replace(/[^\\d.]/g, "");
   const parsed = Number(cleaned);
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -128,7 +226,7 @@ function parseAmount(value) {
 function LogoMark() {
   return (
     <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg">
-      <span className="text-lg">v</span>
+      <span className="text-lg">🎁</span>
     </div>
   );
 }
@@ -144,9 +242,13 @@ function ModalShell({ open, onClose, title, eyebrow, children, maxWidth = "max-w
         <div className="flex items-center justify-between border-b border-[#efe0d7] px-6 py-5">
           <div>
             {eyebrow ? (
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#df7b59]">{eyebrow}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#df7b59]">
+                {eyebrow}
+              </p>
             ) : null}
-            <h2 className="mt-1 text-[28px] font-semibold tracking-[-0.05em] text-slate-900">{title}</h2>
+            <h2 className="mt-1 text-[28px] font-semibold tracking-[-0.05em] text-slate-900">
+              {title}
+            </h2>
           </div>
 
           <button
@@ -165,27 +267,13 @@ function ModalShell({ open, onClose, title, eyebrow, children, maxWidth = "max-w
   );
 }
 
-function EmptyContacts({ onAdd }) {
-  return (
-    <div className="rounded-[24px] border border-dashed border-[#e7d7ce] bg-[#fffdfa] p-5 text-center">
-      <p className="text-sm font-semibold text-slate-900">No contacts yet</p>
-      <p className="mt-2 text-[13px] leading-6 text-slate-500">
-        Add a contact first so you can start building circles around real people.
-      </p>
-      <button
-        type="button"
-        onClick={onAdd}
-        className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg"
-      >
-        Add contact
-      </button>
-    </div>
-  );
-}
-
 function ContactCard({ contact, onAdd }) {
   return (
-    <article className="rounded-[22px] border border-[#f0dfd6] bg-white p-4 shadow-sm">
+    <article
+      draggable
+      className="cursor-grab rounded-[22px] border border-[#f0dfd6] bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:cursor-grabbing"
+      aria-label={`Drag ${contact.name} into a circle`}
+    >
       <div className="flex items-center gap-3">
         <div
           className={`flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b text-[12px] font-bold text-white ${contact.colors}`}
@@ -195,8 +283,9 @@ function ContactCard({ contact, onAdd }) {
 
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900">{contact.name}</p>
-          <p className="text-xs text-slate-500">{contact.role || "Contact"}</p>
-          {contact.email ? <p className="truncate text-[11px] text-slate-400">{contact.email}</p> : null}
+          <p className="text-xs text-slate-500">
+            {contact.role} · {contact.note}
+          </p>
         </div>
 
         <button
@@ -211,34 +300,83 @@ function ContactCard({ contact, onAdd }) {
   );
 }
 
-function InvitePill({ invite }) {
-  const label = invite.status === "paid" ? "Paid" : invite.status === "viewed" ? "Viewed" : "Invited";
-  const styles =
-    invite.status === "paid"
-      ? "bg-[#edf6eb] text-[#4a7a3a]"
-      : invite.status === "viewed"
-        ? "bg-[#eef4ff] text-[#5676b3]"
-        : "bg-[#fff3ee] text-[#d57a58]";
+function MemberPill({ member, currency = "GBP" }) {
+  const statusStyles =
+    member.status === "joined"
+      ? member.contributed
+        ? "bg-[#edf6eb] text-[#4a7a3a]"
+        : "bg-[#eef4ff] text-[#5676b3]"
+      : "bg-[#fff3ee] text-[#d57a58]";
 
-  const displayName = invite.invite_name || invite.contact_name || invite.invite_email || "Invite";
-  const initials = getInitials(displayName);
-  const colors = invite.contact_colors || "from-[#efcdbf] to-[#bb8168]";
+  const statusLabel =
+    member.status === "joined"
+      ? member.contributed
+        ? "Contributed"
+        : "Joined"
+      : "Invited";
 
   return (
     <div className="rounded-[20px] border border-[#eee1d9] bg-[#fffdfa] p-3">
       <div className="flex items-center gap-3">
         <div
-          className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b text-[11px] font-bold text-white ${colors}`}
+          className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b text-[11px] font-bold text-white ${member.colors}`}
         >
-          {initials}
+          {member.initials}
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
+          <p className="text-sm font-semibold text-slate-900">{member.name}</p>
           <div className="mt-1 flex items-center gap-2">
-            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${styles}`}>{label}</span>
-            {invite.invite_email ? <span className="truncate text-[11px] text-slate-400">{invite.invite_email}</span> : null}
+            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusStyles}`}>
+              {statusLabel}
+            </span>
+            <span className="text-[11px] text-slate-400">
+              {member.contributed ? formatMoney(member.amount, currency) : "—"}
+            </span>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContributionRing({ raised, target, ringId }) {
+  const percentage = target > 0 ? Math.min((raised / target) * 100, 100) : 0;
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  const dash = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative flex h-[148px] w-[148px] items-center justify-center">
+        <svg className="h-[148px] w-[148px] -rotate-90" viewBox="0 0 140 140" aria-hidden="true">
+          <circle cx="70" cy="70" r={radius} stroke="#f1e3db" strokeWidth="12" fill="none" />
+          <circle
+            cx="70"
+            cy="70"
+            r={radius}
+            stroke={`url(#${ringId})`}
+            strokeWidth="12"
+            strokeLinecap="round"
+            fill="none"
+            strokeDasharray={circumference}
+            strokeDashoffset={dash}
+          />
+          <defs>
+            <linearGradient id={ringId} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ff9b75" />
+              <stop offset="100%" stopColor="#f36f64" />
+            </linearGradient>
+          </defs>
+        </svg>
+
+        <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-white/80">
+          <span className="text-[28px] font-semibold tracking-[-0.06em] text-slate-900">
+            {Math.round(percentage)}%
+          </span>
+          <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">
+            funded
+          </span>
         </div>
       </div>
     </div>
@@ -250,7 +388,9 @@ function PotPreviewCard({ image, title, description, url, sourceLabel, compact =
 
   return (
     <div className={`rounded-[22px] border border-[#eedfd6] bg-[#fffdfa] ${compact ? "p-3" : "p-4"}`}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Linked item</p>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+        Linked item
+      </p>
 
       <div className={`mt-3 flex ${compact ? "gap-3" : "gap-4"}`}>
         {image ? (
@@ -264,13 +404,20 @@ function PotPreviewCard({ image, title, description, url, sourceLabel, compact =
         )}
 
         <div className="min-w-0 flex-1">
-          <p className={`${compact ? "text-[13px]" : "text-sm"} font-semibold text-slate-900`}>{title || "Untitled item"}</p>
+          <p className={`${compact ? "text-[13px]" : "text-sm"} font-semibold text-slate-900`}>
+            {title || "Untitled item"}
+          </p>
+
           {description ? (
             <p className={`mt-1 ${compact ? "text-[12px] leading-5" : "text-[13px] leading-6"} text-slate-500`}>
               {description}
             </p>
           ) : null}
-          {sourceLabel ? <p className="mt-2 text-[12px] font-medium text-[#df7b59]">{sourceLabel}</p> : null}
+
+          {sourceLabel ? (
+            <p className="mt-2 text-[12px] font-medium text-[#df7b59]">{sourceLabel}</p>
+          ) : null}
+
           {url ? (
             <a
               href={url}
@@ -287,18 +434,15 @@ function PotPreviewCard({ image, title, description, url, sourceLabel, compact =
   );
 }
 
-function CircleCard({ circle, onOpenInviteModal }) {
-  const inviteCount = circle.invites?.length || 0;
-  const viewedCount = circle.invites?.filter((invite) => invite.status === "viewed" || invite.status === "paid").length || 0;
-  const targetLabel = formatMoney(circle.total_target_amount, circle.currency);
-  const itemLabel = formatMoney(circle.item_target_amount, circle.currency);
-  const feeLabel = formatMoney(circle.organising_fee_amount, circle.currency);
-  const sourceLabelMap = {
-    recipient_public_hint: "From recipient's public hints",
-    organiser_private_hint: "Saved privately by organiser",
-    shop_item: "From Hinted Shop",
-    external_link: "From an external link",
-  };
+function CircleCard({ circle, onEditPot }) {
+  const joinedCount = circle.members.filter((member) => member.status === "joined").length;
+  const invitedCount = circle.members.length;
+  const moneyLabel = formatMoney(circle.pot.target, circle.pot.currency);
+  const raisedLabel = formatMoney(circle.pot.raised, circle.pot.currency);
+  const showItemPreview =
+    circle.pot.active &&
+    circle.pot.goalType === "item" &&
+    (circle.pot.previewImage || circle.pot.previewDescription || circle.pot.sourceUrl);
 
   return (
     <article className="rounded-[30px] border border-[#f0dfd6] bg-white p-5 shadow-sm sm:p-6">
@@ -306,110 +450,143 @@ function CircleCard({ circle, onOpenInviteModal }) {
         <div>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Circle</p>
-                {circle.isDemo ? (
-                  <span className="rounded-full bg-[#fff1ea] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">Demo example</span>
-                ) : null}
-              </div>
-              <h2 className="mt-1 text-[26px] font-semibold tracking-[-0.05em] text-slate-900">{circle.title}</h2>
-              <p className="mt-2 text-sm text-slate-500">
-                {circle.occasion_type || "Occasion"} · {formatDateWithYear(circle.event_date)}
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Circle
               </p>
+              <h2 className="mt-1 text-[26px] font-semibold tracking-[-0.05em] text-slate-900">
+                {circle.name}
+              </h2>
+              <p className="mt-2 text-sm text-slate-500">{circle.subtitle}</p>
             </div>
 
             <div className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
-              {inviteCount} invited · {viewedCount} opened
+              {joinedCount} of {invitedCount} joined
             </div>
           </div>
 
           <p className="mt-4 max-w-[60ch] text-[14px] leading-7 text-slate-600">
-            {circle.isDemo
-              ? "A simple example of how one shared item can turn into one calm group plan. Your real circles will appear here once you create one."
-              : "Keep one gift, one target, and one invite list in one place so the organiser does not have to chase everyone manually."}
+            {circle.description}
           </p>
 
           <div className="mt-5 rounded-[24px] border border-dashed border-[#e6d7cd] bg-[#fffaf7] p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-slate-900">Invite list</p>
+                <p className="text-sm font-semibold text-slate-900">Members</p>
                 <p className="mt-1 text-[13px] text-slate-500">
-                  Invitees stay simple for now: invited, viewed, and later paid once contributions are live.
+                  People can be invited now and only become full members once they accept.
                 </p>
               </div>
 
-              {!circle.isDemo ? (
-                <button
-                  type="button"
-                  onClick={() => onOpenInviteModal(circle)}
-                  className="inline-flex h-10 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
-                >
-                  Add people
-                </button>
-              ) : null}
+              <div className="rounded-full bg-[#fff1ea] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
+                Circle invite flow
+              </div>
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {circle.invites?.length ? (
-                circle.invites.map((invite) => <InvitePill key={invite.id} invite={invite} />)
-              ) : (
-                <div className="rounded-[20px] bg-white p-4 text-sm text-slate-500">No invites added yet.</div>
-              )}
+              {circle.members.map((member) => (
+                <MemberPill
+                  key={`${circle.id}-${member.name}`}
+                  member={member}
+                  currency={circle.pot.currency}
+                />
+              ))}
             </div>
           </div>
         </div>
 
         <div className="rounded-[30px] border border-[#eedfd6] bg-[radial-gradient(circle_at_top,_#fff7f2,_#fffdfa_62%)] p-5">
-          <div className="flex flex-col text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Shared target</p>
-            <h3 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">{circle.item_title}</h3>
-            <p className="mt-2 text-[13px] leading-6 text-slate-500">
-              {sourceLabelMap[circle.source_type] || "Chosen item for this circle"}
+          <div className="flex flex-col items-center text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Shared pot
+            </p>
+            <h3 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
+              {circle.pot.active ? circle.pot.item : "No pot created yet"}
+            </h3>
+            <p className="mt-2 max-w-[28ch] text-[13px] leading-6 text-slate-500">
+              {circle.pot.active ? circle.pot.source : circle.pot.note}
             </p>
 
-            <div className="mt-5 rounded-[24px] border border-[#f0e0d7] bg-white p-4 text-left">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Target</p>
-                  <p className="mt-1 text-[28px] font-semibold tracking-[-0.05em] text-slate-900">{targetLabel}</p>
+            {circle.pot.active ? (
+              <>
+                <div className="mt-5">
+                  <ContributionRing
+                    raised={circle.pot.raised}
+                    target={circle.pot.target}
+                    ringId={`circle-gradient-${circle.id}`}
+                  />
                 </div>
-                <div className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold capitalize text-[#df7b59]">
-                  {String(circle.status || "draft").replaceAll("_", " ")}
-                </div>
-              </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[18px] bg-[#faf7f4] p-3">
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">Item amount</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{itemLabel}</p>
+                <p className="mt-3 text-sm text-slate-500">
+                  {raisedLabel} of {moneyLabel}
+                </p>
+
+                <div className="mt-4 flex -space-x-3">
+                  {circle.members.map((member) => (
+                    <div
+                      key={`${circle.id}-${member.name}-avatar`}
+                      className={`flex h-11 w-11 items-center justify-center rounded-full border-4 border-white bg-gradient-to-b text-[11px] font-bold text-white shadow-sm ${member.colors}`}
+                      title={member.name}
+                    >
+                      {member.initials}
+                    </div>
+                  ))}
                 </div>
-                <div className="rounded-[18px] bg-[#faf7f4] p-3">
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">Hinted fee</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{feeLabel}</p>
+
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                  <span className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
+                    {circle.pot.fundingMode}
+                  </span>
+                  <span className="rounded-full bg-[#f3f6fb] px-3 py-1 text-[11px] font-semibold text-slate-600">
+                    Deadline {formatDateLabel(circle.pot.deadline)}
+                  </span>
+                  <span className="rounded-full bg-[#edf3ff] px-3 py-1 text-[11px] font-semibold text-slate-600">
+                    {circle.pot.currency}
+                  </span>
                 </div>
-                <div className="rounded-[18px] bg-[#faf7f4] p-3">
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">Deadline</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{formatDateLabel(circle.deadline_at)}</p>
+
+                {showItemPreview ? (
+                  <div className="mt-5 w-full text-left">
+                    <PotPreviewCard
+                      image={circle.pot.previewImage}
+                      title={circle.pot.item}
+                      description={circle.pot.previewDescription}
+                      url={circle.pot.sourceUrl}
+                      sourceLabel={circle.pot.source}
+                      compact
+                    />
+                  </div>
+                ) : null}
+
+                <p className="mt-4 text-[14px] leading-7 text-slate-600">{circle.pot.note}</p>
+
+                <div className="mt-5 flex flex-wrap justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => onEditPot(circle)}
+                    className="inline-flex h-10 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-sm font-semibold text-white"
+                  >
+                    Edit pot
+                  </button>
                 </div>
-                <div className="rounded-[18px] bg-[#faf7f4] p-3">
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">Funding mode</p>
-                  <p className="mt-1 text-sm font-semibold capitalize text-slate-900">
-                    {String(circle.funding_mode || "flexible").replaceAll("_", " ")}
+              </>
+            ) : (
+              <>
+                <div className="mt-6 rounded-[24px] border border-dashed border-[#e5d8cf] bg-white p-5 text-left">
+                  <p className="text-sm font-semibold text-slate-900">Choose from hints or links</p>
+                  <p className="mt-2 text-[14px] leading-7 text-slate-600">
+                    Pick a public hint or paste a product link so the circle has one shared goal.
                   </p>
                 </div>
-              </div>
-            </div>
 
-            <div className="mt-5 text-left">
-              <PotPreviewCard
-                image={circle.item_image_url}
-                title={circle.item_title}
-                description={circle.item_description}
-                url={circle.item_url}
-                sourceLabel={sourceLabelMap[circle.source_type] || "Chosen item"}
-                compact
-              />
-            </div>
+                <button
+                  type="button"
+                  onClick={() => onEditPot(circle)}
+                  className="mt-5 inline-flex h-10 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
+                >
+                  Add item
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -417,111 +594,39 @@ function CircleCard({ circle, onOpenInviteModal }) {
   );
 }
 
-function RelationshipChips({ selected, onToggle }) {
+function CurrencyAmountInput({
+  currency,
+  amount,
+  onCurrencyChange,
+  onAmountChange,
+  label = "Target amount",
+}) {
   return (
-    <div className="flex flex-wrap gap-2">
-      {relationshipOptions.map((option) => {
-        const isSelected = selected.includes(option);
-        return (
-          <button
-            key={option}
-            type="button"
-            onClick={() => onToggle(option)}
-            className={`inline-flex h-10 items-center justify-center rounded-full border px-4 text-sm font-medium transition ${
-              isSelected
-                ? "border-[#f0a384] bg-[#fff4ee] text-[#a95b3e]"
-                : "border-[#ead8ce] bg-white text-slate-700 hover:bg-[#fff5f0]"
-            }`}
-          >
-            {option}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+    <div className="space-y-2">
+      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <div className="grid gap-3 sm:grid-cols-[170px_minmax(0,1fr)]">
+        <select
+          value={currency}
+          onChange={(e) => onCurrencyChange(e.target.value)}
+          className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+        >
+          {currencyOptions.map((option) => (
+            <option key={option.code} value={option.code}>
+              {option.code} · {option.label}
+            </option>
+          ))}
+        </select>
 
-function AddContactModal({ open, onClose, onSave, form, setForm, isSaving }) {
-  const toggleRelationship = (value) => {
-    setForm((prev) => ({
-      ...prev,
-      relationshipTypes: prev.relationshipTypes.includes(value)
-        ? prev.relationshipTypes.filter((item) => item !== value)
-        : [...prev.relationshipTypes, value],
-    }));
-  };
-
-  return (
-    <ModalShell open={open} onClose={onClose} eyebrow="Contact" title="Add a contact" maxWidth="max-w-[760px]">
-      <div className="space-y-5 p-6">
-        <div className="rounded-[24px] border border-dashed border-[#e6d7cd] bg-[#fffdfb] p-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Bring someone in quickly</p>
-          <h3 className="mt-2 text-xl font-semibold tracking-[-0.04em] text-slate-900">Replicate the onboarding flow</h3>
-          <p className="mt-2 text-[14px] leading-7 text-slate-600">
-            Search from Google Contacts later, or add someone manually now so they are ready for hints and circles.
-          </p>
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <div className="flex h-12 flex-1 items-center rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-400">
-              Search Google contacts
-            </div>
-            <button
-              type="button"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
-            >
-              Connect Google
-            </button>
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="space-y-2 sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Name</span>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-              className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-              placeholder="Maya"
-            />
-          </label>
-
-          <label className="space-y-2 sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Email</span>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-              className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-              placeholder="maya@example.com"
-            />
-          </label>
-
-          <div className="space-y-2 sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Relationship</span>
-            <RelationshipChips selected={form.relationshipTypes} onToggle={toggleRelationship} />
-            <p className="text-[12px] text-slate-400">Pick one or more so circles and hints can feel more personal later.</p>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 pt-1">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={isSaving}
-            className="inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg disabled:opacity-60"
-          >
-            {isSaving ? "Saving..." : "Save contact"}
-          </button>
-        </div>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={amount}
+          onChange={(e) => onAmountChange(e.target.value)}
+          placeholder="220"
+          className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+        />
       </div>
-    </ModalShell>
+    </div>
   );
 }
 
@@ -539,274 +644,53 @@ function CreateCircleModal({
   setSelectedEventId,
   form,
   setForm,
+  linkPreview,
+  isFetchingPreview,
+  handleFetchPreview,
+  selectedHintContactId,
+  setSelectedHintContactId,
 }) {
   if (!open) return null;
 
-  const amountLabel = useMemo(
-    () => formatMoney(parseAmount(form.itemTargetAmount), form.currency || "GBP"),
-    [form.itemTargetAmount, form.currency],
+  const selectedHintContact = contacts.find(
+    (contact) => String(contact.id) === String(selectedHintContactId)
   );
-  const feeLabel = useMemo(
-    () => formatMoney(parseAmount(form.organisingFeeAmount), form.currency || "GBP"),
-    [form.organisingFeeAmount, form.currency],
-  );
-  const totalLabel = useMemo(
-    () => formatMoney(parseAmount(form.itemTargetAmount) + parseAmount(form.organisingFeeAmount), form.currency || "GBP"),
-    [form.itemTargetAmount, form.organisingFeeAmount, form.currency],
-  );
+  const visibleHints = selectedHintContactId
+    ? publicHintsByContact[selectedHintContactId] || []
+    : [];
+  const amountMode = form.goalType === "amount";
 
   return (
-    <ModalShell open={open} onClose={onClose} eyebrow="New circle" title="Create a circle around an item">
+    <ModalShell open={open} onClose={onClose} eyebrow="New circle" title="Create a circle around an event">
       <div className="grid gap-0 lg:grid-cols-[1.06fr_0.94fr]">
         <div className="max-h-[calc(92vh-90px)] space-y-6 overflow-y-auto p-6">
-          <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">1. Choose the event</p>
-            <div className="mt-4 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setEventMode("calendar")}
-                className={`inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold ${
-                  eventMode === "calendar" ? "bg-[#2f3b2d] text-white" : "border border-[#ead8ce] bg-white text-slate-700"
-                }`}
-              >
-                Suggested
-              </button>
-              <button
-                type="button"
-                onClick={() => setEventMode("new")}
-                className={`inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold ${
-                  eventMode === "new" ? "bg-[#2f3b2d] text-white" : "border border-[#ead8ce] bg-white text-slate-700"
-                }`}
-              >
-                New event
-              </button>
-            </div>
-
-            {eventMode === "calendar" ? (
-              <div className="mt-4 space-y-3">
-                {calendarEvents.map((event) => (
-                  <label
-                    key={event.id}
-                    className={`flex cursor-pointer items-center justify-between rounded-[20px] border p-4 ${
-                      String(event.id) === String(selectedEventId)
-                        ? "border-[#f0a384] bg-[#fff4ee]"
-                        : "border-[#efe1d9] bg-[#fffdfa]"
-                    }`}
-                  >
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{event.title}</p>
-                      <p className="mt-1 text-[13px] text-slate-500">
-                        {event.type} · {event.date}
-                      </p>
-                    </div>
-                    <input
-                      type="radio"
-                      name="calendarEvent"
-                      className="h-4 w-4 accent-[#f36f64]"
-                      checked={String(event.id) === String(selectedEventId)}
-                      onChange={() => {
-                        setSelectedEventId(String(event.id));
-                        setForm((prev) => ({
-                          ...prev,
-                          title: prev.title || `${event.title} gift`,
-                          occasionType: event.type,
-                          eventDate: event.date,
-                          deadline: event.date,
-                        }));
-                      }}
-                    />
-                  </label>
-                ))}
-              </div>
-            ) : null}
-
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="space-y-2 sm:col-span-2">
-                <span className="text-sm font-medium text-slate-700">Circle title</span>
-                <input
-                  type="text"
-                  value={form.title}
-                  onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                  placeholder="Sarah's birthday gift"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">Occasion</span>
-                <input
-                  type="text"
-                  value={form.occasionType}
-                  onChange={(e) => setForm((prev) => ({ ...prev, occasionType: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                  placeholder="Birthday"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">Event date</span>
-                <input
-                  type="date"
-                  value={form.eventDate}
-                  onChange={(e) => setForm((prev) => ({ ...prev, eventDate: e.target.value, deadline: prev.deadline || e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                />
-              </label>
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">2. Circle details</p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">Contribution deadline</span>
-                <input
-                  type="date"
-                  value={form.deadline}
-                  onChange={(e) => setForm((prev) => ({ ...prev, deadline: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">If people do not join</span>
-                <select
-                  value={form.fundingMode}
-                  onChange={(e) => setForm((prev) => ({ ...prev, fundingMode: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                >
-                  <option value="flexible">Flexible pot</option>
-                  <option value="all_or_nothing">All-or-nothing</option>
-                  <option value="organiser_covers">Organizer covers gap</option>
-                </select>
-              </label>
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">3. The item</p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="space-y-2 sm:col-span-2">
-                <span className="text-sm font-medium text-slate-700">Item title</span>
-                <input
-                  type="text"
-                  value={form.itemTitle}
-                  onChange={(e) => setForm((prev) => ({ ...prev, itemTitle: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                  placeholder="Weekend cabin stay"
-                />
-              </label>
-              <label className="space-y-2 sm:col-span-2">
-                <span className="text-sm font-medium text-slate-700">Item link</span>
-                <input
-                  type="url"
-                  value={form.itemUrl}
-                  onChange={(e) => setForm((prev) => ({ ...prev, itemUrl: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                  placeholder="https://..."
-                />
-              </label>
-              <label className="space-y-2 sm:col-span-2">
-                <span className="text-sm font-medium text-slate-700">Item image URL</span>
-                <input
-                  type="url"
-                  value={form.itemImageUrl}
-                  onChange={(e) => setForm((prev) => ({ ...prev, itemImageUrl: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                  placeholder="https://..."
-                />
-              </label>
-              <label className="space-y-2 sm:col-span-2">
-                <span className="text-sm font-medium text-slate-700">Short description</span>
-                <textarea
-                  value={form.itemDescription}
-                  onChange={(e) => setForm((prev) => ({ ...prev, itemDescription: e.target.value }))}
-                  className="min-h-[100px] w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                  placeholder="Why this makes sense for the circle"
-                />
-              </label>
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">4. Amounts</p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">Currency</span>
-                <select
-                  value={form.currency}
-                  onChange={(e) => setForm((prev) => ({ ...prev, currency: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                >
-                  {currencyOptions.map((option) => (
-                    <option key={option.code} value={option.code}>
-                      {option.code} · {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">Source type</span>
-                <select
-                  value={form.sourceType}
-                  onChange={(e) => setForm((prev) => ({ ...prev, sourceType: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                >
-                  <option value="recipient_public_hint">Recipient public hint</option>
-                  <option value="organiser_private_hint">Organiser private hint</option>
-                  <option value="shop_item">Hinted Shop</option>
-                  <option value="external_link">External link</option>
-                </select>
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">Item amount</span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={form.itemTargetAmount}
-                  onChange={(e) => setForm((prev) => ({ ...prev, itemTargetAmount: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                  placeholder="220"
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">Hinted organising fee</span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={form.organisingFeeAmount}
-                  onChange={(e) => setForm((prev) => ({ ...prev, organisingFeeAmount: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                  placeholder="8"
-                />
-              </label>
-            </div>
-          </div>
+          {/* event */}
+          {/* details */}
+          {/* goal type */}
+          {/* choose item from public hints or link */}
         </div>
 
         <div className="max-h-[calc(92vh-90px)] overflow-y-auto border-t border-[#efe0d7] bg-[#fff7f2] p-6 lg:border-l lg:border-t-0">
           <div className="rounded-[24px] border border-dashed border-[#e6d7cd] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">5. Invite people</p>
+            <p className="text-sm font-semibold text-slate-900">5. Add people</p>
             <p className="mt-1 text-[13px] leading-6 text-slate-500">
-              Add people now. They will start as invited, and reminders can be added later when payments go live.
+              Invite people now. They only become full members after they accept.
             </p>
 
             <div className="mt-4 min-h-[120px] rounded-[20px] bg-[#fffaf7] p-4">
               {selectedPeople.length ? (
                 <div className="flex flex-wrap gap-3">
                   {selectedPeople.map((person) => (
-                    <div key={person.id} className="inline-flex items-center gap-2 rounded-full border border-[#ead8ce] bg-white px-3 py-2">
+                    <div
+                      key={person.id}
+                      className="inline-flex items-center gap-2 rounded-full border border-[#ead8ce] bg-white px-3 py-2"
+                    >
                       <div
                         className={`flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-b text-[11px] font-bold text-white ${person.colors}`}
                       >
                         {person.initials}
                       </div>
                       <span className="text-sm font-medium text-slate-700">{person.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPeople((prev) => prev.filter((item) => item.id !== person.id))}
-                        className="text-slate-400 hover:text-slate-600"
-                        aria-label={`Remove ${person.name}`}
-                      >
-                        ✕
-                      </button>
                     </div>
                   ))}
                 </div>
@@ -814,175 +698,7 @@ function CreateCircleModal({
                 <p className="text-sm text-slate-400">No one added yet.</p>
               )}
             </div>
-
-            <div className="mt-5 space-y-3">
-              {contacts.length ? (
-                contacts.map((contact) => {
-                  const alreadyAdded = selectedPeople.some((person) => person.id === contact.id);
-                  return (
-                    <div key={contact.id} className="flex items-center justify-between rounded-[18px] border border-[#f0dfd6] bg-[#fffdfa] p-3">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b text-[11px] font-bold text-white ${contact.colors}`}
-                        >
-                          {contact.initials}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">{contact.name}</p>
-                          <p className="text-[12px] text-slate-500">{contact.role || "Contact"}</p>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        disabled={alreadyAdded}
-                        onClick={() => setSelectedPeople((prev) => [...prev, contact])}
-                        className={`inline-flex h-9 items-center justify-center rounded-full px-4 text-[12px] font-semibold ${
-                          alreadyAdded
-                            ? "bg-[#f4efe9] text-slate-400"
-                            : "border border-[#ead8ce] bg-white text-slate-700 hover:bg-[#fff5f0]"
-                        }`}
-                      >
-                        {alreadyAdded ? "Added" : "Add"}
-                      </button>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-sm text-slate-400">Add contacts first, then come back to create a circle.</p>
-              )}
-            </div>
-
-            <div className="mt-6 rounded-[20px] bg-[#fffaf7] p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Total target</p>
-              <p className="mt-1 text-[28px] font-semibold tracking-[-0.05em] text-slate-900">{totalLabel}</p>
-              <div className="mt-3 space-y-2 text-[13px] text-slate-500">
-                <div className="flex items-center justify-between gap-3">
-                  <span>Item</span>
-                  <span className="font-medium text-slate-700">{amountLabel}</span>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span>Hinted organising fee</span>
-                  <span className="font-medium text-slate-700">{feeLabel}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={onSubmit}
-                disabled={!contacts.length}
-                className="inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg disabled:opacity-50"
-              >
-                Create circle
-              </button>
-            </div>
           </div>
-        </div>
-      </div>
-    </ModalShell>
-  );
-}
-
-function AddInvitesModal({ open, onClose, circle, contacts, onSave, selectedPeople, setSelectedPeople, isSaving }) {
-  if (!open || !circle) return null;
-
-  return (
-    <ModalShell open={open} onClose={onClose} eyebrow="Invite people" title={`Add people to ${circle.title}`} maxWidth="max-w-[820px]">
-      <div className="space-y-5 p-6">
-        <p className="text-sm leading-7 text-slate-600">
-          Add more real contacts to this circle now. Invite status will begin as invited until email and payment flows are wired.
-        </p>
-
-        <div className="rounded-[20px] bg-[#fffaf7] p-4">
-          {selectedPeople.length ? (
-            <div className="flex flex-wrap gap-3">
-              {selectedPeople.map((person) => (
-                <div key={person.id} className="inline-flex items-center gap-2 rounded-full border border-[#ead8ce] bg-white px-3 py-2">
-                  <div
-                    className={`flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-b text-[11px] font-bold text-white ${person.colors}`}
-                  >
-                    {person.initials}
-                  </div>
-                  <span className="text-sm font-medium text-slate-700">{person.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPeople((prev) => prev.filter((item) => item.id !== person.id))}
-                    className="text-slate-400 hover:text-slate-600"
-                    aria-label={`Remove ${person.name}`}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-400">No additional people selected yet.</p>
-          )}
-        </div>
-
-        <div className="space-y-3">
-          {contacts.length ? (
-            contacts.map((contact) => {
-              const alreadyAdded = selectedPeople.some((person) => person.id === contact.id);
-              return (
-                <div key={contact.id} className="flex items-center justify-between rounded-[18px] border border-[#f0dfd6] bg-[#fffdfa] p-3">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b text-[11px] font-bold text-white ${contact.colors}`}
-                    >
-                      {contact.initials}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{contact.name}</p>
-                      <p className="text-[12px] text-slate-500">{contact.role || "Contact"}</p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled={alreadyAdded}
-                    onClick={() => setSelectedPeople((prev) => [...prev, contact])}
-                    className={`inline-flex h-9 items-center justify-center rounded-full px-4 text-[12px] font-semibold ${
-                      alreadyAdded
-                        ? "bg-[#f4efe9] text-slate-400"
-                        : "border border-[#ead8ce] bg-white text-slate-700 hover:bg-[#fff5f0]"
-                    }`}
-                  >
-                    {alreadyAdded ? "Added" : "Add"}
-                  </button>
-                </div>
-              );
-            })
-          ) : (
-            <p className="text-sm text-slate-400">No contacts available yet.</p>
-          )}
-        </div>
-
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={!selectedPeople.length || isSaving}
-            className="inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg disabled:opacity-60"
-          >
-            {isSaving ? "Saving..." : "Save invites"}
-          </button>
         </div>
       </div>
     </ModalShell>
@@ -990,460 +706,40 @@ function AddInvitesModal({ open, onClose, circle, contacts, onSave, selectedPeop
 }
 
 export default function CirclesClient() {
-  const [session, setSession] = useState(null);
-  const [contacts, setContacts] = useState([]);
-  const [circles, setCircles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isAddContactOpen, setIsAddContactOpen] = useState(false);
-  const [isCreateCircleOpen, setIsCreateCircleOpen] = useState(false);
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [savingContact, setSavingContact] = useState(false);
-  const [savingCircle, setSavingCircle] = useState(false);
-  const [savingInvites, setSavingInvites] = useState(false);
-  const [activeCircle, setActiveCircle] = useState(null);
-  const [contactForm, setContactForm] = useState({ name: "", email: "", relationshipTypes: [] });
-  const [eventMode, setEventMode] = useState("calendar");
-  const [selectedEventId, setSelectedEventId] = useState("1");
-  const [selectedPeople, setSelectedPeople] = useState([]);
-  const [inviteSelections, setInviteSelections] = useState([]);
-  const [circleForm, setCircleForm] = useState({
-    title: "Sarah's birthday gift",
-    occasionType: "Birthday",
-    eventDate: "2026-06-29",
-    deadline: "2026-06-29",
-    itemTitle: "Weekend cabin stay",
-    itemUrl: "",
-    itemImageUrl: "",
-    itemDescription: "",
-    currency: "GBP",
-    sourceType: "recipient_public_hint",
-    itemTargetAmount: "220",
-    organisingFeeAmount: "8",
-    fundingMode: "flexible",
-  });
-
-  const resetContactForm = () => {
-    setContactForm({ name: "", email: "", relationshipTypes: [] });
-  };
-
-  const resetCircleForm = () => {
-    setEventMode("calendar");
-    setSelectedEventId("1");
-    setSelectedPeople([]);
-    setCircleForm({
-      title: "Sarah's birthday gift",
-      occasionType: "Birthday",
-      eventDate: "2026-06-29",
-      deadline: "2026-06-29",
-      itemTitle: "Weekend cabin stay",
-      itemUrl: "",
-      itemImageUrl: "",
-      itemDescription: "",
-      currency: "GBP",
-      sourceType: "recipient_public_hint",
-      itemTargetAmount: "220",
-      organisingFeeAmount: "8",
-      fundingMode: "flexible",
-    });
-  };
-
-  const hydrateContact = (row) => {
-    const role = getPrimaryRelationship(row.relationship_types);
-    return {
-      ...row,
-      role,
-      initials: getInitials(row.name),
-      colors: getContactGradient(role),
-    };
-  };
-
-  const fetchContactsAndCircles = async (profileId) => {
-    setLoading(true);
-    setErrorMessage("");
-
-    const [{ data: contactRows, error: contactsError }, { data: circleRows, error: circlesError }] = await Promise.all([
-      supabase
-        .from("profile_connections")
-        .select("id, profile_id, name, email, relationship_types, created_at, updated_at")
-        .eq("profile_id", profileId)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("circles")
-        .select(
-          "id, userid, recipientcontactid, title, occasion_type, event_date, deadline_at, source_type, item_title, item_url, item_image_url, item_description, currency, item_target_amount, organising_fee_amount, total_target_amount, funding_mode, status, created_at, circleinvites(id, contactid, invite_name, invite_email, status, created_at)",
-        )
-        .eq("userid", profileId)
-        .order("created_at", { ascending: false }),
-    ]);
-
-    if (contactsError || circlesError) {
-      setErrorMessage(contactsError?.message || circlesError?.message || "Unable to load circles.");
-      setLoading(false);
-      return;
-    }
-
-    const hydratedContacts = (contactRows || []).map(hydrateContact);
-    setContacts(hydratedContacts);
-
-    const contactMap = new Map(hydratedContacts.map((contact) => [contact.id, contact]));
-    const hydratedCircles = (circleRows || []).map((circle) => ({
-      ...circle,
-      invites: (circle.circleinvites || []).map((invite) => {
-        const contact = invite.contactid ? contactMap.get(invite.contactid) : null;
-        return {
-          ...invite,
-          contact_name: contact?.name || null,
-          contact_colors: contact?.colors || null,
-        };
-      }),
-    }));
-
-    setCircles(hydratedCircles);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function bootstrap() {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        if (mounted) {
-          setErrorMessage(error.message);
-          setLoading(false);
-        }
-        return;
-      }
-
-      const activeSession = data.session;
-      if (!mounted) return;
-      setSession(activeSession);
-
-      if (!activeSession?.user?.id) {
-        setLoading(false);
-        return;
-      }
-
-      await fetchContactsAndCircles(activeSession.user.id);
-    }
-
-    bootstrap();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
-      setSession(nextSession);
-      if (nextSession?.user?.id) {
-        await fetchContactsAndCircles(nextSession.user.id);
-      } else {
-        setContacts([]);
-        setCircles([]);
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const handleSaveContact = async () => {
-    if (!session?.user?.id) {
-      setErrorMessage("You need to be signed in to save a contact.");
-      return;
-    }
-
-    if (!contactForm.name.trim()) {
-      setErrorMessage("Please add a name for the contact.");
-      return;
-    }
-
-    setSavingContact(true);
-    setErrorMessage("");
-
-    const relationshipTypes = contactForm.relationshipTypes.length ? contactForm.relationshipTypes : ["Friend"];
-    const payload = {
-      profile_id: session.user.id,
-      name: contactForm.name.trim(),
-      email: contactForm.email.trim() || null,
-      relationship_types: relationshipTypes,
-    };
-
-    const { data, error } = await supabase
-      .from("profile_connections")
-      .insert(payload)
-      .select("id, profile_id, name, email, relationship_types, created_at, updated_at")
-      .single();
-
-    if (error) {
-      setErrorMessage(error.message);
-      setSavingContact(false);
-      return;
-    }
-
-    const hydrated = hydrateContact(data);
-    setContacts((prev) => [hydrated, ...prev]);
-    resetContactForm();
-    setIsAddContactOpen(false);
-    setSavingContact(false);
-  };
-
-  const handleCreateCircle = async () => {
-    if (!session?.user?.id) {
-      setErrorMessage("You need to be signed in to create a circle.");
-      return;
-    }
-
-    if (!circleForm.title.trim() || !circleForm.itemTitle.trim()) {
-      setErrorMessage("Please add a circle title and item title.");
-      return;
-    }
-
-    setSavingCircle(true);
-    setErrorMessage("");
-
-    const itemAmount = parseAmount(circleForm.itemTargetAmount);
-    const feeAmount = parseAmount(circleForm.organisingFeeAmount);
-    const totalAmount = itemAmount + feeAmount;
-    const deadlineAt = circleForm.deadline ? new Date(`${circleForm.deadline}T18:00:00`).toISOString() : null;
-
-    const circlePayload = {
-      userid: session.user.id,
-      title: circleForm.title.trim(),
-      occasion_type: circleForm.occasionType.trim() || null,
-      event_date: circleForm.eventDate || null,
-      deadline_at: deadlineAt,
-      source_type: circleForm.sourceType,
-      item_title: circleForm.itemTitle.trim(),
-      item_url: circleForm.itemUrl.trim() || null,
-      item_image_url: circleForm.itemImageUrl.trim() || null,
-      item_description: circleForm.itemDescription.trim() || null,
-      currency: circleForm.currency,
-      item_target_amount: itemAmount,
-      organising_fee_amount: feeAmount,
-      total_target_amount: totalAmount,
-      funding_mode: circleForm.fundingMode,
-      status: "active",
-    };
-
-    const { data: insertedCircle, error: circleError } = await supabase.from("circles").insert(circlePayload).select().single();
-
-    if (circleError) {
-      setErrorMessage(circleError.message);
-      setSavingCircle(false);
-      return;
-    }
-
-    if (selectedPeople.length) {
-      const inviteRows = selectedPeople.map((person) => ({
-        circleid: insertedCircle.id,
-        userid: session.user.id,
-        contactid: person.id,
-        invite_name: person.name,
-        invite_email: person.email || `${person.id}@pending.local`,
-        status: "pending",
-      }));
-      const { error: inviteError } = await supabase.from("circleinvites").insert(inviteRows);
-      if (inviteError) setErrorMessage(inviteError.message);
-    }
-
-    await fetchContactsAndCircles(session.user.id);
-    resetCircleForm();
-    setIsCreateCircleOpen(false);
-    setSavingCircle(false);
-  };
-
-  const handleSaveInvites = async () => {
-    if (!session?.user?.id || !activeCircle || !inviteSelections.length) {
-      setIsInviteModalOpen(false);
-      return;
-    }
-
-    setSavingInvites(true);
-    setErrorMessage("");
-
-    const existingContactIds = new Set((activeCircle.invites || []).map((invite) => invite.contactid).filter(Boolean));
-    const rowsToInsert = inviteSelections
-      .filter((person) => !existingContactIds.has(person.id))
-      .map((person) => ({
-        circleid: activeCircle.id,
-        userid: session.user.id,
-        contactid: person.id,
-        invite_name: person.name,
-        invite_email: person.email || `${person.id}@pending.local`,
-        status: "pending",
-      }));
-
-    if (rowsToInsert.length) {
-      const { error } = await supabase.from("circleinvites").insert(rowsToInsert);
-      if (error) {
-        setErrorMessage(error.message);
-        setSavingInvites(false);
-        return;
-      }
-    }
-
-    await fetchContactsAndCircles(session.user.id);
-    setInviteSelections([]);
-    setActiveCircle(null);
-    setIsInviteModalOpen(false);
-    setSavingInvites(false);
-  };
-
-  const openInviteModal = (circle) => {
-    setActiveCircle(circle);
-    setInviteSelections([]);
-    setIsInviteModalOpen(true);
-  };
-
-  const visibleCircles = circles.length ? circles : [demoCircle];
+  const [contacts, setContacts] = useState(initialContacts);
+  const [circles, setCircles] = useState(initialCircles);
+  const [createOpen, setCreateOpen] = useState(false);
 
   return (
-    <main className="min-h-screen bg-[#fcf8f5] text-slate-900">
-      <header className="sticky top-0 z-30 border-b border-[#f1e6df] bg-[#fcf8f5f5] backdrop-blur">
-        <div className="mx-auto flex max-w-[1320px] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f8f3ef]">
+      <header className="border-b border-[#eadfd8] bg-[#fcf8f5]">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <LogoMark />
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#df7b59]">Hinted</p>
-              <h1 className="text-lg font-semibold tracking-[-0.04em] text-slate-900">Circles</h1>
+              <p className="text-sm font-semibold text-slate-900">Hinted</p>
+              <p className="text-xs text-slate-500">Circles</p>
             </div>
           </div>
-
-          <nav className="hidden items-center gap-2 md:flex">
-            <Link href="/feed" className="rounded-full px-4 py-2 text-sm font-medium text-slate-500 hover:bg-white hover:text-slate-900">
-              Feed
-            </Link>
-            <Link href="/hints" className="rounded-full px-4 py-2 text-sm font-medium text-slate-500 hover:bg-white hover:text-slate-900">
-              Hints
-            </Link>
-            <Link href="/shop" className="rounded-full px-4 py-2 text-sm font-medium text-slate-500 hover:bg-white hover:text-slate-900">
-              Shop
-            </Link>
-            <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm">Circles</span>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <AvatarMenu />
-          </div>
+          <AvatarMenu />
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-          <aside className="space-y-5">
-            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Contacts</p>
-                <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">People you can invite</h2>
-                <p className="mt-2 text-[14px] leading-7 text-slate-600">
-                  Keep this list real. If there are no contacts yet, start there first.
-                </p>
-              </div>
-
-              <div className="mt-5 space-y-3">
-                {loading ? (
-                  <div className="rounded-[20px] bg-[#faf7f4] p-4 text-sm text-slate-500">Loading contacts...</div>
-                ) : contacts.length ? (
-                  contacts.map((contact) => (
-                    <ContactCard key={contact.id} contact={contact} onAdd={(person) => setSelectedPeople((prev) => [...prev, person])} />
-                  ))
-                ) : (
-                  <EmptyContacts onAdd={() => setIsAddContactOpen(true)} />
-                )}
-              </div>
-            </section>
+      <main className="mx-auto max-w-7xl px-6 py-8">
+        <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
+          <aside className="space-y-4">
+            {contacts.map((contact) => (
+              <ContactCard key={contact.id} contact={contact} onAdd={() => {}} />
+            ))}
           </aside>
 
-          <section className="space-y-5">
-            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-6 shadow-sm">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Circles</p>
-                  <h2 className="mt-1 text-[28px] font-semibold tracking-[-0.05em] text-slate-900">
-                    Group gifting without the awkward chasing
-                  </h2>
-                  <p className="mt-2 max-w-[64ch] text-[14px] leading-7 text-slate-600">
-                    Start one shared circle around one clear item, invite the right people, and keep the plan calm and visible in one place.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsCreateCircleOpen(true)}
-                  className="inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg"
-                >
-                  Create circle
-                </button>
-              </div>
-
-              <div className="mt-4 rounded-[22px] border border-[#f0dfd6] bg-[#fffaf7] px-4 py-3 text-sm text-slate-600">
-                {circles.length
-                  ? `${circles.length} real circle${circles.length === 1 ? "" : "s"}`
-                  : "Showing one demo example until you create your first real circle"}
-              </div>
-            </section>
-
-            {errorMessage ? <div className="rounded-[20px] border border-[#f1d1c8] bg-[#fff5f0] p-4 text-sm text-[#a55339]">{errorMessage}</div> : null}
-
-            <div className="space-y-5">
-              {loading ? (
-                <div className="rounded-[28px] border border-[#f0dfd6] bg-white p-6 text-sm text-slate-500 shadow-sm">Loading circles...</div>
-              ) : (
-                visibleCircles.map((circle) => <CircleCard key={circle.id} circle={circle} onOpenInviteModal={openInviteModal} />)
-              )}
-            </div>
+          <section className="space-y-6">
+            {circles.map((circle) => (
+              <CircleCard key={circle.id} circle={circle} onEditPot={() => {}} />
+            ))}
           </section>
         </div>
-      </div>
-
-      <AddContactModal
-        open={isAddContactOpen}
-        onClose={() => {
-          resetContactForm();
-          setIsAddContactOpen(false);
-        }}
-        onSave={handleSaveContact}
-        form={contactForm}
-        setForm={setContactForm}
-        isSaving={savingContact}
-      />
-
-      <CreateCircleModal
-        open={isCreateCircleOpen}
-        onClose={() => {
-          resetCircleForm();
-          setIsCreateCircleOpen(false);
-        }}
-        onSubmit={handleCreateCircle}
-        contacts={contacts}
-        calendarEvents={calendarEvents}
-        selectedPeople={selectedPeople}
-        setSelectedPeople={setSelectedPeople}
-        eventMode={eventMode}
-        setEventMode={setEventMode}
-        selectedEventId={selectedEventId}
-        setSelectedEventId={setSelectedEventId}
-        form={circleForm}
-        setForm={setCircleForm}
-      />
-
-      <AddInvitesModal
-        open={isInviteModalOpen}
-        onClose={() => {
-          setInviteSelections([]);
-          setActiveCircle(null);
-          setIsInviteModalOpen(false);
-        }}
-        circle={activeCircle}
-        contacts={contacts}
-        onSave={handleSaveInvites}
-        selectedPeople={inviteSelections}
-        setSelectedPeople={setInviteSelections}
-        isSaving={savingInvites}
-      />
-    </main>
+      </main>
+    </div>
   );
 }
