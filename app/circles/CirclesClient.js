@@ -314,6 +314,12 @@ function buildStoredItemTitle(value) {
   return text || "Shared gift";
 }
 
+function isValidEmail(email) {
+  const value = String(email || "").trim().toLowerCase();
+  if (!value) return true;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 function buildCircleViewModel(circleRow, inviteRows = [], currentUserName = "You") {
   const members = [
     {
@@ -434,11 +440,11 @@ function ModalShell({
   );
 }
 
-function ContactCard({ contact, onAdd }) {
+function ContactCard({ contact, onAdd, onDelete, deleting }) {
   return (
     <article
       className="rounded-[22px] border border-[#f0dfd6] bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-      aria-label={`Add ${contact.name} into a circle`}
+      aria-label={`Manage ${contact.name}`}
     >
       <div className="flex items-center gap-3">
         <div
@@ -455,13 +461,28 @@ function ContactCard({ contact, onAdd }) {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => onAdd(contact)}
-          className="inline-flex h-9 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-3 text-[12px] font-semibold text-slate-700 hover:bg-[#fff5f0]"
-        >
-          Add
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onAdd(contact)}
+            className="inline-flex h-9 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-3 text-[12px] font-semibold text-slate-700 hover:bg-[#fff5f0]"
+          >
+            Add
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onDelete(contact)}
+            disabled={deleting}
+            className={`inline-flex h-9 items-center justify-center rounded-full px-3 text-[12px] font-semibold ${
+              deleting
+                ? "cursor-not-allowed bg-[#f3ece8] text-slate-400"
+                : "border border-[#f0d4cc] bg-[#fff7f5] text-[#b45a4c] hover:bg-[#fff1ed]"
+            }`}
+          >
+            {deleting ? "Deleting..." : "Delete"}
+          </button>
+        </div>
       </div>
     </article>
   );
@@ -550,21 +571,17 @@ function ContributionRing({ raised, target, ringId }) {
   );
 }
 
-function PotPreviewCard({ image, title, url, compact = false }) {
+function PotPreviewCard({ image, title, url }) {
   if (!title && !url && !image) return null;
 
   return (
-    <div
-      className={`overflow-hidden rounded-[22px] border border-[#eedfd6] bg-[#fffdfa] ${
-        compact ? "p-3" : "p-4"
-      }`}
-    >
+    <div className="overflow-hidden rounded-[22px] border border-[#eedfd6] bg-[#fffdfa] p-3">
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
         Linked item
       </p>
 
       <div className="mt-3 min-w-0">
-        <div className="relative w-full overflow-hidden rounded-[18px] bg-[#f5ebe4] aspect-[4/3]">
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[18px] bg-[#f5ebe4]">
           {image ? (
             <img
               src={image}
@@ -759,7 +776,6 @@ function CircleCard({ circle, onEditPot }) {
                       image={circle?.pot?.previewImage}
                       title={circle?.pot?.fullItemTitle || circle?.pot?.item}
                       url={circle?.pot?.sourceUrl}
-                      compact
                     />
                   </div>
                 ) : null}
@@ -876,11 +892,14 @@ function CreateCircleModal({
   const selectedHint =
     publicHintsByContact?.[selectedHintContactId]?.find((hint) => hint.id === form.selectedHintId) || null;
 
+  const previewFailed = !!linkPreview?.manualFallback;
   const liveBaseAmount =
     form.goalType === "item"
       ? form.itemSource === "hint"
         ? extractHintAmount(selectedHint)
-        : extractPreviewAmount(linkPreview)
+        : previewFailed
+          ? parseAmount(form.manualItemAmount)
+          : extractPreviewAmount(linkPreview)
       : parseAmount(form.goalValue);
 
   const liveTotals = calculateCircleTotals(liveBaseAmount);
@@ -1225,7 +1244,7 @@ function CreateCircleModal({
                   </div>
                 </div>
               ) : (
-                <div className="mt-4 space-y-3">
+                <div className="mt-4 space-y-4">
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <input
                       type="url"
@@ -1246,11 +1265,54 @@ function CreateCircleModal({
                   </div>
 
                   {linkPreview ? (
-                    <PotPreviewCard
-                      image={linkPreview.image}
-                      title={linkPreview.title}
-                      url={linkPreview.url}
-                    />
+                    <>
+                      {linkPreview.manualFallback ? (
+                        <div className="rounded-[20px] border border-[#f0dfd6] bg-[#fffaf7] p-4">
+                          <p className="text-sm font-semibold text-slate-900">
+                            We couldn’t pull this automatically
+                          </p>
+                          <p className="mt-1 text-[13px] leading-6 text-slate-500">
+                            You can still use this link. Add a short title and amount manually.
+                          </p>
+
+                          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                            <label className="space-y-2 sm:col-span-2">
+                              <span className="text-sm font-medium text-slate-700">Item title</span>
+                              <input
+                                type="text"
+                                value={form.manualItemTitle}
+                                onChange={(e) =>
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    manualItemTitle: e.target.value,
+                                  }))
+                                }
+                                placeholder="Le Creuset dish"
+                                className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                              />
+                            </label>
+
+                            <CurrencyAmountInput
+                              currency={form.currency}
+                              amount={form.manualItemAmount}
+                              onCurrencyChange={(value) =>
+                                setForm((prev) => ({ ...prev, currency: value }))
+                              }
+                              onAmountChange={(value) =>
+                                setForm((prev) => ({ ...prev, manualItemAmount: value }))
+                              }
+                              label="Item amount"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <PotPreviewCard
+                          image={linkPreview.image}
+                          title={linkPreview.title}
+                          url={linkPreview.url}
+                        />
+                      )}
+                    </>
                   ) : null}
                 </div>
               )}
@@ -1413,6 +1475,7 @@ function EditPotModal({
   open,
   onClose,
   onSave,
+  onDelete,
   circle,
   isSaving,
   errorMessage,
@@ -1533,7 +1596,7 @@ function EditPotModal({
           </div>
         ) : null}
 
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <button
             type="button"
             onClick={onClose}
@@ -1541,6 +1604,15 @@ function EditPotModal({
           >
             Cancel
           </button>
+
+          <button
+            type="button"
+            onClick={onDelete}
+            className="inline-flex h-12 flex-1 items-center justify-center rounded-full border border-[#f0d4cc] bg-[#fff7f5] px-6 text-sm font-semibold text-[#b45a4c] hover:bg-[#fff1ed]"
+          >
+            Delete pot
+          </button>
+
           <button
             type="button"
             disabled={isSaving}
@@ -1561,6 +1633,158 @@ function EditPotModal({
             }`}
           >
             {isSaving ? "Saving..." : "Save changes"}
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+function DeleteContactModal({ open, onClose, onConfirm, contact, isDeleting }) {
+  const [confirmation, setConfirmation] = useState("");
+
+  useEffect(() => {
+    if (!open) setConfirmation("");
+  }, [open]);
+
+  if (!open || !contact) return null;
+
+  const expected = contact.name || contact.email || "";
+  const matches = confirmation.trim() === expected;
+
+  return (
+    <ModalShell
+      open={open}
+      onClose={() => {
+        setConfirmation("");
+        onClose();
+      }}
+      eyebrow="Delete contact"
+      title="Confirm contact deletion"
+      maxWidth="max-w-[640px]"
+    >
+      <div className="p-6">
+        <div className="rounded-[24px] border border-[#f1d6d1] bg-[#fff7f5] p-5">
+          <p className="text-sm font-semibold text-[#a44b42]">
+            This will permanently remove {contact.name || "this contact"} from your contacts.
+          </p>
+          <p className="mt-2 text-[14px] leading-7 text-slate-600">
+            They will no longer appear in your contact list on this page. To confirm, type their name exactly.
+          </p>
+        </div>
+
+        <div className="mt-5 space-y-2">
+          <span className="text-sm font-medium text-slate-700">Type {expected}</span>
+          <input
+            type="text"
+            value={confirmation}
+            onChange={(e) => setConfirmation(e.target.value)}
+            className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#d9796e]"
+            placeholder={expected}
+          />
+        </div>
+
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setConfirmation("");
+              onClose();
+            }}
+            className="inline-flex h-12 flex-1 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-6 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={!matches || isDeleting}
+            onClick={() => {
+              onConfirm();
+              setConfirmation("");
+            }}
+            className={`inline-flex h-12 flex-1 items-center justify-center rounded-full px-6 text-sm font-semibold ${
+              matches && !isDeleting
+                ? "bg-[#b14f43] text-white"
+                : "cursor-not-allowed border border-[#edd8d4] bg-[#f7f2f0] text-slate-400"
+            }`}
+          >
+            {isDeleting ? "Deleting..." : "Delete contact"}
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+function DeletePotModal({ open, onClose, onConfirm, circle, isDeleting }) {
+  const [confirmation, setConfirmation] = useState("");
+
+  useEffect(() => {
+    if (!open) setConfirmation("");
+  }, [open]);
+
+  if (!open || !circle) return null;
+
+  const expected = circle.name;
+  const matches = confirmation.trim() === expected;
+
+  return (
+    <ModalShell
+      open={open}
+      onClose={() => {
+        setConfirmation("");
+        onClose();
+      }}
+      eyebrow="Delete pot"
+      title="Confirm pot deletion"
+      maxWidth="max-w-[640px]"
+    >
+      <div className="p-6">
+        <div className="rounded-[24px] border border-[#f1d6d1] bg-[#fff7f5] p-5">
+          <p className="text-sm font-semibold text-[#a44b42]">
+            This will remove the shared pot from {circle.name}.
+          </p>
+          <p className="mt-2 text-[14px] leading-7 text-slate-600">
+            The circle will remain, but the item, target, service fee, and pot details will be cleared. To confirm, type the circle name exactly.
+          </p>
+        </div>
+
+        <div className="mt-5 space-y-2">
+          <span className="text-sm font-medium text-slate-700">Type {expected}</span>
+          <input
+            type="text"
+            value={confirmation}
+            onChange={(e) => setConfirmation(e.target.value)}
+            className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#d9796e]"
+            placeholder={expected}
+          />
+        </div>
+
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setConfirmation("");
+              onClose();
+            }}
+            className="inline-flex h-12 flex-1 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-6 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={!matches || isDeleting}
+            onClick={() => {
+              onConfirm();
+              setConfirmation("");
+            }}
+            className={`inline-flex h-12 flex-1 items-center justify-center rounded-full px-6 text-sm font-semibold ${
+              matches && !isDeleting
+                ? "bg-[#b14f43] text-white"
+                : "cursor-not-allowed border border-[#edd8d4] bg-[#f7f2f0] text-slate-400"
+            }`}
+          >
+            {isDeleting ? "Deleting..." : "Delete pot"}
           </button>
         </div>
       </div>
@@ -1708,6 +1932,11 @@ function AddContactModal({ open, onClose, onSave, supabase }) {
       return;
     }
 
+    if (form.email.trim() && !isValidEmail(form.email)) {
+      setSaveError("Enter a valid email address.");
+      return;
+    }
+
     setSaving(true);
     setSaveError("");
 
@@ -1806,6 +2035,9 @@ function AddContactModal({ open, onClose, onSave, supabase }) {
               placeholder="maya@example.com"
               className="mt-2 h-[48px] w-full rounded-[18px] border border-[#d9dce3] bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-[#f19b7e]"
             />
+            {form.email.trim() && !isValidEmail(form.email) ? (
+              <p className="mt-2 text-[12px] text-[#b14f43]">Enter a valid email address.</p>
+            ) : null}
           </label>
 
           <div>
@@ -1850,9 +2082,9 @@ function AddContactModal({ open, onClose, onSave, supabase }) {
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving || !form.name.trim()}
+            disabled={saving || !form.name.trim() || (form.email.trim() && !isValidEmail(form.email))}
             className={`inline-flex h-[44px] items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-lg ${
-              saving || !form.name.trim()
+              saving || !form.name.trim() || (form.email.trim() && !isValidEmail(form.email))
                 ? "cursor-not-allowed bg-[#e9a48d]"
                 : "bg-gradient-to-b from-[#ff946d] to-[#f36f64]"
             }`}
@@ -1903,6 +2135,13 @@ export default function CirclesClient() {
   const [isSavingPot, setIsSavingPot] = useState(false);
   const [editingPotError, setEditingPotError] = useState("");
 
+  const [contactPendingDelete, setContactPendingDelete] = useState(null);
+  const [isDeleteContactOpen, setIsDeleteContactOpen] = useState(false);
+  const [isDeletingContact, setIsDeletingContact] = useState(false);
+
+  const [isDeletePotOpen, setIsDeletePotOpen] = useState(false);
+  const [isDeletingPot, setIsDeletingPot] = useState(false);
+
   const [form, setForm] = useState({
     eventTitle: safeDefaultEvent.title || "",
     eventDate: safeDefaultEvent.date || "",
@@ -1914,6 +2153,8 @@ export default function CirclesClient() {
     itemSource: "url",
     selectedHintId: "",
     itemUrl: "",
+    manualItemTitle: "",
+    manualItemAmount: "",
   });
 
   const displayedCircles = useMemo(() => {
@@ -1947,6 +2188,8 @@ export default function CirclesClient() {
       itemSource: "url",
       selectedHintId: "",
       itemUrl: "",
+      manualItemTitle: "",
+      manualItemAmount: "",
     });
   }, [contacts, safeCalendarEvents]);
 
@@ -2115,19 +2358,30 @@ export default function CirclesClient() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || "Failed to fetch preview");
+        setLinkPreview({
+          manualFallback: true,
+          url: form.itemUrl.trim(),
+          title: form.manualItemTitle || "Shared item",
+          image: "",
+        });
+        return;
       }
 
       setLinkPreview(data);
+      if (data?.manualFallback) {
+        setForm((prev) => ({
+          ...prev,
+          manualItemTitle: prev.manualItemTitle || data?.title || "",
+        }));
+      }
     } catch (error) {
+      console.error("Link preview error:", error);
       setLinkPreview({
-        title: "Preview unavailable",
-        description: "We could not pull a preview from that link yet, but you can still use the URL.",
+        manualFallback: true,
+        url: form.itemUrl.trim(),
+        title: form.manualItemTitle || "Shared item",
         image: "",
-        siteName: form.itemUrl,
-        url: form.itemUrl,
       });
-      setCircleError(error?.message || "Failed to fetch link preview.");
     } finally {
       setIsFetchingPreview(false);
     }
@@ -2138,6 +2392,10 @@ export default function CirclesClient() {
 
     if (!sessionUser?.id) {
       throw new Error("You must be signed in to save contacts.");
+    }
+
+    if (contactPayload.email && !isValidEmail(contactPayload.email)) {
+      throw new Error("Enter a valid email address.");
     }
 
     const insertPayload = {
@@ -2161,6 +2419,47 @@ export default function CirclesClient() {
     }
 
     await loadContacts(sessionUser.id);
+  }
+
+  async function handleDeleteContact() {
+    if (!contactPendingDelete?.id || !sessionUser?.id) return;
+
+    setIsDeletingContact(true);
+    setContactError("");
+
+    try {
+      const { data, error } = await supabase
+        .from("profile_connections")
+        .delete()
+        .eq("id", contactPendingDelete.id)
+        .eq("profile_id", sessionUser.id)
+        .select("*");
+
+      if (error) {
+        throw new Error(
+          normalizeSupabaseError(
+            error,
+            "Failed to delete contact from profile_connections."
+          )
+        );
+      }
+
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error(
+          "No contact was deleted. This is often an RLS issue or means the row was not visible to the current user."
+        );
+      }
+
+      setContacts((prev) => prev.filter((contact) => contact.id !== contactPendingDelete.id));
+      setSelectedPeople((prev) => prev.filter((person) => person.id !== contactPendingDelete.id));
+      setIsDeleteContactOpen(false);
+      setContactPendingDelete(null);
+    } catch (error) {
+      console.error("Delete contact failed:", error);
+      setContactError(error?.message || "Failed to delete contact.");
+    } finally {
+      setIsDeletingContact(false);
+    }
   }
 
   async function handleCreateCircle() {
@@ -2243,29 +2542,55 @@ export default function CirclesClient() {
         organisingFeeAmount = totals.feeAmount;
         totalTargetAmount = totals.totalAmount;
       } else {
+        const usingManualFallback = !!linkPreview?.manualFallback;
+
         if (!form.itemUrl.trim()) {
           setCircleError("Paste a product or experience link.");
           return;
         }
 
-        const baseAmount = extractPreviewAmount(linkPreview);
+        if (usingManualFallback) {
+          const manualAmount = parseAmount(form.manualItemAmount);
 
-        if (baseAmount <= 0) {
-          setCircleError(
-            "We couldn’t detect a price from that link preview yet. Add pricing to the preview response or use a hint with a valid amount."
-          );
-          return;
+          if (!form.manualItemTitle.trim()) {
+            setCircleError("Add an item title for this link.");
+            return;
+          }
+
+          if (manualAmount <= 0) {
+            setCircleError("Add a valid item amount for this link.");
+            return;
+          }
+
+          const totals = calculateCircleTotals(manualAmount);
+
+          itemTitle = buildStoredItemTitle(form.manualItemTitle);
+          itemUrl = form.itemUrl.trim();
+          itemImageUrl = null;
+          itemDescription = null;
+          itemTargetAmount = totals.itemAmount;
+          organisingFeeAmount = totals.feeAmount;
+          totalTargetAmount = totals.totalAmount;
+        } else {
+          const baseAmount = extractPreviewAmount(linkPreview);
+
+          if (baseAmount <= 0) {
+            setCircleError(
+              "We couldn’t detect a price from that link preview yet. Fetch the link again or add the title and amount manually."
+            );
+            return;
+          }
+
+          const totals = calculateCircleTotals(baseAmount);
+
+          itemTitle = buildStoredItemTitle(linkPreview?.title || "Shared item");
+          itemUrl = linkPreview?.url || form.itemUrl.trim();
+          itemImageUrl = linkPreview?.image || null;
+          itemDescription = linkPreview?.description || null;
+          itemTargetAmount = totals.itemAmount;
+          organisingFeeAmount = totals.feeAmount;
+          totalTargetAmount = totals.totalAmount;
         }
-
-        const totals = calculateCircleTotals(baseAmount);
-
-        itemTitle = buildStoredItemTitle(linkPreview?.title || "Shared item");
-        itemUrl = linkPreview?.url || form.itemUrl.trim();
-        itemImageUrl = linkPreview?.image || null;
-        itemDescription = linkPreview?.description || null;
-        itemTargetAmount = totals.itemAmount;
-        organisingFeeAmount = totals.feeAmount;
-        totalTargetAmount = totals.totalAmount;
       }
     } else {
       const manualAmount = parseAmount(form.goalValue);
@@ -2454,6 +2779,64 @@ export default function CirclesClient() {
     }
   }
 
+  async function handleDeletePot() {
+    if (!editingCircle?.id) return;
+
+    setIsDeletingPot(true);
+    setCircleError("");
+
+    try {
+      const payload = {
+        source_type: "external_link",
+        item_title: "Shared contribution pot",
+        item_url: null,
+        item_image_url: null,
+        item_description: null,
+        item_target_amount: 0,
+        organising_fee_amount: 0,
+        total_target_amount: 0,
+        fee_mode: "included_in_target",
+      };
+
+      const { data, error } = await supabase
+        .from("circles")
+        .update(payload)
+        .eq("id", editingCircle.id)
+        .select("*")
+        .single();
+
+      if (error) {
+        throw new Error(
+          normalizeSupabaseError(error, "Failed to clear pot details from circles.")
+        );
+      }
+
+      const currentUserName =
+        getGoogleName(profile || {}) ||
+        profile?.full_name ||
+        profile?.name ||
+        "You";
+
+      const nextCircle = buildCircleViewModel(data, editingCircle.invites || [], currentUserName);
+      nextCircle.pot.active = false;
+      nextCircle.pot.note = "Choose a public hint or paste a link to turn this into a communal goal.";
+
+      setRealCircles((prev) =>
+        prev.map((circle) => (circle.id === editingCircle.id ? nextCircle : circle))
+      );
+
+      setIsDeletePotOpen(false);
+      setIsEditPotOpen(false);
+      setEditingCircle(null);
+      setEditingPotError("");
+    } catch (error) {
+      console.error("Delete pot failed:", error);
+      setCircleError(error?.message || "Failed to delete pot.");
+    } finally {
+      setIsDeletingPot(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur">
@@ -2552,11 +2935,16 @@ export default function CirclesClient() {
                         <ContactCard
                           key={contact.id}
                           contact={contact}
+                          deleting={isDeletingContact && contactPendingDelete?.id === contact.id}
                           onAdd={(person) => {
                             setSelectedPeople((prev) =>
                               prev.some((item) => item.id === person.id) ? prev : [...prev, person]
                             );
                             setIsCreateOpen(true);
+                          }}
+                          onDelete={(person) => {
+                            setContactPendingDelete(person);
+                            setIsDeleteContactOpen(true);
                           }}
                         />
                       ))
@@ -2661,9 +3049,29 @@ export default function CirclesClient() {
           setEditingPotError("");
         }}
         onSave={handleSavePotEdits}
+        onDelete={() => setIsDeletePotOpen(true)}
         circle={editingCircle}
         isSaving={isSavingPot}
         errorMessage={editingPotError}
+      />
+
+      <DeleteContactModal
+        open={isDeleteContactOpen}
+        onClose={() => {
+          setIsDeleteContactOpen(false);
+          setContactPendingDelete(null);
+        }}
+        onConfirm={handleDeleteContact}
+        contact={contactPendingDelete}
+        isDeleting={isDeletingContact}
+      />
+
+      <DeletePotModal
+        open={isDeletePotOpen}
+        onClose={() => setIsDeletePotOpen(false)}
+        onConfirm={handleDeletePot}
+        circle={editingCircle}
+        isDeleting={isDeletingPot}
       />
 
       <AddContactModal
