@@ -2287,117 +2287,152 @@ export default function CirclesClient() {
     }
   };
 
-  const handleCreateCircle = () => {
-    const selectedEvent =
-      eventMode === "calendar"
-        ? calendarEvents.find((event) => String(event.id) === selectedEventId)
-        : null;
+const handleCreateCircle = async () => {
+  const selectedEvent =
+    eventMode === "calendar"
+      ? calendarEvents.find((event) => String(event.id) === selectedEventId)
+      : null;
 
-    const eventTitle =
-      eventMode === "calendar"
-        ? selectedEvent?.title || form.eventTitle
-        : form.eventTitle.trim();
+  const eventTitle =
+    eventMode === "calendar"
+      ? selectedEvent?.title || form.eventTitle
+      : form.eventTitle.trim();
 
-    const eventDate =
-      eventMode === "calendar"
-        ? selectedEvent?.date || form.eventDate
-        : form.eventDate;
+  const eventDate =
+    eventMode === "calendar"
+      ? selectedEvent?.date || form.eventDate
+      : form.eventDate;
 
-    if (!eventDate || !eventTitle) return;
+  if (!eventDate || !eventTitle) return;
 
-    const fundingModeLabel =
-      form.fundingMode === "all_or_nothing"
-        ? "All-or-nothing"
-        : form.fundingMode === "organizer_covers"
-          ? "Organizer covers gap"
-          : "Flexible pot";
+  const fundingModeLabel =
+    form.fundingMode === "all_or_nothing"
+      ? "All-or-nothing"
+      : form.fundingMode === "organizer_covers"
+        ? "Organizer covers gap"
+        : "Flexible pot";
 
-    const targetNumber = parseAmount(form.goalValue);
+  const targetNumber = parseAmount(form.goalValue);
 
-    const selectedHint =
-      publicHintsByContact[selectedHintContactId]?.find((hint) => hint.id === form.selectedHintId) || null;
-    const selectedHintContact =
-      contacts.find((contact) => String(contact.id) === String(selectedHintContactId)) || null;
+  const selectedHint =
+    publicHintsByContact[selectedHintContactId]?.find((hint) => hint.id === form.selectedHintId) || null;
+  const selectedHintContact =
+    contacts.find((contact) => String(contact.id) === String(selectedHintContactId)) || null;
 
-    const itemLabel =
-      form.goalType === "amount"
-        ? "Shared contribution pot"
-        : form.itemSource === "hint"
-          ? selectedHint?.title || "New shared item"
-          : linkPreview?.title || "New shared item";
+  const itemLabel =
+    form.goalType === "amount"
+      ? "Shared contribution pot"
+      : form.itemSource === "hint"
+        ? selectedHint?.title || "New shared item"
+        : linkPreview?.title || "New shared item";
 
-    const sourceLabel =
-      form.goalType === "amount"
-        ? "Amount-based goal"
-        : form.itemSource === "hint"
-          ? `From ${selectedHintContact?.name || "contact"}'s public hints`
-          : linkPreview?.siteName || "From pasted link";
+  const sourceLabel =
+    form.goalType === "amount"
+      ? "Amount-based goal"
+      : form.itemSource === "hint"
+        ? `From ${selectedHintContact?.name || "contact"}'s public hints`
+        : linkPreview?.siteName || "From pasted link";
 
-    const newCircle = {
-      id: Date.now(),
-      name: eventTitle,
-      subtitle: `${eventMode === "calendar" ? selectedEvent?.type || "Event" : "Event"} · ${formatDateLabel(eventDate)}`,
-      description:
-        "A new shared circle built around one event, one goal, and a clear fallback if invitees do not join.",
-      members: [
-        {
-          name: "You",
-          initials: "Y",
-          contributed: false,
-          amount: 0,
-          colors: "from-[#4e596d] to-[#212a3c]",
-          status: "joined",
-        },
-        ...selectedPeople.map((person) => ({
-          name: person.name,
-          initials: person.initials,
-          contributed: false,
-          amount: 0,
-          colors: person.colors,
-          status: "invited",
-        })),
-      ],
-      pot: {
-        active: true,
-        item: itemLabel,
-        source: sourceLabel,
-        sourceUrl:
-          form.goalType === "amount"
-            ? ""
-            : form.itemSource === "hint"
-              ? selectedHint?.url || ""
-              : linkPreview?.url || form.itemUrl || "",
-        previewImage:
-          form.goalType === "amount"
-            ? ""
-            : form.itemSource === "hint"
-              ? selectedHint?.image || ""
-              : linkPreview?.image || "",
-        previewDescription:
-          form.goalType === "amount"
-            ? ""
-            : form.itemSource === "hint"
-              ? selectedHint?.description || ""
-              : linkPreview?.description || "",
-        target: targetNumber,
-        currency: form.currency,
-        raised: 0,
-        note:
-          form.fundingMode === "all_or_nothing"
-            ? "This circle will only proceed if the group reaches the target by the deadline."
-            : form.fundingMode === "organizer_covers"
-              ? "If the full target is not reached, the organiser can choose to cover the gap."
-              : "This circle can stay flexible if fewer people join than expected.",
-        fundingMode: fundingModeLabel,
-        deadline: form.deadline || eventDate,
-        goalType: form.goalType,
+  const newCircle = {
+    id: Date.now(),
+    name: eventTitle,
+    subtitle: `${eventMode === "calendar" ? selectedEvent?.type || "Event" : "Event"} · ${formatDateLabel(eventDate)}`,
+    description:
+      "A new shared circle built around one event, one goal, and a clear fallback if invitees do not join.",
+    members: [
+      {
+        name: "You",
+        initials: "Y",
+        contributed: false,
+        amount: 0,
+        colors: "from-[#4e596d] to-[#212a3c]",
+        status: "joined",
       },
-    };
+      ...selectedPeople.map((person) => ({
+        name: person.name,
+        initials: person.initials,
+        contributed: false,
+        amount: 0,
+        colors: person.colors,
+        status: "invited",
+      })),
+    ],
+    pot: {
+      active: true,
+      item: itemLabel,
+      source: sourceLabel,
+      sourceUrl:
+        form.goalType === "amount"
+          ? ""
+          : form.itemSource === "hint"
+            ? selectedHint?.url || ""
+            : linkPreview?.url || form.itemUrl || "",
+      previewImage:
+        form.goalType === "amount"
+          ? ""
+          : form.itemSource === "hint"
+            ? selectedHint?.image || ""
+            : linkPreview?.image || "",
+      previewDescription:
+        form.goalType === "amount"
+          ? ""
+          : form.itemSource === "hint"
+            ? selectedHint?.description || ""
+            : linkPreview?.description || "",
+      target: targetNumber,
+      currency: form.currency,
+      raised: 0,
+      note:
+        form.fundingMode === "all_or_nothing"
+          ? "This circle will only proceed if the group reaches the target by the deadline."
+          : form.fundingMode === "organizer_covers"
+            ? "If the full target is not reached, the organiser can choose to cover the gap."
+            : "This circle can stay flexible if fewer people join than expected.",
+      fundingMode: fundingModeLabel,
+      deadline: form.deadline || eventDate,
+      goalType: form.goalType,
+    },
+  };
+
+  try {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      console.error("Could not find logged-in user.");
+      return;
+    }
+
+    const inviteRows = selectedPeople.map((person) => ({
+      circle_id: String(newCircle.id),
+      user_id: user.id,
+      contact_id: person.id,
+      invite_name: person.name,
+      invite_email: person.email || "",
+      status: "sent",
+      reminder_count: 0,
+    }));
+
+    if (inviteRows.length > 0) {
+      const { error: inviteError } = await supabase
+        .from("circle_invites")
+        .insert(inviteRows);
+
+      if (inviteError) {
+        console.error("Error saving circle invites:", inviteError.message);
+        return;
+      }
+    }
 
     setCircles((prev) => [newCircle, ...prev]);
     setIsCreateOpen(false);
     resetCircleForm();
-  };
+  } catch (error) {
+    console.error("Error creating circle:", error);
+  }
+};
 
   const openEditPot = (circle) => {
     setEditingCircle(circle);
