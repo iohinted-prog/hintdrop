@@ -314,6 +314,10 @@ function buildStoredItemTitle(value) {
   return text || "Shared gift";
 }
 
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim().toLowerCase());
+}
+
 function buildCircleViewModel(circleRow, inviteRows = [], currentUserName = "You") {
   const members = [
     {
@@ -341,8 +345,7 @@ function buildCircleViewModel(circleRow, inviteRows = [], currentUserName = "You
     id: circleRow.id,
     name: circleRow.title || "Untitled circle",
     subtitle: `${circleRow.occasion_type || "Event"} · ${formatDateLabel(circleRow.event_date)}`,
-    description:
-      "A shared circle built around one event, one goal, and a clear fallback if invitees do not join.",
+    description: "",
     members,
     pot: {
       active: totalTarget > 0,
@@ -673,9 +676,11 @@ function CircleCard({ circle, onDeleteCircleClick, deletingCircleId }) {
             </div>
           </div>
 
-          <p className="mt-4 max-w-[60ch] text-[14px] leading-7 text-slate-600">
-            {circle?.description || "A shared gifting circle."}
-          </p>
+          {circle?.description ? (
+            <p className="mt-4 max-w-[60ch] text-[14px] leading-7 text-slate-600">
+              {circle.description}
+            </p>
+          ) : null}
 
           <div className="mt-5 rounded-[24px] border border-dashed border-[#e6d7cd] bg-[#fffaf7] p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1561,13 +1566,25 @@ function AddContactModal({ open, onClose, onSave, supabase }) {
       return;
     }
 
+    const cleanedEmail = form.email.trim().toLowerCase();
+
+    if (!cleanedEmail) {
+      setSaveError("Email is required.");
+      return;
+    }
+
+    if (!isValidEmail(cleanedEmail)) {
+      setSaveError("Enter a valid email address.");
+      return;
+    }
+
     setSaving(true);
     setSaveError("");
 
     try {
       await onSave({
         name: form.name.trim(),
-        email: form.email.trim().toLowerCase(),
+        email: cleanedEmail,
         relationshipTypes: selectedRelationships.length ? selectedRelationships : ["Friend"],
       });
       setSaving(false);
@@ -1657,6 +1674,7 @@ function AddContactModal({ open, onClose, onSave, supabase }) {
               value={form.email}
               onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
               placeholder="maya@example.com"
+              required
               className="mt-2 h-[48px] w-full rounded-[18px] border border-[#d9dce3] bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-[#f19b7e]"
             />
           </label>
@@ -1703,9 +1721,9 @@ function AddContactModal({ open, onClose, onSave, supabase }) {
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving || !form.name.trim()}
+            disabled={saving || !form.name.trim() || !form.email.trim()}
             className={`inline-flex h-[44px] items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-lg ${
-              saving || !form.name.trim()
+              saving || !form.name.trim() || !form.email.trim()
                 ? "cursor-not-allowed bg-[#e9a48d]"
                 : "bg-gradient-to-b from-[#ff946d] to-[#f36f64]"
             }`}
@@ -1820,7 +1838,7 @@ function DeleteCircleModal({
         <div className="rounded-[22px] border border-[#efc0ba] bg-[#fff4f2] p-4">
           <p className="text-sm font-semibold text-[#b14f43]">This will permanently delete the entire circle.</p>
           <p className="mt-2 text-[13px] leading-6 text-slate-600">
-            This removes the circle itself and its invites. You mentioned people included should be notified; this modal is the right place to keep that flow, but this code currently deletes manually from the database and does not yet send notifications.
+            This removes the circle itself and its invites.
           </p>
         </div>
 
@@ -2105,11 +2123,15 @@ export default function CirclesClient() {
   }, [contacts, selectedHintContactId]);
 
   const handleFetchPreview = async () => {
-    if (!form.itemUrl.trim()) return;
+    if (!form.itemUrl.trim()) {
+      setCircleError("Paste a product or experience link first.");
+      return;
+    }
 
     try {
       setIsFetchingPreview(true);
       setCircleError("");
+      setLinkPreview(null);
 
       const response = await fetch("/api/link-preview", {
         method: "POST",
@@ -2119,21 +2141,38 @@ export default function CirclesClient() {
         body: JSON.stringify({ url: form.itemUrl.trim() }),
       });
 
-      const data = await response.json();
+      const rawText = await response.text();
+      let data = null;
+
+      if (rawText) {
+        try {
+          data = JSON.parse(rawText);
+        } catch {
+          throw new Error("Link preview API returned an invalid response.");
+        }
+      }
 
       if (!response.ok) {
-        throw new Error(data?.error || "Failed to fetch preview");
+        throw new Error(data?.error || `Failed to fetch preview (${response.status}).`);
+      }
+
+      if (!data) {
+        throw new Error("Link preview API returned an empty response.");
       }
 
       setLinkPreview(data);
     } catch (error) {
+      console.error("Link preview fetch failed:", error);
+
       setLinkPreview({
         title: "Preview unavailable",
-        description: "We could not pull a preview from that link yet, but you can still use the URL.",
+        description:
+          "We could not pull a preview from that link yet, but you can still use the URL.",
         image: "",
         siteName: form.itemUrl,
         url: form.itemUrl,
       });
+
       setCircleError(error?.message || "Failed to fetch link preview.");
     } finally {
       setIsFetchingPreview(false);
@@ -2147,10 +2186,16 @@ export default function CirclesClient() {
       throw new Error("You must be signed in to save contacts.");
     }
 
+    const cleanedEmail = String(contactPayload.email || "").trim().toLowerCase();
+
+    if (!cleanedEmail || !isValidEmail(cleanedEmail)) {
+      throw new Error("A valid email address is required.");
+    }
+
     const insertPayload = {
       profile_id: sessionUser.id,
       name: contactPayload.name,
-      email: contactPayload.email || null,
+      email: cleanedEmail,
       relationship_types: contactPayload.relationshipTypes || ["Friend"],
     };
 
@@ -2323,9 +2368,12 @@ export default function CirclesClient() {
       return;
     }
 
-    const contactsWithoutEmail = selectedPeople.filter((person) => !String(person.email || "").trim());
+    const contactsWithoutEmail = selectedPeople.filter(
+      (person) => !String(person.email || "").trim() || !isValidEmail(person.email)
+    );
+
     if (contactsWithoutEmail.length > 0) {
-      setCircleError("Every invited contact must have an email because circle_invites.invite_email is required.");
+      setCircleError("Every invited contact must have a valid email address.");
       return;
     }
 
