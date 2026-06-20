@@ -29,6 +29,198 @@ const SECONDARY_HEADERS = {
 const PRICE_REGEX =
   /(?:A\$|NZ\$|C\$|£|\$|€|R)\s?\d[\d,]*(?:\.\d{1,2})?|\d[\d,]*(?:\.\d{1,2})?\s?(?:GBP|USD|EUR|AUD|NZD|CAD|ZAR)/gi;
 
+const HOST_RULES = {
+  amazon: {
+    match: (hostname) => /(^|\.)amazon\./i.test(hostname),
+    titleSelectors: [
+      "#productTitle",
+      'meta[property="og:title"]',
+      'meta[name="title"]',
+      'meta[name="twitter:title"]',
+      "h1",
+      "title",
+    ],
+    priceSelectors: [
+      "#corePrice_feature_div .a-price .a-offscreen",
+      "#corePriceDisplay_desktop_feature_div .a-price .a-offscreen",
+      "#apex_desktop .a-price .a-offscreen",
+      ".priceToPay .a-offscreen",
+      "#price_inside_buybox",
+      "#newAccordionRow_1 .a-price .a-offscreen",
+      ".a-price .a-offscreen",
+      ".a-price-whole",
+    ],
+    imageSelectors: [
+      "#landingImage",
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+    ],
+  },
+  ebay: {
+    match: (hostname) => /(^|\.)ebay\./i.test(hostname),
+    titleSelectors: [
+      '[data-testid="x-item-title-label"] + div',
+      '[data-testid="x-item-title"]',
+      "h1.x-item-title__mainTitle",
+      'meta[property="og:title"]',
+      "h1",
+      "title",
+    ],
+    priceSelectors: [
+      '[itemprop="price"]',
+      '[data-testid="x-price-primary"]',
+      '.x-price-primary [class*="price"]',
+      '.display-price',
+      '.notranslate',
+    ],
+    imageSelectors: [
+      '[data-testid="ux-image-carousel-item"] img',
+      ".ux-image-carousel-item img",
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+    ],
+  },
+  etsy: {
+    match: (hostname) => /(^|\.)etsy\.com$/i.test(hostname),
+    titleSelectors: [
+      'meta[property="og:title"]',
+      "h1",
+      "title",
+    ],
+    priceSelectors: [
+      '[data-selector="price-only"]',
+      '[data-buy-box-region="price"]',
+      '[class*="wt-text-title"]',
+      '[itemprop="price"]',
+    ],
+    imageSelectors: [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      "img[data-src]",
+      "img[src]",
+    ],
+  },
+  airbnb: {
+    match: (hostname) => /(^|\.)airbnb\./i.test(hostname),
+    titleSelectors: [
+      'meta[property="og:title"]',
+      "h1",
+      "title",
+    ],
+    priceSelectors: [
+      '[data-testid*="price"]',
+      '[class*="price"]',
+      '[aria-label*="price"]',
+    ],
+    imageSelectors: [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      "picture img",
+      "img[src]",
+    ],
+  },
+  currys: {
+    match: (hostname) => /(^|\.)currys\.co\.uk$/i.test(hostname),
+    titleSelectors: [
+      'meta[property="og:title"]',
+      "h1",
+      "title",
+    ],
+    priceSelectors: [
+      '[data-testid*="price"]',
+      '[class*="price"]',
+      '[id*="price"]',
+      '[aria-label*="price"]',
+      '[itemprop="price"]',
+    ],
+    imageSelectors: [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      "img[src]",
+    ],
+  },
+  argos: {
+    match: (hostname) => /(^|\.)argos\.co\.uk$/i.test(hostname),
+    titleSelectors: [
+      'meta[property="og:title"]',
+      "h1",
+      "title",
+    ],
+    priceSelectors: [
+      '[data-test="product-price-primary"]',
+      '[data-testid*="price"]',
+      '[class*="price"]',
+      '[itemprop="price"]',
+    ],
+    imageSelectors: [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      "img[src]",
+    ],
+  },
+  johnlewis: {
+    match: (hostname) => /(^|\.)johnlewis\.com$/i.test(hostname),
+    titleSelectors: [
+      'meta[property="og:title"]',
+      "h1",
+      "title",
+    ],
+    priceSelectors: [
+      '[data-test="price"]',
+      '[data-testid*="price"]',
+      '[class*="price"]',
+      '[itemprop="price"]',
+    ],
+    imageSelectors: [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      "img[src]",
+    ],
+  },
+  harrods: {
+    match: (hostname) => /(^|\.)harrods\.com$/i.test(hostname),
+    titleSelectors: [
+      'meta[property="og:title"]',
+      "h1",
+      "title",
+    ],
+    priceSelectors: [
+      '[data-testid*="price"]',
+      '[class*="price"]',
+      '[itemprop="price"]',
+    ],
+    imageSelectors: [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      "img[src]",
+    ],
+  },
+  generic: {
+    match: () => true,
+    titleSelectors: [
+      'meta[property="og:title"]',
+      'meta[name="twitter:title"]',
+      'meta[name="title"]',
+      "h1",
+      "title",
+    ],
+    priceSelectors: [
+      '[itemprop="price"]',
+      '[data-testid*="price"]',
+      '[data-price]',
+      '[class*="price"]',
+      '[id*="price"]',
+      '[aria-label*="price"]',
+    ],
+    imageSelectors: [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      'link[rel="image_src"]',
+      "img[src]",
+    ],
+  },
+};
+
 function decodeHtml(value = "") {
   return String(value)
     .replace(/&amp;/gi, "&")
@@ -113,7 +305,8 @@ function getMeta($, selectors = []) {
 
 function getAttr($, selectors = [], attr = "content") {
   for (const selector of selectors) {
-    const value = $(selector).attr(attr);
+    const element = $(selector).first();
+    const value = element.attr(attr);
     const cleaned = String(value || "").trim();
     if (cleaned) return cleaned;
   }
@@ -135,70 +328,6 @@ function extractCanonical($, fallbackUrl) {
     getMeta($, ['meta[property="og:url"]', 'meta[name="og:url"]']);
 
   return makeAbsoluteUrl(canonical, fallbackUrl) || fallbackUrl;
-}
-
-function cleanAmazonTitle(title = "") {
-  return String(title)
-    .replace(/\s*:\s*Amazon\.[A-Za-z.]+.*$/i, "")
-    .replace(/\s*\|\s*Amazon\.[A-Za-z.]+.*$/i, "")
-    .replace(/\s*-\s*Amazon\.[A-Za-z.]+.*$/i, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-}
-
-function extractTitle($, canonicalUrl, bodyText = "") {
-  const hostname = getHostnameLabel(canonicalUrl);
-
-  let title =
-    getMeta($, [
-      'meta[property="og:title"]',
-      'meta[name="og:title"]',
-      'meta[name="twitter:title"]',
-      'meta[name="title"]',
-    ]) ||
-    getText($, ["h1"]) ||
-    getText($, ["title"]);
-
-  if (!title && bodyText) {
-    const firstLines = bodyText
-      .split(/\n+/)
-      .map((line) => cleanText(line))
-      .filter(Boolean)
-      .slice(0, 12);
-
-    title =
-      firstLines.find(
-        (line) =>
-          line.length >= 12 &&
-          line.length <= 220 &&
-          !/save|delivery|returns|finance|representative|apr|credit/i.test(line)
-      ) || "";
-  }
-
-  if (hostname.includes("amazon.")) {
-    title = cleanAmazonTitle(title);
-  }
-
-  return title || hostname || "Shared item";
-}
-
-function extractDescription($) {
-  return (
-    getMeta($, [
-      'meta[property="og:description"]',
-      'meta[name="og:description"]',
-      'meta[name="twitter:description"]',
-      'meta[name="description"]',
-    ]) ||
-    getText($, [
-      "#feature-bullets",
-      "#bookDescription_feature_div",
-      "#productDescription",
-      "main p",
-      "article p",
-    ]) ||
-    ""
-  );
 }
 
 function currencySymbolFromCode(code = "") {
@@ -253,6 +382,15 @@ function extractNumericPrice(value = "") {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function cleanAmazonTitle(title = "") {
+  return String(title)
+    .replace(/\s*:\s*Amazon\.[A-Za-z.]+.*$/i, "")
+    .replace(/\s*\|\s*Amazon\.[A-Za-z.]+.*$/i, "")
+    .replace(/\s*-\s*Amazon\.[A-Za-z.]+.*$/i, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function shortenTitle(title = "", retailer = "") {
   const source = String(title || "").trim();
   if (!source) return "Saved hint";
@@ -264,67 +402,17 @@ function shortenTitle(title = "", retailer = "") {
     .toLowerCase();
 
   const stopWords = new Set([
-    "the",
-    "and",
-    "with",
-    "for",
-    "from",
-    "new",
-    "latest",
-    "edition",
-    "model",
-    "official",
-    "amazon",
-    "uk",
-    "black",
-    "white",
-    "silver",
-    "blue",
-    "green",
-    "pink",
-    "grey",
-    "gray",
-    "wireless",
-    "bluetooth",
+    "the", "and", "with", "for", "from", "new", "latest", "edition", "model",
+    "official", "amazon", "uk", "black", "white", "silver", "blue", "green",
+    "pink", "grey", "gray", "wireless", "bluetooth",
   ]);
 
   const categoryWords = [
-    "headphones",
-    "earbuds",
-    "speaker",
-    "kindle",
-    "book",
-    "pillowcase",
-    "pillowcases",
-    "dish",
-    "pan",
-    "mug",
-    "print",
-    "necklace",
-    "ring",
-    "bag",
-    "dress",
-    "trainer",
-    "trainers",
-    "jacket",
-    "candle",
-    "coffee",
-    "set",
-    "workshop",
-    "experience",
-    "voucher",
-    "lego",
-    "camera",
-    "watch",
-    "sofa",
-    "blanket",
-    "coat",
-    "boots",
-    "sandals",
-    "lamp",
-    "vase",
-    "frame",
-    "tv",
+    "headphones", "earbuds", "speaker", "kindle", "book", "pillowcase", "pillowcases",
+    "dish", "pan", "mug", "print", "necklace", "ring", "bag", "dress", "trainer",
+    "trainers", "jacket", "candle", "coffee", "set", "workshop", "experience",
+    "voucher", "lego", "camera", "watch", "sofa", "blanket", "coat", "boots",
+    "sandals", "lamp", "vase", "frame", "tv",
   ];
 
   let cleaned = source
@@ -400,10 +488,7 @@ function pickPriceFromOffer(offer) {
       return formatPrice(spec.price, spec.priceCurrency || offer.priceCurrency);
     }
     if (spec.minPrice) {
-      return formatPrice(
-        spec.minPrice,
-        spec.priceCurrency || offer.priceCurrency
-      );
+      return formatPrice(spec.minPrice, spec.priceCurrency || offer.priceCurrency);
     }
   }
 
@@ -513,6 +598,129 @@ function extractJsonLdProductData($, baseUrl = "") {
   return best;
 }
 
+function getHostRule(hostname = "") {
+  const rules = Object.entries(HOST_RULES);
+  for (const [key, rule] of rules) {
+    if (key === "generic") continue;
+    if (rule.match(hostname)) return { key, rule };
+  }
+  return { key: "generic", rule: HOST_RULES.generic };
+}
+
+function extractBySelectors($, selectors = [], mode = "text", baseUrl = "") {
+  for (const selector of selectors) {
+    const element = $(selector).first();
+    if (!element.length) continue;
+
+    if (mode === "text") {
+      const value = cleanText(element.text());
+      if (value) return value;
+    }
+
+    if (mode === "content") {
+      const value = cleanText(element.attr("content") || "");
+      if (value) return value;
+    }
+
+    if (mode === "image") {
+      const attrs = [
+        element.attr("content"),
+        element.attr("src"),
+        element.attr("data-src"),
+        element.attr("data-old-hires"),
+        element.attr("data-zoom-image"),
+        element.attr("href"),
+      ].filter(Boolean);
+
+      for (const attr of attrs) {
+        const absolute = makeAbsoluteUrl(attr, baseUrl);
+        if (absolute) return absolute;
+      }
+    }
+  }
+
+  return "";
+}
+
+function extractHostSpecificTitle($, hostname, baseUrl) {
+  const { key, rule } = getHostRule(hostname);
+  let title = extractBySelectors($, rule.titleSelectors, "text", baseUrl);
+
+  if (!title) {
+    title =
+      getMeta($, [
+        'meta[property="og:title"]',
+        'meta[name="og:title"]',
+        'meta[name="twitter:title"]',
+        'meta[name="title"]',
+      ]) || "";
+  }
+
+  if (key === "amazon" && title) {
+    title = cleanAmazonTitle(title);
+  }
+
+  return title;
+}
+
+function extractHostSpecificPrice($, hostname) {
+  const { key, rule } = getHostRule(hostname);
+
+  for (const selector of rule.priceSelectors) {
+    const el = $(selector).first();
+    if (!el.length) continue;
+
+    const value =
+      cleanText(el.attr("content") || "") ||
+      cleanText(el.attr("value") || "") ||
+      cleanText(el.text() || "");
+
+    if (!value) continue;
+
+    if (key === "amazon" && selector === ".a-price-whole") {
+      const whole = cleanText($(".a-price-whole").first().text());
+      const fraction = cleanText($(".a-price-fraction").first().text());
+      if (whole) return `£${whole}${fraction ? `.${fraction}` : ""}`.replace(/\.00$/, "");
+    }
+
+    const match = value.match(PRICE_REGEX);
+    if (match?.[0]) return cleanText(match[0]);
+  }
+
+  return "";
+}
+
+function improveAmazonImage(url = "") {
+  return String(url)
+    .replace(/\._AC_[A-Z0-9,]+_\./i, "._AC_SL1500_.")
+    .replace(/\._SL\d+_\./i, "._SL1500_.")
+    .replace(/\._SX\d+_\./i, "._SL1500_.")
+    .replace(/\._SY\d+_\./i, "._SL1500_.");
+}
+
+function extractHostSpecificImage($, hostname, baseUrl) {
+  const { key, rule } = getHostRule(hostname);
+  let image = extractBySelectors($, rule.imageSelectors, "image", baseUrl);
+
+  if (!image) {
+    image =
+      getMeta($, [
+        'meta[property="og:image"]',
+        'meta[property="og:image:url"]',
+        'meta[name="og:image"]',
+        'meta[name="twitter:image"]',
+        'meta[name="twitter:image:src"]',
+      ]) || "";
+    image = makeAbsoluteUrl(image, baseUrl);
+  }
+
+  if (key === "amazon" && image) {
+    image = improveAmazonImage(image);
+  }
+
+  return image;
+}
+
 function scorePriceCandidate(text = "", context = "") {
   let score = 0;
   const combined = `${text} ${context}`.toLowerCase();
@@ -520,10 +728,10 @@ function scorePriceCandidate(text = "", context = "") {
   if (!text) return -100;
 
   if (/£\s?\d|€\s?\d|\$\s?\d|a\$\s?\d|nz\$\s?\d|c\$\s?\d|\br\s?\d/i.test(text)) score += 40;
-  if (/sale|now|price|our price|current price|buy|basket|bag|cart|found it cheaper/i.test(combined)) score += 18;
+  if (/sale|now|price|our price|current price|buy|basket|bag|cart|night/i.test(combined)) score += 18;
   if (/delivery|returns|warranty|support plan|installation|recycling/.test(combined)) score -= 10;
   if (/finance|monthly|per month|apr|credit|representative example|interest rate/.test(combined)) score -= 8;
-  if (/was|save|rrp/.test(combined)) score -= 3;
+  if (/was|save|rrp|from /.test(combined)) score -= 3;
   if (/item no|product code|sku|model/.test(combined)) score -= 6;
 
   const numeric = extractNumericPrice(text);
@@ -562,8 +770,8 @@ function extractGenericTextPrice($, bodyText = "") {
 
   const selectors = [
     "[itemprop='price']",
-    "[data-price]",
     "[data-testid*='price']",
+    "[data-price]",
     "[class*='price']",
     "[id*='price']",
     "[aria-label*='price']",
@@ -606,14 +814,6 @@ function extractGenericTextPrice($, bodyText = "") {
   return candidates[0]?.value || "";
 }
 
-function improveAmazonImage(url = "") {
-  return String(url)
-    .replace(/\._AC_[A-Z0-9,]+_\./i, "._AC_SL1500_.")
-    .replace(/\._SL\d+_\./i, "._SL1500_.")
-    .replace(/\._SX\d+_\./i, "._SL1500_.")
-    .replace(/\._SY\d+_\./i, "._SL1500_.");
-}
-
 function looksLikeBadImage(url = "", alt = "") {
   const text = `${url} ${alt}`.toLowerCase();
   return /logo|sprite|icon|favicon|avatar|placeholder|spacer|loading|1x1|blank|transparent|trustpilot|star-rating/i.test(
@@ -632,6 +832,7 @@ function scoreImage(url = "", hostname = "", source = "", alt = "") {
   if (/\bhero|primary|main|large\b/i.test(lower)) score += 16;
   if (/\.(jpg|jpeg|png|webp|avif)(\?|$)/i.test(lower)) score += 12;
   if (hostname && lower.includes(hostname.replace(/^www\./, ""))) score += 6;
+  if (source === "host") score += 30;
   if (source === "jsonld") score += 25;
   if (source === "og") score += 18;
   if (source === "dom") score += 8;
@@ -656,7 +857,7 @@ function dedupeCandidates(candidates = []) {
   return output;
 }
 
-function buildImageCandidates($, baseUrl, canonicalUrl, jsonLdImages = []) {
+function buildImageCandidates($, baseUrl, canonicalUrl, jsonLdImages = [], hostImage = "") {
   const hostname = getHostnameLabel(canonicalUrl);
   const candidates = [];
 
@@ -674,6 +875,7 @@ function buildImageCandidates($, baseUrl, canonicalUrl, jsonLdImages = []) {
     });
   };
 
+  if (hostImage) addCandidate(hostImage, "host");
   jsonLdImages.forEach((url) => addCandidate(url, "jsonld"));
 
   [
@@ -685,8 +887,6 @@ function buildImageCandidates($, baseUrl, canonicalUrl, jsonLdImages = []) {
       'meta[name="twitter:image:src"]',
     ]),
     getAttr($, ['link[rel="image_src"]'], "href"),
-    getAttr($, ["#landingImage", "#imgBlkFront", "#ebooksImgBlkFront"], "src"),
-    getAttr($, ["#landingImage", "#imgBlkFront", "#ebooksImgBlkFront"], "data-old-hires"),
   ]
     .filter(Boolean)
     .forEach((url) => addCandidate(url, "og"));
@@ -735,8 +935,15 @@ function extractSiteName($, canonicalUrl) {
   );
 }
 
-function choosePrice({ preferredCurrency, jsonLdPrice, metaPrice, textPrice }) {
+function choosePrice({
+  preferredCurrency,
+  hostPrice,
+  jsonLdPrice,
+  metaPrice,
+  textPrice,
+}) {
   const candidates = [
+    { value: hostPrice, source: "host" },
     { value: jsonLdPrice, source: "jsonld" },
     { value: metaPrice, source: "meta" },
     { value: textPrice, source: "text" },
@@ -763,11 +970,16 @@ function choosePrice({ preferredCurrency, jsonLdPrice, metaPrice, textPrice }) {
     : candidates;
 
   const pool = filteredByCurrency.length ? filteredByCurrency : candidates;
+  const sourcePriority = { host: 4, jsonld: 3, meta: 2, text: 1 };
 
   pool.sort((a, b) => {
+    const sourceDiff = (sourcePriority[b.source] || 0) - (sourcePriority[a.source] || 0);
+    if (sourceDiff !== 0) return sourceDiff;
+
     const aHasDecimals = /\.\d{2}\b/.test(a.value) ? 1 : 0;
     const bHasDecimals = /\.\d{2}\b/.test(b.value) ? 1 : 0;
     if (bHasDecimals !== aHasDecimals) return bHasDecimals - aHasDecimals;
+
     return 0;
   });
 
@@ -904,13 +1116,59 @@ async function fetchPreview(inputUrl, preferredCurrency = "GBP") {
   const bodyText = cleanText(rawBodyText);
 
   const jsonLd = extractJsonLdProductData($, finalUrl);
+  const hostMeta = getHostRule(hostname);
 
-  const title =
+  const hostTitle = extractHostSpecificTitle($, hostname, finalUrl);
+  const hostPrice = extractHostSpecificPrice($, hostname);
+  const hostImage = extractHostSpecificImage($, hostname, finalUrl);
+
+  let title =
+    hostTitle ||
     jsonLd.title ||
-    extractTitle($, canonicalUrl, rawBodyText) ||
-    getHostnameLabel(canonicalUrl);
+    getMeta($, [
+      'meta[property="og:title"]',
+      'meta[name="og:title"]',
+      'meta[name="twitter:title"]',
+      'meta[name="title"]',
+    ]) ||
+    getText($, ["h1", "title"]);
 
-  const description = extractDescription($);
+  if (!title && rawBodyText) {
+    const firstLines = rawBodyText
+      .split(/\n+/)
+      .map((line) => cleanText(line))
+      .filter(Boolean)
+      .slice(0, 12);
+
+    title =
+      firstLines.find(
+        (line) =>
+          line.length >= 12 &&
+          line.length <= 220 &&
+          !/save|delivery|returns|finance|representative|apr|credit/i.test(line)
+      ) || "";
+  }
+
+  if (hostMeta.key === "amazon" && title) {
+    title = cleanAmazonTitle(title);
+  }
+
+  const description =
+    getMeta($, [
+      'meta[property="og:description"]',
+      'meta[name="og:description"]',
+      'meta[name="twitter:description"]',
+      'meta[name="description"]',
+    ]) ||
+    getText($, [
+      "#feature-bullets",
+      "#bookDescription_feature_div",
+      "#productDescription",
+      "main p",
+      "article p",
+    ]) ||
+    "";
+
   const siteName = extractSiteName($, canonicalUrl);
 
   const jsonLdPrice = jsonLd.priceText || "";
@@ -919,12 +1177,19 @@ async function fetchPreview(inputUrl, preferredCurrency = "GBP") {
 
   const chosenPrice = choosePrice({
     preferredCurrency,
+    hostPrice,
     jsonLdPrice,
     metaPrice,
     textPrice,
   });
 
-  const imageCandidates = buildImageCandidates($, finalUrl, canonicalUrl, jsonLd.images);
+  const imageCandidates = buildImageCandidates(
+    $,
+    finalUrl,
+    canonicalUrl,
+    jsonLd.images,
+    hostImage
+  );
   const selectedImage = imageCandidates[0] ? imageCandidates[0].url : "";
   const titleShort = shortenTitle(title, siteName);
 
@@ -959,7 +1224,11 @@ async function fetchPreview(inputUrl, preferredCurrency = "GBP") {
       finalUrl,
       canonicalUrl,
       hostname: getHostnameLabel(canonicalUrl),
+      hostRule: hostMeta.key,
       preferredCurrency,
+      hostTitle,
+      hostPrice,
+      hostImage,
       selectedPriceSource: chosenPrice.source,
       selectedPriceText: chosenPrice.priceText || "",
       matchedPreferredCurrency: chosenPrice.matchedPreferredCurrency,
