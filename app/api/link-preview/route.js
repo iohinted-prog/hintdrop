@@ -227,17 +227,16 @@ function isUsablePreview(result) {
   return (hasTitle && hasImage) || (hasTitle && hasPrice);
 }
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 4500) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 3500) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const res = await fetch(url, {
+    return await fetch(url, {
       ...options,
       signal: controller.signal,
       cache: "no-store",
     });
-    return res;
   } finally {
     clearTimeout(timer);
   }
@@ -261,8 +260,11 @@ function parseHtmlPreview({ html, finalUrl, status, preferredCurrency }) {
     "";
 
   const description =
-    getMeta($, ['meta[property="og:description"]', 'meta[name="description"]', 'meta[name="twitter:description"]']) ||
-    "";
+    getMeta($, [
+      'meta[property="og:description"]',
+      'meta[name="description"]',
+      'meta[name="twitter:description"]',
+    ]) || "";
 
   const siteName =
     getMeta($, ['meta[property="og:site_name"]']) ||
@@ -346,7 +348,7 @@ async function tryHtmlPreview(inputUrl, preferredCurrency) {
       headers: HTML_HEADERS,
       redirect: "follow",
     },
-    4500
+    3500
   );
 
   const contentType = res.headers.get("content-type") || "";
@@ -386,7 +388,7 @@ async function fetchLinkPreview(inputUrl) {
         "X-Linkpreview-Api-Key": apiKey,
       },
     },
-    2200
+    2500
   );
 
   const raw = await res.text();
@@ -415,7 +417,9 @@ function mapLinkPreviewResult(inputUrl, payload, preferredCurrency = "GBP") {
   const title = cleanText(payload?.title || "");
   const description = cleanText(payload?.description || "");
   const image = String(payload?.image || "").trim();
-  const siteName = hostname(finalUrl);
+  const siteName =
+    cleanText(payload?.site_name || payload?.siteName || "") ||
+    hostname(finalUrl);
 
   const rawPrice =
     String(payload?.price || "").trim() ||
