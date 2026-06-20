@@ -22,7 +22,7 @@ const PRICE_REGEX =
 
 const RETAILER_RULES = {
   amazon: {
-    match: (h: string) => /(^|\.)amazon\./i.test(h),
+    match: (h) => /(^|\.)amazon\./i.test(h),
     titleSelectors: ["#productTitle", 'meta[property="og:title"]', "h1"],
     priceSelectors: [
       "#corePrice_feature_div .a-price .a-offscreen",
@@ -33,7 +33,7 @@ const RETAILER_RULES = {
       ".a-price .a-offscreen",
     ],
     imageSelectors: ["#landingImage", "#imgBlkFront", 'meta[property="og:image"]'],
-    cleanTitle: (t: string) =>
+    cleanTitle: (t) =>
       t
         .replace(/\s*:\s*Amazon\.[A-Za-z.]+.*$/i, "")
         .replace(/\s*\|\s*Amazon\.[A-Za-z.]+.*$/i, "")
@@ -42,13 +42,13 @@ const RETAILER_RULES = {
         .trim(),
   },
   currys: {
-    match: (h: string) => /(^|\.)currys\.co\.uk$/i.test(h),
+    match: (h) => /(^|\.)currys\.co\.uk$/i.test(h),
     titleSelectors: ['meta[property="og:title"]', "h1"],
     priceSelectors: ['[data-testid*="price"]', '[class*="price"]', '[itemprop="price"]'],
     imageSelectors: ['meta[property="og:image"]', 'meta[name="twitter:image"]', "img[src]"],
   },
   johnlewis: {
-    match: (h: string) => /(^|\.)johnlewis\.com$/i.test(h),
+    match: (h) => /(^|\.)johnlewis\.com$/i.test(h),
     titleSelectors: ['meta[property="og:title"]', "h1"],
     priceSelectors: [
       '[data-test="price"]',
@@ -59,7 +59,7 @@ const RETAILER_RULES = {
     imageSelectors: ['meta[property="og:image"]', 'meta[name="twitter:image"]', "img[src]"],
   },
   argos: {
-    match: (h: string) => /(^|\.)argos\.co\.uk$/i.test(h),
+    match: (h) => /(^|\.)argos\.co\.uk$/i.test(h),
     titleSelectors: ['meta[property="og:title"]', "h1"],
     priceSelectors: [
       '[data-test="product-price-primary"]',
@@ -69,7 +69,7 @@ const RETAILER_RULES = {
     imageSelectors: ['meta[property="og:image"]', "img[src]"],
   },
   ebay: {
-    match: (h: string) => /(^|\.)ebay\./i.test(h),
+    match: (h) => /(^|\.)ebay\./i.test(h),
     titleSelectors: [
       '[data-testid="x-item-title"]',
       "h1.x-item-title__mainTitle",
@@ -87,7 +87,7 @@ const RETAILER_RULES = {
     ],
   },
   etsy: {
-    match: (h: string) => /(^|\.)etsy\.com$/i.test(h),
+    match: (h) => /(^|\.)etsy\.com$/i.test(h),
     titleSelectors: ['meta[property="og:title"]', "h1"],
     priceSelectors: [
       '[data-selector="price-only"]',
@@ -180,7 +180,7 @@ function getRule(host = "") {
   return { key: "generic", rule: RETAILER_RULES.generic };
 }
 
-function getMeta($: cheerio.CheerioAPI, selectors: string[] = []) {
+function getMeta($, selectors = []) {
   for (const sel of selectors) {
     const val = cleanText($(sel).attr("content") || "");
     if (val) return val;
@@ -188,7 +188,7 @@ function getMeta($: cheerio.CheerioAPI, selectors: string[] = []) {
   return "";
 }
 
-function getText($: cheerio.CheerioAPI, selectors: string[] = []) {
+function getText($, selectors = []) {
   for (const sel of selectors) {
     const val = cleanText($(sel).first().text() || "");
     if (val) return val;
@@ -196,7 +196,7 @@ function getText($: cheerio.CheerioAPI, selectors: string[] = []) {
   return "";
 }
 
-function getAttrValue($: cheerio.CheerioAPI, selectors: string[] = [], attr = "content") {
+function getAttrValue($, selectors = [], attr = "content") {
   for (const sel of selectors) {
     const val = String($(sel).first().attr(attr) || "").trim();
     if (val) return val;
@@ -204,7 +204,7 @@ function getAttrValue($: cheerio.CheerioAPI, selectors: string[] = [], attr = "c
   return "";
 }
 
-function getImageAttr($: cheerio.CheerioAPI, selectors: string[] = [], base = "") {
+function getImageAttr($, selectors = [], base = "") {
   for (const sel of selectors) {
     const el = $(sel).first();
     if (!el.length) continue;
@@ -238,7 +238,7 @@ function detectCurrency(val = "") {
 }
 
 function currencySymbol(code = "") {
-  const map: Record<string, string> = {
+  const map = {
     GBP: "£",
     USD: "$",
     EUR: "€",
@@ -268,8 +268,8 @@ function extractNumericPrice(val = "") {
   return Number.isFinite(num) ? num : null;
 }
 
-function extractJsonLd($: cheerio.CheerioAPI, base = "") {
-  const result = { title: "", brand: "", priceText: "", images: [] as string[] };
+function extractJsonLd($, base = "") {
+  const result = { title: "", brand: "", priceText: "", images: [] };
 
   $('script[type="application/ld+json"]').each((_, el) => {
     try {
@@ -278,7 +278,7 @@ function extractJsonLd($: cheerio.CheerioAPI, base = "") {
     } catch {}
   });
 
-  function walk(node: any) {
+  function walk(node) {
     if (!node || typeof node !== "object") return;
     if (Array.isArray(node)) {
       node.forEach(walk);
@@ -314,7 +314,7 @@ function extractJsonLd($: cheerio.CheerioAPI, base = "") {
     if (node.image) {
       const images = []
         .concat(node.image)
-        .map((img: any) => makeAbsolute(typeof img === "string" ? img : img.url || "", base))
+        .map((img) => makeAbsolute(typeof img === "string" ? img : img.url || "", base))
         .filter(Boolean);
       result.images.push(...images);
     }
@@ -330,7 +330,7 @@ function extractJsonLd($: cheerio.CheerioAPI, base = "") {
   return result;
 }
 
-function extractMetaPrice($: cheerio.CheerioAPI) {
+function extractMetaPrice($) {
   const amount = getMeta($, [
     'meta[property="product:price:amount"]',
     'meta[property="og:price:amount"]',
@@ -344,7 +344,7 @@ function extractMetaPrice($: cheerio.CheerioAPI) {
   return formatPrice(amount, currency || detectCurrency(amount) || "");
 }
 
-function extractDomPrice($: cheerio.CheerioAPI, selectors: string[] = []) {
+function extractDomPrice($, selectors = []) {
   for (const sel of selectors) {
     const el = $(sel).first();
     if (!el.length) continue;
@@ -362,10 +362,7 @@ function extractDomPrice($: cheerio.CheerioAPI, selectors: string[] = []) {
   return "";
 }
 
-function pickBestPrice(
-  { domPrice, jsonLdPrice, metaPrice }: { domPrice: string; jsonLdPrice: string; metaPrice: string },
-  preferredCurrency = "GBP"
-) {
+function pickBestPrice({ domPrice, jsonLdPrice, metaPrice }, preferredCurrency = "GBP") {
   const candidates = [
     { value: domPrice, priority: 3 },
     { value: jsonLdPrice, priority: 2 },
@@ -427,7 +424,7 @@ function extractAmazonDynamicImage(raw = "", base = "") {
   return improveAmazonImage(makeAbsolute(val, base));
 }
 
-function getAmazonPrimaryImage($: cheerio.CheerioAPI, base = "") {
+function getAmazonPrimaryImage($, base = "") {
   const landing = $("#landingImage").first();
 
   if (landing.length) {
@@ -459,23 +456,11 @@ function getAmazonPrimaryImage($: cheerio.CheerioAPI, base = "") {
   return "";
 }
 
-function pickBestImage({
-  hostImage,
-  jsonLdImages,
-  $,
-  base,
-  isAmazon,
-}: {
-  hostImage: string;
-  jsonLdImages: string[];
-  $: cheerio.CheerioAPI;
-  base: string;
-  isAmazon: boolean;
-}) {
-  const candidates: { url: string; score: number }[] = [];
+function pickBestImage({ hostImage, jsonLdImages, $, base, isAmazon }) {
+  const candidates = [];
   const seen = new Set();
 
-  function add(url: string, source: string) {
+  function add(url, source) {
     const abs = makeAbsolute(url, base);
     const final = isAmazon ? improveAmazonImage(abs) : abs;
     if (!final || seen.has(final)) return;
@@ -504,7 +489,7 @@ function pickBestImage({
       $(el).attr("data-old-hires"),
       $(el).attr("data-lazy-src"),
       $(el).attr("data-a-dynamic-image"),
-    ].filter(Boolean) as string[];
+    ].filter(Boolean);
 
     attrs.forEach((u) => {
       if (isAmazon && String(u).trim().startsWith("{")) {
@@ -523,7 +508,7 @@ function pickBestImage({
   );
 }
 
-async function fetchDirect(inputUrl: string) {
+async function fetchDirect(inputUrl) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
 
@@ -555,7 +540,7 @@ async function fetchDirect(inputUrl: string) {
   }
 }
 
-async function fetchViaScrapingBee(inputUrl: string) {
+async function fetchViaScrapingBee(inputUrl) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 20000);
 
@@ -638,7 +623,7 @@ function detectBlock(bodyText = "", titleTag = "", h1 = "", status = 200) {
   return { blocked: false };
 }
 
-async function scrapeUrl(inputUrl: string, preferredCurrency = "GBP") {
+async function scrapeUrl(inputUrl, preferredCurrency = "GBP") {
   const inputHost = hostname(inputUrl);
   const response = isAmazonHost(inputHost)
     ? await fetchDirect(inputUrl)
@@ -719,7 +704,7 @@ async function scrapeUrl(inputUrl: string, preferredCurrency = "GBP") {
     getText($, ["h1", "title"]) ||
     "";
 
-  if (isAmazon && title && "cleanTitle" in rule && typeof rule.cleanTitle === "function") {
+  if (isAmazon && rule.cleanTitle) {
     title = rule.cleanTitle(title);
   }
 
@@ -810,7 +795,7 @@ async function scrapeUrl(inputUrl: string, preferredCurrency = "GBP") {
   };
 }
 
-export async function POST(request: Request) {
+export async function POST(request) {
   try {
     const body = await request.json().catch(() => null);
     const inputUrl = ensureHttpUrl(body?.url || "");
@@ -823,7 +808,7 @@ export async function POST(request: Request) {
     try {
       const result = await scrapeUrl(inputUrl, preferredCurrency);
       return NextResponse.json(result, { status: 200 });
-    } catch (scrapeError: any) {
+    } catch (scrapeError) {
       const host = (() => {
         try {
           return new URL(inputUrl).hostname.replace(/^www\./i, "");
@@ -859,7 +844,7 @@ export async function POST(request: Request) {
         { status: 200 }
       );
     }
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
       { error: err?.message || "Unexpected error." },
       { status: 500 }
