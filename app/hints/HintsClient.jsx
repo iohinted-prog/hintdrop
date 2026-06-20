@@ -133,16 +133,24 @@ function getPriceBand(price) {
   return "small";
 }
 
-function getSizeFromPrice(price, allPrices) {
-  if (price == null || allPrices.length < 3) return "portrait";
+function getSizeFromPrice(price, allPrices, starred = false) {
+  if (price == null || allPrices.length < 3) {
+    return starred ? "portrait" : "square";
+  }
 
   const sorted = [...allPrices].sort((a, b) => a - b);
   const lowCut = sorted[Math.floor(sorted.length * 0.35)];
-  const highCut = sorted[Math.floor(sorted.length * 0.75)];
+  const highCut = sorted[Math.floor(sorted.length * 0.78)];
 
-  if (price >= highCut) return "tall";
-  if (price >= lowCut) return "portrait";
-  return "square";
+  let size = "square";
+
+  if (price >= highCut) size = "tall";
+  else if (price >= lowCut) size = "portrait";
+
+  if (starred && size === "square") size = "portrait";
+  if (starred && size === "portrait" && price >= highCut * 0.9) size = "tall";
+
+  return size;
 }
 
 function formatPriceLabel(price, rawPrice) {
@@ -241,6 +249,11 @@ function shortenTitle(title = "", retailer = "") {
     "watch",
     "sofa",
     "blanket",
+    "cabin",
+    "boots",
+    "coat",
+    "lamp",
+    "vase",
   ];
 
   let cleaned = source
@@ -272,10 +285,10 @@ function shortenTitle(title = "", retailer = "") {
   if (foundCategory && brand.toLowerCase() !== foundCategory.toLowerCase()) {
     finalWords = [brand, foundCategory];
   } else {
-    finalWords = words.slice(0, Math.min(4, Math.max(2, words.length >= 2 ? 2 : 1)));
+    finalWords = words.slice(0, Math.min(3, Math.max(2, words.length)));
   }
 
-  const compact = finalWords.slice(0, 4).join(" ").trim();
+  const compact = finalWords.join(" ").trim();
   return compact.charAt(0).toUpperCase() + compact.slice(1);
 }
 
@@ -289,7 +302,9 @@ function pickBestPreviewImage(data) {
   }
 
   if (Array.isArray(data?.images)) {
-    const found = data.images.find((value) => typeof value === "string" && value.startsWith("http"));
+    const found = data.images.find(
+      (value) => typeof value === "string" && value.startsWith("http")
+    );
     if (found) return found;
   }
 
@@ -306,12 +321,12 @@ function ComposerPreview({
   onSubmit,
   onCancel,
 }) {
-  const [previewImageFailed, setPreviewImageFailed] = useState(false);
-  const showImage = Boolean(preview.image) && !previewImageFailed;
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(preview.image) && !imageFailed;
 
   return (
     <div className="mx-auto mt-4 w-full max-w-[980px] rounded-[30px] border border-[#efdfd6] bg-white p-4 shadow-[0_18px_40px_rgba(176,118,86,0.08)] sm:p-5">
-      <div className="flex flex-col gap-4 md:flex-row md:items-stretch">
+      <div className="flex flex-col gap-4 md:flex-row">
         <div className="relative h-[170px] w-full overflow-hidden rounded-[24px] border border-[#f0dfd6] bg-[#faf6f3] md:w-[220px] md:shrink-0">
           {showImage ? (
             <>
@@ -320,7 +335,7 @@ function ComposerPreview({
                 alt={draftTitle || preview.title}
                 className="absolute inset-0 h-full w-full object-cover"
                 referrerPolicy="no-referrer"
-                onError={() => setPreviewImageFailed(true)}
+                onError={() => setImageFailed(true)}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[rgba(31,24,20,0.26)] via-[rgba(31,24,20,0.05)] to-[rgba(255,255,255,0.02)]" />
             </>
@@ -563,9 +578,7 @@ function HintCard({
               <img
                 src={hint.image}
                 alt={hint.title}
-                className={`absolute inset-0 h-full w-full object-cover ${
-                  hint.private ? "opacity-80" : ""
-                }`}
+                className={`absolute inset-0 h-full w-full object-cover ${hint.private ? "opacity-80" : ""}`}
                 loading="lazy"
                 referrerPolicy="no-referrer"
                 onError={() => setImageFailed(true)}
@@ -709,7 +722,7 @@ function SortableHintTile(props) {
   } = useSortable({ id: hint.id });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: transform ? CSS.Translate.toString(transform) : undefined,
     transition,
   };
 
@@ -800,14 +813,19 @@ export default function HintsPage() {
         return;
       }
 
-      const loadedRows = data || [];
-      const loadedPrices = loadedRows
+      const rows = data || [];
+      const loadedPrices = rows
         .map((item) => item.numeric_price)
         .filter((value) => typeof value === "number");
 
       setHints(
-        loadedRows.map((row, index) => {
-          const derivedSize = getSizeFromPrice(row.numeric_price, loadedPrices);
+        rows.map((row, index) => {
+          const derivedSize = getSizeFromPrice(
+            row.numeric_price,
+            loadedPrices,
+            Boolean(row.starred)
+          );
+
           return {
             id: row.id,
             title: row.title || "Saved hint",
@@ -823,8 +841,6 @@ export default function HintsPage() {
             size:
               row.size && ["tall", "portrait", "square"].includes(row.size)
                 ? row.size
-                : derivedSize === "square"
-                ? "square"
                 : derivedSize,
             url: row.url || "",
             position: row.position ?? index,
@@ -918,7 +934,10 @@ export default function HintsPage() {
 
     const supabase = createClient();
 
-    const { error } = await supabase.from("hints").delete().eq("id", editingHintId);
+    const { error } = await supabase
+      .from("hints")
+      .delete()
+      .eq("id", editingHintId);
 
     if (error) {
       setError(error.message);
@@ -936,7 +955,15 @@ export default function HintsPage() {
     const newStarred = !hint.starred;
 
     setHints((current) =>
-      current.map((h) => (h.id === hint.id ? { ...h, starred: newStarred } : h))
+      current.map((h) =>
+        h.id === hint.id
+          ? {
+              ...h,
+              starred: newStarred,
+              size: getSizeFromPrice(h.numericPrice, numericPrices, newStarred),
+            }
+          : h
+      )
     );
 
     const { error } = await supabase
@@ -1000,7 +1027,10 @@ export default function HintsPage() {
       const numericPrice = extractNumericPrice(data.priceText);
       const refreshedTitle =
         data.titleShort ||
-        shortenTitle(data.title || editForm.title || "", data.siteName || normaliseRetailer(trimmed));
+        shortenTitle(
+          data.title || editForm.title || "",
+          data.siteName || normaliseRetailer(trimmed)
+        );
 
       const chosenImage = pickBestPreviewImage(data);
 
@@ -1012,8 +1042,6 @@ export default function HintsPage() {
         return current.map((hint) => {
           if (hint.id !== editingHintId) return hint;
 
-          const nextSize = getSizeFromPrice(numericPrice, pricePool);
-
           return {
             ...hint,
             title: refreshedTitle,
@@ -1022,7 +1050,7 @@ export default function HintsPage() {
             numericPrice,
             priceBand: getPriceBand(numericPrice),
             image: chosenImage || hint.image,
-            size: nextSize,
+            size: getSizeFromPrice(numericPrice, pricePool, hint.starred),
             url: data.url || trimmed,
           };
         });
@@ -1099,7 +1127,7 @@ export default function HintsPage() {
         image: pickBestPreviewImage(data),
         fallbackGradient: buildFallbackGradient(hints.length),
         private: false,
-        size: getSizeFromPrice(numericPrice, pricePool),
+        size: getSizeFromPrice(numericPrice, pricePool, false),
         url: data.url || trimmed,
       };
 
@@ -1299,7 +1327,7 @@ export default function HintsPage() {
                   linear-gradient(to right, rgba(214, 195, 184, 0.28) 1px, transparent 1px),
                   linear-gradient(to bottom, rgba(214, 195, 184, 0.28) 1px, transparent 1px)
                 `,
-                backgroundSize: "112px 112px",
+                backgroundSize: "104px 104px",
                 backgroundPosition: "center center",
               }}
             />
@@ -1344,7 +1372,7 @@ export default function HintsPage() {
                   </div>
                 </SortableContext>
 
-                <DragOverlay>
+                <DragOverlay adjustScale={false}>
                   {activeHint ? (
                     <div className="w-full max-w-[320px]">
                       <HintCard
