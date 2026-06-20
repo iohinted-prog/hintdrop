@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   DndContext,
@@ -14,7 +14,7 @@ import {
 import {
   SortableContext,
   arrayMove,
-  rectSortingStrategy,
+  verticalListSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
 } from "@dnd-kit/sortable";
@@ -33,7 +33,6 @@ const demoHints = [
     image:
       "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#d9dfcf] via-[#b9c7aa] to-[#90a27e]",
-    tags: [],
     starred: true,
     private: false,
     size: "medium",
@@ -50,7 +49,6 @@ const demoHints = [
     image:
       "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]",
-    tags: [],
     starred: false,
     private: false,
     size: "medium",
@@ -67,12 +65,27 @@ const demoHints = [
     image:
       "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#efe5de] via-[#e5d2c8] to-[#d1b2a4]",
-    tags: [],
     starred: false,
     private: true,
     size: "small",
     url: "https://www.johnlewis.com/",
     position: 2,
+  },
+  {
+    id: "demo-4",
+    title: "Hotel voucher",
+    retailer: "booking.com",
+    priceLabel: "From £1290",
+    numericPrice: 1290,
+    priceBand: "large",
+    image:
+      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+    fallbackGradient: "from-[#d5dbee] via-[#b3c0df] to-[#8f9fc9]",
+    starred: true,
+    private: false,
+    size: "large",
+    url: "https://www.booking.com/",
+    position: 3,
   },
 ];
 
@@ -132,10 +145,6 @@ function getSizeFromPrice(price) {
   if (price == null || price <= 100) return "small";
   if (price <= 1000) return "medium";
   return "large";
-}
-
-function getPriceBand(price) {
-  return getSizeFromPrice(price);
 }
 
 function getAspectRatio(size) {
@@ -221,131 +230,12 @@ function shortenTitle(title = "", retailer = "") {
   return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
-function EditHintModal({
-  isOpen,
-  editForm,
-  setEditForm,
-  onClose,
-  onSave,
-  onRefreshFromLink,
-  onDelete,
-  onTogglePrivate,
-  onToggleStarred,
-  isRefreshing,
-  isSaving,
-  hint,
-}) {
-  if (!isOpen || !hint) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(33,24,20,0.42)] px-4 py-8 backdrop-blur-sm">
-      <div className="w-full max-w-[560px] rounded-[30px] bg-white p-6 shadow-[0_28px_80px_rgba(75,45,30,0.18)] sm:p-7">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#e08a67]">
-              Edit hint
-            </p>
-            <h2 className="mt-2 text-[28px] font-semibold tracking-[-0.05em] text-slate-900">
-              Update this card
-            </h2>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:bg-[#faf6f3]"
-            aria-label="Close edit modal"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="mt-6 space-y-4">
-          <div>
-            <label htmlFor="edit-link" className="mb-2 block text-sm font-medium text-slate-700">
-              Link
-            </label>
-            <input
-              id="edit-link"
-              type="url"
-              value={editForm.url}
-              onChange={(e) => setEditForm((current) => ({ ...current, url: e.target.value }))}
-              className="h-14 w-full rounded-[18px] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none ring-1 ring-[#eadcd3] focus:ring-2 focus:ring-[#f19a78]/50"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="edit-title" className="mb-2 block text-sm font-medium text-slate-700">
-              Name
-            </label>
-            <input
-              id="edit-title"
-              type="text"
-              value={editForm.title}
-              onChange={(e) => setEditForm((current) => ({ ...current, title: e.target.value }))}
-              className="h-14 w-full rounded-[18px] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none ring-1 ring-[#eadcd3] focus:ring-2 focus:ring-[#f19a78]/50"
-            />
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={onToggleStarred}
-              className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                hint.starred
-                  ? "bg-[#fff2ea] text-[#e27956]"
-                  : "bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
-              }`}
-            >
-              {hint.starred ? "★ Starred" : "★ Star"}
-            </button>
-
-            <button
-              type="button"
-              onClick={onTogglePrivate}
-              className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                hint.private
-                  ? "bg-[#fffaf7] text-[#e08a67]"
-                  : "bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
-              }`}
-            >
-              {hint.private ? "🔒 Private" : "🔓 Public"}
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-between">
-          <button
-            type="button"
-            onClick={onDelete}
-            className="inline-flex h-12 items-center justify-center rounded-full bg-[#fff4ef] px-5 text-sm font-semibold text-[#d56949] hover:bg-[#ffe9df]"
-          >
-            Delete hint
-          </button>
-
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              type="button"
-              onClick={onRefreshFromLink}
-              disabled={isRefreshing}
-              className="inline-flex h-12 items-center justify-center rounded-full bg-[#f7f2ee] px-5 text-sm font-semibold text-slate-700 hover:bg-[#f1ebe6] disabled:opacity-60"
-            >
-              {isRefreshing ? "Refreshing..." : "Refresh from link"}
-            </button>
-
-            <button
-              type="button"
-              onClick={onSave}
-              disabled={isSaving}
-              className="inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg disabled:opacity-70"
-            >
-              {isSaving ? "Saving..." : "Save changes"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+function splitIntoColumns(items, columnCount = 3) {
+  const columns = Array.from({ length: columnCount }, () => []);
+  items.forEach((item, index) => {
+    columns[index % columnCount].push(item);
+  });
+  return columns;
 }
 
 function HintCard({
@@ -397,7 +287,6 @@ function HintCard({
           <button
             type="button"
             className="flex cursor-grab active:cursor-grabbing items-center gap-1 rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm"
-            title="Drag to reorder"
             {...dragHandleAttributes}
             {...dragHandleListeners}
           >
@@ -444,9 +333,9 @@ function HintCard({
         <div className="flex flex-wrap items-center gap-2">
           <span
             className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-              hint.priceBand === "large"
+              hint.size === "large"
                 ? "bg-[#2f3b2d] text-white"
-                : hint.priceBand === "medium"
+                : hint.size === "medium"
                 ? "bg-[#fff1e9] text-[#df7c59]"
                 : "bg-[#f1f5ec] text-[#627f53]"
             }`}
@@ -491,7 +380,7 @@ function HintCard({
   );
 }
 
-function SortableHintTile({
+function SortableHintCard({
   hint,
   onEdit,
   onToggleStarred,
@@ -519,7 +408,11 @@ function SortableHintTile({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="w-full">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="mb-6 break-inside-avoid"
+    >
       <HintCard
         hint={hint}
         onEdit={onEdit}
@@ -548,9 +441,7 @@ export default function HintsClient() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 6,
-      },
+      activationConstraint: { distance: 6 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -603,10 +494,8 @@ export default function HintsClient() {
           retailer: row.retailer || normaliseRetailer(row.url || ""),
           priceLabel: row.price_text || formatPriceLabel(row.numeric_price, null),
           numericPrice: row.numeric_price,
-          priceBand: getPriceBand(row.numeric_price),
           image: row.image_url || "",
           fallbackGradient: buildFallbackGradient(index),
-          tags: [],
           starred: Boolean(row.starred),
           private: Boolean(row.is_private),
           size: getSizeFromPrice(row.numeric_price),
@@ -621,22 +510,30 @@ export default function HintsClient() {
     loadHints();
   }, [currentUser]);
 
+  const visibleHints = hints.length > 0 ? hints : demoHints;
+  const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
+
+  const columns = useMemo(() => {
+    return splitIntoColumns(visibleHints, 3);
+  }, [visibleHints]);
+
   async function persistOrder(nextHints) {
     if (!currentUser) return;
-
     const supabase = createClient();
 
     await Promise.all(
       nextHints.map((hint, index) =>
-        supabase
-          .from("hints")
-          .update({
-            position: index,
-            size: hint.size,
-          })
-          .eq("id", hint.id)
+        supabase.from("hints").update({ position: index }).eq("id", hint.id)
       )
     );
+  }
+
+  function rebuildFromColumns(nextColumns) {
+    const flat = nextColumns.flat().map((hint, index) => ({
+      ...hint,
+      position: index,
+    }));
+    return flat;
   }
 
   function openEditModal(hint) {
@@ -698,7 +595,6 @@ export default function HintsClient() {
 
   async function deleteHint() {
     if (!currentUser) return;
-
     const supabase = createClient();
 
     const { error } = await supabase.from("hints").delete().eq("id", editingHintId);
@@ -714,7 +610,6 @@ export default function HintsClient() {
 
   async function toggleStarred(hint) {
     if (!currentUser) return;
-
     const supabase = createClient();
     const newStarred = !hint.starred;
 
@@ -728,16 +623,15 @@ export default function HintsClient() {
       .eq("id", hint.id);
 
     if (error) {
-      setError(error.message);
       setHints((current) =>
         current.map((h) => (h.id === hint.id ? { ...h, starred: hint.starred } : h))
       );
+      setError(error.message);
     }
   }
 
   async function togglePrivate(hint) {
     if (!currentUser) return;
-
     const supabase = createClient();
     const newPrivate = !hint.private;
 
@@ -751,16 +645,15 @@ export default function HintsClient() {
       .eq("id", hint.id);
 
     if (error) {
-      setError(error.message);
       setHints((current) =>
         current.map((h) => (h.id === hint.id ? { ...h, private: hint.private } : h))
       );
+      setError(error.message);
     }
   }
 
   async function refreshHintFromLink() {
     const trimmed = editForm.url.trim();
-
     if (!trimmed || editingHintId == null) return;
     if (!isValidHttpUrl(trimmed)) {
       setError("Please enter a valid URL.");
@@ -773,16 +666,14 @@ export default function HintsClient() {
     try {
       const response = await fetch("/api/link-preview", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: normaliseInputUrl(trimmed) }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data && data.error ? data.error : "Could not refresh this link.");
+        throw new Error(data?.error || "Could not refresh this link.");
       }
 
       const numericPrice =
@@ -796,24 +687,23 @@ export default function HintsClient() {
       );
 
       setHints((current) =>
-        current.map((hint) => {
-          if (hint.id !== editingHintId) return hint;
-
-          return {
-            ...hint,
-            title: refreshedTitle,
-            retailer: data.siteName || normaliseRetailer(trimmed),
-            priceLabel: formatPriceLabel(numericPrice, data.priceText),
-            numericPrice,
-            priceBand: getPriceBand(numericPrice),
-            size: getSizeFromPrice(numericPrice),
-            image:
-              typeof data.image === "string" && data.image.startsWith("http")
-                ? data.image
-                : hint.image,
-            url: data.url || normaliseInputUrl(trimmed),
-          };
-        })
+        current.map((hint) =>
+          hint.id === editingHintId
+            ? {
+                ...hint,
+                title: refreshedTitle,
+                retailer: data.siteName || normaliseRetailer(trimmed),
+                priceLabel: formatPriceLabel(numericPrice, data.priceText),
+                numericPrice,
+                size: getSizeFromPrice(numericPrice),
+                image:
+                  typeof data.image === "string" && data.image.startsWith("http")
+                    ? data.image
+                    : hint.image,
+                url: data.url || normaliseInputUrl(trimmed),
+              }
+            : hint
+        )
       );
 
       setEditForm((current) => ({
@@ -822,7 +712,7 @@ export default function HintsClient() {
         url: data.url || normaliseInputUrl(trimmed),
       }));
     } catch (err) {
-      setError(err && err.message ? err.message : "Could not refresh this link.");
+      setError(err.message || "Could not refresh this link.");
     } finally {
       setIsRefreshingEdit(false);
     }
@@ -835,7 +725,6 @@ export default function HintsClient() {
     }
 
     const trimmed = link.trim();
-
     if (!trimmed) {
       setError("Paste a link first.");
       return;
@@ -852,16 +741,14 @@ export default function HintsClient() {
     try {
       const response = await fetch("/api/link-preview", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: normaliseInputUrl(trimmed) }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data && data.error ? data.error : "Could not extract this link.");
+        throw new Error(data?.error || "Could not extract this link.");
       }
 
       const numericPrice =
@@ -872,29 +759,22 @@ export default function HintsClient() {
       const retailer = data.siteName || normaliseRetailer(trimmed);
       const shortTitle = shortenTitle(data.title || "Saved hint", retailer);
 
-      const tempId =
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `hint-${Date.now()}`;
-
       const newHint = {
-        id: tempId,
+        id: crypto.randomUUID(),
         title: shortTitle,
         retailer,
         priceLabel: formatPriceLabel(numericPrice, data.priceText),
         numericPrice,
-        priceBand: getPriceBand(numericPrice),
         image:
           typeof data.image === "string" && data.image.startsWith("http")
             ? data.image
             : "",
         fallbackGradient: buildFallbackGradient(hints.length),
-        tags: [],
         starred: false,
         private: false,
         size: getSizeFromPrice(numericPrice),
         url: data.url || normaliseInputUrl(trimmed),
-        position: hints.length,
+        position: 0,
       };
 
       const supabase = createClient();
@@ -910,7 +790,7 @@ export default function HintsClient() {
         numeric_price: newHint.numericPrice,
         starred: newHint.starred,
         is_private: newHint.private,
-        position: newHint.position,
+        position: 0,
         size: newHint.size,
         source: "user",
       });
@@ -919,10 +799,10 @@ export default function HintsClient() {
         throw new Error(error.message || "Could not save this hint.");
       }
 
-      setHints((current) => [newHint, ...current]);
+      setHints((current) => [newHint, ...current].map((item, index) => ({ ...item, position: index })));
       setLink("");
     } catch (err) {
-      setError(err && err.message ? err.message : "Could not extract this link.");
+      setError(err.message || "Could not extract this link.");
     } finally {
       setIsAdding(false);
     }
@@ -936,30 +816,37 @@ export default function HintsClient() {
     const { active, over } = event;
     setActiveId(null);
 
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id || hints.length === 0) return;
 
-    const oldIndex = hints.findIndex((hint) => hint.id === active.id);
-    const newIndex = hints.findIndex((hint) => hint.id === over.id);
+    const nextColumns = splitIntoColumns(hints, 3);
+    const fromColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === active.id));
+    const toColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === over.id));
+
+    if (fromColumnIndex === -1 || toColumnIndex === -1) return;
+
+    const fromItems = [...nextColumns[fromColumnIndex]];
+    const toItems = fromColumnIndex === toColumnIndex ? fromItems : [...nextColumns[toColumnIndex]];
+
+    const oldIndex = fromItems.findIndex((item) => item.id === active.id);
+    const newIndex = toItems.findIndex((item) => item.id === over.id);
 
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const nextHints = arrayMove(hints, oldIndex, newIndex).map((hint, index) => ({
-      ...hint,
-      position: index,
-    }));
+    if (fromColumnIndex === toColumnIndex) {
+      nextColumns[fromColumnIndex] = arrayMove(fromItems, oldIndex, newIndex);
+    } else {
+      const [moved] = fromItems.splice(oldIndex, 1);
+      toItems.splice(newIndex, 0, moved);
+      nextColumns[fromColumnIndex] = fromItems;
+      nextColumns[toColumnIndex] = toItems;
+    }
 
+    const nextHints = rebuildFromColumns(nextColumns);
     setHints(nextHints);
     await persistOrder(nextHints);
   }
 
-  function handleDragCancel() {
-    setActiveId(null);
-  }
-
-  const hasRealHints = hints.length > 0;
-  const visibleHints = hasRealHints ? hints : demoHints;
   const editingHint = visibleHints.find((h) => h.id === editingHintId) || null;
-  const activeHint = visibleHints.find((h) => h.id === activeId) || null;
 
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
@@ -1044,39 +931,41 @@ export default function HintsClient() {
             {isLoading ? (
               <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                 {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="w-full overflow-hidden rounded-[30px] bg-[#f9f8f5]"
-                    style={{ aspectRatio: i === 1 ? "1 / 1.35" : "1 / 1" }}
-                  >
-                    <div className="skeleton h-full w-full" />
+                  <div key={i} className="space-y-6">
+                    <div className="w-full overflow-hidden rounded-[30px] bg-[#f9f8f5] aspect-square">
+                      <div className="skeleton h-full w-full" />
+                    </div>
                   </div>
                 ))}
               </div>
-            ) : hasRealHints ? (
+            ) : hints.length > 0 ? (
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
-                onDragCancel={handleDragCancel}
               >
-                <SortableContext
-                  items={hints.map((hint) => hint.id)}
-                  strategy={rectSortingStrategy}
-                >
-                  <div className="relative grid grid-cols-1 gap-6 md:grid-cols-3">
-                    {hints.map((hint) => (
-                      <SortableHintTile
-                        key={hint.id}
-                        hint={hint}
-                        onEdit={openEditModal}
-                        onToggleStarred={toggleStarred}
-                        onTogglePrivate={togglePrivate}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
+                <div className="relative grid grid-cols-1 gap-6 md:grid-cols-3">
+                  {columns.map((columnHints, columnIndex) => (
+                    <SortableContext
+                      key={`column-${columnIndex}`}
+                      items={columnHints.map((hint) => hint.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-6">
+                        {columnHints.map((hint) => (
+                          <SortableHintCard
+                            key={hint.id}
+                            hint={hint}
+                            onEdit={openEditModal}
+                            onToggleStarred={toggleStarred}
+                            onTogglePrivate={togglePrivate}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  ))}
+                </div>
 
                 <DragOverlay
                   dropAnimation={{
@@ -1099,15 +988,19 @@ export default function HintsClient() {
               </DndContext>
             ) : (
               <div className="relative grid grid-cols-1 gap-6 md:grid-cols-3">
-                {demoHints.map((hint) => (
-                  <div key={hint.id} className="w-full">
-                    <HintCard
-                      hint={hint}
-                      onEdit={() => {}}
-                      onToggleStarred={() => {}}
-                      onTogglePrivate={() => {}}
-                      isDragging={false}
-                    />
+                {splitIntoColumns(demoHints, 3).map((columnHints, columnIndex) => (
+                  <div key={`demo-col-${columnIndex}`} className="space-y-6">
+                    {columnHints.map((hint) => (
+                      <div key={hint.id} className="break-inside-avoid">
+                        <HintCard
+                          hint={hint}
+                          onEdit={() => {}}
+                          onToggleStarred={() => {}}
+                          onTogglePrivate={() => {}}
+                          isDragging={false}
+                        />
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
