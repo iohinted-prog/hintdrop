@@ -27,6 +27,8 @@ import AvatarMenu from "../components/AvatarMenu";
 const ACTIVE_CURRENCY = "GBP";
 const PREVIEW_TIMEOUT_MS = 12000;
 const CARD_MAX_HEIGHT = "min(540px, 68vh)";
+const TIMEOUT_MODAL_MESSAGE =
+  "We couldn’t fetch that item in time. You can still save it now — add the photo manually to help curate your page.";
 
 const EMPTY_NEW_HINT_FORM = {
   title: "",
@@ -496,7 +498,6 @@ function HintFormFields({
   form,
   setForm,
   prefix = "new",
-  showReviewCopy = false,
   showToggles = true,
   imageHelpText = "No image yet. Upload one here if you want to add a photo.",
 }) {
@@ -504,12 +505,6 @@ function HintFormFields({
 
   return (
     <div className="space-y-4">
-      {showReviewCopy && form.needsReview ? (
-        <div className="rounded-[22px] border border-[#f4cdbd] bg-[#fff6f1] p-4 text-sm text-[#9b553d]">
-          We’ll try our best to pull the title, image, and price. You can choose your privacy settings, and let fix anything before saving.
-        </div>
-      ) : null}
-
       <div>
         <label htmlFor={`${prefix}-link`} className="mb-2 block text-sm font-medium text-slate-700">
           Link
@@ -614,7 +609,15 @@ function HintFormFields({
   );
 }
 
-function AddHintModal({ isOpen, form, setForm, onClose, onSubmit, isSaving }) {
+function AddHintModal({
+  isOpen,
+  form,
+  setForm,
+  onClose,
+  onSubmit,
+  isSaving,
+  notice,
+}) {
   return (
     <ModalShell
       isOpen={isOpen}
@@ -634,14 +637,21 @@ function AddHintModal({ isOpen, form, setForm, onClose, onSubmit, isSaving }) {
         </div>
       }
     >
-      <HintFormFields
-        form={form}
-        setForm={setForm}
-        prefix="new"
-        showReviewCopy
-        showToggles
-        imageHelpText="No image yet. Upload one only if you want to add a photo now."
-      />
+      <div className="space-y-4">
+        {notice ? (
+          <div className="rounded-[22px] border border-[#f4cdbd] bg-[#fff6f1] p-4 text-sm text-[#9b553d]">
+            {notice}
+          </div>
+        ) : null}
+
+        <HintFormFields
+          form={form}
+          setForm={setForm}
+          prefix="new"
+          showToggles
+          imageHelpText="No image yet. Upload one only if you want to add a photo now."
+        />
+      </div>
     </ModalShell>
   );
 }
@@ -700,7 +710,6 @@ function EditHintModal({
         form={editForm}
         setForm={setEditForm}
         prefix="edit"
-        showReviewCopy={false}
         showToggles={false}
         imageHelpText="No image yet. Add or replace a photo here if you want."
       />
@@ -911,6 +920,7 @@ export default function HintsClient() {
   const [isSubmittingNewHint, setIsSubmittingNewHint] = useState(false);
   const [pendingHint, setPendingHint] = useState(null);
   const [newHintForm, setNewHintForm] = useState(EMPTY_NEW_HINT_FORM);
+  const [addModalNotice, setAddModalNotice] = useState("");
   const [busyState, setBusyState] = useState({ open: false, title: "", message: "" });
   const busyLongTimerRef = useRef(null);
 
@@ -1115,6 +1125,7 @@ export default function HintsClient() {
     setPendingHint(null);
     setIsSubmittingNewHint(false);
     setNewHintForm(EMPTY_NEW_HINT_FORM);
+    setAddModalNotice("");
   }
 
   async function saveEditChanges() {
@@ -1314,6 +1325,7 @@ export default function HintsClient() {
 
     setIsAdding(true);
     setError("");
+    setAddModalNotice("");
     beginFetchBusy();
 
     try {
@@ -1331,11 +1343,9 @@ export default function HintsClient() {
 
         setPendingHint(manualDraft);
         setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...manualDraft });
+        setAddModalNotice(TIMEOUT_MODAL_MESSAGE);
         setIsAddModalOpen(true);
         setLink("");
-        setError(
-          "We couldn’t fetch that item in time. You can still save it now — add the photo manually to help curate your page."
-        );
       } else {
         setError(errorToMessage(err));
       }
@@ -1535,8 +1545,10 @@ export default function HintsClient() {
               <p className="mt-3 text-sm font-medium text-[#c45c42]">{error}</p>
             ) : (
               <div className="mt-3 space-y-1 text-sm text-slate-500">
-                <p>We’ll pull the title, image, and price, then let you fix anything before saving.</p>
-                <p>You can also save private hints, and both image and price are optional.</p>
+                <p>
+                  We’ll try our best to pull the title, image, and price. You can choose your
+                  privacy settings and fix anything before saving.
+                </p>
               </div>
             )}
           </div>
@@ -1643,6 +1655,7 @@ export default function HintsClient() {
         onClose={closeAddModal}
         onSubmit={submitNewHint}
         isSaving={isSubmittingNewHint}
+        notice={addModalNotice}
       />
 
       <EditHintModal
