@@ -31,12 +31,13 @@ const demoHints = [
     priceLabel: "From £320",
     numericPrice: 320,
     priceBand: "high",
-    image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
+    image:
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#d9dfcf] via-[#b9c7aa] to-[#90a27e]",
     tags: ["Travel", "Big gift"],
     starred: true,
     private: false,
-    size: "tall",
+    size: "hero",
     url: "https://www.airbnb.co.uk/",
     position: 1,
   },
@@ -47,12 +48,13 @@ const demoHints = [
     priceLabel: "About £249",
     numericPrice: 249,
     priceBand: "high",
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
+    image:
+      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]",
     tags: ["Tech", "Birthday"],
     starred: true,
     private: false,
-    size: "tall",
+    size: "hero",
     url: "https://www.amazon.co.uk/",
     position: 2,
   },
@@ -63,12 +65,13 @@ const demoHints = [
     priceLabel: "About £78",
     numericPrice: 78,
     priceBand: "mid",
-    image: "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1200&q=80",
+    image:
+      "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#f3d5cc] via-[#e9b39f] to-[#d98c76]",
     tags: ["Experience", "Couples"],
     starred: false,
     private: false,
-    size: "portrait",
+    size: "feature",
     url: "https://classbento.co.uk/",
     position: 3,
   },
@@ -79,12 +82,13 @@ const demoHints = [
     priceLabel: "About £45",
     numericPrice: 45,
     priceBand: "small",
-    image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
+    image:
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#efe5de] via-[#e5d2c8] to-[#d1b2a4]",
     tags: ["Home", "Under £50"],
     starred: false,
     private: true,
-    size: "square",
+    size: "base",
     url: "https://www.johnlewis.com/",
     position: 4,
   },
@@ -124,21 +128,20 @@ function extractNumericPrice(value) {
 function getPriceBand(price) {
   if (price == null) return "small";
   if (price >= 180) return "high";
-  if (price >= 120) return "premium";
-  if (price >= 60) return "mid";
+  if (price >= 95) return "mid";
   return "small";
 }
 
 function getSizeFromPrice(price, allPrices) {
-  if (price == null || allPrices.length < 3) return "portrait";
+  if (price == null || allPrices.length < 3) return "base";
 
   const sorted = [...allPrices].sort((a, b) => a - b);
-  const lowCut = sorted[Math.floor(sorted.length * 0.35)];
-  const highCut = sorted[Math.floor(sorted.length * 0.75)];
+  const middleCut = sorted[Math.floor(sorted.length * 0.6)];
+  const topCut = sorted[Math.floor(sorted.length * 0.85)];
 
-  if (price >= highCut) return "tall";
-  if (price >= lowCut) return "portrait";
-  return "square";
+  if (price >= topCut) return "hero";
+  if (price >= middleCut) return "feature";
+  return "base";
 }
 
 function formatPriceLabel(price, rawPrice) {
@@ -160,15 +163,20 @@ function buildFallbackGradient(index) {
 }
 
 function getTileClass(size) {
-  if (size === "tall") return "md:col-span-3 md:row-span-9";
-  if (size === "portrait") return "md:col-span-3 md:row-span-7";
-  return "md:col-span-3 md:row-span-5";
+  if (size === "hero") return "md:col-span-4 md:row-span-10";
+  if (size === "feature") return "md:col-span-4 md:row-span-8";
+  return "md:col-span-4 md:row-span-7";
+}
+
+function getImageFrameClass(size) {
+  if (size === "hero") return "min-h-[66%]";
+  if (size === "feature") return "min-h-[63%]";
+  return "min-h-[60%]";
 }
 
 function getPricePill(priceBand) {
   if (priceBand === "high") return "bg-[#2f3b2d] text-white";
-  if (priceBand === "premium") return "bg-[#fff1e9] text-[#df7c59]";
-  if (priceBand === "mid") return "bg-[#f3f0ff] text-[#7c61bf]";
+  if (priceBand === "mid") return "bg-[#fff1e9] text-[#df7c59]";
   return "bg-[#f1f5ec] text-[#627f53]";
 }
 
@@ -183,19 +191,67 @@ function shortenTitle(title = "", retailer = "") {
     .toLowerCase();
 
   const stopWords = new Set([
-    "the", "and", "with", "for", "from", "new", "latest",
-    "edition", "model", "official", "amazon", "uk",
-    "black", "white", "silver", "blue", "green", "pink", "grey", "gray",
-    "wireless", "bluetooth",
+    "the",
+    "and",
+    "with",
+    "for",
+    "from",
+    "new",
+    "latest",
+    "edition",
+    "model",
+    "official",
+    "amazon",
+    "uk",
+    "black",
+    "white",
+    "silver",
+    "blue",
+    "green",
+    "pink",
+    "grey",
+    "gray",
+    "wireless",
+    "bluetooth",
   ]);
 
   const categoryWords = [
-    "headphones", "earbuds", "speaker", "kindle", "book",
-    "pillowcase", "pillowcases", "dish", "pan", "mug", "print",
-    "necklace", "ring", "bag", "dress", "trainer", "trainers",
-    "jacket", "candle", "coffee", "set", "workshop", "experience",
-    "voucher", "lego", "camera", "watch", "sofa", "blanket",
-    "coat", "boots", "sandals", "lamp", "vase", "frame",
+    "headphones",
+    "earbuds",
+    "speaker",
+    "kindle",
+    "book",
+    "pillowcase",
+    "pillowcases",
+    "dish",
+    "pan",
+    "mug",
+    "print",
+    "necklace",
+    "ring",
+    "bag",
+    "dress",
+    "trainer",
+    "trainers",
+    "jacket",
+    "candle",
+    "coffee",
+    "set",
+    "workshop",
+    "experience",
+    "voucher",
+    "lego",
+    "camera",
+    "watch",
+    "sofa",
+    "blanket",
+    "coat",
+    "boots",
+    "sandals",
+    "lamp",
+    "vase",
+    "frame",
+    "cabin",
   ];
 
   let cleaned = source
@@ -219,7 +275,9 @@ function shortenTitle(title = "", retailer = "") {
   if (words.length === 0) return "Saved hint";
 
   const brand = words[0];
-  const foundCategory = words.find((word) => categoryWords.includes(word.toLowerCase()));
+  const foundCategory = words.find((word) =>
+    categoryWords.includes(word.toLowerCase())
+  );
 
   let finalWords;
   if (foundCategory && brand.toLowerCase() !== foundCategory.toLowerCase()) {
@@ -230,6 +288,141 @@ function shortenTitle(title = "", retailer = "") {
 
   const compact = finalWords.join(" ").trim();
   return compact.charAt(0).toUpperCase() + compact.slice(1);
+}
+
+function inferImageStyle(hint) {
+  const title = `${hint.title || ""} ${hint.retailer || ""}`.toLowerCase();
+  const productWords = [
+    "headphones",
+    "earbuds",
+    "speaker",
+    "watch",
+    "ring",
+    "necklace",
+    "bag",
+    "boots",
+    "sandals",
+    "pillowcase",
+    "pillowcases",
+    "lamp",
+    "vase",
+    "mug",
+    "candle",
+    "camera",
+    "trainer",
+    "trainers",
+    "jacket",
+    "dress",
+    "coat",
+    "kindle",
+    "lego",
+  ];
+
+  return productWords.some((word) => title.includes(word)) ? "object-contain" : "object-cover";
+}
+
+function ComposerPreview({
+  preview,
+  titleDraft,
+  setTitleDraft,
+  visibility,
+  setVisibility,
+  isAdding,
+  onAdd,
+  onClear,
+}) {
+  return (
+    <div className="mx-auto mt-4 w-full max-w-[980px] rounded-[30px] border border-[#efdfd6] bg-white/88 p-4 shadow-[0_18px_40px_rgba(176,118,86,0.08)] backdrop-blur-sm sm:p-5">
+      <div className="flex flex-col gap-4 md:flex-row">
+        <div className="relative flex h-[172px] w-full shrink-0 items-center justify-center overflow-hidden rounded-[24px] border border-[#f0e1d8] bg-[#fbf7f3] md:w-[220px]">
+          {preview.image ? (
+            <>
+              <div className="absolute inset-[14px] rounded-[20px] bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.98),_rgba(247,239,233,0.95)_62%,_rgba(235,220,212,0.9))]" />
+              <img
+                src={preview.image}
+                alt={titleDraft || preview.title || "Hint preview"}
+                className={`relative z-[1] h-[82%] w-[82%] ${inferImageStyle(preview)} drop-shadow-[0_16px_24px_rgba(92,62,46,0.18)]`}
+                referrerPolicy="no-referrer"
+              />
+            </>
+          ) : (
+            <div className={`absolute inset-0 bg-gradient-to-br ${preview.fallbackGradient}`} />
+          )}
+
+          <div className="pointer-events-none absolute inset-x-5 bottom-4 h-6 rounded-full bg-[rgba(66,44,33,0.10)] blur-md" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setVisibility("shared")}
+              className={`rounded-full px-4 py-2 text-[12px] font-semibold transition ${
+                visibility === "shared"
+                  ? "bg-[#2f3b2d] text-white"
+                  : "border border-[#ead9d0] bg-white text-slate-600 hover:bg-[#faf6f3]"
+              }`}
+            >
+              Shared
+            </button>
+            <button
+              type="button"
+              onClick={() => setVisibility("private")}
+              className={`rounded-full px-4 py-2 text-[12px] font-semibold transition ${
+                visibility === "private"
+                  ? "bg-[#fff3ec] text-[#df7c59]"
+                  : "border border-[#ead9d0] bg-white text-slate-600 hover:bg-[#faf6f3]"
+              }`}
+            >
+              Private
+            </button>
+
+            {preview.priceLabel ? (
+              <span
+                className={`rounded-full px-3 py-2 text-[12px] font-semibold ${getPricePill(
+                  preview.priceBand
+                )}`}
+              >
+                {preview.priceLabel}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="mt-4">
+            <input
+              type="text"
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-white px-5 text-[18px] font-semibold tracking-[-0.03em] text-slate-900 outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
+              placeholder="Name this hint"
+            />
+            <p className="mt-2 truncate text-[13px] text-slate-500">
+              {preview.retailer}
+            </p>
+          </div>
+
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={onAdd}
+              disabled={isAdding}
+              className="inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg disabled:opacity-70"
+            >
+              {isAdding ? "Adding..." : "Save hint"}
+            </button>
+            <button
+              type="button"
+              onClick={onClear}
+              disabled={isAdding}
+              className="inline-flex h-12 items-center justify-center rounded-full border border-[#ead9d0] px-5 text-sm font-semibold text-slate-600 hover:bg-[#faf6f3] disabled:opacity-60"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function EditHintModal({
@@ -273,27 +466,37 @@ function EditHintModal({
 
         <div className="mt-6 space-y-4">
           <div>
-            <label htmlFor="edit-link" className="mb-2 block text-sm font-medium text-slate-700">
+            <label
+              htmlFor="edit-link"
+              className="mb-2 block text-sm font-medium text-slate-700"
+            >
               Link
             </label>
             <input
               id="edit-link"
               type="url"
               value={editForm.url}
-              onChange={(e) => setEditForm((current) => ({ ...current, url: e.target.value }))}
+              onChange={(e) =>
+                setEditForm((current) => ({ ...current, url: e.target.value }))
+              }
               className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-white px-5 text-[15px] text-slate-700 outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
             />
           </div>
 
           <div>
-            <label htmlFor="edit-title" className="mb-2 block text-sm font-medium text-slate-700">
+            <label
+              htmlFor="edit-title"
+              className="mb-2 block text-sm font-medium text-slate-700"
+            >
               Name
             </label>
             <input
               id="edit-title"
               type="text"
               value={editForm.title}
-              onChange={(e) => setEditForm((current) => ({ ...current, title: e.target.value }))}
+              onChange={(e) =>
+                setEditForm((current) => ({ ...current, title: e.target.value }))
+              }
               className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-white px-5 text-[15px] text-slate-700 outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
             />
           </div>
@@ -373,10 +576,11 @@ function HintCard({
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(hint.image) && !imageFailed;
+  const imageFit = inferImageStyle(hint);
 
   return (
     <article
-      className={`group relative flex h-full min-h-[280px] flex-col overflow-hidden rounded-[30px] border transition-[transform,box-shadow,opacity] duration-200 ${
+      className={`group relative flex h-full min-h-[360px] flex-col overflow-hidden rounded-[32px] border transition-[transform,box-shadow,opacity] duration-200 ${
         getTileClass(hint.size)
       } ${
         isDragging
@@ -384,26 +588,39 @@ function HintCard({
           : "hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(176,118,86,0.14)]"
       } ${
         hint.private
-          ? "border-white/50 bg-white/55 shadow-[0_10px_28px_rgba(176,118,86,0.08)] backdrop-blur-sm"
+          ? "border-white/50 bg-white/60 shadow-[0_10px_28px_rgba(176,118,86,0.08)] backdrop-blur-sm"
           : "border-[#f0dfd6] bg-white shadow-sm"
       }`}
     >
       <div className="relative flex h-full flex-col">
-        <div className="relative min-h-[62%] flex-1 overflow-hidden">
+        <div
+          className={`relative flex-1 overflow-hidden ${getImageFrameClass(
+            hint.size
+          )}`}
+        >
           {showImage ? (
             <>
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,250,246,0.96),_rgba(245,236,229,0.92)_58%,_rgba(233,220,211,0.88))]" />
+              <div className="absolute inset-[18px] rounded-[26px] border border-white/70 bg-white/38 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] backdrop-blur-[2px]" />
               <img
                 src={hint.image}
                 alt={hint.title}
-                className={`absolute inset-0 h-full w-full object-cover ${hint.private ? "opacity-80" : ""}`}
+                className={`absolute inset-[28px] h-[calc(100%-56px)] w-[calc(100%-56px)] ${imageFit} drop-shadow-[0_24px_30px_rgba(96,69,54,0.18)] ${hint.private ? "opacity-86" : ""}`}
                 loading="lazy"
                 referrerPolicy="no-referrer"
                 onError={() => setImageFailed(true)}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[rgba(31,24,20,0.35)] via-[rgba(31,24,20,0.05)] to-[rgba(255,255,255,0.02)]" />
+              <div className="pointer-events-none absolute inset-x-10 bottom-7 h-7 rounded-full bg-[rgba(67,42,28,0.12)] blur-md" />
             </>
           ) : (
-            <div className={`absolute inset-0 bg-gradient-to-br ${hint.fallbackGradient} ${hint.private ? "opacity-80" : ""}`} />
+            <>
+              <div
+                className={`absolute inset-0 bg-gradient-to-br ${hint.fallbackGradient} ${
+                  hint.private ? "opacity-80" : ""
+                }`}
+              />
+              <div className="absolute inset-[18px] rounded-[26px] border border-white/35 bg-white/18 backdrop-blur-[2px]" />
+            </>
           )}
 
           <div className="absolute left-4 right-4 top-4 flex items-start justify-between">
@@ -413,7 +630,7 @@ function HintCard({
                 ref={setDragActivatorNodeRef}
                 {...dragAttributes}
                 {...dragListeners}
-                className="flex cursor-grab touch-none items-center gap-1 rounded-full bg-white/78 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm active:cursor-grabbing"
+                className="flex cursor-grab touch-none items-center gap-1 rounded-full bg-white/82 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm active:cursor-grabbing"
                 title="Drag to reorder"
                 aria-label={`Drag ${hint.title}`}
               >
@@ -427,7 +644,7 @@ function HintCard({
               )}
 
               {hint.private && (
-                <div className="rounded-full bg-white/74 px-3 py-1 text-[11px] font-semibold text-slate-600 backdrop-blur-sm">
+                <div className="rounded-full bg-white/76 px-3 py-1 text-[11px] font-semibold text-slate-600 backdrop-blur-sm">
                   Private
                 </div>
               )}
@@ -437,7 +654,7 @@ function HintCard({
               <button
                 type="button"
                 onClick={() => onEdit(hint)}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/72 text-[15px] text-slate-500 backdrop-blur-sm hover:text-slate-800"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/76 text-[15px] text-slate-500 backdrop-blur-sm hover:text-slate-800"
                 aria-label="Edit hint"
               >
                 ✎
@@ -445,8 +662,10 @@ function HintCard({
 
               <button
                 onClick={() => onToggleStarred(hint)}
-                className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/72 text-[16px] backdrop-blur-sm ${
-                  hint.starred ? "text-[#f36f64]" : "text-slate-400 hover:text-[#f36f64]"
+                className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/76 text-[16px] backdrop-blur-sm ${
+                  hint.starred
+                    ? "text-[#f36f64]"
+                    : "text-slate-400 hover:text-[#f36f64]"
                 }`}
                 aria-label={hint.starred ? "Unhighlight hint" : "Highlight hint"}
                 type="button"
@@ -457,10 +676,18 @@ function HintCard({
           </div>
         </div>
 
-        <div className="relative -mt-6 flex flex-1 px-4 pb-4 sm:px-5 sm:pb-5">
-          <div className={`flex w-full flex-1 flex-col rounded-[24px] p-4 shadow-sm backdrop-blur-md ${hint.private ? "bg-white/82" : "bg-white/90"}`}>
+        <div className="relative -mt-8 flex flex-1 px-4 pb-4 sm:px-5 sm:pb-5">
+          <div
+            className={`flex w-full flex-1 flex-col rounded-[26px] p-4 shadow-sm backdrop-blur-md ${
+              hint.private ? "bg-white/84" : "bg-white/92"
+            }`}
+          >
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getPricePill(hint.priceBand)}`}>
+              <span
+                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getPricePill(
+                  hint.priceBand
+                )}`}
+              >
                 {hint.priceLabel}
               </span>
 
@@ -475,7 +702,7 @@ function HintCard({
             </div>
 
             <h2
-              className="mt-3 min-w-0 overflow-hidden text-[20px] font-semibold tracking-[-0.04em] text-slate-900"
+              className="mt-3 min-w-0 overflow-hidden text-[21px] font-semibold tracking-[-0.04em] text-slate-900"
               style={{
                 display: "-webkit-box",
                 WebkitBoxOrient: "vertical",
@@ -486,7 +713,9 @@ function HintCard({
               {hint.title}
             </h2>
 
-            <p className="mt-1 truncate text-[13px] text-slate-500">{hint.retailer}</p>
+            <p className="mt-1 truncate text-[13px] text-slate-500">
+              {hint.retailer}
+            </p>
 
             <div className="mt-auto pt-4">
               <div className="flex items-center justify-end gap-2">
@@ -547,6 +776,10 @@ function SortableHintTile(props) {
 export default function HintsPage() {
   const [hints, setHints] = useState([]);
   const [link, setLink] = useState("");
+  const [draftPreview, setDraftPreview] = useState(null);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftVisibility, setDraftVisibility] = useState("shared");
+  const [isFetchingPreview, setIsFetchingPreview] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState("");
   const [editingHintId, setEditingHintId] = useState(null);
@@ -558,7 +791,10 @@ export default function HintsPage() {
   const [activeId, setActiveId] = useState(null);
 
   const numericPrices = useMemo(
-    () => hints.map((hint) => hint.numericPrice).filter((value) => typeof value === "number"),
+    () =>
+      hints
+        .map((hint) => hint.numericPrice)
+        .filter((value) => typeof value === "number"),
     [hints]
   );
 
@@ -614,6 +850,10 @@ export default function HintsPage() {
         return;
       }
 
+      const allLoadedPrices = (data || [])
+        .map((item) => item.numeric_price)
+        .filter((value) => typeof value === "number");
+
       setHints(
         (data || []).map((row, index) => ({
           id: row.id,
@@ -627,7 +867,7 @@ export default function HintsPage() {
           tags: [],
           starred: Boolean(row.starred),
           private: Boolean(row.is_private),
-          size: row.size || getSizeFromPrice(row.numeric_price, (data || []).map((item) => item.numeric_price).filter((v) => typeof v === "number")),
+          size: row.size || getSizeFromPrice(row.numeric_price, allLoadedPrices),
           url: row.url || "",
           position: row.position ?? index,
         }))
@@ -646,12 +886,15 @@ export default function HintsPage() {
 
     await Promise.all(
       updatedHints.map((hint, index) =>
-        supabase
-          .from("hints")
-          .update({ position: index })
-          .eq("id", hint.id)
+        supabase.from("hints").update({ position: index }).eq("id", hint.id)
       )
     );
+  }
+
+  function resetComposer() {
+    setDraftPreview(null);
+    setDraftTitle("");
+    setDraftVisibility("shared");
   }
 
   function openEditModal(hint) {
@@ -716,10 +959,7 @@ export default function HintsPage() {
 
     const supabase = createClient();
 
-    const { error } = await supabase
-      .from("hints")
-      .delete()
-      .eq("id", editingHintId);
+    const { error } = await supabase.from("hints").delete().eq("id", editingHintId);
 
     if (error) {
       setError(error.message);
@@ -810,8 +1050,8 @@ export default function HintsPage() {
         typeof data.selectedImage === "string" && data.selectedImage.startsWith("http")
           ? data.selectedImage
           : typeof data.image === "string" && data.image.startsWith("http")
-            ? data.image
-            : "";
+          ? data.image
+          : "";
 
       setHints((current) => {
         const pricePool = current
@@ -860,7 +1100,7 @@ export default function HintsPage() {
     }
   }
 
-  async function handleAddHint() {
+  async function handleFetchPreview() {
     if (!currentUser) {
       setError("You must be signed in to add hints.");
       return;
@@ -873,7 +1113,7 @@ export default function HintsPage() {
       return;
     }
 
-    setIsAdding(true);
+    setIsFetchingPreview(true);
     setError("");
 
     try {
@@ -893,8 +1133,6 @@ export default function HintsPage() {
 
       const numericPrice = extractNumericPrice(data.priceText);
       const allPrices = [...numericPrices, ...(numericPrice != null ? [numericPrice] : [])];
-      const size = getSizeFromPrice(numericPrice, allPrices);
-
       const retailer = data.siteName || normaliseRetailer(trimmed);
       const shortTitle =
         data.titleShort || shortenTitle(data.title || "Saved hint", retailer);
@@ -903,11 +1141,10 @@ export default function HintsPage() {
         typeof data.selectedImage === "string" && data.selectedImage.startsWith("http")
           ? data.selectedImage
           : typeof data.image === "string" && data.image.startsWith("http")
-            ? data.image
-            : "";
+          ? data.image
+          : "";
 
-      const newHint = {
-        id: crypto.randomUUID(),
+      const preview = {
         title: shortTitle,
         retailer,
         priceLabel: formatPriceLabel(numericPrice, data.priceText),
@@ -915,11 +1152,42 @@ export default function HintsPage() {
         priceBand: getPriceBand(numericPrice),
         image: chosenImage,
         fallbackGradient: buildFallbackGradient(hints.length),
+        url: data.url || trimmed,
+        size: getSizeFromPrice(numericPrice, allPrices),
+      };
+
+      setDraftPreview(preview);
+      setDraftTitle(shortTitle);
+      setDraftVisibility("shared");
+    } catch (err) {
+      setError(err.message || "Could not extract this link.");
+      setDraftPreview(null);
+    } finally {
+      setIsFetchingPreview(false);
+    }
+  }
+
+  async function handleAddHint() {
+    if (!currentUser || !draftPreview) return;
+
+    setIsAdding(true);
+    setError("");
+
+    try {
+      const newHint = {
+        id: crypto.randomUUID(),
+        title: draftTitle.trim() || draftPreview.title || "Saved hint",
+        retailer: draftPreview.retailer,
+        priceLabel: draftPreview.priceLabel,
+        numericPrice: draftPreview.numericPrice,
+        priceBand: draftPreview.priceBand,
+        image: draftPreview.image,
+        fallbackGradient: draftPreview.fallbackGradient,
         tags: ["Added from link"],
         starred: false,
-        private: false,
-        size,
-        url: data.url || trimmed,
+        private: draftVisibility === "private",
+        size: draftPreview.size,
+        url: draftPreview.url,
         position: 0,
       };
 
@@ -939,6 +1207,7 @@ export default function HintsPage() {
           is_private: newHint.private,
           position: 0,
           source: "user",
+          size: newHint.size,
         })
         .select("id")
         .single();
@@ -956,9 +1225,10 @@ export default function HintsPage() {
 
       setHints(updatedHints);
       setLink("");
+      resetComposer();
       persistHintOrder(updatedHints);
     } catch (err) {
-      setError(err.message || "Could not extract this link.");
+      setError(err.message || "Could not save this hint.");
     } finally {
       setIsAdding(false);
     }
@@ -1000,10 +1270,30 @@ export default function HintsPage() {
 
           <div className="flex items-center gap-3 sm:gap-4">
             <nav className="flex items-center gap-2 sm:gap-3">
-              <Link href="/feed" className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Feed</Link>
-              <Link href="/hints" className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5">Hints</Link>
-              <Link href="/circles" className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Circles</Link>
-              <Link href="/shop" className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Shop</Link>
+              <Link
+                href="/feed"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Feed
+              </Link>
+              <Link
+                href="/hints"
+                className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5"
+              >
+                Hints
+              </Link>
+              <Link
+                href="/circles"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Circles
+              </Link>
+              <Link
+                href="/shop"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Shop
+              </Link>
             </nav>
 
             <AvatarMenu />
@@ -1027,7 +1317,7 @@ export default function HintsPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    handleAddHint();
+                    handleFetchPreview();
                   }
                 }}
                 placeholder="Paste any product, wishlist, or experience link"
@@ -1035,48 +1325,69 @@ export default function HintsPage() {
               />
               <button
                 type="button"
-                onClick={handleAddHint}
-                disabled={isAdding || isLoading}
+                onClick={handleFetchPreview}
+                disabled={isFetchingPreview || isLoading}
                 className="inline-flex h-[72px] shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-8 text-sm font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[170px]"
               >
-                {isAdding ? "Adding..." : isLoading ? "Loading..." : "Add hint"}
+                {isFetchingPreview
+                  ? "Fetching..."
+                  : isLoading
+                  ? "Loading..."
+                  : "Preview"}
               </button>
             </div>
 
             {error ? (
               <p className="mt-3 text-sm font-medium text-[#c45c42]">{error}</p>
-            ) : (
+            ) : draftPreview ? null : (
               <p className="mt-3 text-sm text-slate-500">
-                We'll pull the title, image, and price from the link, then you can edit it any time.
+                Pull the image, tweak the name, choose who sees it.
               </p>
             )}
           </div>
+
+          {draftPreview ? (
+            <ComposerPreview
+              preview={draftPreview}
+              titleDraft={draftTitle}
+              setTitleDraft={setDraftTitle}
+              visibility={draftVisibility}
+              setVisibility={setDraftVisibility}
+              isAdding={isAdding}
+              onAdd={handleAddHint}
+              onClear={resetComposer}
+            />
+          ) : null}
         </section>
 
         <section className="mt-12">
           <div className="relative rounded-[36px] border border-[#efdfd6] bg-[#fffdfb] p-3 sm:p-5">
             <div
-              className="pointer-events-none absolute inset-0 rounded-[36px] opacity-70"
+              className="pointer-events-none absolute inset-0 rounded-[36px] opacity-80"
               style={{
                 backgroundImage: `
-                  linear-gradient(to right, rgba(214, 195, 184, 0.28) 1px, transparent 1px),
-                  linear-gradient(to bottom, rgba(214, 195, 184, 0.28) 1px, transparent 1px)
+                  linear-gradient(to right, rgba(214, 195, 184, 0.32) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(214, 195, 184, 0.32) 1px, transparent 1px)
                 `,
-                backgroundSize: "76px 76px",
+                backgroundSize: "108px 108px",
                 backgroundPosition: "center center",
               }}
             />
 
             {isLoading ? (
-              <div className="grid auto-rows-[46px] grid-cols-1 gap-6 md:grid-cols-12">
+              <div className="grid auto-rows-[54px] grid-cols-1 gap-7 md:grid-cols-12">
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className={`relative flex h-full min-h-[280px] flex-col overflow-hidden rounded-[30px] border border-[#efdfd6] bg-[#f9f8f5] md:col-span-3 ${
-                      i === 1 ? "md:row-span-9" : i === 2 ? "md:row-span-7" : "md:row-span-5"
+                    className={`relative flex h-full min-h-[360px] flex-col overflow-hidden rounded-[30px] border border-[#efdfd6] bg-[#f9f8f5] md:col-span-4 ${
+                      i === 1
+                        ? "md:row-span-10"
+                        : i === 2
+                        ? "md:row-span-8"
+                        : "md:row-span-7"
                     }`}
                   >
-                    <div className="relative min-h-[62%] flex-1 overflow-hidden">
+                    <div className="relative flex-1 overflow-hidden">
                       <div className="skeleton h-full w-full" />
                     </div>
                   </div>
@@ -1090,8 +1401,11 @@ export default function HintsPage() {
                 onDragEnd={handleDragEnd}
                 onDragCancel={() => setActiveId(null)}
               >
-                <SortableContext items={visibleHints.map((hint) => hint.id)} strategy={rectSortingStrategy}>
-                  <div className="relative grid auto-rows-[46px] grid-cols-1 gap-6 md:grid-cols-12">
+                <SortableContext
+                  items={visibleHints.map((hint) => hint.id)}
+                  strategy={rectSortingStrategy}
+                >
+                  <div className="relative grid auto-rows-[54px] grid-cols-1 gap-7 md:grid-cols-12">
                     {visibleHints.map((hint) => (
                       <SortableHintTile
                         key={hint.id}
@@ -1106,7 +1420,7 @@ export default function HintsPage() {
 
                 <DragOverlay>
                   {activeHint ? (
-                    <div className="w-full max-w-[340px]">
+                    <div className="w-full max-w-[420px]">
                       <HintCard
                         hint={activeHint}
                         isDragging
