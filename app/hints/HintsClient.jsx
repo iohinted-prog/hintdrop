@@ -236,6 +236,32 @@ function splitIntoColumns(items, columnCount = 3) {
   return columns;
 }
 
+async function fetchPreview(url) {
+  const response = await fetch("/api/link-preview", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    },
+    body: JSON.stringify({ url }),
+  });
+
+  const raw = await response.text();
+  let data = null;
+
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    throw new Error(raw || "The preview service returned an invalid response.");
+  }
+
+  if (!response.ok) {
+    throw new Error(data?.error || "Could not fetch this link preview.");
+  }
+
+  return data;
+}
+
 function AddHintModal({
   isOpen,
   form,
@@ -943,17 +969,7 @@ export default function HintsClient() {
     setError("");
 
     try {
-      const response = await fetch("/api/link-preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: normaliseInputUrl(trimmed) }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || "Could not refresh this link.");
-      }
+      const data = await fetchPreview(normaliseInputUrl(trimmed));
 
       const numericPrice =
         typeof data.numericPrice === "number"
@@ -991,7 +1007,7 @@ export default function HintsClient() {
         url: data.url || normaliseInputUrl(trimmed),
       }));
     } catch (err) {
-      setError(err.message || "Could not refresh this link.");
+      setError(err instanceof Error ? err.message : "Could not refresh this link.");
     } finally {
       setIsRefreshingEdit(false);
     }
@@ -1019,17 +1035,7 @@ export default function HintsClient() {
     setError("");
 
     try {
-      const response = await fetch("/api/link-preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: normaliseInputUrl(trimmed) }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || "Could not extract this link.");
-      }
+      const data = await fetchPreview(normaliseInputUrl(trimmed));
 
       const numericPrice =
         typeof data.numericPrice === "number"
@@ -1068,7 +1074,7 @@ export default function HintsClient() {
       setIsAddModalOpen(true);
       setLink("");
     } catch (err) {
-      setError(err.message || "Could not extract this link.");
+      setError(err instanceof Error ? err.message : "Could not extract this link.");
     } finally {
       setIsAdding(false);
     }
@@ -1136,7 +1142,7 @@ export default function HintsClient() {
 
       closeAddModal();
     } catch (err) {
-      setError(err.message || "Could not save this hint.");
+      setError(err instanceof Error ? err.message : "Could not save this hint.");
       setIsSubmittingNewHint(false);
     }
   }
