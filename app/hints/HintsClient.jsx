@@ -24,6 +24,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
 
+const ACTIVE_CURRENCY = "GBP";
+
 const demoHints = [
   {
     id: "demo-1",
@@ -31,6 +33,7 @@ const demoHints = [
     retailer: "airbnb.co.uk",
     priceLabel: "From £320",
     numericPrice: 320,
+    currency: "GBP",
     image:
       "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#d9dfcf] via-[#b9c7aa] to-[#90a27e]",
@@ -46,6 +49,7 @@ const demoHints = [
     retailer: "amazon.co.uk",
     priceLabel: "About £249",
     numericPrice: 249,
+    currency: "GBP",
     image:
       "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]",
@@ -61,6 +65,7 @@ const demoHints = [
     retailer: "johnlewis.com",
     priceLabel: "About £45",
     numericPrice: 45,
+    currency: "GBP",
     image:
       "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#efe5de] via-[#e5d2c8] to-[#d1b2a4]",
@@ -76,6 +81,7 @@ const demoHints = [
     retailer: "booking.com",
     priceLabel: "From £1290",
     numericPrice: 1290,
+    currency: "GBP",
     image:
       "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#d5dbee] via-[#b3c0df] to-[#8f9fc9]",
@@ -89,10 +95,33 @@ const demoHints = [
 
 function LogoMark() {
   return (
-    <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg">
+    <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] border border-[#efc4b2] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg">
       <span className="text-lg">🎁</span>
     </div>
   );
+}
+
+function errorToMessage(value) {
+  if (!value) return "Something went wrong.";
+
+  if (typeof value === "string") return value;
+  if (value instanceof Error) return value.message || "Something went wrong.";
+
+  if (typeof value === "object") {
+    if (typeof value.message === "string" && value.message.trim()) {
+      return value.message;
+    }
+    if (typeof value.error === "string" && value.error.trim()) {
+      return value.error;
+    }
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return "Something went wrong.";
+    }
+  }
+
+  return String(value);
 }
 
 function normaliseRetailer(url) {
@@ -124,6 +153,16 @@ function normaliseInputUrl(value = "") {
     : `https://${trimmed}`;
 }
 
+function detectCurrency(raw = "") {
+  const text = String(raw || "").trim();
+  if (!text) return null;
+  if (text.includes("£")) return "GBP";
+  if (text.includes("$")) return "USD";
+  if (text.includes("€")) return "EUR";
+  if (/\bR\s?\d/i.test(text) || /\bZAR\b/i.test(text)) return "ZAR";
+  return null;
+}
+
 function extractNumericPrice(value) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (!value || typeof value !== "string") return null;
@@ -131,6 +170,7 @@ function extractNumericPrice(value) {
   const cleaned = value.replace(/,/g, "");
   const match =
     cleaned.match(/(?:£|\$|€)\s?(\d+(?:\.\d{1,2})?)/) ||
+    cleaned.match(/\bR\s?(\d+(?:\.\d{1,2})?)/i) ||
     cleaned.match(/(\d+(?:\.\d{1,2})?)/);
 
   if (!match) return null;
@@ -151,10 +191,32 @@ function getAspectRatio(size) {
   return "1 / 1";
 }
 
-function formatPriceLabel(price, rawPrice) {
-  if (rawPrice && typeof rawPrice === "string") return rawPrice;
+function formatPriceLabel(price, rawPrice, currency = ACTIVE_CURRENCY) {
+  if (currency !== ACTIVE_CURRENCY) return "Price unavailable";
+  if (rawPrice && typeof rawPrice === "string" && detectCurrency(rawPrice) === ACTIVE_CURRENCY) {
+    return rawPrice;
+  }
   if (price == null) return "Price unavailable";
-  return `About £${Math.round(price)}`;
+  if (currency === "GBP") return `About £${Math.round(price)}`;
+  return `About ${Math.round(price)}`;
+}
+
+function sanitisePrice(rawPrice, numericPrice) {
+  const currency = detectCurrency(rawPrice) || ACTIVE_CURRENCY;
+
+  if (currency !== ACTIVE_CURRENCY) {
+    return {
+      currency,
+      numericPrice: null,
+      priceLabel: "Price unavailable",
+    };
+  }
+
+  return {
+    currency,
+    numericPrice,
+    priceLabel: formatPriceLabel(numericPrice, rawPrice, currency),
+  };
 }
 
 function buildFallbackGradient(index) {
@@ -241,9 +303,9 @@ async function fetchPreview(url) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Accept": "application/json",
+      Accept: "application/json",
     },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ url, currency: ACTIVE_CURRENCY }),
   });
 
   const raw = await response.text();
@@ -256,7 +318,11 @@ async function fetchPreview(url) {
   }
 
   if (!response.ok) {
-    throw new Error(data?.error || "Could not fetch this link preview.");
+    throw new Error(
+      data?.error ||
+        data?.message ||
+        (typeof data === "string" ? data : "Could not fetch this link preview.")
+    );
   }
 
   return data;
@@ -274,7 +340,7 @@ function AddHintModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(33,24,20,0.42)] px-4 py-8 backdrop-blur-sm">
-      <div className="w-full max-w-[560px] rounded-[30px] bg-white p-6 shadow-[0_28px_80px_rgba(75,45,30,0.18)] sm:p-7">
+      <div className="w-full max-w-[560px] rounded-[30px] border border-[#efdcd2] bg-white p-6 shadow-[0_28px_80px_rgba(75,45,30,0.18)] sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#e08a67]">
@@ -288,7 +354,7 @@ function AddHintModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:bg-[#faf6f3]"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-[#efe0d7] text-slate-500 hover:bg-[#faf6f3]"
             aria-label="Close add modal"
           >
             ✕
@@ -305,7 +371,7 @@ function AddHintModal({
               type="url"
               value={form.url}
               onChange={(e) => setForm((current) => ({ ...current, url: e.target.value }))}
-              className="h-14 w-full rounded-[18px] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none ring-1 ring-[#eadcd3] focus:ring-2 focus:ring-[#f19a78]/50"
+              className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
             />
           </div>
 
@@ -318,7 +384,7 @@ function AddHintModal({
               type="text"
               value={form.title}
               onChange={(e) => setForm((current) => ({ ...current, title: e.target.value }))}
-              className="h-14 w-full rounded-[18px] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none ring-1 ring-[#eadcd3] focus:ring-2 focus:ring-[#f19a78]/50"
+              className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
             />
           </div>
 
@@ -328,10 +394,10 @@ function AddHintModal({
               onClick={() =>
                 setForm((current) => ({ ...current, starred: !current.starred }))
               }
-              className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              className={`rounded-full border px-4 py-2 text-sm font-semibold ${
                 form.starred
-                  ? "bg-[#fff2ea] text-[#e27956]"
-                  : "bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
+                  ? "border-[#ffd8c9] bg-[#fff2ea] text-[#e27956]"
+                  : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
               }`}
             >
               {form.starred ? "★ Starred" : "★ Star"}
@@ -342,10 +408,10 @@ function AddHintModal({
               onClick={() =>
                 setForm((current) => ({ ...current, private: !current.private }))
               }
-              className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              className={`rounded-full border px-4 py-2 text-sm font-semibold ${
                 form.private
-                  ? "bg-[#fffaf7] text-[#e08a67]"
-                  : "bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
+                  ? "border-[#ffd8c9] bg-[#fffaf7] text-[#e08a67]"
+                  : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
               }`}
             >
               {form.private ? "🔒 Private" : "🔓 Public"}
@@ -358,7 +424,7 @@ function AddHintModal({
             type="button"
             onClick={onSubmit}
             disabled={isSaving}
-            className="inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg disabled:opacity-70"
+            className="inline-flex h-12 items-center justify-center rounded-full border border-[#ee8d69] bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg disabled:opacity-70"
           >
             {isSaving ? "Saving..." : "Save hint"}
           </button>
@@ -386,7 +452,7 @@ function EditHintModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(33,24,20,0.42)] px-4 py-8 backdrop-blur-sm">
-      <div className="w-full max-w-[560px] rounded-[30px] bg-white p-6 shadow-[0_28px_80px_rgba(75,45,30,0.18)] sm:p-7">
+      <div className="w-full max-w-[560px] rounded-[30px] border border-[#efdcd2] bg-white p-6 shadow-[0_28px_80px_rgba(75,45,30,0.18)] sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#e08a67]">
@@ -400,7 +466,7 @@ function EditHintModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:bg-[#faf6f3]"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-[#efe0d7] text-slate-500 hover:bg-[#faf6f3]"
             aria-label="Close edit modal"
           >
             ✕
@@ -417,7 +483,7 @@ function EditHintModal({
               type="url"
               value={editForm.url}
               onChange={(e) => setEditForm((current) => ({ ...current, url: e.target.value }))}
-              className="h-14 w-full rounded-[18px] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none ring-1 ring-[#eadcd3] focus:ring-2 focus:ring-[#f19a78]/50"
+              className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
             />
           </div>
 
@@ -430,7 +496,7 @@ function EditHintModal({
               type="text"
               value={editForm.title}
               onChange={(e) => setEditForm((current) => ({ ...current, title: e.target.value }))}
-              className="h-14 w-full rounded-[18px] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none ring-1 ring-[#eadcd3] focus:ring-2 focus:ring-[#f19a78]/50"
+              className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
             />
           </div>
 
@@ -438,10 +504,10 @@ function EditHintModal({
             <button
               type="button"
               onClick={onToggleStarred}
-              className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              className={`rounded-full border px-4 py-2 text-sm font-semibold ${
                 hint.starred
-                  ? "bg-[#fff2ea] text-[#e27956]"
-                  : "bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
+                  ? "border-[#ffd8c9] bg-[#fff2ea] text-[#e27956]"
+                  : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
               }`}
             >
               {hint.starred ? "★ Starred" : "★ Star"}
@@ -450,10 +516,10 @@ function EditHintModal({
             <button
               type="button"
               onClick={onTogglePrivate}
-              className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              className={`rounded-full border px-4 py-2 text-sm font-semibold ${
                 hint.private
-                  ? "bg-[#fffaf7] text-[#e08a67]"
-                  : "bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
+                  ? "border-[#ffd8c9] bg-[#fffaf7] text-[#e08a67]"
+                  : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
               }`}
             >
               {hint.private ? "🔒 Private" : "🔓 Public"}
@@ -465,7 +531,7 @@ function EditHintModal({
           <button
             type="button"
             onClick={onDelete}
-            className="inline-flex h-12 items-center justify-center rounded-full bg-[#fff4ef] px-5 text-sm font-semibold text-[#d56949] hover:bg-[#ffe9df]"
+            className="inline-flex h-12 items-center justify-center rounded-full border border-[#f1c9bb] bg-[#fff4ef] px-5 text-sm font-semibold text-[#d56949] hover:bg-[#ffe9df]"
           >
             Delete hint
           </button>
@@ -475,7 +541,7 @@ function EditHintModal({
               type="button"
               onClick={onRefreshFromLink}
               disabled={isRefreshing}
-              className="inline-flex h-12 items-center justify-center rounded-full bg-[#f7f2ee] px-5 text-sm font-semibold text-slate-700 hover:bg-[#f1ebe6] disabled:opacity-60"
+              className="inline-flex h-12 items-center justify-center rounded-full border border-[#efe0d7] bg-[#f7f2ee] px-5 text-sm font-semibold text-slate-700 hover:bg-[#f1ebe6] disabled:opacity-60"
             >
               {isRefreshing ? "Refreshing..." : "Refresh from link"}
             </button>
@@ -484,7 +550,7 @@ function EditHintModal({
               type="button"
               onClick={onSave}
               disabled={isSaving}
-              className="inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg disabled:opacity-70"
+              className="inline-flex h-12 items-center justify-center rounded-full border border-[#ee8d69] bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg disabled:opacity-70"
             >
               {isSaving ? "Saving..." : "Save changes"}
             </button>
@@ -509,7 +575,7 @@ function HintCard({
 
   return (
     <article
-      className={`group relative w-full overflow-hidden rounded-[30px] bg-white transition-all duration-300 ${
+      className={`group relative w-full overflow-hidden rounded-[30px] border border-[#efe1d8] bg-white transition-all duration-300 ${
         isDragging
           ? "scale-[1.02] shadow-[0_26px_70px_rgba(113,74,49,0.22)]"
           : "shadow-[0_10px_30px_rgba(176,118,86,0.10)] hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(176,118,86,0.14)]"
@@ -547,7 +613,7 @@ function HintCard({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="flex cursor-grab active:cursor-grabbing items-center gap-1 rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm"
+            className="flex cursor-grab active:cursor-grabbing items-center gap-1 rounded-full border border-white/60 bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm"
             {...dragHandleAttributes}
             {...dragHandleListeners}
           >
@@ -555,13 +621,13 @@ function HintCard({
           </button>
 
           {hint.starred && (
-            <div className="rounded-full bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
+            <div className="rounded-full border border-[#ffd8c9] bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
               Top pick
             </div>
           )}
 
           {hint.private && (
-            <div className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm">
+            <div className="rounded-full border border-white/60 bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm">
               Private
             </div>
           )}
@@ -571,7 +637,7 @@ function HintCard({
           <button
             type="button"
             onClick={() => onEdit(hint)}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/78 text-[15px] text-slate-500 backdrop-blur-sm hover:text-slate-800"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/78 text-[15px] text-slate-500 backdrop-blur-sm hover:text-slate-800"
             aria-label="Edit hint"
           >
             ✎
@@ -579,7 +645,7 @@ function HintCard({
 
           <button
             onClick={() => onToggleStarred(hint)}
-            className={`flex h-10 w-10 items-center justify-center rounded-full bg-white/78 text-[16px] backdrop-blur-sm ${
+            className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/78 text-[16px] backdrop-blur-sm ${
               hint.starred ? "text-[#f36f64]" : "text-slate-400 hover:text-[#f36f64]"
             }`}
             aria-label={hint.starred ? "Unhighlight hint" : "Highlight hint"}
@@ -593,12 +659,12 @@ function HintCard({
       <div className="absolute inset-x-0 bottom-0 z-10 p-4 sm:p-5">
         <div className="flex flex-wrap items-center gap-2">
           <span
-            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+            className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
               hint.size === "large"
-                ? "bg-[#2f3b2d] text-white"
+                ? "border-[#445541] bg-[#2f3b2d] text-white"
                 : hint.size === "medium"
-                ? "bg-[#fff1e9] text-[#df7c59]"
-                : "bg-[#f1f5ec] text-[#627f53]"
+                ? "border-[#ffd8c9] bg-[#fff1e9] text-[#df7c59]"
+                : "border-[#d7e4ce] bg-[#f1f5ec] text-[#627f53]"
             }`}
           >
             {hint.priceLabel}
@@ -623,7 +689,7 @@ function HintCard({
           <button
             type="button"
             onClick={() => onTogglePrivate(hint)}
-            className="rounded-full bg-white/85 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-sm hover:bg-white"
+            className="rounded-full border border-white/60 bg-white/85 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-sm hover:bg-white"
           >
             {hint.private ? "🔒 Private" : "🔓 Public"}
           </button>
@@ -632,7 +698,7 @@ function HintCard({
             href={hint.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-full bg-white/85 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-sm hover:bg-white"
+            className="rounded-full border border-white/60 bg-white/85 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-sm hover:bg-white"
           >
             Open
           </a>
@@ -716,6 +782,7 @@ export default function HintsClient() {
     image: "",
     priceLabel: "Price unavailable",
     numericPrice: null,
+    currency: ACTIVE_CURRENCY,
     private: false,
     starred: false,
   });
@@ -768,7 +835,7 @@ export default function HintsClient() {
         .order("created_at", { ascending: false });
 
       if (error) {
-        setError(error.message);
+        setError(errorToMessage(error));
         setHints([]);
         setIsLoading(false);
         return;
@@ -779,8 +846,9 @@ export default function HintsClient() {
           id: row.id,
           title: row.title || "Saved hint",
           retailer: row.retailer || normaliseRetailer(row.url || ""),
-          priceLabel: row.price_text || formatPriceLabel(row.numeric_price, null),
+          priceLabel: row.price_text || formatPriceLabel(row.numeric_price, null, ACTIVE_CURRENCY),
           numericPrice: row.numeric_price,
+          currency: row.currency || ACTIVE_CURRENCY,
           image: row.image_url || "",
           fallbackGradient: buildFallbackGradient(index),
           starred: Boolean(row.starred),
@@ -849,6 +917,7 @@ export default function HintsClient() {
       image: "",
       priceLabel: "Price unavailable",
       numericPrice: null,
+      currency: ACTIVE_CURRENCY,
       private: false,
       starred: false,
     });
@@ -873,7 +942,7 @@ export default function HintsClient() {
       .eq("id", editingHintId);
 
     if (error) {
-      setError(error.message);
+      setError(errorToMessage(error));
       setIsSavingEdit(false);
       return;
     }
@@ -902,7 +971,7 @@ export default function HintsClient() {
     const { error } = await supabase.from("hints").delete().eq("id", editingHintId);
 
     if (error) {
-      setError(error.message);
+      setError(errorToMessage(error));
       return;
     }
 
@@ -929,7 +998,7 @@ export default function HintsClient() {
       setHints((current) =>
         current.map((h) => (h.id === hint.id ? { ...h, starred: hint.starred } : h))
       );
-      setError(error.message);
+      setError(errorToMessage(error));
     }
   }
 
@@ -952,7 +1021,7 @@ export default function HintsClient() {
       setHints((current) =>
         current.map((h) => (h.id === hint.id ? { ...h, private: hint.private } : h))
       );
-      setError(error.message);
+      setError(errorToMessage(error));
     }
   }
 
@@ -971,10 +1040,12 @@ export default function HintsClient() {
     try {
       const data = await fetchPreview(normaliseInputUrl(trimmed));
 
-      const numericPrice =
+      const extractedNumericPrice =
         typeof data.numericPrice === "number"
           ? data.numericPrice
           : extractNumericPrice(data.priceText);
+
+      const priceMeta = sanitisePrice(data.priceText, extractedNumericPrice);
 
       const refreshedTitle = shortenTitle(
         data.title || editForm.title || "",
@@ -988,9 +1059,10 @@ export default function HintsClient() {
                 ...hint,
                 title: refreshedTitle,
                 retailer: data.siteName || normaliseRetailer(trimmed),
-                priceLabel: formatPriceLabel(numericPrice, data.priceText),
-                numericPrice,
-                size: getSizeFromPrice(numericPrice),
+                priceLabel: priceMeta.priceLabel,
+                numericPrice: priceMeta.numericPrice,
+                currency: priceMeta.currency,
+                size: getSizeFromPrice(priceMeta.numericPrice),
                 image:
                   typeof data.image === "string" && data.image.startsWith("http")
                     ? data.image
@@ -1007,7 +1079,7 @@ export default function HintsClient() {
         url: data.url || normaliseInputUrl(trimmed),
       }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not refresh this link.");
+      setError(errorToMessage(err));
     } finally {
       setIsRefreshingEdit(false);
     }
@@ -1037,11 +1109,12 @@ export default function HintsClient() {
     try {
       const data = await fetchPreview(normaliseInputUrl(trimmed));
 
-      const numericPrice =
+      const extractedNumericPrice =
         typeof data.numericPrice === "number"
           ? data.numericPrice
           : extractNumericPrice(data.priceText);
 
+      const priceMeta = sanitisePrice(data.priceText, extractedNumericPrice);
       const retailer = data.siteName || normaliseRetailer(trimmed);
       const shortTitle = shortenTitle(data.title || "Saved hint", retailer);
       const finalUrl = data.url || normaliseInputUrl(trimmed);
@@ -1049,8 +1122,9 @@ export default function HintsClient() {
       const draft = {
         title: shortTitle,
         retailer,
-        priceLabel: formatPriceLabel(numericPrice, data.priceText),
-        numericPrice,
+        priceLabel: priceMeta.priceLabel,
+        numericPrice: priceMeta.numericPrice,
+        currency: priceMeta.currency,
         image:
           typeof data.image === "string" && data.image.startsWith("http")
             ? data.image
@@ -1068,13 +1142,14 @@ export default function HintsClient() {
         image: draft.image,
         priceLabel: draft.priceLabel,
         numericPrice: draft.numericPrice,
+        currency: draft.currency,
         private: false,
         starred: false,
       });
       setIsAddModalOpen(true);
       setLink("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not extract this link.");
+      setError(errorToMessage(err));
     } finally {
       setIsAdding(false);
     }
@@ -1102,6 +1177,7 @@ export default function HintsClient() {
         retailer,
         priceLabel: newHintForm.priceLabel || "Price unavailable",
         numericPrice,
+        currency: newHintForm.currency || ACTIVE_CURRENCY,
         image: newHintForm.image || "",
         fallbackGradient: buildFallbackGradient(hints.length),
         starred: Boolean(newHintForm.starred),
@@ -1122,6 +1198,7 @@ export default function HintsClient() {
         retailer: newHint.retailer,
         price_text: newHint.priceLabel,
         numeric_price: newHint.numericPrice,
+        currency: newHint.currency,
         starred: newHint.starred,
         is_private: newHint.private,
         position: 0,
@@ -1130,7 +1207,7 @@ export default function HintsClient() {
       });
 
       if (error) {
-        throw new Error(error.message || "Could not save this hint.");
+        throw new Error(errorToMessage(error));
       }
 
       setHints((current) =>
@@ -1142,7 +1219,7 @@ export default function HintsClient() {
 
       closeAddModal();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save this hint.");
+      setError(errorToMessage(err));
       setIsSubmittingNewHint(false);
     }
   }
@@ -1213,25 +1290,25 @@ export default function HintsClient() {
             <nav className="flex items-center gap-2 sm:gap-3">
               <Link
                 href="/feed"
-                className="inline-flex h-11 items-center justify-center rounded-full bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
               >
                 Feed
               </Link>
               <Link
                 href="/hints"
-                className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#3c4d39] bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5"
               >
                 Hints
               </Link>
               <Link
                 href="/circles"
-                className="inline-flex h-11 items-center justify-center rounded-full bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
               >
                 Circles
               </Link>
               <Link
                 href="/shop"
-                className="inline-flex h-11 items-center justify-center rounded-full bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
               >
                 Shop
               </Link>
@@ -1262,13 +1339,13 @@ export default function HintsClient() {
                   }
                 }}
                 placeholder="Paste a link here..."
-                className="h-[72px] w-full rounded-full bg-white px-8 text-[16px] text-slate-700 outline-none ring-1 ring-[#eadcd3] focus:ring-2 focus:ring-[#f19a78]/50"
+                className="h-[72px] w-full rounded-full border border-[#eadcd3] bg-white px-8 text-[16px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
               />
               <button
                 type="button"
                 onClick={handleAddHint}
                 disabled={isAdding || isLoading}
-                className="inline-flex h-[72px] shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-8 text-sm font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[170px]"
+                className="inline-flex h-[72px] shrink-0 items-center justify-center rounded-full border border-[#ee8d69] bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-8 text-sm font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[170px]"
               >
                 {isAdding ? "Checking..." : isLoading ? "Loading..." : "Add hint"}
               </button>
@@ -1285,7 +1362,7 @@ export default function HintsClient() {
         </section>
 
         <section className="mt-12">
-          <div className="relative rounded-[36px] bg-[#fffdfb] p-3 sm:p-5">
+          <div className="relative rounded-[36px] border border-[#efe0d7] bg-[#fffdfb] p-3 sm:p-5 shadow-[0_12px_32px_rgba(176,118,86,0.08)]">
             <div
               className="pointer-events-none absolute inset-0 rounded-[36px] opacity-70"
               style={{
@@ -1303,7 +1380,7 @@ export default function HintsClient() {
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="mb-6 break-inside-avoid">
                     <div
-                      className="w-full overflow-hidden rounded-[30px] bg-[#f9f8f5]"
+                      className="w-full overflow-hidden rounded-[30px] border border-[#efe1d8] bg-[#f9f8f5]"
                       style={{ aspectRatio: i === 1 ? "1 / 1.35" : "1 / 1" }}
                     >
                       <div className="skeleton h-full w-full" />
