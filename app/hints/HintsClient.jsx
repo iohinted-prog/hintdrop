@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   DndContext,
@@ -223,11 +223,6 @@ function getTitleClass(size) {
   if (size === "tall") return "text-[19px] sm:text-[20px]";
   if (size === "medium") return "text-[17px] sm:text-[18px]";
   return "text-[15px] sm:text-[16px]";
-}
-
-function getTitleLines(size) {
-  if (size === "short") return 1;
-  return 2;
 }
 
 function getImagePosition(size) {
@@ -525,12 +520,14 @@ function EditHintModal({
 function HintCard({
   hint,
   dragging,
+  dragHandleProps,
   onEdit,
   onToggleStarred,
   onTogglePrivate,
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(hint.image) && !imageFailed;
+  const isShort = hint.size === "short";
 
   useEffect(() => {
     setImageFailed(false);
@@ -573,9 +570,16 @@ function HintCard({
 
           <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm">
+              <button
+                type="button"
+                {...dragHandleProps}
+                onClick={(e) => e.preventDefault()}
+                className="cursor-grab rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm active:cursor-grabbing"
+                aria-label="Drag to reorder"
+                title="Drag to reorder"
+              >
                 ⋮⋮ Drag
-              </div>
+              </button>
 
               {hint.starred && (
                 <div className="rounded-full bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
@@ -590,10 +594,38 @@ function HintCard({
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {isShort && onTogglePrivate && (
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTogglePrivate(hint);
+                  }}
+                  className="rounded-full border border-white/50 bg-white/78 px-3 py-1.5 text-[11px] font-medium text-slate-700 backdrop-blur-sm hover:bg-white"
+                >
+                  {hint.private ? "🔒 Private" : "🔓 Public"}
+                </button>
+              )}
+
+              {isShort && (
+                <a
+                  href={hint.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  className="rounded-full border border-white/50 bg-white/78 px-3 py-1.5 text-[11px] font-medium text-slate-700 backdrop-blur-sm hover:bg-white"
+                >
+                  Open
+                </a>
+              )}
+
               {onEdit && (
                 <button
                   type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
                     onEdit(hint);
@@ -641,7 +673,7 @@ function HintCard({
               </span>
             </div>
 
-            <div className="min-h-[42px]">
+            <div className={isShort ? "min-h-[24px]" : "min-h-[42px]"}>
               <h2
                 className={`mt-2 min-w-0 overflow-hidden font-semibold leading-[1.03] tracking-[-0.05em] text-slate-900 ${getTitleClass(
                   hint.size
@@ -649,7 +681,7 @@ function HintCard({
                 style={{
                   display: "-webkit-box",
                   WebkitBoxOrient: "vertical",
-                  WebkitLineClamp: getTitleLines(hint.size),
+                  WebkitLineClamp: isShort ? 1 : 2,
                   overflow: "hidden",
                 }}
               >
@@ -659,34 +691,36 @@ function HintCard({
 
             <p className="mt-1 truncate text-[12px] text-slate-500">{hint.retailer}</p>
 
-            <div className="mt-auto pt-3">
-              <div className="flex items-center justify-end gap-2">
-                {onTogglePrivate && (
-                  <button
-                    type="button"
+            {!isShort && (
+              <div className="mt-auto pt-3">
+                <div className="flex items-center justify-end gap-2">
+                  {onTogglePrivate && (
+                    <button
+                      type="button"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTogglePrivate(hint);
+                      }}
+                      className="rounded-full border border-[#eadfd8] bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 hover:bg-[#faf7f4]"
+                    >
+                      {hint.private ? "🔒 Private" : "🔓 Public"}
+                    </button>
+                  )}
+
+                  <a
+                    href={hint.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onTogglePrivate(hint);
-                    }}
+                    onClick={(e) => e.stopPropagation()}
                     className="rounded-full border border-[#eadfd8] bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 hover:bg-[#faf7f4]"
                   >
-                    {hint.private ? "🔒 Private" : "🔓 Public"}
-                  </button>
-                )}
-
-                <a
-                  href={hint.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                  className="rounded-full border border-[#eadfd8] bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 hover:bg-[#faf7f4]"
-                >
-                  Open
-                </a>
+                    Open
+                  </a>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -704,10 +738,17 @@ function SortableHintTile({
     attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: hint.id });
+  } = useSortable({
+    id: hint.id,
+    transition: {
+      duration: 180,
+      easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+    },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -716,15 +757,18 @@ function SortableHintTile({
 
   return (
     <div ref={setNodeRef} style={style} className={getTileClass(hint.size)}>
-      <div {...attributes} {...listeners} className="h-full touch-none cursor-grab active:cursor-grabbing">
-        <HintCard
-          hint={hint}
-          dragging={isDragging}
-          onEdit={onEdit}
-          onToggleStarred={onToggleStarred}
-          onTogglePrivate={onTogglePrivate}
-        />
-      </div>
+      <HintCard
+        hint={hint}
+        dragging={isDragging}
+        dragHandleProps={{
+          ref: setActivatorNodeRef,
+          ...attributes,
+          ...listeners,
+        }}
+        onEdit={onEdit}
+        onToggleStarred={onToggleStarred}
+        onTogglePrivate={onTogglePrivate}
+      />
     </div>
   );
 }
@@ -807,26 +851,26 @@ export default function HintsClient() {
       const rows = data || [];
 
       setHints(
-        rows.map((row, index) => ({
-          id: row.id,
-          title: row.title || "Saved hint",
-          retailer: row.retailer || normaliseRetailer(row.url || ""),
-          priceLabel: row.price_text || "Price unavailable",
-          numericPrice:
-            typeof row.numeric_price === "number" ? row.numeric_price : null,
-          priceBand: getPriceBand(
-            typeof row.numeric_price === "number" ? row.numeric_price : null
-          ),
-          image: row.image_url || "",
-          fallbackGradient: buildFallbackGradient(index),
-          starred: Boolean(row.starred),
-          private: Boolean(row.is_private),
-          size: getBoardSize(
-            typeof row.numeric_price === "number" ? row.numeric_price : null
-          ),
-          url: row.url || "",
-          position: row.position ?? index,
-        }))
+        rows.map((row, index) => {
+          const numericPrice =
+            typeof row.numeric_price === "number" ? row.numeric_price : null;
+
+          return {
+            id: row.id,
+            title: row.title || "Saved hint",
+            retailer: row.retailer || normaliseRetailer(row.url || ""),
+            priceLabel: row.price_text || "Price unavailable",
+            numericPrice,
+            priceBand: getPriceBand(numericPrice),
+            image: row.image_url || "",
+            fallbackGradient: buildFallbackGradient(index),
+            starred: Boolean(row.starred),
+            private: Boolean(row.is_private),
+            size: row.size || getBoardSize(numericPrice),
+            url: row.url || "",
+            position: row.position ?? index,
+          };
+        })
       );
 
       setIsLoading(false);
@@ -1093,23 +1137,21 @@ export default function HintsClient() {
         throw new Error("A link is required.");
       }
 
+      const numericPrice =
+        typeof draftHint.numericPrice === "number" ? draftHint.numericPrice : null;
+
       const newHint = {
         id: crypto.randomUUID(),
         title: shortenTitle(trimmedTitle, draftHint.retailer),
         retailer: draftHint.retailer || normaliseRetailer(trimmedUrl),
         priceLabel: draftHint.priceLabel || "Price unavailable",
-        numericPrice:
-          typeof draftHint.numericPrice === "number" ? draftHint.numericPrice : null,
-        priceBand: getPriceBand(
-          typeof draftHint.numericPrice === "number" ? draftHint.numericPrice : null
-        ),
+        numericPrice,
+        priceBand: getPriceBand(numericPrice),
         image: draftHint.image || "",
         fallbackGradient: buildFallbackGradient(hints.length),
         starred: false,
         private: draftHint.private,
-        size: getBoardSize(
-          typeof draftHint.numericPrice === "number" ? draftHint.numericPrice : null
-        ),
+        size: getBoardSize(numericPrice),
         url: trimmedUrl,
         position: 0,
       };
@@ -1133,6 +1175,7 @@ export default function HintsClient() {
         starred: newHint.starred,
         is_private: newHint.private,
         position: 0,
+        size: newHint.size,
         source: "user",
       });
 
