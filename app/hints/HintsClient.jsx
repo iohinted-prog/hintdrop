@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   DndContext,
@@ -29,15 +29,16 @@ const demoHints = [
     retailer: "airbnb.co.uk",
     priceLabel: "From £320",
     numericPrice: 320,
-    priceBand: "mid",
-    image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
+    priceBand: "medium",
+    image:
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#d9dfcf] via-[#b9c7aa] to-[#90a27e]",
-    tags: ["Travel", "Big gift"],
+    tags: [],
     starred: true,
     private: false,
     size: "medium",
     url: "https://www.airbnb.co.uk/",
-    position: 1,
+    position: 0,
   },
   {
     id: "demo-2",
@@ -45,47 +46,33 @@ const demoHints = [
     retailer: "amazon.co.uk",
     priceLabel: "About £249",
     numericPrice: 249,
-    priceBand: "mid",
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
+    priceBand: "medium",
+    image:
+      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]",
-    tags: ["Tech", "Birthday"],
-    starred: true,
+    tags: [],
+    starred: false,
     private: false,
     size: "medium",
     url: "https://www.amazon.co.uk/",
-    position: 2,
+    position: 1,
   },
   {
     id: "demo-3",
-    title: "Ceramics workshop",
-    retailer: "classbento.co.uk",
-    priceLabel: "About £78",
-    numericPrice: 78,
-    priceBand: "small",
-    image: "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1200&q=80",
-    fallbackGradient: "from-[#f3d5cc] via-[#e9b39f] to-[#d98c76]",
-    tags: ["Experience", "Couples"],
-    starred: false,
-    private: false,
-    size: "small",
-    url: "https://classbento.co.uk/",
-    position: 3,
-  },
-  {
-    id: "demo-4",
     title: "Silk pillowcases",
     retailer: "johnlewis.com",
     priceLabel: "About £45",
     numericPrice: 45,
     priceBand: "small",
-    image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
+    image:
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#efe5de] via-[#e5d2c8] to-[#d1b2a4]",
-    tags: ["Home", "Under £50"],
+    tags: [],
     starred: false,
     private: true,
     size: "small",
     url: "https://www.johnlewis.com/",
-    position: 4,
+    position: 2,
   },
 ];
 
@@ -141,16 +128,20 @@ function extractNumericPrice(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function getPriceBand(price) {
-  if (price == null || price <= 100) return "small";
-  if (price < 1000) return "mid";
-  return "high";
-}
-
 function getSizeFromPrice(price) {
   if (price == null || price <= 100) return "small";
-  if (price < 1000) return "medium";
+  if (price <= 1000) return "medium";
   return "large";
+}
+
+function getPriceBand(price) {
+  return getSizeFromPrice(price);
+}
+
+function getAspectRatio(size) {
+  if (size === "large") return "1 / 1.7";
+  if (size === "medium") return "1 / 1.35";
+  return "1 / 1";
 }
 
 function formatPriceLabel(price, rawPrice) {
@@ -169,18 +160,6 @@ function buildFallbackGradient(index) {
     "from-[#d6e7eb] via-[#b5ced7] to-[#8fb3c5]",
   ];
   return gradients[index % gradients.length];
-}
-
-function getTileClass(size) {
-  if (size === "large") return "md:col-span-6 md:row-span-10";
-  if (size === "medium") return "md:col-span-4 md:row-span-8";
-  return "md:col-span-3 md:row-span-6";
-}
-
-function getPricePill(priceBand) {
-  if (priceBand === "high") return "bg-[#2f3b2d] text-white";
-  if (priceBand === "mid") return "bg-[#fff1e9] text-[#df7c59]";
-  return "bg-[#f1f5ec] text-[#627f53]";
 }
 
 function shortenTitle(title = "", retailer = "") {
@@ -218,38 +197,6 @@ function shortenTitle(title = "", retailer = "") {
     "bluetooth",
   ]);
 
-  const categoryWords = [
-    "headphones",
-    "earbuds",
-    "speaker",
-    "kindle",
-    "book",
-    "pillowcase",
-    "pillowcases",
-    "dish",
-    "pan",
-    "mug",
-    "print",
-    "necklace",
-    "ring",
-    "bag",
-    "dress",
-    "trainer",
-    "trainers",
-    "jacket",
-    "candle",
-    "coffee",
-    "set",
-    "workshop",
-    "experience",
-    "voucher",
-    "lego",
-    "camera",
-    "watch",
-    "sofa",
-    "blanket",
-  ];
-
   let cleaned = source
     .replace(/\([^)]*\)/g, " ")
     .replace(/\[[^\]]*\]/g, " ")
@@ -268,20 +215,10 @@ function shortenTitle(title = "", retailer = "") {
     return true;
   });
 
-  if (words.length === 0) return "Saved hint";
+  if (!words.length) return "Saved hint";
 
-  const brand = words[0];
-  const foundCategory = words.find((word) => categoryWords.includes(word.toLowerCase()));
-
-  let finalWords;
-  if (foundCategory && brand.toLowerCase() !== foundCategory.toLowerCase()) {
-    finalWords = [brand, foundCategory];
-  } else {
-    finalWords = words.slice(0, Math.min(2, words.length));
-  }
-
-  const compact = finalWords.join(" ").trim();
-  return compact.charAt(0).toUpperCase() + compact.slice(1);
+  const result = words.slice(0, 2).join(" ").trim();
+  return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
 function EditHintModal({
@@ -350,31 +287,29 @@ function EditHintModal({
             />
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={onToggleStarred}
-              className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${
+              className={`rounded-full px-4 py-2 text-sm font-semibold ${
                 hint.starred
                   ? "bg-[#fff2ea] text-[#e27956]"
                   : "bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
               }`}
             >
-              <span>★</span>
-              {hint.starred ? "Starred" : "Star"}
+              {hint.starred ? "★ Starred" : "★ Star"}
             </button>
 
             <button
               type="button"
               onClick={onTogglePrivate}
-              className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${
+              className={`rounded-full px-4 py-2 text-sm font-semibold ${
                 hint.private
                   ? "bg-[#fffaf7] text-[#e08a67]"
                   : "bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
               }`}
             >
-              <span>{hint.private ? "🔒" : "🔓"}</span>
-              {hint.private ? "Private" : "Public"}
+              {hint.private ? "🔒 Private" : "🔓 Public"}
             </button>
           </div>
         </div>
@@ -427,130 +362,129 @@ function HintCard({
 
   return (
     <article
-      className={`group relative flex h-full min-h-[280px] flex-col overflow-hidden rounded-[30px] bg-white transition-all duration-300 ${
+      className={`group relative w-full overflow-hidden rounded-[30px] bg-white transition-all duration-300 ${
         isDragging
           ? "scale-[1.02] shadow-[0_26px_70px_rgba(113,74,49,0.22)]"
           : "shadow-[0_10px_30px_rgba(176,118,86,0.10)] hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(176,118,86,0.14)]"
-      } ${hint.private ? "bg-white/70 backdrop-blur-sm" : ""}`}
+      }`}
+      style={{ aspectRatio: getAspectRatio(hint.size) }}
     >
-      <div className="relative flex h-full flex-col">
-        <div className="relative min-h-[62%] flex-1 overflow-hidden">
-          {showImage ? (
-            <>
-              <img
-                src={hint.image}
-                alt={hint.title}
-                className={`absolute inset-0 h-full w-full object-cover transition-transform duration-500 ${hint.private ? "opacity-80" : ""} ${isDragging ? "scale-[1.02]" : "group-hover:scale-[1.03]"}`}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                onError={() => setImageFailed(true)}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[rgba(31,24,20,0.35)] via-[rgba(31,24,20,0.05)] to-[rgba(255,255,255,0.02)]" />
-            </>
-          ) : (
+      <div className="absolute inset-0">
+        {showImage ? (
+          <>
+            <img
+              src={hint.image}
+              alt={hint.title}
+              className={`h-full w-full object-cover transition-transform duration-500 ${
+                isDragging ? "scale-[1.02]" : "group-hover:scale-[1.03]"
+              } ${hint.private ? "opacity-80" : ""}`}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={() => setImageFailed(true)}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.82)] via-[rgba(22,18,16,0.20)] to-[rgba(255,255,255,0.02)]" />
+          </>
+        ) : (
+          <>
             <div className={`absolute inset-0 bg-gradient-to-br ${hint.fallbackGradient} ${hint.private ? "opacity-80" : ""}`} />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.70)] via-[rgba(22,18,16,0.16)] to-transparent" />
+          </>
+        )}
+      </div>
+
+      <div className="absolute left-4 right-4 top-4 z-10 flex items-start justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="flex cursor-grab active:cursor-grabbing items-center gap-1 rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm"
+            title="Drag to reorder"
+            {...dragHandleAttributes}
+            {...dragHandleListeners}
+          >
+            ⋮⋮ Drag
+          </button>
+
+          {hint.starred && (
+            <div className="rounded-full bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
+              Top pick
+            </div>
           )}
 
-          <div className="absolute left-4 right-4 top-4 flex items-start justify-between">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                className="flex cursor-grab active:cursor-grabbing items-center gap-1 rounded-full bg-white/78 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm"
-                title="Drag to reorder"
-                {...dragHandleAttributes}
-                {...dragHandleListeners}
-              >
-                ⋮⋮ Drag
-              </button>
-
-              {hint.starred && (
-                <div className="rounded-full bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
-                  Top pick
-                </div>
-              )}
-
-              {hint.private && (
-                <div className="rounded-full bg-white/74 px-3 py-1 text-[11px] font-semibold text-slate-600 backdrop-blur-sm">
-                  Private
-                </div>
-              )}
+          {hint.private && (
+            <div className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm">
+              Private
             </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onEdit(hint)}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/72 text-[15px] text-slate-500 backdrop-blur-sm hover:text-slate-800"
-                aria-label="Edit hint"
-              >
-                ✎
-              </button>
-
-              <button
-                onClick={() => onToggleStarred(hint)}
-                className={`flex h-10 w-10 items-center justify-center rounded-full bg-white/72 text-[16px] backdrop-blur-sm ${
-                  hint.starred ? "text-[#f36f64]" : "text-slate-400 hover:text-[#f36f64]"
-                }`}
-                aria-label={hint.starred ? "Unhighlight hint" : "Highlight hint"}
-                type="button"
-              >
-                ★
-              </button>
-            </div>
-          </div>
+          )}
         </div>
 
-        <div className="relative -mt-6 flex flex-1 px-4 pb-4 sm:px-5 sm:pb-5">
-          <div className={`flex w-full flex-1 flex-col rounded-[24px] p-4 shadow-sm backdrop-blur-md ${hint.private ? "bg-white/82" : "bg-white/90"}`}>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getPricePill(hint.priceBand)}`}>
-                {hint.priceLabel}
-              </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onEdit(hint)}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/78 text-[15px] text-slate-500 backdrop-blur-sm hover:text-slate-800"
+            aria-label="Edit hint"
+          >
+            ✎
+          </button>
 
-              {hint.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full bg-[#f8f5f2] px-2.5 py-1 text-[11px] font-medium text-slate-500"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
+          <button
+            onClick={() => onToggleStarred(hint)}
+            className={`flex h-10 w-10 items-center justify-center rounded-full bg-white/78 text-[16px] backdrop-blur-sm ${
+              hint.starred ? "text-[#f36f64]" : "text-slate-400 hover:text-[#f36f64]"
+            }`}
+            aria-label={hint.starred ? "Unhighlight hint" : "Highlight hint"}
+            type="button"
+          >
+            ★
+          </button>
+        </div>
+      </div>
 
-            <h2
-              className="mt-3 min-w-0 overflow-hidden text-[20px] font-semibold tracking-[-0.04em] text-slate-900"
-              style={{
-                display: "-webkit-box",
-                WebkitBoxOrient: "vertical",
-                WebkitLineClamp: 2,
-                lineClamp: 2,
-              }}
-            >
-              {hint.title}
-            </h2>
+      <div className="absolute inset-x-0 bottom-0 z-10 p-4 sm:p-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+              hint.priceBand === "large"
+                ? "bg-[#2f3b2d] text-white"
+                : hint.priceBand === "medium"
+                ? "bg-[#fff1e9] text-[#df7c59]"
+                : "bg-[#f1f5ec] text-[#627f53]"
+            }`}
+          >
+            {hint.priceLabel}
+          </span>
+        </div>
 
-            <p className="mt-1 truncate text-[13px] text-slate-500">{hint.retailer}</p>
+        <h2
+          className="mt-3 overflow-hidden text-[22px] font-semibold tracking-[-0.05em] text-white"
+          style={{
+            display: "-webkit-box",
+            WebkitBoxOrient: "vertical",
+            WebkitLineClamp: 2,
+            lineClamp: 2,
+          }}
+        >
+          {hint.title}
+        </h2>
 
-            <div className="mt-auto pt-4">
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => onTogglePrivate(hint)}
-                  className="rounded-full bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 hover:bg-[#faf7f4]"
-                >
-                  {hint.private ? "🔒 Private" : "🔓 Public"}
-                </button>
-                <a
-                  href={hint.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-full bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 hover:bg-[#faf7f4]"
-                >
-                  Open
-                </a>
-              </div>
-            </div>
-          </div>
+        <p className="mt-1 truncate text-[13px] text-white/78">{hint.retailer}</p>
+
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onTogglePrivate(hint)}
+            className="rounded-full bg-white/85 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-sm hover:bg-white"
+          >
+            {hint.private ? "🔒 Private" : "🔓 Public"}
+          </button>
+          <a
+            href={hint.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full bg-white/85 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-sm hover:bg-white"
+          >
+            Open
+          </a>
         </div>
       </div>
     </article>
@@ -585,7 +519,7 @@ function SortableHintTile({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={getTileClass(hint.size)}>
+    <div ref={setNodeRef} style={style} className="w-full">
       <HintCard
         hint={hint}
         onEdit={onEdit}
@@ -611,11 +545,6 @@ export default function HintsClient() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeId, setActiveId] = useState(null);
-
-  const numericPrices = useMemo(
-    () => hints.map((hint) => hint.numericPrice).filter((value) => typeof value === "number"),
-    [hints]
-  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -960,7 +889,7 @@ export default function HintsClient() {
             ? data.image
             : "",
         fallbackGradient: buildFallbackGradient(hints.length),
-        tags: data.needsReview ? ["Review"] : [],
+        tags: [],
         starred: false,
         private: false,
         size: getSizeFromPrice(numericPrice),
@@ -992,10 +921,6 @@ export default function HintsClient() {
 
       setHints((current) => [newHint, ...current]);
       setLink("");
-
-      if (data.warning || data.needsReview) {
-        setError("Added, but double-check the title, image, or price.");
-      }
     } catch (err) {
       setError(err && err.message ? err.message : "Could not extract this link.");
     } finally {
@@ -1117,17 +1042,14 @@ export default function HintsClient() {
             />
 
             {isLoading ? (
-              <div className="grid auto-rows-[46px] grid-cols-1 gap-6 md:grid-cols-12">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className={`relative flex h-full min-h-[280px] flex-col overflow-hidden rounded-[30px] bg-[#f9f8f5] ${
-                      i === 1 ? "md:col-span-6 md:row-span-10" : i === 2 ? "md:col-span-4 md:row-span-8" : "md:col-span-3 md:row-span-6"
-                    }`}
+                    className="w-full overflow-hidden rounded-[30px] bg-[#f9f8f5]"
+                    style={{ aspectRatio: i === 1 ? "1 / 1.35" : "1 / 1" }}
                   >
-                    <div className="relative min-h-[62%] flex-1 overflow-hidden">
-                      <div className="skeleton h-full w-full" />
-                    </div>
+                    <div className="skeleton h-full w-full" />
                   </div>
                 ))}
               </div>
@@ -1143,7 +1065,7 @@ export default function HintsClient() {
                   items={hints.map((hint) => hint.id)}
                   strategy={rectSortingStrategy}
                 >
-                  <div className="relative grid auto-rows-[46px] grid-cols-1 gap-6 md:grid-cols-12">
+                  <div className="relative grid grid-cols-1 gap-6 md:grid-cols-3">
                     {hints.map((hint) => (
                       <SortableHintTile
                         key={hint.id}
@@ -1163,7 +1085,7 @@ export default function HintsClient() {
                   }}
                 >
                   {activeHint ? (
-                    <div className={`${getTileClass(activeHint.size)} w-[min(92vw,520px)]`}>
+                    <div className="w-[min(92vw,420px)]">
                       <HintCard
                         hint={activeHint}
                         onEdit={() => {}}
@@ -1176,9 +1098,9 @@ export default function HintsClient() {
                 </DragOverlay>
               </DndContext>
             ) : (
-              <div className="relative grid auto-rows-[46px] grid-cols-1 gap-6 md:grid-cols-12">
+              <div className="relative grid grid-cols-1 gap-6 md:grid-cols-3">
                 {demoHints.map((hint) => (
-                  <div key={hint.id} className={getTileClass(hint.size)}>
+                  <div key={hint.id} className="w-full">
                     <HintCard
                       hint={hint}
                       onEdit={() => {}}
