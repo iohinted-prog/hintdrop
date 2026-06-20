@@ -5,13 +5,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const HEADER_PROFILE = {
+const FORWARDED_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
   Accept:
     "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
   "Accept-Language": "en-GB,en;q=0.9",
-  "Accept-Encoding": "gzip, deflate, br",
   "Cache-Control": "no-cache",
   Pragma: "no-cache",
   DNT: "1",
@@ -32,7 +31,11 @@ const RETAILER_RULES = {
       "#price_inside_buybox",
       ".a-price .a-offscreen",
     ],
-    imageSelectors: ["#landingImage", "#imgBlkFront", 'meta[property="og:image"]'],
+    imageSelectors: [
+      "#landingImage",
+      "#imgBlkFront",
+      'meta[property="og:image"]',
+    ],
     cleanTitle: (t) =>
       t
         .replace(/\s*:\s*Amazon\.[A-Za-z.]+.*$/i, "")
@@ -44,8 +47,16 @@ const RETAILER_RULES = {
   currys: {
     match: (h) => /(^|\.)currys\.co\.uk$/i.test(h),
     titleSelectors: ['meta[property="og:title"]', "h1"],
-    priceSelectors: ['[data-testid*="price"]', '[class*="price"]', '[itemprop="price"]'],
-    imageSelectors: ['meta[property="og:image"]', 'meta[name="twitter:image"]', "img[src]"],
+    priceSelectors: [
+      '[data-testid*="price"]',
+      '[class*="price"]',
+      '[itemprop="price"]',
+    ],
+    imageSelectors: [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      "img[src]",
+    ],
   },
   johnlewis: {
     match: (h) => /(^|\.)johnlewis\.com$/i.test(h),
@@ -56,7 +67,11 @@ const RETAILER_RULES = {
       '[class*="price"]',
       '[itemprop="price"]',
     ],
-    imageSelectors: ['meta[property="og:image"]', 'meta[name="twitter:image"]', "img[src]"],
+    imageSelectors: [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      "img[src]",
+    ],
   },
   argos: {
     match: (h) => /(^|\.)argos\.co\.uk$/i.test(h),
@@ -394,7 +409,6 @@ function scoreImage(url = "", source = "") {
   if (source === "jsonld") score += 25;
   if (source === "og") score += 18;
   if (source === "dom") score += 5;
-
   return score;
 }
 
@@ -404,6 +418,53 @@ function improveAmazonImage(url = "") {
     .replace(/\._SL\d+_\./i, "._SL1500_.")
     .replace(/\._SX\d+_\./i, "._SL1500_.")
     .replace(/\._SY\d+_\./i, "._SL1500_.");
+}
+
+function extractAmazonDynamicImage(raw = "", base = "") {
+  const val = String(raw || "").trim();
+  if (!val) return "";
+
+  if (val.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(val);
+      const first = Object.keys(parsed)[0];
+      if (first) return improveAmazonImage(makeAbsolute(first, base));
+    } catch {}
+  }
+
+  return improveAmazonImage(makeAbsolute(val, base));
+}
+
+function getAmazonPrimaryImage($, base = "") {
+  const landing = $("#landingImage").first();
+
+  if (landing.length) {
+    const direct =
+      landing.attr("data-old-hires") ||
+      landing.attr("data-a-dynamic-image") ||
+      landing.attr("src") ||
+      "";
+
+    const parsed = extractAmazonDynamicImage(direct, base);
+    if (parsed) return parsed;
+  }
+
+  const front = $("#imgBlkFront").first();
+  if (front.length) {
+    const direct =
+      front.attr("data-old-hires") ||
+      front.attr("data-a-dynamic-image") ||
+      front.attr("src") ||
+      "";
+
+    const parsed = extractAmazonDynamicImage(direct, base);
+    if (parsed) return parsed;
+  }
+
+  const og = $('meta[property="og:image"]').attr("content") || "";
+  if (og) return improveAmazonImage(makeAbsolute(og, base));
+
+  return "";
 }
 
 function pickBestImage({ hostImage, jsonLdImages, $, base, isAmazon }) {
@@ -438,9 +499,17 @@ function pickBestImage({ hostImage, jsonLdImages, $, base, isAmazon }) {
       $(el).attr("data-src"),
       $(el).attr("data-old-hires"),
       $(el).attr("data-lazy-src"),
+      $(el).attr("data-a-dynamic-image"),
     ].filter(Boolean);
 
-    attrs.forEach((u) => add(u, "dom"));
+    attrs.forEach((u) => {
+      if (isAmazon && String(u).trim().startsWith("{")) {
+        const parsed = extractAmazonDynamicImage(u, base);
+        if (parsed) add(parsed, "dom");
+      } else {
+        add(u, "dom");
+      }
+    });
   });
 
   return (
@@ -450,20 +519,36 @@ function pickBestImage({ hostImage, jsonLdImages, $, base, isAmazon }) {
   );
 }
 
-async function fetchHtml(inputUrl) {
+async function fetchViaScrapingBee(inputUrl) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12000);
+  const timer = setTimeout(() => controller.abort(), 20000);
 
   try {
-    const res = await fetch(inputUrl, {
+    const apiKey = process.env.SCRAPINGBEE_API_KEY;
+    if (!apiKey) throw new Error("Missing SCRAPINGBEE_API_KEY");
+
+    const apiUrl = new URL("https://app.scrapingbee.com/api/v1");
+    apiUrl.searchParams.set("api_key", apiKey);
+    apiUrl.searchParams.set("url", inputUrl);
+    apiUrl.searchParams.set("render_js", "false");
+    apiUrl.searchParams.set("transparent_status_code", "true");
+    apiUrl.searchParams.set("forward_headers", "true");
+
+    const res = await fetch(apiUrl.toString(), {
       method: "GET",
-      headers: HEADER_PROFILE,
-      redirect: "follow",
       cache: "no-store",
       signal: controller.signal,
+      headers: {
+        "Spb-User-Agent": FORWARDED_HEADERS["User-Agent"],
+        "Spb-Accept": FORWARDED_HEADERS.Accept,
+        "Spb-Accept-Language": FORWARDED_HEADERS["Accept-Language"],
+        "Spb-Cache-Control": FORWARDED_HEADERS["Cache-Control"],
+        "Spb-Pragma": FORWARDED_HEADERS.Pragma,
+        "Spb-DNT": FORWARDED_HEADERS.DNT,
+      },
     });
 
-    const contentType = res.headers.get("content-type") || "";
+    const contentType = res.headers.get("content-type") || "text/html";
     const html = await res.text();
 
     clearTimeout(timer);
@@ -473,7 +558,8 @@ async function fetchHtml(inputUrl) {
       status: res.status,
       contentType,
       html: html || "",
-      finalUrl: res.url || inputUrl,
+      finalUrl: inputUrl,
+      provider: "scrapingbee",
     };
   } catch (err) {
     clearTimeout(timer);
@@ -481,7 +567,7 @@ async function fetchHtml(inputUrl) {
   }
 }
 
-function detectBlock(bodyText, titleTag, h1, status) {
+function detectBlock(bodyText = "", titleTag = "", h1 = "", status = 200) {
   const text = bodyText.toLowerCase();
   const titleLower = titleTag.toLowerCase();
   const h1Lower = h1.toLowerCase();
@@ -489,8 +575,8 @@ function detectBlock(bodyText, titleTag, h1, status) {
   if (status === 503 || titleLower.includes("503") || text.includes("service unavailable")) {
     return {
       blocked: true,
-      blockReason: "amazon-503",
-      blockMessage: "Amazon returned a service unavailable error.",
+      blockReason: "service-unavailable",
+      blockMessage: "The retailer returned a service unavailable page.",
     };
   }
 
@@ -503,15 +589,20 @@ function detectBlock(bodyText, titleTag, h1, status) {
     return {
       blocked: true,
       blockReason: "cloudflare-403",
-      blockMessage: "Cloudflare blocked the request (likely retailer anti-bot).",
+      blockMessage: "The retailer blocked the request.",
     };
   }
 
-  if (text.includes("captcha") || text.includes("robot") || text.includes("access denied")) {
+  if (
+    text.includes("captcha") ||
+    text.includes("robot") ||
+    text.includes("access denied") ||
+    text.includes("verify you are human")
+  ) {
     return {
       blocked: true,
       blockReason: "access-denied",
-      blockMessage: "The retailer blocked the request (CAPTCHA / access denied).",
+      blockMessage: "The retailer challenged the request.",
     };
   }
 
@@ -519,7 +610,8 @@ function detectBlock(bodyText, titleTag, h1, status) {
 }
 
 async function scrapeUrl(inputUrl, preferredCurrency = "GBP") {
-  const { html, finalUrl, status, contentType, ok } = await fetchHtml(inputUrl);
+  const { html, finalUrl, status, contentType, ok, provider } =
+    await fetchViaScrapingBee(inputUrl);
 
   if (!contentType.includes("text/html")) {
     throw new Error("URL did not return an HTML page.");
@@ -554,10 +646,13 @@ async function scrapeUrl(inputUrl, preferredCurrency = "GBP") {
   if (blockInfo.blocked) {
     return {
       url: canonicalUrl,
-      title: titleTag || h1 || host || "Blocked page",
+      title: titleTag || h1 || host || "Needs review",
+      titleShort: titleTag || h1 || host || "Needs review",
       description: blockInfo.blockMessage || "",
       siteName: host,
       image: "",
+      selectedImage: "",
+      imageCandidates: [],
       priceText: "",
       numericPrice: null,
       detectedCurrency: null,
@@ -567,17 +662,16 @@ async function scrapeUrl(inputUrl, preferredCurrency = "GBP") {
       blocked: true,
       blockReason: blockInfo.blockReason,
       blockMessage: blockInfo.blockMessage,
-      source: "blocked",
+      source: provider || "scrapingbee",
       debug: {
         ok,
         status,
         finalUrl,
         canonicalUrl,
         hostname: host,
-        blockDetails: blockInfo,
         titleTag,
         h1,
-        bodySnippet: bodyText.slice(0, 2000),
+        bodySnippet: bodyText.slice(0, 1200),
         htmlLength: html.length,
       },
     };
@@ -592,21 +686,11 @@ async function scrapeUrl(inputUrl, preferredCurrency = "GBP") {
     getText($, ["h1", "title"]) ||
     "";
 
-  if (isAmazon && title && rule.cleanTitle) {
+  if (isAmazon && rule.cleanTitle) {
     title = rule.cleanTitle(title);
   }
 
   title = cleanText(title);
-
-  const description =
-    getMeta($, [
-      'meta[property="og:description"]',
-      'meta[name="twitter:description"]',
-      'meta[name="description"]',
-    ]) || getText($, ["main p", "article p"]) || "";
-
-  const siteName =
-    getMeta($, ['meta[property="og:site_name"]', 'meta[name="application-name"]']) || host;
 
   const domPrice = extractDomPrice($, rule.priceSelectors);
   const jsonLdPrice = jsonLd.priceText;
@@ -618,23 +702,26 @@ async function scrapeUrl(inputUrl, preferredCurrency = "GBP") {
   );
 
   const hostImage = getImageAttr($, rule.imageSelectors, finalUrl);
+  const amazonPrimary = isAmazon ? getAmazonPrimaryImage($, finalUrl) : "";
 
-  const image = pickBestImage({
-    hostImage,
-    jsonLdImages: jsonLd.images,
-    $,
-    base: finalUrl,
-    isAmazon,
-  });
+  const image =
+    amazonPrimary ||
+    pickBestImage({
+      hostImage,
+      jsonLdImages: jsonLd.images,
+      $,
+      base: finalUrl,
+      isAmazon,
+    });
 
-  const hasStrongImage = Boolean(image);
-  const hasPrice = Boolean(priceText);
   const hasTitle = Boolean(title);
+  const hasPrice = Boolean(priceText);
+  const hasImage = Boolean(image);
 
   const confidence =
-    hasStrongImage && hasTitle && hasPrice
+    hasTitle && hasPrice && hasImage
       ? "high"
-      : hasTitle && (hasStrongImage || hasPrice)
+      : hasTitle && (hasPrice || hasImage)
         ? "medium"
         : "low";
 
@@ -642,11 +729,11 @@ async function scrapeUrl(inputUrl, preferredCurrency = "GBP") {
     url: canonicalUrl,
     title: title || "Shared item",
     titleShort: title || "Shared item",
-    description: cleanText(description) || "",
-    siteName,
+    description: "",
+    siteName: host,
     image,
     selectedImage: image,
-    imageCandidates: [],
+    imageCandidates: image ? [image] : [],
     priceText,
     numericPrice: extractNumericPrice(priceText),
     detectedCurrency,
@@ -654,7 +741,9 @@ async function scrapeUrl(inputUrl, preferredCurrency = "GBP") {
     confidence,
     needsReview: confidence !== "high",
     blocked: false,
-    source: "scraper",
+    blockReason: null,
+    blockMessage: "",
+    source: provider || "scrapingbee",
     debug: {
       ok,
       status,
@@ -664,7 +753,7 @@ async function scrapeUrl(inputUrl, preferredCurrency = "GBP") {
       hostRule: key,
       titleTag,
       h1,
-      bodySnippet: bodyText.slice(0, 2000),
+      bodySnippet: bodyText.slice(0, 1200),
       htmlLength: html.length,
       jsonLdTitle: jsonLd.title || "",
       extractedTitle: title || "",
@@ -672,7 +761,7 @@ async function scrapeUrl(inputUrl, preferredCurrency = "GBP") {
       metaPrice,
       domPrice,
       allPriceCandidates: [domPrice, jsonLdPrice, metaPrice].filter(Boolean),
-      imageCandidateCount: 1,
+      amazonPrimaryImage: amazonPrimary || null,
       topImageCandidate: image || null,
     },
   };
@@ -703,10 +792,13 @@ export async function POST(request) {
       return NextResponse.json(
         {
           url: inputUrl,
-          title: "Failed to fetch page",
+          title: "Needs review",
+          titleShort: "Needs review",
           description: scrapeError?.message || "Could not fetch page details.",
           siteName: host,
           image: "",
+          selectedImage: "",
+          imageCandidates: [],
           priceText: "",
           numericPrice: null,
           detectedCurrency: null,
@@ -714,6 +806,8 @@ export async function POST(request) {
           confidence: "low",
           needsReview: true,
           blocked: false,
+          blockReason: null,
+          blockMessage: "",
           source: "fallback",
           debug: {
             error: scrapeError?.message || "Fetch error",
@@ -729,4 +823,3 @@ export async function POST(request) {
     );
   }
 }
-
