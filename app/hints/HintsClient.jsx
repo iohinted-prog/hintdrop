@@ -26,6 +26,28 @@ import AvatarMenu from "../components/AvatarMenu";
 
 const ACTIVE_CURRENCY = "GBP";
 
+const EMPTY_NEW_HINT_FORM = {
+  title: "",
+  url: "",
+  retailer: "",
+  image: "",
+  uploadedImage: null,
+  priceInput: "",
+  private: false,
+  starred: false,
+  needsReview: false,
+  source: "preview",
+};
+
+const EMPTY_EDIT_FORM = {
+  title: "",
+  url: "",
+  retailer: "",
+  image: "",
+  uploadedImage: null,
+  priceInput: "",
+};
+
 const demoHints = [
   {
     id: "demo-1",
@@ -41,6 +63,7 @@ const demoHints = [
     size: "medium",
     url: "https://www.airbnb.co.uk/",
     position: 0,
+    needsReview: false,
   },
   {
     id: "demo-2",
@@ -56,6 +79,7 @@ const demoHints = [
     size: "medium",
     url: "https://www.amazon.co.uk/",
     position: 1,
+    needsReview: false,
   },
   {
     id: "demo-3",
@@ -71,6 +95,7 @@ const demoHints = [
     size: "small",
     url: "https://www.johnlewis.com/",
     position: 2,
+    needsReview: false,
   },
   {
     id: "demo-4",
@@ -86,6 +111,7 @@ const demoHints = [
     size: "large",
     url: "https://www.booking.com/",
     position: 3,
+    needsReview: false,
   },
 ];
 
@@ -99,17 +125,12 @@ function LogoMark() {
 
 function errorToMessage(value) {
   if (!value) return "Something went wrong.";
-
   if (typeof value === "string") return value;
   if (value instanceof Error) return value.message || "Something went wrong.";
 
   if (typeof value === "object") {
-    if (typeof value.message === "string" && value.message.trim()) {
-      return value.message;
-    }
-    if (typeof value.error === "string" && value.error.trim()) {
-      return value.error;
-    }
+    if (typeof value.message === "string" && value.message.trim()) return value.message;
+    if (typeof value.error === "string" && value.error.trim()) return value.error;
     try {
       return JSON.stringify(value);
     } catch {
@@ -131,9 +152,7 @@ function normaliseRetailer(url) {
 function isValidHttpUrl(value = "") {
   try {
     const withProtocol =
-      value.startsWith("http://") || value.startsWith("https://")
-        ? value
-        : `https://${value}`;
+      value.startsWith("http://") || value.startsWith("https://") ? value : `https://${value}`;
     const parsed = new URL(withProtocol);
     return ["http:", "https:"].includes(parsed.protocol);
   } catch {
@@ -153,7 +172,7 @@ function detectCurrency(raw = "") {
   const text = String(raw || "").trim();
   if (!text) return null;
   if (text.includes("£")) return "GBP";
-  if (text.includes("$")) return "USD";
+  if (text.includes("$") && !text.includes("A$") && !text.includes("C$") && !text.includes("NZ$")) return "USD";
   if (text.includes("€")) return "EUR";
   if (/\bR\s?\d/i.test(text) || /\bZAR\b/i.test(text)) return "ZAR";
   return null;
@@ -170,7 +189,6 @@ function extractNumericPrice(value) {
     cleaned.match(/(\d+(?:\.\d{1,2})?)/);
 
   if (!match) return null;
-
   const parsed = Number(match[1]);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -199,14 +217,9 @@ function formatPriceLabel(price, rawPrice, currency = ACTIVE_CURRENCY) {
 
 function sanitisePrice(rawPrice, numericPrice) {
   const detectedCurrency = detectCurrency(rawPrice) || ACTIVE_CURRENCY;
-
   if (detectedCurrency !== ACTIVE_CURRENCY) {
-    return {
-      numericPrice: null,
-      priceLabel: "Price unavailable",
-    };
+    return { numericPrice: null, priceLabel: "Price unavailable" };
   }
-
   return {
     numericPrice,
     priceLabel: formatPriceLabel(numericPrice, rawPrice, ACTIVE_CURRENCY),
@@ -236,28 +249,9 @@ function shortenTitle(title = "", retailer = "") {
     .toLowerCase();
 
   const stopWords = new Set([
-    "the",
-    "and",
-    "with",
-    "for",
-    "from",
-    "new",
-    "latest",
-    "edition",
-    "model",
-    "official",
-    "amazon",
-    "uk",
-    "black",
-    "white",
-    "silver",
-    "blue",
-    "green",
-    "pink",
-    "grey",
-    "gray",
-    "wireless",
-    "bluetooth",
+    "the", "and", "with", "for", "from", "new", "latest", "edition", "model", "official",
+    "amazon", "uk", "black", "white", "silver", "blue", "green", "pink", "grey", "gray",
+    "wireless", "bluetooth",
   ]);
 
   let cleaned = source
@@ -269,7 +263,6 @@ function shortenTitle(title = "", retailer = "") {
     .trim();
 
   let words = cleaned.split(" ").filter(Boolean);
-
   words = words.filter((word) => {
     const lower = word.toLowerCase();
     if (stopWords.has(lower)) return false;
@@ -279,7 +272,6 @@ function shortenTitle(title = "", retailer = "") {
   });
 
   if (!words.length) return "Saved hint";
-
   const result = words.slice(0, 2).join(" ").trim();
   return result.charAt(0).toUpperCase() + result.slice(1);
 }
@@ -290,6 +282,41 @@ function splitIntoColumns(items, columnCount = 3) {
     columns[index % columnCount].push(item);
   });
   return columns;
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(new Error("Could not read the selected image."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function buildDraftFromPreview(data, rawUrl) {
+  const extractedNumericPrice =
+    typeof data?.numericPrice === "number" ? data.numericPrice : extractNumericPrice(data?.priceText);
+  const priceMeta = sanitisePrice(data?.priceText, extractedNumericPrice);
+  const retailer = data?.siteName || normaliseRetailer(rawUrl);
+  const title = shortenTitle(data?.title || "Saved hint", retailer);
+  const image = typeof data?.image === "string" && data.image.startsWith("http") ? data.image : "";
+  const finalUrl = data?.url || normaliseInputUrl(rawUrl);
+  const needsReview = Boolean(data?.needsReview) || !image || !title || !priceMeta.numericPrice;
+
+  return {
+    title,
+    retailer,
+    image,
+    uploadedImage: null,
+    url: finalUrl,
+    priceInput: priceMeta.numericPrice != null ? String(priceMeta.numericPrice) : "",
+    priceLabel: priceMeta.priceLabel,
+    numericPrice: priceMeta.numericPrice,
+    starred: false,
+    private: false,
+    needsReview,
+    source: data?.source || "preview",
+  };
 }
 
 async function fetchPreview(url) {
@@ -322,19 +349,134 @@ async function fetchPreview(url) {
   return data;
 }
 
-function AddHintModal({
-  isOpen,
+function HintFormFields({
   form,
   setForm,
-  onClose,
-  onSubmit,
-  isSaving,
+  prefix = "new",
+  showReviewCopy = false,
+  showToggles = true,
+  imageHelpText = "No image yet. Upload one here if you want to add a photo.",
 }) {
+  const previewImage = form.uploadedImage || form.image;
+
+  return (
+    <div className="space-y-4">
+      {showReviewCopy && form.needsReview ? (
+        <div className="rounded-[22px] border border-[#f4cdbd] bg-[#fff6f1] p-4 text-sm text-[#9b553d]">
+          We couldn’t fill everything automatically. You can still save this now, and image and price are optional.
+        </div>
+      ) : null}
+
+      <div>
+        <label htmlFor={`${prefix}-link`} className="mb-2 block text-sm font-medium text-slate-700">
+          Link
+        </label>
+        <input
+          id={`${prefix}-link`}
+          type="url"
+          value={form.url}
+          onChange={(e) => setForm((current) => ({ ...current, url: e.target.value }))}
+          className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
+        />
+      </div>
+
+      <div>
+        <label htmlFor={`${prefix}-title`} className="mb-2 block text-sm font-medium text-slate-700">
+          Name
+        </label>
+        <input
+          id={`${prefix}-title`}
+          type="text"
+          value={form.title}
+          onChange={(e) => setForm((current) => ({ ...current, title: e.target.value }))}
+          placeholder="Give this hint a clear name"
+          className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
+        />
+      </div>
+
+      <div>
+        <label htmlFor={`${prefix}-price`} className="mb-2 block text-sm font-medium text-slate-700">
+          Price (optional)
+        </label>
+        <input
+          id={`${prefix}-price`}
+          type="text"
+          value={form.priceInput}
+          onChange={(e) => setForm((current) => ({ ...current, priceInput: e.target.value }))}
+          placeholder="Leave blank if you don’t want to add a price"
+          className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
+        />
+      </div>
+
+      <div>
+        <label htmlFor={`${prefix}-image`} className="mb-2 block text-sm font-medium text-slate-700">
+          Photo (optional)
+        </label>
+        <input
+          id={`${prefix}-image`}
+          type="file"
+          accept="image/*"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const imageUrl = await fileToDataUrl(file);
+            setForm((current) => ({ ...current, uploadedImage: imageUrl }));
+          }}
+          className="block w-full rounded-[18px] border border-dashed border-[#eadcd3] bg-[#fcfaf8] px-4 py-4 text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-[#fff1e9] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#df7c59]"
+        />
+
+        {previewImage ? (
+          <div className="mt-3 overflow-hidden rounded-[20px] border border-[#efe0d7] bg-[#faf6f3]">
+            <img
+              src={previewImage}
+              alt={form.title || "Selected hint image"}
+              className="h-40 w-full object-cover"
+            />
+          </div>
+        ) : (
+          <div className="mt-3 rounded-[20px] border border-dashed border-[#efe0d7] bg-[#faf6f3] px-4 py-8 text-center text-sm text-slate-500">
+            {imageHelpText}
+          </div>
+        )}
+      </div>
+
+      {showToggles ? (
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => setForm((current) => ({ ...current, starred: !current.starred }))}
+            className={`rounded-full border px-4 py-2 text-sm font-semibold ${
+              form.starred
+                ? "border-[#ffd8c9] bg-[#fff2ea] text-[#e27956]"
+                : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
+            }`}
+          >
+            {form.starred ? "★ Starred" : "★ Star"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setForm((current) => ({ ...current, private: !current.private }))}
+            className={`rounded-full border px-4 py-2 text-sm font-semibold ${
+              form.private
+                ? "border-[#ffd8c9] bg-[#fffaf7] text-[#e08a67]"
+                : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
+            }`}
+          >
+            {form.private ? "🔒 Private" : "🔓 Public"}
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function AddHintModal({ isOpen, form, setForm, onClose, onSubmit, isSaving }) {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(33,24,20,0.42)] px-4 py-8 backdrop-blur-sm">
-      <div className="w-full max-w-[560px] rounded-[30px] border border-[#efdcd2] bg-white p-6 shadow-[0_28px_80px_rgba(75,45,30,0.18)] sm:p-7">
+      <div className="w-full max-w-[620px] rounded-[30px] border border-[#efdcd2] bg-white p-6 shadow-[0_28px_80px_rgba(75,45,30,0.18)] sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#e08a67]">
@@ -355,62 +497,15 @@ function AddHintModal({
           </button>
         </div>
 
-        <div className="mt-6 space-y-4">
-          <div>
-            <label htmlFor="new-link" className="mb-2 block text-sm font-medium text-slate-700">
-              Link
-            </label>
-            <input
-              id="new-link"
-              type="url"
-              value={form.url}
-              onChange={(e) => setForm((current) => ({ ...current, url: e.target.value }))}
-              className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="new-title" className="mb-2 block text-sm font-medium text-slate-700">
-              Name
-            </label>
-            <input
-              id="new-title"
-              type="text"
-              value={form.title}
-              onChange={(e) => setForm((current) => ({ ...current, title: e.target.value }))}
-              className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
-            />
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() =>
-                setForm((current) => ({ ...current, starred: !current.starred }))
-              }
-              className={`rounded-full border px-4 py-2 text-sm font-semibold ${
-                form.starred
-                  ? "border-[#ffd8c9] bg-[#fff2ea] text-[#e27956]"
-                  : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
-              }`}
-            >
-              {form.starred ? "★ Starred" : "★ Star"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                setForm((current) => ({ ...current, private: !current.private }))
-              }
-              className={`rounded-full border px-4 py-2 text-sm font-semibold ${
-                form.private
-                  ? "border-[#ffd8c9] bg-[#fffaf7] text-[#e08a67]"
-                  : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
-              }`}
-            >
-              {form.private ? "🔒 Private" : "🔓 Public"}
-            </button>
-          </div>
+        <div className="mt-6">
+          <HintFormFields
+            form={form}
+            setForm={setForm}
+            prefix="new"
+            showReviewCopy
+            showToggles
+            imageHelpText="No image yet. Upload one only if you want to add a photo now."
+          />
         </div>
 
         <div className="mt-7 flex justify-end">
@@ -436,8 +531,6 @@ function EditHintModal({
   onSave,
   onRefreshFromLink,
   onDelete,
-  onTogglePrivate,
-  onToggleStarred,
   isRefreshing,
   isSaving,
   hint,
@@ -446,7 +539,7 @@ function EditHintModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(33,24,20,0.42)] px-4 py-8 backdrop-blur-sm">
-      <div className="w-full max-w-[560px] rounded-[30px] border border-[#efdcd2] bg-white p-6 shadow-[0_28px_80px_rgba(75,45,30,0.18)] sm:p-7">
+      <div className="w-full max-w-[620px] rounded-[30px] border border-[#efdcd2] bg-white p-6 shadow-[0_28px_80px_rgba(75,45,30,0.18)] sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#e08a67]">
@@ -467,58 +560,15 @@ function EditHintModal({
           </button>
         </div>
 
-        <div className="mt-6 space-y-4">
-          <div>
-            <label htmlFor="edit-link" className="mb-2 block text-sm font-medium text-slate-700">
-              Link
-            </label>
-            <input
-              id="edit-link"
-              type="url"
-              value={editForm.url}
-              onChange={(e) => setEditForm((current) => ({ ...current, url: e.target.value }))}
-              className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="edit-title" className="mb-2 block text-sm font-medium text-slate-700">
-              Name
-            </label>
-            <input
-              id="edit-title"
-              type="text"
-              value={editForm.title}
-              onChange={(e) => setEditForm((current) => ({ ...current, title: e.target.value }))}
-              className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
-            />
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={onToggleStarred}
-              className={`rounded-full border px-4 py-2 text-sm font-semibold ${
-                hint.starred
-                  ? "border-[#ffd8c9] bg-[#fff2ea] text-[#e27956]"
-                  : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
-              }`}
-            >
-              {hint.starred ? "★ Starred" : "★ Star"}
-            </button>
-
-            <button
-              type="button"
-              onClick={onTogglePrivate}
-              className={`rounded-full border px-4 py-2 text-sm font-semibold ${
-                hint.private
-                  ? "border-[#ffd8c9] bg-[#fffaf7] text-[#e08a67]"
-                  : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
-              }`}
-            >
-              {hint.private ? "🔒 Private" : "🔓 Public"}
-            </button>
-          </div>
+        <div className="mt-6">
+          <HintFormFields
+            form={editForm}
+            setForm={setEditForm}
+            prefix="edit"
+            showReviewCopy={false}
+            showToggles={false}
+            imageHelpText="No image yet. Add or replace a photo here if you want."
+          />
         </div>
 
         <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-between">
@@ -625,6 +675,12 @@ function HintCard({
               Private
             </div>
           )}
+
+          {hint.needsReview && (
+            <div className="rounded-full border border-[#f6d2c2] bg-[#fff6f1] px-3 py-1 text-[11px] font-semibold text-[#c46545]">
+              Needs review
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -657,8 +713,8 @@ function HintCard({
               hint.size === "large"
                 ? "border-[#445541] bg-[#2f3b2d] text-white"
                 : hint.size === "medium"
-                ? "border-[#ffd8c9] bg-[#fff1e9] text-[#df7c59]"
-                : "border-[#d7e4ce] bg-[#f1f5ec] text-[#627f53]"
+                  ? "border-[#ffd8c9] bg-[#fff1e9] text-[#df7c59]"
+                  : "border-[#d7e4ce] bg-[#f1f5ec] text-[#627f53]"
             }`}
           >
             {hint.priceLabel}
@@ -702,27 +758,13 @@ function HintCard({
   );
 }
 
-function SortableHintCard({
-  hint,
-  onEdit,
-  onToggleStarred,
-  onTogglePrivate,
-}) {
+function SortableHintCard({ hint, onEdit, onToggleStarred, onTogglePrivate }) {
   const animateLayoutChanges = (args) => {
-    if (args.isSorting || args.wasDragging) {
-      return defaultAnimateLayoutChanges(args);
-    }
+    if (args.isSorting || args.wasDragging) return defaultAnimateLayoutChanges(args);
     return true;
   };
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: hint.id,
     animateLayoutChanges,
     transition: {
@@ -759,7 +801,7 @@ export default function HintsClient() {
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState("");
   const [editingHintId, setEditingHintId] = useState(null);
-  const [editForm, setEditForm] = useState({ title: "", url: "" });
+  const [editForm, setEditForm] = useState(EMPTY_EDIT_FORM);
   const [isRefreshingEdit, setIsRefreshingEdit] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -769,39 +811,22 @@ export default function HintsClient() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSubmittingNewHint, setIsSubmittingNewHint] = useState(false);
   const [pendingHint, setPendingHint] = useState(null);
-  const [newHintForm, setNewHintForm] = useState({
-    title: "",
-    url: "",
-    retailer: "",
-    image: "",
-    priceLabel: "Price unavailable",
-    numericPrice: null,
-    private: false,
-    starred: false,
-  });
+  const [newHintForm, setNewHintForm] = useState(EMPTY_NEW_HINT_FORM);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 4 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   const measuring = {
-    droppable: {
-      strategy: MeasuringStrategy.Always,
-    },
+    droppable: { strategy: MeasuringStrategy.Always },
   };
 
   useEffect(() => {
     const supabase = createClient();
 
     async function loadSession() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user || null);
     }
 
@@ -848,6 +873,7 @@ export default function HintsClient() {
           size: getSizeFromPrice(row.numeric_price),
           url: row.url || "",
           position: row.position ?? index,
+          needsReview: false,
         }))
       );
 
@@ -859,28 +885,18 @@ export default function HintsClient() {
 
   const visibleHints = hints.length > 0 ? hints : demoHints;
   const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
-
-  const columns = useMemo(() => {
-    return splitIntoColumns(visibleHints, 3);
-  }, [visibleHints]);
+  const columns = useMemo(() => splitIntoColumns(visibleHints, 3), [visibleHints]);
 
   async function persistOrder(nextHints) {
     if (!currentUser) return;
-
     const supabase = createClient();
-
     await Promise.all(
-      nextHints.map((hint, index) =>
-        supabase.from("hints").update({ position: index }).eq("id", hint.id)
-      )
+      nextHints.map((hint, index) => supabase.from("hints").update({ position: index }).eq("id", hint.id))
     );
   }
 
   function rebuildFromColumns(nextColumns) {
-    return nextColumns.flat().map((hint, index) => ({
-      ...hint,
-      position: index,
-    }));
+    return nextColumns.flat().map((hint, index) => ({ ...hint, position: index }));
   }
 
   function openEditModal(hint) {
@@ -888,12 +904,16 @@ export default function HintsClient() {
     setEditForm({
       title: hint.title || "",
       url: hint.url || "",
+      retailer: hint.retailer || "",
+      image: hint.image || "",
+      uploadedImage: null,
+      priceInput: hint.numericPrice != null ? String(hint.numericPrice) : "",
     });
   }
 
   function closeEditModal() {
     setEditingHintId(null);
-    setEditForm({ title: "", url: "" });
+    setEditForm(EMPTY_EDIT_FORM);
     setIsRefreshingEdit(false);
     setIsSavingEdit(false);
   }
@@ -902,33 +922,32 @@ export default function HintsClient() {
     setIsAddModalOpen(false);
     setPendingHint(null);
     setIsSubmittingNewHint(false);
-    setNewHintForm({
-      title: "",
-      url: "",
-      retailer: "",
-      image: "",
-      priceLabel: "Price unavailable",
-      numericPrice: null,
-      private: false,
-      starred: false,
-    });
+    setNewHintForm(EMPTY_NEW_HINT_FORM);
   }
 
   async function saveEditChanges() {
-    if (!currentUser) return;
+    if (!currentUser || editingHintId == null) return;
 
-    const trimmedTitle = editForm.title.trim();
+    const trimmedTitle = editForm.title.trim() || "Saved hint";
     const trimmedUrl = editForm.url.trim();
+    const trimmedRetailer = editForm.retailer?.trim() || normaliseRetailer(trimmedUrl);
+    const parsedNumericPrice = extractNumericPrice(editForm.priceInput);
+    const priceMeta = sanitisePrice(editForm.priceInput, parsedNumericPrice);
+    const finalImage = editForm.uploadedImage || editForm.image || "";
+
     setIsSavingEdit(true);
 
     const supabase = createClient();
-
     const { error } = await supabase
       .from("hints")
       .update({
         title: trimmedTitle,
         url: trimmedUrl,
-        retailer: trimmedUrl ? normaliseRetailer(trimmedUrl) : null,
+        retailer: trimmedRetailer,
+        image_url: finalImage,
+        price_text: priceMeta.priceLabel,
+        numeric_price: priceMeta.numericPrice,
+        size: getSizeFromPrice(priceMeta.numericPrice),
       })
       .eq("id", editingHintId);
 
@@ -943,9 +962,14 @@ export default function HintsClient() {
         hint.id === editingHintId
           ? {
               ...hint,
-              title: trimmedTitle || hint.title,
+              title: trimmedTitle,
               url: trimmedUrl || hint.url,
-              retailer: trimmedUrl ? normaliseRetailer(trimmedUrl) : hint.retailer,
+              retailer: trimmedRetailer,
+              image: finalImage,
+              priceLabel: priceMeta.priceLabel,
+              numericPrice: priceMeta.numericPrice,
+              size: getSizeFromPrice(priceMeta.numericPrice),
+              needsReview: false,
             }
           : hint
       )
@@ -957,68 +981,46 @@ export default function HintsClient() {
 
   async function deleteHint() {
     if (!currentUser) return;
-
     const supabase = createClient();
     const { error } = await supabase.from("hints").delete().eq("id", editingHintId);
-
     if (error) {
       setError(errorToMessage(error));
       return;
     }
-
     setHints((current) => current.filter((hint) => hint.id !== editingHintId));
     closeEditModal();
   }
 
   async function toggleStarred(hint) {
     if (!currentUser) return;
-
     const supabase = createClient();
     const newStarred = !hint.starred;
 
-    setHints((current) =>
-      current.map((h) => (h.id === hint.id ? { ...h, starred: newStarred } : h))
-    );
+    setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, starred: newStarred } : h)));
 
-    const { error } = await supabase
-      .from("hints")
-      .update({ starred: newStarred })
-      .eq("id", hint.id);
-
+    const { error } = await supabase.from("hints").update({ starred: newStarred }).eq("id", hint.id);
     if (error) {
-      setHints((current) =>
-        current.map((h) => (h.id === hint.id ? { ...h, starred: hint.starred } : h))
-      );
+      setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, starred: hint.starred } : h)));
       setError(errorToMessage(error));
     }
   }
 
   async function togglePrivate(hint) {
     if (!currentUser) return;
-
     const supabase = createClient();
     const newPrivate = !hint.private;
 
-    setHints((current) =>
-      current.map((h) => (h.id === hint.id ? { ...h, private: newPrivate } : h))
-    );
+    setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, private: newPrivate } : h)));
 
-    const { error } = await supabase
-      .from("hints")
-      .update({ is_private: newPrivate })
-      .eq("id", hint.id);
-
+    const { error } = await supabase.from("hints").update({ is_private: newPrivate }).eq("id", hint.id);
     if (error) {
-      setHints((current) =>
-        current.map((h) => (h.id === hint.id ? { ...h, private: hint.private } : h))
-      );
+      setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, private: hint.private } : h)));
       setError(errorToMessage(error));
     }
   }
 
   async function refreshHintFromLink() {
     const trimmed = editForm.url.trim();
-
     if (!trimmed || editingHintId == null) return;
     if (!isValidHttpUrl(trimmed)) {
       setError("Please enter a valid URL.");
@@ -1030,34 +1032,21 @@ export default function HintsClient() {
 
     try {
       const data = await fetchPreview(normaliseInputUrl(trimmed));
-
-      const extractedNumericPrice =
-        typeof data.numericPrice === "number"
-          ? data.numericPrice
-          : extractNumericPrice(data.priceText);
-
-      const priceMeta = sanitisePrice(data.priceText, extractedNumericPrice);
-
-      const refreshedTitle = shortenTitle(
-        data.title || editForm.title || "",
-        data.siteName || normaliseRetailer(trimmed)
-      );
+      const draft = buildDraftFromPreview(data, trimmed);
 
       setHints((current) =>
         current.map((hint) =>
           hint.id === editingHintId
             ? {
                 ...hint,
-                title: refreshedTitle,
-                retailer: data.siteName || normaliseRetailer(trimmed),
-                priceLabel: priceMeta.priceLabel,
-                numericPrice: priceMeta.numericPrice,
-                size: getSizeFromPrice(priceMeta.numericPrice),
-                image:
-                  typeof data.image === "string" && data.image.startsWith("http")
-                    ? data.image
-                    : hint.image,
-                url: data.url || normaliseInputUrl(trimmed),
+                title: draft.title,
+                retailer: draft.retailer,
+                priceLabel: draft.priceLabel,
+                numericPrice: draft.numericPrice,
+                size: getSizeFromPrice(draft.numericPrice),
+                image: draft.image || hint.image,
+                url: draft.url,
+                needsReview: draft.needsReview,
               }
             : hint
         )
@@ -1065,8 +1054,11 @@ export default function HintsClient() {
 
       setEditForm((current) => ({
         ...current,
-        title: refreshedTitle,
-        url: data.url || normaliseInputUrl(trimmed),
+        title: draft.title,
+        url: draft.url,
+        retailer: draft.retailer,
+        image: draft.image || current.image,
+        priceInput: draft.priceInput,
       }));
     } catch (err) {
       setError(errorToMessage(err));
@@ -1082,12 +1074,10 @@ export default function HintsClient() {
     }
 
     const trimmed = link.trim();
-
     if (!trimmed) {
       setError("Paste a link first.");
       return;
     }
-
     if (!isValidHttpUrl(trimmed)) {
       setError("Please paste a valid product or experience URL.");
       return;
@@ -1098,42 +1088,10 @@ export default function HintsClient() {
 
     try {
       const data = await fetchPreview(normaliseInputUrl(trimmed));
-
-      const extractedNumericPrice =
-        typeof data.numericPrice === "number"
-          ? data.numericPrice
-          : extractNumericPrice(data.priceText);
-
-      const priceMeta = sanitisePrice(data.priceText, extractedNumericPrice);
-      const retailer = data.siteName || normaliseRetailer(trimmed);
-      const shortTitle = shortenTitle(data.title || "Saved hint", retailer);
-      const finalUrl = data.url || normaliseInputUrl(trimmed);
-
-      const draft = {
-        title: shortTitle,
-        retailer,
-        priceLabel: priceMeta.priceLabel,
-        numericPrice: priceMeta.numericPrice,
-        image:
-          typeof data.image === "string" && data.image.startsWith("http")
-            ? data.image
-            : "",
-        url: finalUrl,
-        starred: false,
-        private: false,
-      };
+      const draft = buildDraftFromPreview(data, trimmed);
 
       setPendingHint(draft);
-      setNewHintForm({
-        title: draft.title,
-        url: draft.url,
-        retailer: draft.retailer,
-        image: draft.image,
-        priceLabel: draft.priceLabel,
-        numericPrice: draft.numericPrice,
-        private: false,
-        starred: false,
-      });
+      setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...draft });
       setIsAddModalOpen(true);
       setLink("");
     } catch (err) {
@@ -1152,30 +1110,29 @@ export default function HintsClient() {
     try {
       const title = newHintForm.title.trim() || pendingHint.title || "Saved hint";
       const url = newHintForm.url.trim() || pendingHint.url;
-      const retailer = newHintForm.retailer || normaliseRetailer(url);
-      const numericPrice = newHintForm.numericPrice;
-      const size = getSizeFromPrice(numericPrice);
+      const retailer = newHintForm.retailer?.trim() || normaliseRetailer(url);
+      const numericPrice = extractNumericPrice(newHintForm.priceInput);
+      const priceMeta = sanitisePrice(newHintForm.priceInput, numericPrice);
+      const size = getSizeFromPrice(priceMeta.numericPrice);
+      const image = newHintForm.uploadedImage || newHintForm.image || "";
 
       const newHint = {
-        id:
-          typeof crypto !== "undefined" && crypto.randomUUID
-            ? crypto.randomUUID()
-            : `hint-${Date.now()}`,
+        id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `hint-${Date.now()}`,
         title,
         retailer,
-        priceLabel: newHintForm.priceLabel || "Price unavailable",
-        numericPrice,
-        image: newHintForm.image || "",
+        priceLabel: priceMeta.priceLabel,
+        numericPrice: priceMeta.numericPrice,
+        image,
         fallbackGradient: buildFallbackGradient(hints.length),
         starred: Boolean(newHintForm.starred),
         private: Boolean(newHintForm.private),
         size,
         url,
         position: 0,
+        needsReview: false,
       };
 
       const supabase = createClient();
-
       const { error } = await supabase.from("hints").insert({
         id: newHint.id,
         user_id: currentUser.id,
@@ -1189,20 +1146,12 @@ export default function HintsClient() {
         is_private: newHint.private,
         position: 0,
         size: newHint.size,
-        source: "user",
+        source: newHintForm.source || "user",
       });
 
-      if (error) {
-        throw new Error(errorToMessage(error));
-      }
+      if (error) throw new Error(errorToMessage(error));
 
-      setHints((current) =>
-        [newHint, ...current].map((item, index) => ({
-          ...item,
-          position: index,
-        }))
-      );
-
+      setHints((current) => [newHint, ...current].map((item, index) => ({ ...item, position: index })));
       closeAddModal();
     } catch (err) {
       setError(errorToMessage(err));
@@ -1217,28 +1166,17 @@ export default function HintsClient() {
   async function handleDragEnd(event) {
     const { active, over } = event;
     setActiveId(null);
-
     if (!over || active.id === over.id || hints.length === 0) return;
 
     const nextColumns = splitIntoColumns(hints, 3);
-    const fromColumnIndex = nextColumns.findIndex((col) =>
-      col.some((item) => item.id === active.id)
-    );
-    const toColumnIndex = nextColumns.findIndex((col) =>
-      col.some((item) => item.id === over.id)
-    );
-
+    const fromColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === active.id));
+    const toColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === over.id));
     if (fromColumnIndex === -1 || toColumnIndex === -1) return;
 
     const fromItems = [...nextColumns[fromColumnIndex]];
-    const toItems =
-      fromColumnIndex === toColumnIndex
-        ? fromItems
-        : [...nextColumns[toColumnIndex]];
-
+    const toItems = fromColumnIndex === toColumnIndex ? fromItems : [...nextColumns[toColumnIndex]];
     const oldIndex = fromItems.findIndex((item) => item.id === active.id);
     const newIndex = toItems.findIndex((item) => item.id === over.id);
-
     if (oldIndex === -1 || newIndex === -1) return;
 
     if (fromColumnIndex === toColumnIndex) {
@@ -1274,32 +1212,11 @@ export default function HintsClient() {
 
           <div className="flex items-center gap-3 sm:gap-4">
             <nav className="flex items-center gap-2 sm:gap-3">
-              <Link
-                href="/feed"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
-              >
-                Feed
-              </Link>
-              <Link
-                href="/hints"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#3c4d39] bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5"
-              >
-                Hints
-              </Link>
-              <Link
-                href="/circles"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
-              >
-                Circles
-              </Link>
-              <Link
-                href="/shop"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
-              >
-                Shop
-              </Link>
+              <Link href="/feed" className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Feed</Link>
+              <Link href="/hints" className="inline-flex h-11 items-center justify-center rounded-full border border-[#3c4d39] bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5">Hints</Link>
+              <Link href="/circles" className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Circles</Link>
+              <Link href="/shop" className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Shop</Link>
             </nav>
-
             <AvatarMenu />
           </div>
         </div>
@@ -1340,9 +1257,10 @@ export default function HintsClient() {
             {error ? (
               <p className="mt-3 text-sm font-medium text-[#c45c42]">{error}</p>
             ) : (
-              <p className="mt-3 text-sm text-slate-500">
-                We’ll pull the title, image, and price, then let you confirm the name and privacy before saving.
-              </p>
+              <div className="mt-3 space-y-1 text-sm text-slate-500">
+                <p>We’ll pull the title, image, and price, then let you fix anything before saving.</p>
+                <p>You can also save private hints, and both image and price are optional.</p>
+              </div>
             )}
           </div>
         </section>
@@ -1365,10 +1283,7 @@ export default function HintsClient() {
               <div className="columns-1 gap-6 md:columns-3">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="mb-6 break-inside-avoid">
-                    <div
-                      className="w-full overflow-hidden rounded-[30px] border border-[#efe1d8] bg-[#f9f8f5]"
-                      style={{ aspectRatio: i === 1 ? "1 / 1.35" : "1 / 1" }}
-                    >
+                    <div className="w-full overflow-hidden rounded-[30px] border border-[#efe1d8] bg-[#f9f8f5]" style={{ aspectRatio: i === 1 ? "1 / 1.35" : "1 / 1" }}>
                       <div className="skeleton h-full w-full" />
                     </div>
                   </div>
@@ -1405,12 +1320,7 @@ export default function HintsClient() {
                   ))}
                 </div>
 
-                <DragOverlay
-                  dropAnimation={{
-                    duration: 180,
-                    easing: "cubic-bezier(0.25, 1, 0.5, 1)",
-                  }}
-                >
+                <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.25, 1, 0.5, 1)" }}>
                   {activeHint ? (
                     <div className="w-full max-w-[420px]">
                       <HintCard
@@ -1428,13 +1338,7 @@ export default function HintsClient() {
               <div className="columns-1 gap-6 md:columns-3">
                 {demoHints.map((hint) => (
                   <div key={hint.id} className="mb-6 break-inside-avoid">
-                    <HintCard
-                      hint={hint}
-                      onEdit={() => {}}
-                      onToggleStarred={() => {}}
-                      onTogglePrivate={() => {}}
-                      isDragging={false}
-                    />
+                    <HintCard hint={hint} onEdit={() => {}} onToggleStarred={() => {}} onTogglePrivate={() => {}} isDragging={false} />
                   </div>
                 ))}
               </div>
@@ -1460,12 +1364,6 @@ export default function HintsClient() {
         onSave={saveEditChanges}
         onRefreshFromLink={refreshHintFromLink}
         onDelete={deleteHint}
-        onTogglePrivate={() => {
-          if (editingHint) togglePrivate(editingHint);
-        }}
-        onToggleStarred={() => {
-          if (editingHint) toggleStarred(editingHint);
-        }}
         isRefreshing={isRefreshingEdit}
         isSaving={isSavingEdit}
         hint={editingHint}
