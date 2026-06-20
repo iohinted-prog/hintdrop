@@ -10,8 +10,6 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -95,23 +93,6 @@ const demoHints = [
   },
 ];
 
-type Hint = {
-  id: string;
-  title: string;
-  retailer: string;
-  priceLabel: string;
-  numericPrice: number | null;
-  priceBand: "small" | "mid" | "premium" | "high";
-  image: string;
-  fallbackGradient: string;
-  tags: string[];
-  starred: boolean;
-  private: boolean;
-  size: "square" | "portrait" | "feature" | "hero";
-  url: string;
-  position: number;
-};
-
 function LogoMark() {
   return (
     <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg">
@@ -120,7 +101,7 @@ function LogoMark() {
   );
 }
 
-function normaliseRetailer(url: string) {
+function normaliseRetailer(url) {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
   } catch {
@@ -128,7 +109,7 @@ function normaliseRetailer(url: string) {
   }
 }
 
-function extractNumericPrice(value: unknown) {
+function extractNumericPrice(value) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (!value || typeof value !== "string") return null;
 
@@ -143,7 +124,7 @@ function extractNumericPrice(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function getPriceBand(price: number | null): Hint["priceBand"] {
+function getPriceBand(price) {
   if (price == null) return "small";
   if (price >= 220) return "high";
   if (price >= 120) return "premium";
@@ -151,13 +132,13 @@ function getPriceBand(price: number | null): Hint["priceBand"] {
   return "small";
 }
 
-function formatPriceLabel(price: number | null, rawPrice?: string | null) {
+function formatPriceLabel(price, rawPrice) {
   if (rawPrice && typeof rawPrice === "string") return rawPrice;
   if (price == null) return "Price unavailable";
   return `About £${Math.round(price)}`;
 }
 
-function buildFallbackGradient(index: number) {
+function buildFallbackGradient(index) {
   const gradients = [
     "from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]",
     "from-[#d9dfcf] via-[#b9c7aa] to-[#90a27e]",
@@ -262,7 +243,7 @@ function shortenTitle(title = "", retailer = "") {
     categoryWords.includes(word.toLowerCase())
   );
 
-  let finalWords: string[];
+  let finalWords;
   if (foundCategory && brand.toLowerCase() !== foundCategory.toLowerCase()) {
     finalWords = [brand, foundCategory];
   } else {
@@ -273,35 +254,30 @@ function shortenTitle(title = "", retailer = "") {
   return compact.charAt(0).toUpperCase() + compact.slice(1);
 }
 
-function getBoardSize(
-  price: number | null,
-  index: number,
-  allPrices: number[] = []
-): Hint["size"] {
+function getBoardSize(price, index, allPrices) {
   if (price == null) return index % 5 === 0 ? "portrait" : "square";
+
   const sorted = [...allPrices].sort((a, b) => a - b);
   const highCut = sorted[Math.max(0, Math.floor(sorted.length * 0.75))] ?? price;
   const midCut = sorted[Math.max(0, Math.floor(sorted.length * 0.45))] ?? price;
 
-  if (price >= highCut && price >= 180) return index % 3 === 0 ? "hero" : "feature";
-  if (price >= midCut && price >= 75) return "portrait";
+  if (price >= highCut && price >= 180) {
+    return index % 3 === 0 ? "hero" : "feature";
+  }
+  if (price >= midCut && price >= 75) {
+    return "portrait";
+  }
   return "square";
 }
 
-function getTileClass(size: Hint["size"]) {
-  if (size === "hero") {
-    return "md:col-span-6 md:row-span-12";
-  }
-  if (size === "feature") {
-    return "md:col-span-4 md:row-span-10";
-  }
-  if (size === "portrait") {
-    return "md:col-span-4 md:row-span-8";
-  }
+function getTileClass(size) {
+  if (size === "hero") return "md:col-span-6 md:row-span-12";
+  if (size === "feature") return "md:col-span-4 md:row-span-10";
+  if (size === "portrait") return "md:col-span-4 md:row-span-8";
   return "md:col-span-4 md:row-span-6";
 }
 
-function getPricePill(priceBand: Hint["priceBand"]) {
+function getPricePill(priceBand) {
   if (priceBand === "high") return "bg-[#2f3b2d] text-white";
   if (priceBand === "premium") return "bg-[#fff1e9] text-[#df7c59]";
   if (priceBand === "mid") return "bg-[#f3f0ff] text-[#7c61bf]";
@@ -315,33 +291,12 @@ function HintComposerModal({
   onClose,
   onSave,
   isSaving,
-}: {
-  isOpen: boolean;
-  draft: {
-    title: string;
-    url: string;
-    image: string;
-    retailer: string;
-    priceLabel: string;
-    numericPrice: number | null;
-    private: boolean;
-  };
-  setDraft: React.Dispatch<
-    React.SetStateAction<{
-      title: string;
-      url: string;
-      image: string;
-      retailer: string;
-      priceLabel: string;
-      numericPrice: number | null;
-      private: boolean;
-    }>
-  >;
-  onClose: () => void;
-  onSave: () => void;
-  isSaving: boolean;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [draft.image, isOpen]);
 
   if (!isOpen) return null;
 
@@ -380,14 +335,19 @@ function HintComposerModal({
               />
             ) : (
               <div className="flex aspect-[4/5] items-end bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f] p-4">
-                <p className="text-sm font-medium text-white/90">{draft.retailer || "Saved link"}</p>
+                <p className="text-sm font-medium text-white/90">
+                  {draft.retailer || "Saved link"}
+                </p>
               </div>
             )}
           </div>
 
           <div className="space-y-4">
             <div>
-              <label htmlFor="composer-link" className="mb-2 block text-sm font-medium text-slate-700">
+              <label
+                htmlFor="composer-link"
+                className="mb-2 block text-sm font-medium text-slate-700"
+              >
                 Link
               </label>
               <input
@@ -402,7 +362,10 @@ function HintComposerModal({
             </div>
 
             <div>
-              <label htmlFor="composer-title" className="mb-2 block text-sm font-medium text-slate-700">
+              <label
+                htmlFor="composer-title"
+                className="mb-2 block text-sm font-medium text-slate-700"
+              >
                 Name
               </label>
               <input
@@ -421,7 +384,9 @@ function HintComposerModal({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                   Retailer
                 </p>
-                <p className="mt-1 text-sm text-slate-700">{draft.retailer || "Saved link"}</p>
+                <p className="mt-1 text-sm text-slate-700">
+                  {draft.retailer || "Saved link"}
+                </p>
               </div>
 
               <div className="rounded-[20px] border border-[#f0e0d7] bg-[#fffaf7] px-4 py-3">
@@ -436,7 +401,10 @@ function HintComposerModal({
               <button
                 type="button"
                 onClick={() =>
-                  setDraft((current) => ({ ...current, private: !current.private }))
+                  setDraft((current) => ({
+                    ...current,
+                    private: !current.private,
+                  }))
                 }
                 className={`rounded-full border px-4 py-2 text-sm font-semibold ${
                   draft.private
@@ -489,7 +457,7 @@ function EditHintModal({
   isRefreshing,
   isSaving,
   hint,
-}: any) {
+}) {
   if (!isOpen || !hint) return null;
 
   return (
@@ -517,30 +485,36 @@ function EditHintModal({
 
         <div className="mt-6 space-y-4">
           <div>
-            <label htmlFor="edit-link" className="mb-2 block text-sm font-medium text-slate-700">
+            <label
+              htmlFor="edit-link"
+              className="mb-2 block text-sm font-medium text-slate-700"
+            >
               Link
             </label>
             <input
               id="edit-link"
               type="url"
               value={editForm.url}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setEditForm((current: any) => ({ ...current, url: e.target.value }))
+              onChange={(e) =>
+                setEditForm((current) => ({ ...current, url: e.target.value }))
               }
               className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-white px-5 text-[15px] text-slate-700 outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
             />
           </div>
 
           <div>
-            <label htmlFor="edit-title" className="mb-2 block text-sm font-medium text-slate-700">
+            <label
+              htmlFor="edit-title"
+              className="mb-2 block text-sm font-medium text-slate-700"
+            >
               Name
             </label>
             <input
               id="edit-title"
               type="text"
               value={editForm.title}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setEditForm((current: any) => ({ ...current, title: e.target.value }))
+              onChange={(e) =>
+                setEditForm((current) => ({ ...current, title: e.target.value }))
               }
               className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-white px-5 text-[15px] text-slate-700 outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
             />
@@ -611,19 +585,17 @@ function EditHintModal({
 
 function HintCard({
   hint,
-  dragging = false,
+  dragging,
   onEdit,
   onToggleStarred,
   onTogglePrivate,
-}: {
-  hint: Hint;
-  dragging?: boolean;
-  onEdit?: (hint: Hint) => void;
-  onToggleStarred?: (hint: Hint) => void;
-  onTogglePrivate?: (hint: Hint) => void;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(hint.image) && !imageFailed;
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [hint.image]);
 
   return (
     <article
@@ -682,7 +654,10 @@ function HintCard({
               {onEdit && (
                 <button
                   type="button"
-                  onClick={() => onEdit(hint)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(hint);
+                  }}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/75 text-[15px] text-slate-500 backdrop-blur-sm hover:text-slate-800"
                   aria-label="Edit hint"
                 >
@@ -692,12 +667,16 @@ function HintCard({
 
               {onToggleStarred && (
                 <button
-                  onClick={() => onToggleStarred(hint)}
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleStarred(hint);
+                  }}
                   className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/75 text-[16px] backdrop-blur-sm ${
                     hint.starred ? "text-[#f36f64]" : "text-slate-400 hover:text-[#f36f64]"
                   }`}
                   aria-label={hint.starred ? "Unhighlight hint" : "Highlight hint"}
-                  type="button"
                 >
                   ★
                 </button>
@@ -707,9 +686,17 @@ function HintCard({
         </div>
 
         <div className="relative -mt-7 flex flex-1 px-4 pb-4 sm:px-5 sm:pb-5">
-          <div className={`flex w-full flex-1 flex-col rounded-[26px] p-5 shadow-sm backdrop-blur-md ${hint.private ? "bg-white/84" : "bg-white/92"}`}>
+          <div
+            className={`flex w-full flex-1 flex-col rounded-[26px] p-5 shadow-sm backdrop-blur-md ${
+              hint.private ? "bg-white/84" : "bg-white/92"
+            }`}
+          >
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getPricePill(hint.priceBand)}`}>
+              <span
+                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getPricePill(
+                  hint.priceBand
+                )}`}
+              >
                 {hint.priceLabel}
               </span>
 
@@ -729,7 +716,6 @@ function HintCard({
                 display: "-webkit-box",
                 WebkitBoxOrient: "vertical",
                 WebkitLineClamp: 2,
-                lineClamp: 2,
               }}
             >
               {hint.title}
@@ -742,16 +728,23 @@ function HintCard({
                 {onTogglePrivate && (
                   <button
                     type="button"
-                    onClick={() => onTogglePrivate(hint)}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTogglePrivate(hint);
+                    }}
                     className="rounded-full border border-[#eadfd8] bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 hover:bg-[#faf7f4]"
                   >
                     {hint.private ? "🔒 Private" : "🔓 Public"}
                   </button>
                 )}
+
                 <a
                   href={hint.url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
                   className="rounded-full border border-[#eadfd8] bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 hover:bg-[#faf7f4]"
                 >
                   Open
@@ -770,11 +763,6 @@ function SortableHintTile({
   onEdit,
   onToggleStarred,
   onTogglePrivate,
-}: {
-  hint: Hint;
-  onEdit: (hint: Hint) => void;
-  onToggleStarred: (hint: Hint) => void;
-  onTogglePrivate: (hint: Hint) => void;
 }) {
   const {
     attributes,
@@ -791,37 +779,33 @@ function SortableHintTile({
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`${getTileClass(hint.size)} touch-none`}
-      {...attributes}
-      {...listeners}
-    >
-      <HintCard
-        hint={hint}
-        dragging={isDragging}
-        onEdit={onEdit}
-        onToggleStarred={onToggleStarred}
-        onTogglePrivate={onTogglePrivate}
-      />
+    <div ref={setNodeRef} style={style} className={getTileClass(hint.size)}>
+      <div {...attributes} {...listeners} className="h-full touch-none cursor-grab active:cursor-grabbing">
+        <HintCard
+          hint={hint}
+          dragging={isDragging}
+          onEdit={onEdit}
+          onToggleStarred={onToggleStarred}
+          onTogglePrivate={onTogglePrivate}
+        />
+      </div>
     </div>
   );
 }
 
-export default function HintsPage() {
-  const [hints, setHints] = useState<Hint[]>([]);
+export default function HintsClient() {
+  const [hints, setHints] = useState([]);
   const [link, setLink] = useState("");
   const [isFetchingDraft, setIsFetchingDraft] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [error, setError] = useState("");
-  const [editingHintId, setEditingHintId] = useState<string | null>(null);
+  const [editingHintId, setEditingHintId] = useState(null);
   const [editForm, setEditForm] = useState({ title: "", url: "" });
   const [isRefreshingEdit, setIsRefreshingEdit] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState(null);
 
   const [draftHint, setDraftHint] = useState({
     title: "",
@@ -829,32 +813,29 @@ export default function HintsPage() {
     image: "",
     retailer: "",
     priceLabel: "Price unavailable",
-    numericPrice: null as number | null,
+    numericPrice: null,
     private: false,
   });
   const [isComposerOpen, setIsComposerOpen] = useState(false);
 
-  const hasRealHints = hints.length > 0;
-  const visibleHints = hasRealHints ? hints : demoHints;
-  const activeHint =
-    visibleHints.find((hint) => hint.id === activeId) ?? null;
-
-  const numericPrices = useMemo(
-    () =>
-      hints
-        .map((hint) => hint.numericPrice)
-        .filter((value): value is number => typeof value === "number"),
-    [hints]
-  );
-
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 6 },
+      activationConstraint: { distance: 8 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  const hasRealHints = hints.length > 0;
+  const visibleHints = hasRealHints ? hints : demoHints;
+  const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
+
+  const numericPrices = useMemo(() => {
+    return hints
+      .map((hint) => hint.numericPrice)
+      .filter((value) => typeof value === "number");
+  }, [hints]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -863,7 +844,8 @@ export default function HintsPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      setCurrentUser(user);
+
+      setCurrentUser(user || null);
       setIsLoading(false);
     }
 
@@ -892,12 +874,13 @@ export default function HintsPage() {
         return;
       }
 
-      const prices = (data || [])
+      const rows = data || [];
+      const prices = rows
         .map((row) => row.numeric_price)
         .filter((value) => typeof value === "number");
 
       setHints(
-        (data || []).map((row, index) => ({
+        rows.map((row, index) => ({
           id: row.id,
           title: row.title || "Saved hint",
           retailer: row.retailer || normaliseRetailer(row.url || ""),
@@ -921,20 +904,19 @@ export default function HintsPage() {
     loadHints();
   }, [currentUser]);
 
-  async function persistPositions(updatedHints: Hint[]) {
+  async function persistPositions(updatedHints) {
+    if (!currentUser) return;
+
     const supabase = createClient();
 
     await Promise.all(
-      updatedHints.map((hint, idx) =>
-        supabase
-          .from("hints")
-          .update({ position: idx })
-          .eq("id", hint.id)
+      updatedHints.map((hint, index) =>
+        supabase.from("hints").update({ position: index }).eq("id", hint.id)
       )
     );
   }
 
-  function openEditModal(hint: Hint) {
+  function openEditModal(hint) {
     setEditingHintId(hint.id);
     setEditForm({
       title: hint.title || "",
@@ -1007,7 +989,7 @@ export default function HintsPage() {
     closeEditModal();
   }
 
-  async function toggleStarred(hint: Hint) {
+  async function toggleStarred(hint) {
     if (!currentUser) return;
 
     const supabase = createClient();
@@ -1030,7 +1012,7 @@ export default function HintsPage() {
     }
   }
 
-  async function togglePrivate(hint: Hint) {
+  async function togglePrivate(hint) {
     if (!currentUser) return;
 
     const supabase = createClient();
@@ -1055,10 +1037,10 @@ export default function HintsPage() {
 
   async function refreshHintFromLink() {
     const trimmed = editForm.url.trim();
-
-    if (!trimmed || editingHintId == null) return;
+    if (!trimmed || !editingHintId) return;
 
     setIsRefreshingEdit(true);
+    setError("");
 
     try {
       const response = await fetch("/api/link-preview", {
@@ -1076,9 +1058,10 @@ export default function HintsPage() {
       }
 
       const numericPrice = extractNumericPrice(data.priceText);
+      const retailer = data.siteName || normaliseRetailer(trimmed);
       const refreshedTitle = shortenTitle(
         data.title || editForm.title || "",
-        data.siteName || normaliseRetailer(trimmed)
+        retailer
       );
 
       setHints((current) =>
@@ -1088,7 +1071,7 @@ export default function HintsPage() {
           return {
             ...hint,
             title: refreshedTitle,
-            retailer: data.siteName || normaliseRetailer(trimmed),
+            retailer,
             priceLabel: formatPriceLabel(numericPrice, data.priceText),
             numericPrice,
             priceBand: getPriceBand(numericPrice),
@@ -1107,7 +1090,7 @@ export default function HintsPage() {
         title: refreshedTitle,
         url: data.url || trimmed,
       }));
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || "Could not refresh this link.");
     } finally {
       setIsRefreshingEdit(false);
@@ -1163,7 +1146,7 @@ export default function HintsPage() {
       });
 
       setIsComposerOpen(true);
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || "Could not extract this link.");
     } finally {
       setIsFetchingDraft(false);
@@ -1174,6 +1157,7 @@ export default function HintsPage() {
     if (!currentUser) return;
 
     setIsSavingDraft(true);
+    setError("");
 
     try {
       const incomingPriceSet = [
@@ -1181,7 +1165,7 @@ export default function HintsPage() {
         ...(draftHint.numericPrice != null ? [draftHint.numericPrice] : []),
       ];
 
-      const newHint: Hint = {
+      const newHint = {
         id: crypto.randomUUID(),
         title: shortenTitle(draftHint.title || "Saved hint", draftHint.retailer),
         retailer: draftHint.retailer || normaliseRetailer(draftHint.url),
@@ -1221,25 +1205,27 @@ export default function HintsPage() {
         source: "user",
       });
 
-      if (insertError) throw new Error(insertError.message || "Could not save this hint.");
+      if (insertError) {
+        throw new Error(insertError.message || "Could not save this hint.");
+      }
 
       setHints(reordered);
       setLink("");
       setIsComposerOpen(false);
 
       await persistPositions(reordered);
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || "Could not save this hint.");
     } finally {
       setIsSavingDraft(false);
     }
   }
 
-  function handleDragStart(event: DragStartEvent) {
+  function handleDragStart(event) {
     setActiveId(String(event.active.id));
   }
 
-  async function handleDragEnd(event: DragEndEvent) {
+  async function handleDragEnd(event) {
     const { active, over } = event;
     setActiveId(null);
 
@@ -1273,10 +1259,30 @@ export default function HintsPage() {
 
           <div className="flex items-center gap-3 sm:gap-4">
             <nav className="flex items-center gap-2 sm:gap-3">
-              <Link href="/feed" className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Feed</Link>
-              <Link href="/hints" className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5">Hints</Link>
-              <Link href="/circles" className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Circles</Link>
-              <Link href="/shop" className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Shop</Link>
+              <Link
+                href="/feed"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Feed
+              </Link>
+              <Link
+                href="/hints"
+                className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5"
+              >
+                Hints
+              </Link>
+              <Link
+                href="/circles"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Circles
+              </Link>
+              <Link
+                href="/shop"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Shop
+              </Link>
             </nav>
 
             <AvatarMenu />
@@ -1291,7 +1297,8 @@ export default function HintsPage() {
           </h1>
 
           <p className="mx-auto mt-4 max-w-[640px] text-[15px] leading-6 text-slate-500 sm:text-[16px]">
-            Save things you’d genuinely love, keep some private, and we can even remind you when it goes on sale.
+            Save things you’d genuinely love, keep some private, and we can even
+            remind you when it goes on sale.
           </p>
 
           <div className="mt-7">
@@ -1324,7 +1331,8 @@ export default function HintsPage() {
               <p className="mt-3 text-sm font-medium text-[#c45c42]">{error}</p>
             ) : (
               <p className="mt-3 text-sm text-slate-500">
-                We’ll pull the image, title, and price first, then you can name it and choose privacy before saving.
+                We’ll pull the image, title, and price first, then you can name it
+                and choose privacy before saving.
               </p>
             )}
           </div>
@@ -1387,7 +1395,12 @@ export default function HintsPage() {
                   </div>
                 </SortableContext>
 
-                <DragOverlay dropAnimation={{ duration: 220, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }}>
+                <DragOverlay
+                  dropAnimation={{
+                    duration: 220,
+                    easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+                  }}
+                >
                   {activeHint ? (
                     <div className={`${getTileClass(activeHint.size)} w-[min(92vw,420px)]`}>
                       <HintCard hint={activeHint} dragging />
@@ -1418,16 +1431,16 @@ export default function HintsPage() {
         onRefreshFromLink={refreshHintFromLink}
         onDelete={deleteHint}
         onTogglePrivate={() => {
-          const hint = visibleHints.find((h) => h.id === editingHintId);
+          const hint = hints.find((h) => h.id === editingHintId);
           if (hint) togglePrivate(hint);
         }}
         onToggleStarred={() => {
-          const hint = visibleHints.find((h) => h.id === editingHintId);
+          const hint = hints.find((h) => h.id === editingHintId);
           if (hint) toggleStarred(hint);
         }}
         isRefreshing={isRefreshingEdit}
         isSaving={isSavingEdit}
-        hint={visibleHints.find((h) => h.id === editingHintId)}
+        hint={hints.find((h) => h.id === editingHintId)}
       />
     </main>
   );
