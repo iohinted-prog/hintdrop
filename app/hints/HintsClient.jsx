@@ -107,6 +107,7 @@ function normaliseRetailer(url) {
 
 function extractNumericPrice(value) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
+
   if (typeof value === "string") {
     const cleaned = value.replace(/,/g, "");
     const match =
@@ -114,18 +115,23 @@ function extractNumericPrice(value) {
       cleaned.match(/(\d+(?:\.\d{1,2})?)/);
 
     if (!match) return null;
+
     const parsed = Number(match[1]);
     return Number.isFinite(parsed) ? parsed : null;
   }
+
   return null;
 }
 
 function normaliseNumericPrice(value) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
+
   if (typeof value === "string") {
     const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : extractNumericPrice(value);
+    if (Number.isFinite(parsed)) return parsed;
+    return extractNumericPrice(value);
   }
+
   return null;
 }
 
@@ -283,6 +289,10 @@ function getPricePill(priceBand) {
 
 function toHintRecord(row, index = 0) {
   const numericPrice = normaliseNumericPrice(row.numeric_price ?? row.price_text);
+  const safeImage =
+    typeof row.image_url === "string" && row.image_url.trim().startsWith("http")
+      ? row.image_url.trim()
+      : "";
 
   return {
     id: row.id,
@@ -291,7 +301,7 @@ function toHintRecord(row, index = 0) {
     priceLabel: row.price_text || formatPriceLabel(numericPrice, null),
     numericPrice,
     priceBand: getPriceBand(numericPrice),
-    image: row.image_url || "",
+    image: safeImage,
     fallbackGradient: buildFallbackGradient(index),
     tags: [],
     starred: Boolean(row.starred),
@@ -348,7 +358,6 @@ function HintComposerModal({
                 alt={draft.title || "Hint preview"}
                 className="aspect-[4/5] h-full w-full object-cover"
                 onError={() => setImageFailed(true)}
-                referrerPolicy="no-referrer"
               />
             ) : (
               <div className="flex aspect-[4/5] items-end bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f] p-4">
@@ -593,7 +602,13 @@ function HintCard({
   onTogglePrivate,
 }) {
   const [imageFailed, setImageFailed] = useState(false);
-  const showImage = Boolean(hint.image) && !imageFailed;
+
+  const imageSrc =
+    typeof hint.image === "string" && hint.image.trim().startsWith("http")
+      ? hint.image.trim()
+      : "";
+
+  const showImage = Boolean(imageSrc) && !imageFailed;
 
   return (
     <article
@@ -605,17 +620,16 @@ function HintCard({
           : "border-[#f0dfd6] bg-white shadow-[0_8px_24px_rgba(176,118,86,0.08)] hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(176,118,86,0.14)]"
       } ${getTileHeightClass(hint.numericPrice)}`}
     >
-      <div className="relative h-full overflow-hidden">
+      <div className="relative h-full overflow-hidden bg-[#f3ebe4]">
         {showImage ? (
           <>
             <img
-              src={hint.image}
+              src={imageSrc}
               alt={hint.title}
               className={`absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03] ${
                 hint.private ? "opacity-80" : ""
               }`}
               loading="lazy"
-              referrerPolicy="no-referrer"
               onError={() => setImageFailed(true)}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.82)] via-[rgba(22,18,16,0.22)] to-[rgba(255,255,255,0.02)]" />
@@ -623,11 +637,16 @@ function HintCard({
         ) : (
           <>
             <div
-              className={`absolute inset-0 bg-gradient-to-br ${hint.fallbackGradient} ${
-                hint.private ? "opacity-80" : ""
+              className={`absolute inset-0 bg-gradient-to-br ${
+                hint.fallbackGradient || "from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]"
               }`}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.65)] via-[rgba(22,18,16,0.18)] to-transparent" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.24),transparent_38%)]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.72)] via-[rgba(22,18,16,0.16)] to-transparent" />
+
+            <div className="absolute left-5 top-5 rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-sm">
+              {hint.retailer || "Saved link"}
+            </div>
           </>
         )}
 
@@ -1211,7 +1230,7 @@ export default function HintsClient() {
   return (
     <main className="min-h-screen bg-[#fff8f4] text-slate-800">
       <header className="border-b border-[#efe0d7] bg-[#fff8f4]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1480px] items-center justify-between px-5 py-4 md:px-8">
+        <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
           <Link href="/feed" className="flex items-center gap-3.5">
             <LogoMark />
             <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
@@ -1232,7 +1251,7 @@ export default function HintsClient() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1480px] px-5 py-10 md:px-8 md:py-12">
+      <div className="mx-auto max-w-[1380px] px-5 py-10 md:px-8 md:py-12">
         <section className="mx-auto max-w-[920px] text-center">
           <h1 className="text-[38px] font-extrabold tracking-[-0.07em] text-[#f19a78] sm:text-[48px] md:text-[58px]">
             Paste a link here...
