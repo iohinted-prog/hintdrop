@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   DndContext,
@@ -25,6 +25,15 @@ import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
 
 const ACTIVE_CURRENCY = "GBP";
+const LOCAL_PREVIEW_TIMEOUT_MS = 5000;
+const REMOTE_PREVIEW_TIMEOUT_MS = 6500;
+
+const PREVIEW_STAGE = {
+  IDLE: "idle",
+  LOCAL: "local",
+  REMOTE: "remote",
+  MANUAL: "manual",
+};
 
 const EMPTY_NEW_HINT_FORM = {
   title: "",
@@ -123,27 +132,6 @@ function LogoMark() {
   );
 }
 
-function BusyOverlay({ open, title, message }) {
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[rgba(33,24,20,0.32)] px-4 backdrop-blur-sm">
-      <div className="w-full max-w-[420px] rounded-[28px] border border-[#efdcd2] bg-white px-6 py-6 shadow-[0_28px_80px_rgba(75,45,30,0.18)]">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#fff1e9]">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#f1c4b2] border-t-[#f36f64]" />
-          </div>
-
-          <div>
-            <p className="text-[15px] font-semibold text-slate-900">{title}</p>
-            <p className="mt-1 text-sm text-slate-500">{message}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function errorToMessage(value) {
   if (!value) return "Something went wrong.";
   if (typeof value === "string") return value;
@@ -193,8 +181,7 @@ function detectCurrency(raw = "") {
   const text = String(raw || "").trim();
   if (!text) return null;
   if (text.includes("£")) return "GBP";
-  if (text.includes("$") && !text.includes("A$") && !text.includes("C$") && !text.includes("NZ$"))
-    return "USD";
+  if (text.includes("$") && !text.includes("A$") && !text.includes("C$") && !text.includes("NZ$")) return "USD";
   if (text.includes("€")) return "EUR";
   if (/\bR\s?\d/i.test(text) || /\bZAR\b/i.test(text)) return "ZAR";
   return null;
@@ -360,7 +347,25 @@ function buildDraftFromPreview(data, rawUrl) {
   };
 }
 
-async function fetchPreview(url) {
+function buildManualDraft(rawUrl = "") {
+  const finalUrl = normaliseInputUrl(rawUrl);
+
+  return {
+    ...EMPTY_NEW_HINT_FORM,
+    title: "",
+    retailer: normaliseRetailer(finalUrl),
+    image: "",
+    uploadedImage: null,
+    url: finalUrl,
+    priceInput: "",
+    private: false,
+    starred: false,
+    needsReview: true,
+    source: "manual",
+  };
+}
+
+async function fetchPreview(url, { signal } = {}) {
   const response = await fetch("/api/link-preview", {
     method: "POST",
     headers: {
@@ -368,6 +373,7 @@ async function fetchPreview(url) {
       Accept: "application/json",
     },
     body: JSON.stringify({ url, currency: ACTIVE_CURRENCY }),
+    signal,
   });
 
   const raw = await response.text();
@@ -390,22 +396,26 @@ async function fetchPreview(url) {
   return data;
 }
 
-function shouldContainImage(hint) {
-  const host = String(hint?.retailer || "").toLowerCase();
-  return [
-    "amazon",
-    "johnlewis",
-    "argos",
-    "currys",
-    "next",
-    "ebay",
-    "etsy",
-    "boots",
-    "very",
-    "ao.com",
-    "hm.com",
-    "zara",
-  ].some((name) => host.includes(name));
+async function fetchPreviewWithTimeout(url, timeoutMs, controller) {
+  let timeoutId = null;
+
+  try {
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        controller.abort();
+        const err = new Error("Preview timed out.");
+        err.code = "PREVIEW_TIMEOUT";
+        reject(err);
+      }, timeoutMs);
+    });
+
+    return await Promise.race([
+      fetchPreview(url, { signal: controller.signal }),
+      timeoutPromise,
+    ]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 function HintFormFields({
@@ -422,8 +432,7 @@ function HintFormFields({
     <div className="space-y-4">
       {showReviewCopy && form.needsReview ? (
         <div className="rounded-[22px] border border-[#f4cdbd] bg-[#fff6f1] p-4 text-sm text-[#9b553d]">
-          We couldn’t fill everything automatically. You can still save this now, and image and
-          price are optional.
+          We couldn’t fill everything automatically. You can still save this now, and image and price are optional.
         </div>
       ) : null}
 
@@ -676,7 +685,6 @@ function HintCard({
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(hint.image) && !imageFailed;
-  const useContain = shouldContainImage(hint);
 
   return (
     <article
@@ -690,33 +698,17 @@ function HintCard({
       <div className="absolute inset-0">
         {showImage ? (
           <>
-            <div className="absolute inset-0 bg-[#f6f1ec]" />
-
             <img
               src={hint.image}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl opacity-30"
+              alt={hint.title}
+              className={`h-full w-full object-cover transition-transform duration-500 ${
+                isDragging ? "scale-[1.02]" : "group-hover:scale-[1.03]"
+              } ${hint.private ? "opacity-80" : ""}`}
               loading="lazy"
               referrerPolicy="no-referrer"
+              onError={() => setImageFailed(true)}
             />
-
-            <div className="absolute inset-[10px] overflow-hidden rounded-[24px] bg-[#f8f4ef]">
-              <img
-                src={hint.image}
-                alt={hint.title}
-                className={`h-full w-full transition-transform duration-500 ${
-                  useContain ? "object-contain p-4" : "object-cover"
-                } ${isDragging ? "scale-[1.01]" : "group-hover:scale-[1.02]"} ${
-                  hint.private ? "opacity-84" : ""
-                }`}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                onError={() => setImageFailed(true)}
-              />
-            </div>
-
-            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.72)] via-[rgba(22,18,16,0.12)] to-[rgba(255,255,255,0.01)]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.82)] via-[rgba(22,18,16,0.20)] to-[rgba(255,255,255,0.02)]" />
           </>
         ) : (
           <>
@@ -734,7 +726,7 @@ function HintCard({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="flex cursor-grab items-center gap-1 rounded-full border border-white/60 bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm active:cursor-grabbing"
+            className="flex cursor-grab active:cursor-grabbing items-center gap-1 rounded-full border border-white/60 bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm"
             {...dragHandleAttributes}
             {...dragHandleListeners}
           >
@@ -890,11 +882,11 @@ export default function HintsClient() {
   const [pendingHint, setPendingHint] = useState(null);
   const [newHintForm, setNewHintForm] = useState(EMPTY_NEW_HINT_FORM);
 
-  const [busyState, setBusyState] = useState({
-    open: false,
-    title: "",
-    message: "",
-  });
+  const [previewStage, setPreviewStage] = useState(PREVIEW_STAGE.IDLE);
+  const [previewMessage, setPreviewMessage] = useState("");
+
+  const localPreviewControllerRef = useRef(null);
+  const remotePreviewControllerRef = useRef(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -904,14 +896,6 @@ export default function HintsClient() {
   const measuring = {
     droppable: { strategy: MeasuringStrategy.Always },
   };
-
-  function openBusy(title, message) {
-    setBusyState({ open: true, title, message });
-  }
-
-  function closeBusy() {
-    setBusyState({ open: false, title: "", message: "" });
-  }
 
   useEffect(() => {
     const supabase = createClient();
@@ -976,6 +960,13 @@ export default function HintsClient() {
     loadHints();
   }, [currentUser]);
 
+  useEffect(() => {
+    return () => {
+      localPreviewControllerRef.current?.abort?.();
+      remotePreviewControllerRef.current?.abort?.();
+    };
+  }, []);
+
   const visibleHints = hints.length > 0 ? hints : demoHints;
   const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
   const columns = useMemo(() => splitIntoColumns(visibleHints, 3), [visibleHints]);
@@ -983,7 +974,6 @@ export default function HintsClient() {
   async function persistOrder(nextHints) {
     if (!currentUser) return;
     const supabase = createClient();
-
     await Promise.all(
       nextHints.map((hint, index) => supabase.from("hints").update({ position: index }).eq("id", hint.id))
     );
@@ -1010,6 +1000,8 @@ export default function HintsClient() {
     setEditForm(EMPTY_EDIT_FORM);
     setIsRefreshingEdit(false);
     setIsSavingEdit(false);
+    setPreviewStage(PREVIEW_STAGE.IDLE);
+    setPreviewMessage("");
   }
 
   function closeAddModal() {
@@ -1017,6 +1009,55 @@ export default function HintsClient() {
     setPendingHint(null);
     setIsSubmittingNewHint(false);
     setNewHintForm(EMPTY_NEW_HINT_FORM);
+    setPreviewStage(PREVIEW_STAGE.IDLE);
+    setPreviewMessage("");
+  }
+
+  async function runStagedPreview(rawUrl) {
+    const url = normaliseInputUrl(rawUrl);
+
+    localPreviewControllerRef.current?.abort?.();
+    remotePreviewControllerRef.current?.abort?.();
+
+    const localController = new AbortController();
+    const remoteController = new AbortController();
+
+    localPreviewControllerRef.current = localController;
+    remotePreviewControllerRef.current = remoteController;
+
+    setPreviewStage(PREVIEW_STAGE.LOCAL);
+    setPreviewMessage("Looking for title, image, and price from the page itself...");
+
+    try {
+      const localData = await fetchPreviewWithTimeout(
+        url,
+        LOCAL_PREVIEW_TIMEOUT_MS,
+        localController
+      );
+
+      setPreviewStage(PREVIEW_STAGE.IDLE);
+      setPreviewMessage("");
+      return localData;
+    } catch (localError) {
+      setPreviewStage(PREVIEW_STAGE.REMOTE);
+      setPreviewMessage("This is taking a little longer than expected. Trying a deeper fetch now...");
+
+      try {
+        const remoteData = await fetchPreviewWithTimeout(
+          url,
+          REMOTE_PREVIEW_TIMEOUT_MS,
+          remoteController
+        );
+
+        setPreviewStage(PREVIEW_STAGE.IDLE);
+        setPreviewMessage("");
+        return remoteData;
+      } catch {
+        setPreviewStage(PREVIEW_STAGE.MANUAL);
+        setPreviewMessage("");
+        throw localError;
+      }
+    }
   }
 
   async function saveEditChanges() {
@@ -1030,8 +1071,6 @@ export default function HintsClient() {
     const finalImage = editForm.uploadedImage || editForm.image || "";
 
     setIsSavingEdit(true);
-    setError("");
-    openBusy("Saving changes", "Updating this hint...");
 
     const supabase = createClient();
     const { error } = await supabase
@@ -1050,7 +1089,6 @@ export default function HintsClient() {
     if (error) {
       setError(errorToMessage(error));
       setIsSavingEdit(false);
-      closeBusy();
       return;
     }
 
@@ -1073,7 +1111,6 @@ export default function HintsClient() {
     );
 
     setIsSavingEdit(false);
-    closeBusy();
     closeEditModal();
   }
 
@@ -1081,12 +1118,10 @@ export default function HintsClient() {
     if (!currentUser) return;
     const supabase = createClient();
     const { error } = await supabase.from("hints").delete().eq("id", editingHintId);
-
     if (error) {
       setError(errorToMessage(error));
       return;
     }
-
     setHints((current) => current.filter((hint) => hint.id !== editingHintId));
     closeEditModal();
   }
@@ -1099,7 +1134,6 @@ export default function HintsClient() {
     setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, starred: newStarred } : h)));
 
     const { error } = await supabase.from("hints").update({ starred: newStarred }).eq("id", hint.id);
-
     if (error) {
       setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, starred: hint.starred } : h)));
       setError(errorToMessage(error));
@@ -1114,7 +1148,6 @@ export default function HintsClient() {
     setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, private: newPrivate } : h)));
 
     const { error } = await supabase.from("hints").update({ is_private: newPrivate }).eq("id", hint.id);
-
     if (error) {
       setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, private: hint.private } : h)));
       setError(errorToMessage(error));
@@ -1123,7 +1156,6 @@ export default function HintsClient() {
 
   async function refreshHintFromLink() {
     const trimmed = editForm.url.trim();
-
     if (!trimmed || editingHintId == null) return;
 
     if (!isValidHttpUrl(trimmed)) {
@@ -1133,10 +1165,9 @@ export default function HintsClient() {
 
     setIsRefreshingEdit(true);
     setError("");
-    openBusy("Refreshing from link", "Checking the latest title, image, and price...");
 
     try {
-      const data = await fetchPreview(normaliseInputUrl(trimmed));
+      const data = await runStagedPreview(trimmed);
       const draft = buildDraftFromPreview(data, trimmed);
 
       setHints((current) =>
@@ -1165,11 +1196,12 @@ export default function HintsClient() {
         image: draft.image || current.image,
         priceInput: draft.priceInput,
       }));
-    } catch (err) {
-      setError(errorToMessage(err));
+    } catch {
+      setError("We tried, but couldn’t refresh this right now. You can update the details manually here.");
     } finally {
       setIsRefreshingEdit(false);
-      closeBusy();
+      setPreviewStage(PREVIEW_STAGE.IDLE);
+      setPreviewMessage("");
     }
   }
 
@@ -1180,7 +1212,6 @@ export default function HintsClient() {
     }
 
     const trimmed = link.trim();
-
     if (!trimmed) {
       setError("Paste a link first.");
       return;
@@ -1193,21 +1224,25 @@ export default function HintsClient() {
 
     setIsAdding(true);
     setError("");
-    openBusy("Fetching preview", "Pulling the title, image, and price from the link...");
 
     try {
-      const data = await fetchPreview(normaliseInputUrl(trimmed));
+      const data = await runStagedPreview(trimmed);
       const draft = buildDraftFromPreview(data, trimmed);
 
       setPendingHint(draft);
       setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...draft });
       setIsAddModalOpen(true);
       setLink("");
-    } catch (err) {
-      setError(errorToMessage(err));
+    } catch {
+      const manualDraft = buildManualDraft(trimmed);
+      setPendingHint(manualDraft);
+      setNewHintForm(manualDraft);
+      setIsAddModalOpen(true);
+      setError("We tried, but we couldn’t fetch the info you need right now. You can enter it manually here.");
     } finally {
       setIsAdding(false);
-      closeBusy();
+      setPreviewStage(PREVIEW_STAGE.IDLE);
+      setPreviewMessage("");
     }
   }
 
@@ -1216,7 +1251,6 @@ export default function HintsClient() {
 
     setIsSubmittingNewHint(true);
     setError("");
-    openBusy("Saving hint", "Adding this card to your board...");
 
     try {
       const title = newHintForm.title.trim() || pendingHint.title || "Saved hint";
@@ -1267,12 +1301,7 @@ export default function HintsClient() {
     } catch (err) {
       setError(errorToMessage(err));
       setIsSubmittingNewHint(false);
-      closeBusy();
-      return;
     }
-
-    setIsSubmittingNewHint(false);
-    closeBusy();
   }
 
   function handleDragStart(event) {
@@ -1282,20 +1311,17 @@ export default function HintsClient() {
   async function handleDragEnd(event) {
     const { active, over } = event;
     setActiveId(null);
-
     if (!over || active.id === over.id || hints.length === 0) return;
 
     const nextColumns = splitIntoColumns(hints, 3);
     const fromColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === active.id));
     const toColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === over.id));
-
     if (fromColumnIndex === -1 || toColumnIndex === -1) return;
 
     const fromItems = [...nextColumns[fromColumnIndex]];
     const toItems = fromColumnIndex === toColumnIndex ? fromItems : [...nextColumns[toColumnIndex]];
     const oldIndex = fromItems.findIndex((item) => item.id === active.id);
     const newIndex = toItems.findIndex((item) => item.id === over.id);
-
     if (oldIndex === -1 || newIndex === -1) return;
 
     if (fromColumnIndex === toColumnIndex) {
@@ -1331,30 +1357,10 @@ export default function HintsClient() {
 
           <div className="flex items-center gap-3 sm:gap-4">
             <nav className="flex items-center gap-2 sm:gap-3">
-              <Link
-                href="/feed"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
-              >
-                Feed
-              </Link>
-              <Link
-                href="/hints"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#3c4d39] bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5"
-              >
-                Hints
-              </Link>
-              <Link
-                href="/circles"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
-              >
-                Circles
-              </Link>
-              <Link
-                href="/shop"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
-              >
-                Shop
-              </Link>
+              <Link href="/feed" className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Feed</Link>
+              <Link href="/hints" className="inline-flex h-11 items-center justify-center rounded-full border border-[#3c4d39] bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5">Hints</Link>
+              <Link href="/circles" className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Circles</Link>
+              <Link href="/shop" className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Shop</Link>
             </nav>
             <AvatarMenu />
           </div>
@@ -1389,23 +1395,33 @@ export default function HintsClient() {
                 disabled={isAdding || isLoading}
                 className="inline-flex h-[72px] shrink-0 items-center justify-center rounded-full border border-[#ee8d69] bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-8 text-sm font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[170px]"
               >
-                {isAdding ? "Checking..." : isLoading ? "Loading..." : "Add hint"}
+                {isAdding
+                  ? previewStage === PREVIEW_STAGE.REMOTE
+                    ? "Trying harder..."
+                    : "Checking..."
+                  : isLoading
+                    ? "Loading..."
+                    : "Add hint"}
               </button>
             </div>
 
             {error ? (
               <p className="mt-3 text-sm font-medium text-[#c45c42]">{error}</p>
+            ) : previewStage === PREVIEW_STAGE.LOCAL ? (
+              <p className="mt-3 text-sm font-medium text-slate-500">{previewMessage}</p>
+            ) : previewStage === PREVIEW_STAGE.REMOTE ? (
+              <p className="mt-3 text-sm font-medium text-[#c4704d]">{previewMessage}</p>
             ) : (
               <div className="mt-3 space-y-1 text-sm text-slate-500">
-                <p>We’ll pull the title, image, and price, then let you fix anything before saving.</p>
-                <p>You can also save private hints, and both image and price are optional.</p>
+                <p>We’ll try the page first, then a deeper fetch only if needed.</p>
+                <p>If it still can’t load, you can enter the details manually and save anyway.</p>
               </div>
             )}
           </div>
         </section>
 
         <section className="mt-12">
-          <div className="relative rounded-[36px] border border-[#efe0d7] bg-[#fffdfb] p-3 shadow-[0_12px_32px_rgba(176,118,86,0.08)] sm:p-5">
+          <div className="relative rounded-[36px] border border-[#efe0d7] bg-[#fffdfb] p-3 sm:p-5 shadow-[0_12px_32px_rgba(176,118,86,0.08)]">
             <div
               className="pointer-events-none absolute inset-0 rounded-[36px] opacity-70"
               style={{
@@ -1480,13 +1496,7 @@ export default function HintsClient() {
               <div className="columns-1 gap-6 md:columns-3">
                 {demoHints.map((hint) => (
                   <div key={hint.id} className="mb-6 break-inside-avoid">
-                    <HintCard
-                      hint={hint}
-                      onEdit={() => {}}
-                      onToggleStarred={() => {}}
-                      onTogglePrivate={() => {}}
-                      isDragging={false}
-                    />
+                    <HintCard hint={hint} onEdit={() => {}} onToggleStarred={() => {}} onTogglePrivate={() => {}} isDragging={false} />
                   </div>
                 ))}
               </div>
@@ -1516,8 +1526,6 @@ export default function HintsClient() {
         isSaving={isSavingEdit}
         hint={editingHint}
       />
-
-      <BusyOverlay open={busyState.open} title={busyState.title} message={busyState.message} />
     </main>
   );
 }
