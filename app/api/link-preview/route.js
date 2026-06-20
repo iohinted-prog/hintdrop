@@ -26,6 +26,9 @@ const SECONDARY_HEADERS = {
   Pragma: "no-cache",
 };
 
+const PRICE_REGEX =
+  /(?:A\$|NZ\$|C\$|£|\$|€|R)\s?\d[\d,]*(?:\.\d{1,2})?|\d[\d,]*(?:\.\d{1,2})?\s?(?:GBP|USD|EUR|AUD|NZD|CAD|ZAR)/gi;
+
 function decodeHtml(value = "") {
   return String(value)
     .replace(/&amp;/gi, "&")
@@ -143,7 +146,7 @@ function cleanAmazonTitle(title = "") {
     .trim();
 }
 
-function extractTitle($, canonicalUrl) {
+function extractTitle($, canonicalUrl, bodyText = "") {
   const hostname = getHostnameLabel(canonicalUrl);
 
   let title =
@@ -154,8 +157,23 @@ function extractTitle($, canonicalUrl) {
       'meta[name="title"]',
     ]) ||
     getText($, ["h1"]) ||
-    getText($, ["title"]) ||
-    hostname;
+    getText($, ["title"]);
+
+  if (!title && bodyText) {
+    const firstLines = bodyText
+      .split(/\n+/)
+      .map((line) => cleanText(line))
+      .filter(Boolean)
+      .slice(0, 12);
+
+    title =
+      firstLines.find(
+        (line) =>
+          line.length >= 12 &&
+          line.length <= 220 &&
+          !/save|delivery|returns|finance|representative|apr|credit/i.test(line)
+      ) || "";
+  }
 
   if (hostname.includes("amazon.")) {
     title = cleanAmazonTitle(title);
@@ -502,10 +520,10 @@ function scorePriceCandidate(text = "", context = "") {
   if (!text) return -100;
 
   if (/£\s?\d|€\s?\d|\$\s?\d|a\$\s?\d|nz\$\s?\d|c\$\s?\d|\br\s?\d/i.test(text)) score += 40;
-  if (/sale|now|price|our price|current price|buy|add to basket|add to bag|add to cart/i.test(combined)) score += 18;
-  if (/delivery|returns|warranty|support plan|installation|recycling/i.test(combined)) score -= 10;
-  if (/finance|monthly|per month|apr|credit/.test(combined)) score -= 8;
-  if (/was|save|rrp/.test(combined)) score -= 4;
+  if (/sale|now|price|our price|current price|buy|basket|bag|cart|found it cheaper/i.test(combined)) score += 18;
+  if (/delivery|returns|warranty|support plan|installation|recycling/.test(combined)) score -= 10;
+  if (/finance|monthly|per month|apr|credit|representative example|interest rate/.test(combined)) score -= 8;
+  if (/was|save|rrp/.test(combined)) score -= 3;
   if (/item no|product code|sku|model/.test(combined)) score -= 6;
 
   const numeric = extractNumericPrice(text);
@@ -517,28 +535,29 @@ function scorePriceCandidate(text = "", context = "") {
   return score;
 }
 
-function extractGenericTextPrice($) {
+function extractGenericTextPrice($, bodyText = "") {
   const candidates = [];
   const seen = new Set();
 
-  const addCandidate = (value = "", context = "") => {
-    const cleanedValue = cleanText(value);
-    if (!cleanedValue) return;
+  const addCandidate = (rawText = "", context = "") => {
+    const text = cleanText(rawText);
+    if (!text) return;
 
-    const match = cleanedValue.match(/(?:A\$|NZ\$|C\$|£|\$|€|R)\s?\d[\d,]*(?:\.\d{1,2})?/i);
-    if (!match?.[0]) return;
+    const matches = text.match(PRICE_REGEX) || [];
+    for (const match of matches) {
+      const value = cleanText(match);
+      if (!value) continue;
 
-    const priceText = match[0].trim();
-    const key = `${priceText}__${context}`;
-    if (seen.has(key)) return;
-    seen.add(key);
+      const key = `${value}__${context}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
 
-    candidates.push({
-      value: priceText,
-      score: scorePriceCandidate(priceText, context),
-      context: cleanText(context).slice(0, 180),
-      source: "generic-text",
-    });
+      candidates.push({
+        value,
+        score: scorePriceCandidate(value, context),
+        context: cleanText(context).slice(0, 240),
+      });
+    }
   };
 
   const selectors = [
@@ -566,9 +585,21 @@ function extractGenericTextPrice($) {
           $(el).closest("section, article, div").first().text() || "",
         ].join(" ")
       );
-
       addCandidate(text, context);
     });
+  }
+
+  if (bodyText) {
+    const lines = bodyText
+      .split(/\n+/)
+      .map((line) => cleanText(line))
+      .filter(Boolean);
+
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i];
+      const context = [lines[i - 1] || "", line, lines[i + 1] || "", lines[i + 2] || ""].join(" ");
+      addCandidate(line, context);
+    }
   }
 
   candidates.sort((a, b) => b.score - a.score);
@@ -583,27 +614,30 @@ function improveAmazonImage(url = "") {
     .replace(/\._SY\d+_\./i, "._SL1500_.");
 }
 
-function looksLikeBadImage(url = "") {
-  return /logo|sprite|icon|favicon|avatar|placeholder|spacer|loading|1x1|blank|transparent/i.test(
-    url
+function looksLikeBadImage(url = "", alt = "") {
+  const text = `${url} ${alt}`.toLowerCase();
+  return /logo|sprite|icon|favicon|avatar|placeholder|spacer|loading|1x1|blank|transparent|trustpilot|star-rating/i.test(
+    text
   );
 }
 
-function scoreImage(url = "", hostname = "", source = "") {
+function scoreImage(url = "", hostname = "", source = "", alt = "") {
   let score = 0;
   const lower = url.toLowerCase();
+  const altLower = String(alt || "").toLowerCase();
 
   if (!url) return -100;
-  if (looksLikeBadImage(url)) score -= 90;
-  if (/\b(product|products|prod)\b/i.test(lower)) score += 20;
+  if (looksLikeBadImage(url, alt)) score -= 90;
+  if (/\b(product|products|prod|pdp)\b/i.test(lower)) score += 20;
   if (/\bhero|primary|main|large\b/i.test(lower)) score += 16;
   if (/\.(jpg|jpeg|png|webp|avif)(\?|$)/i.test(lower)) score += 12;
   if (hostname && lower.includes(hostname.replace(/^www\./, ""))) score += 6;
   if (source === "jsonld") score += 25;
   if (source === "og") score += 18;
   if (source === "dom") score += 8;
-  if (/1500|1200|1024|960|800/.test(lower)) score += 8;
+  if (/1500|1200|1024|960|800|640/.test(lower)) score += 8;
   if (/data:image\//.test(lower)) score -= 100;
+  if (/product|tv|samsung|camera|dress|shoe|bag|watch|sofa|lamp/i.test(altLower)) score += 10;
 
   return score;
 }
@@ -626,7 +660,7 @@ function buildImageCandidates($, baseUrl, canonicalUrl, jsonLdImages = []) {
   const hostname = getHostnameLabel(canonicalUrl);
   const candidates = [];
 
-  const addCandidate = (url, source) => {
+  const addCandidate = (url, source, alt = "") => {
     const absolute = makeAbsoluteUrl(url, baseUrl);
     if (!absolute) return;
 
@@ -635,7 +669,8 @@ function buildImageCandidates($, baseUrl, canonicalUrl, jsonLdImages = []) {
     candidates.push({
       url: improved,
       source,
-      score: scoreImage(improved, hostname, source),
+      alt: cleanText(alt),
+      score: scoreImage(improved, hostname, source, alt),
     });
   };
 
@@ -659,6 +694,7 @@ function buildImageCandidates($, baseUrl, canonicalUrl, jsonLdImages = []) {
   $("img").each((_, element) => {
     const srcset = $(element).attr("srcset");
     const firstSrcset = srcset ? srcset.split(",")[0].trim().split(" ")[0] : "";
+    const alt = $(element).attr("alt") || "";
 
     const attrs = [
       $(element).attr("src"),
@@ -666,6 +702,8 @@ function buildImageCandidates($, baseUrl, canonicalUrl, jsonLdImages = []) {
       $(element).attr("data-old-hires"),
       $(element).attr("data-lazy-src"),
       $(element).attr("data-image"),
+      $(element).attr("data-zoom-image"),
+      $(element).attr("data-test-image"),
       firstSrcset,
     ].filter(Boolean);
 
@@ -673,10 +711,10 @@ function buildImageCandidates($, baseUrl, canonicalUrl, jsonLdImages = []) {
       if (String(src).startsWith("{")) {
         try {
           const parsed = JSON.parse(String(src));
-          Object.keys(parsed).forEach((imageUrl) => addCandidate(imageUrl, "dom"));
+          Object.keys(parsed).forEach((imageUrl) => addCandidate(imageUrl, "dom", alt));
         } catch {}
       } else {
-        addCandidate(String(src), "dom");
+        addCandidate(String(src), "dom", alt);
       }
     }
   });
@@ -697,12 +735,7 @@ function extractSiteName($, canonicalUrl) {
   );
 }
 
-function choosePrice({
-  preferredCurrency,
-  jsonLdPrice,
-  metaPrice,
-  textPrice,
-}) {
+function choosePrice({ preferredCurrency, jsonLdPrice, metaPrice, textPrice }) {
   const candidates = [
     { value: jsonLdPrice, source: "jsonld" },
     { value: metaPrice, source: "meta" },
@@ -712,6 +745,7 @@ function choosePrice({
     .map((item) => ({
       ...item,
       currency: detectCurrency(item.value),
+      numeric: extractNumericPrice(item.value),
     }));
 
   if (!candidates.length) {
@@ -724,16 +758,27 @@ function choosePrice({
     };
   }
 
-  const preferredMatch = preferredCurrency
-    ? candidates.find((item) => item.currency === preferredCurrency)
-    : null;
+  const filteredByCurrency = preferredCurrency
+    ? candidates.filter((item) => item.currency === preferredCurrency)
+    : candidates;
 
-  const winner = preferredMatch || candidates[0];
+  const pool = filteredByCurrency.length ? filteredByCurrency : candidates;
+
+  pool.sort((a, b) => {
+    const aHasDecimals = /\.\d{2}\b/.test(a.value) ? 1 : 0;
+    const bHasDecimals = /\.\d{2}\b/.test(b.value) ? 1 : 0;
+    if (bHasDecimals !== aHasDecimals) return bHasDecimals - aHasDecimals;
+    return 0;
+  });
+
+  const winner = pool[0];
 
   return {
     priceText: winner.value,
     detectedCurrency: winner.currency,
-    matchedPreferredCurrency: Boolean(preferredMatch),
+    matchedPreferredCurrency: Boolean(
+      preferredCurrency && winner.currency === preferredCurrency
+    ),
     source: winner.source,
     candidates,
   };
@@ -766,7 +811,7 @@ function buildFallbackPreview(url, reason = "preview_unavailable") {
   };
 }
 
-async function fetchWithTimeout(inputUrl, headers, timeoutMs = 10000) {
+async function fetchWithTimeout(inputUrl, headers, timeoutMs = 12000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -855,11 +900,14 @@ async function fetchPreview(inputUrl, preferredCurrency = "GBP") {
     canonicalUrl = stripAmazonParams(canonicalUrl);
   }
 
+  const rawBodyText = $("body").text() || "";
+  const bodyText = cleanText(rawBodyText);
+
   const jsonLd = extractJsonLdProductData($, finalUrl);
 
   const title =
     jsonLd.title ||
-    extractTitle($, canonicalUrl) ||
+    extractTitle($, canonicalUrl, rawBodyText) ||
     getHostnameLabel(canonicalUrl);
 
   const description = extractDescription($);
@@ -867,7 +915,7 @@ async function fetchPreview(inputUrl, preferredCurrency = "GBP") {
 
   const jsonLdPrice = jsonLd.priceText || "";
   const metaPrice = extractPriceFromMeta($) || "";
-  const textPrice = extractGenericTextPrice($) || "";
+  const textPrice = extractGenericTextPrice($, rawBodyText) || "";
 
   const chosenPrice = choosePrice({
     preferredCurrency,
@@ -912,9 +960,11 @@ async function fetchPreview(inputUrl, preferredCurrency = "GBP") {
       canonicalUrl,
       hostname: getHostnameLabel(canonicalUrl),
       preferredCurrency,
-      matchedPreferredCurrency: chosenPrice.matchedPreferredCurrency,
       selectedPriceSource: chosenPrice.source,
       selectedPriceText: chosenPrice.priceText || "",
+      matchedPreferredCurrency: chosenPrice.matchedPreferredCurrency,
+      jsonLdTitle: jsonLd.title || "",
+      extractedTitle: title || "",
       jsonLdPrice,
       metaPrice,
       textPrice,
@@ -922,7 +972,7 @@ async function fetchPreview(inputUrl, preferredCurrency = "GBP") {
       imageCandidateCount: imageCandidates.length,
       topImageCandidate: imageCandidates[0] || null,
       hasJsonLdImage: jsonLd.images.length > 0,
-      hasPriceFromJsonLd: Boolean(jsonLd.priceText),
+      bodySnippet: bodyText.slice(0, 2500),
       fetchDebug,
     },
   };
