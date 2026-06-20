@@ -2,25 +2,25 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { createClient } from "../../lib/supabase/client";
-import AvatarMenu from "../components/AvatarMenu";
 import {
+  closestCenter,
   DndContext,
   DragOverlay,
-  PointerSensor,
   KeyboardSensor,
-  closestCenter,
+  PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  rectSortingStrategy,
-  useSortable,
   arrayMove,
+  rectSortingStrategy,
   sortableKeyboardCoordinates,
+  useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { createClient } from "../../lib/supabase/client";
+import AvatarMenu from "../components/AvatarMenu";
 
 const demoHints = [
   {
@@ -33,9 +33,10 @@ const demoHints = [
     image:
       "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#d9dfcf] via-[#b9c7aa] to-[#90a27e]",
+    tags: ["Travel"],
     starred: true,
     private: false,
-    size: "hero",
+    size: "large",
     url: "https://www.airbnb.co.uk/",
     position: 0,
   },
@@ -49,9 +50,10 @@ const demoHints = [
     image:
       "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]",
+    tags: ["Tech"],
     starred: true,
     private: false,
-    size: "feature",
+    size: "large",
     url: "https://www.amazon.co.uk/",
     position: 1,
   },
@@ -65,9 +67,10 @@ const demoHints = [
     image:
       "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#f3d5cc] via-[#e9b39f] to-[#d98c76]",
+    tags: ["Experience"],
     starred: false,
     private: false,
-    size: "portrait",
+    size: "medium",
     url: "https://classbento.co.uk/",
     position: 2,
   },
@@ -81,9 +84,10 @@ const demoHints = [
     image:
       "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
     fallbackGradient: "from-[#efe5de] via-[#e5d2c8] to-[#d1b2a4]",
+    tags: ["Home"],
     starred: false,
     private: true,
-    size: "square",
+    size: "small",
     url: "https://www.johnlewis.com/",
     position: 3,
   },
@@ -211,12 +215,6 @@ function shortenTitle(title = "", retailer = "") {
     "watch",
     "sofa",
     "blanket",
-    "coat",
-    "boots",
-    "sandals",
-    "lamp",
-    "vase",
-    "frame",
     "cabin",
   ];
 
@@ -245,37 +243,40 @@ function shortenTitle(title = "", retailer = "") {
     categoryWords.includes(word.toLowerCase())
   );
 
+  let finalWords;
   if (foundCategory && brand.toLowerCase() !== foundCategory.toLowerCase()) {
-    return [brand, foundCategory]
-      .join(" ")
-      .trim()
-      .replace(/^./, (m) => m.toUpperCase());
+    finalWords = [brand, foundCategory];
+  } else {
+    finalWords = words.slice(0, Math.min(2, words.length));
   }
 
-  return words
-    .slice(0, Math.min(words.length >= 2 ? 2 : 1, 2))
-    .join(" ")
-    .trim()
-    .replace(/^./, (m) => m.toUpperCase());
+  const compact = finalWords.join(" ").trim();
+  return compact.charAt(0).toUpperCase() + compact.slice(1);
 }
 
-function getBoardSize(price, index, allPrices = []) {
-  if (price == null) return index % 5 === 0 ? "portrait" : "square";
+function getRelativePriceSize(price, allPrices = []) {
+  const valid = allPrices
+    .filter((value) => typeof value === "number" && Number.isFinite(value))
+    .sort((a, b) => a - b);
 
-  const sorted = [...allPrices].sort((a, b) => a - b);
-  const highCut = sorted[Math.max(0, Math.floor(sorted.length * 0.75))] ?? price;
-  const midCut = sorted[Math.max(0, Math.floor(sorted.length * 0.45))] ?? price;
+  if (price == null) return "medium";
+  if (valid.length < 3) return "medium";
 
-  if (price >= highCut && price >= 180) return index % 3 === 0 ? "hero" : "feature";
-  if (price >= midCut && price >= 75) return "portrait";
-  return "square";
+  const lowIndex = Math.floor((valid.length - 1) * 0.33);
+  const highIndex = Math.floor((valid.length - 1) * 0.66);
+
+  const lowCut = valid[lowIndex];
+  const highCut = valid[highIndex];
+
+  if (price <= lowCut) return "small";
+  if (price >= highCut) return "large";
+  return "medium";
 }
 
-function getTileClass(size) {
-  if (size === "hero") return "md:col-span-6 md:row-span-12";
-  if (size === "feature") return "md:col-span-4 md:row-span-10";
-  if (size === "portrait") return "md:col-span-4 md:row-span-8";
-  return "md:col-span-4 md:row-span-6";
+function getTileHeightClass(size) {
+  if (size === "large") return "min-h-[500px]";
+  if (size === "medium") return "min-h-[410px]";
+  return "min-h-[330px]";
 }
 
 function getPricePill(priceBand) {
@@ -388,9 +389,7 @@ function HintComposerModal({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                   Price
                 </p>
-                <p className="mt-1 text-sm text-slate-700">
-                  {draft.priceLabel}
-                </p>
+                <p className="mt-1 text-sm text-slate-700">{draft.priceLabel}</p>
               </div>
             </div>
 
@@ -486,7 +485,9 @@ function EditHintModal({
               id="edit-link"
               type="url"
               value={editForm.url}
-              onChange={(e) => setEditForm((current) => ({ ...current, url: e.target.value }))}
+              onChange={(e) =>
+                setEditForm((current) => ({ ...current, url: e.target.value }))
+              }
               className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-white px-5 text-[15px] text-slate-700 outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
             />
           </div>
@@ -499,7 +500,9 @@ function EditHintModal({
               id="edit-title"
               type="text"
               value={editForm.title}
-              onChange={(e) => setEditForm((current) => ({ ...current, title: e.target.value }))}
+              onChange={(e) =>
+                setEditForm((current) => ({ ...current, title: e.target.value }))
+              }
               className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-white px-5 text-[15px] text-slate-700 outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
             />
           </div>
@@ -583,128 +586,152 @@ function HintCard({
 
   return (
     <article
-      className={`group relative flex h-full min-h-[320px] flex-col overflow-hidden rounded-[32px] border transition-all duration-300 ${
+      className={`group relative flex h-full flex-col overflow-hidden rounded-[32px] border transition-all duration-300 ${
         dragging
-          ? "rotate-[1.5deg] border-[#f0cdbf] bg-white shadow-[0_30px_80px_rgba(115,70,45,0.22)]"
+          ? "rotate-[1.2deg] border-[#f0cdbf] bg-white shadow-[0_30px_80px_rgba(115,70,45,0.22)]"
           : hint.private
           ? "border-white/50 bg-white/60 shadow-[0_12px_28px_rgba(176,118,86,0.08)] backdrop-blur-sm hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(176,118,86,0.14)]"
           : "border-[#f0dfd6] bg-white shadow-[0_8px_24px_rgba(176,118,86,0.08)] hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(176,118,86,0.14)]"
-      }`}
+      } ${getTileHeightClass(hint.size)}`}
     >
-      <div className="relative flex h-full flex-col">
-        <div className="relative min-h-[66%] flex-1 overflow-hidden">
-          {showImage ? (
-            <>
-              <img
-                src={hint.image}
-                alt={hint.title}
-                className={`absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03] ${
-                  hint.private ? "opacity-80" : ""
-                }`}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                onError={() => setImageFailed(true)}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[rgba(28,22,18,0.42)] via-[rgba(28,22,18,0.05)] to-[rgba(255,255,255,0.02)]" />
-            </>
-          ) : (
+      <div className="relative h-full overflow-hidden">
+        {showImage ? (
+          <>
+            <img
+              src={hint.image}
+              alt={hint.title}
+              className={`absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03] ${
+                hint.private ? "opacity-82" : ""
+              }`}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={() => setImageFailed(true)}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.82)] via-[rgba(22,18,16,0.24)] to-[rgba(255,255,255,0.02)]" />
+          </>
+        ) : (
+          <>
             <div
               className={`absolute inset-0 bg-gradient-to-br ${hint.fallbackGradient} ${
-                hint.private ? "opacity-80" : ""
+                hint.private ? "opacity-82" : ""
               }`}
             />
-          )}
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.62)] via-[rgba(22,18,16,0.16)] to-transparent" />
+          </>
+        )}
 
-          <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm">
-                ⋮⋮ Drag
+        <div className="absolute left-4 right-4 top-4 z-20 flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="cursor-grab active:cursor-grabbing rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm">
+              ⋮⋮ Drag
+            </div>
+
+            {hint.starred && (
+              <div className="rounded-full bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
+                Top pick
               </div>
+            )}
 
-              {hint.starred && (
-                <div className="rounded-full bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
-                  Top pick
-                </div>
-              )}
+            {hint.private && (
+              <div className="rounded-full bg-white/78 px-3 py-1 text-[11px] font-semibold text-slate-600 backdrop-blur-sm">
+                Private
+              </div>
+            )}
+          </div>
 
-              {hint.private && (
-                <div className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-600 backdrop-blur-sm">
-                  Private
-                </div>
-              )}
-            </div>
+          <div className="flex items-center gap-2">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEdit(hint);
+                }}
+                className="relative z-30 flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/75 text-[15px] text-slate-500 backdrop-blur-sm hover:text-slate-800"
+                aria-label="Edit hint"
+              >
+                ✎
+              </button>
+            )}
 
-            <div className="flex items-center gap-2">
-              {onEdit && (
-                <button
-                  type="button"
-                  onClick={() => onEdit(hint)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/75 text-[15px] text-slate-500 backdrop-blur-sm hover:text-slate-800"
-                  aria-label="Edit hint"
-                >
-                  ✎
-                </button>
-              )}
-
-              {onToggleStarred && (
-                <button
-                  onClick={() => onToggleStarred(hint)}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/75 text-[16px] backdrop-blur-sm ${
-                    hint.starred ? "text-[#f36f64]" : "text-slate-400 hover:text-[#f36f64]"
-                  }`}
-                  aria-label={hint.starred ? "Unhighlight hint" : "Highlight hint"}
-                  type="button"
-                >
-                  ★
-                </button>
-              )}
-            </div>
+            {onToggleStarred && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleStarred(hint);
+                }}
+                className={`relative z-30 flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/75 text-[16px] backdrop-blur-sm ${
+                  hint.starred ? "text-[#f36f64]" : "text-slate-400 hover:text-[#f36f64]"
+                }`}
+                aria-label={hint.starred ? "Unhighlight hint" : "Highlight hint"}
+              >
+                ★
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="relative -mt-7 flex flex-1 px-4 pb-4 sm:px-5 sm:pb-5">
-          <div className={`flex w-full flex-1 flex-col rounded-[26px] p-5 shadow-sm backdrop-blur-md ${hint.private ? "bg-white/84" : "bg-white/92"}`}>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getPricePill(hint.priceBand)}`}>
-                {hint.priceLabel}
-              </span>
-            </div>
-
-            <h2
-              className="mt-3 min-w-0 overflow-hidden text-[22px] font-semibold tracking-[-0.05em] text-slate-900"
-              style={{
-                display: "-webkit-box",
-                WebkitBoxOrient: "vertical",
-                WebkitLineClamp: 2,
-                lineClamp: 2,
-              }}
+        <div className="absolute inset-x-0 bottom-0 z-20 p-5 sm:p-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${getPricePill(
+                hint.priceBand
+              )}`}
             >
-              {hint.title}
-            </h2>
+              {hint.priceLabel}
+            </span>
 
-            <p className="mt-1 truncate text-[13px] text-slate-500">{hint.retailer}</p>
+            {(hint.tags || []).map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full bg-white/14 px-2.5 py-1 text-[11px] font-medium text-white/88 backdrop-blur-sm"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
 
-            <div className="mt-auto pt-5">
-              <div className="flex items-center justify-end gap-2">
-                {onTogglePrivate && (
-                  <button
-                    type="button"
-                    onClick={() => onTogglePrivate(hint)}
-                    className="rounded-full border border-[#eadfd8] bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 hover:bg-[#faf7f4]"
-                  >
-                    {hint.private ? "🔒 Private" : "🔓 Public"}
-                  </button>
-                )}
-                <a
-                  href={hint.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-full border border-[#eadfd8] bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 hover:bg-[#faf7f4]"
-                >
-                  Open
-                </a>
-              </div>
-            </div>
+          <h2
+            className="mt-3 overflow-hidden text-[22px] font-semibold tracking-[-0.05em] text-white"
+            style={{
+              display: "-webkit-box",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: 2,
+              lineClamp: 2,
+            }}
+          >
+            {hint.title}
+          </h2>
+
+          <p className="mt-1 truncate text-[13px] text-white/75">{hint.retailer}</p>
+
+          <div className="mt-4 flex items-center justify-end gap-2">
+            {onTogglePrivate && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onTogglePrivate(hint);
+                }}
+                className="relative z-30 rounded-full border border-white/20 bg-white/12 px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur-sm hover:bg-white/18"
+              >
+                {hint.private ? "🔒 Private" : "🔓 Public"}
+              </button>
+            )}
+
+            <a
+              href={hint.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative z-30 rounded-full border border-white/20 bg-white/12 px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur-sm hover:bg-white/18"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Open
+            </a>
           </div>
         </div>
       </div>
@@ -728,18 +755,12 @@ function SortableHintTile({
   } = useSortable({ id: hint.id });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform),
     transition,
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`${getTileClass(hint.size)} touch-none`}
-      {...attributes}
-      {...listeners}
-    >
+    <div ref={setNodeRef} style={style} className="touch-none" {...attributes} {...listeners}>
       <HintCard
         hint={hint}
         dragging={isDragging}
@@ -778,13 +799,13 @@ export default function HintsPage() {
 
   const hasRealHints = hints.length > 0;
   const visibleHints = hasRealHints ? hints : demoHints;
-  const activeHint = visibleHints.find((hint) => hint.id === activeId) ?? null;
+  const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
 
   const numericPrices = useMemo(
     () =>
       hints
         .map((hint) => hint.numericPrice)
-        .filter((value) => typeof value === "number"),
+        .filter((value) => typeof value === "number" && Number.isFinite(value)),
     [hints]
   );
 
@@ -805,16 +826,14 @@ export default function HintsPage() {
         data: { user },
       } = await supabase.auth.getUser();
       setCurrentUser(user);
+      setIsLoading(false);
     }
 
     loadSession();
   }, []);
 
   useEffect(() => {
-    if (!currentUser) {
-      setIsLoading(false);
-      return;
-    }
+    if (!currentUser) return;
 
     const supabase = createClient();
 
@@ -836,12 +855,13 @@ export default function HintsPage() {
         return;
       }
 
-      const prices = (data || [])
+      const rows = data || [];
+      const prices = rows
         .map((row) => row.numeric_price)
-        .filter((value) => typeof value === "number");
+        .filter((value) => typeof value === "number" && Number.isFinite(value));
 
       setHints(
-        (data || []).map((row, index) => ({
+        rows.map((row, index) => ({
           id: row.id,
           title: row.title || "Saved hint",
           retailer: row.retailer || normaliseRetailer(row.url || ""),
@@ -850,9 +870,13 @@ export default function HintsPage() {
           priceBand: getPriceBand(row.numeric_price),
           image: row.image_url || "",
           fallbackGradient: buildFallbackGradient(index),
+          tags: [],
           starred: Boolean(row.starred),
           private: Boolean(row.is_private),
-          size: row.size || getBoardSize(row.numeric_price, index, prices),
+          size:
+            row.size && ["small", "medium", "large"].includes(row.size)
+              ? row.size
+              : getRelativePriceSize(row.numeric_price, prices),
           url: row.url || "",
           position: row.position ?? index,
         }))
@@ -865,19 +889,21 @@ export default function HintsPage() {
   }, [currentUser]);
 
   async function persistPositions(updatedHints) {
+    if (!currentUser) return;
+
     const supabase = createClient();
 
-    const updates = updatedHints.map((hint, index) =>
-      supabase
-        .from("hints")
-        .update({
-          position: index,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", hint.id)
+    await Promise.all(
+      updatedHints.map((hint, idx) =>
+        supabase
+          .from("hints")
+          .update({
+            position: idx,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", hint.id)
+      )
     );
-
-    await Promise.all(updates);
   }
 
   function openEditModal(hint) {
@@ -908,7 +934,7 @@ export default function HintsPage() {
     const { error } = await supabase
       .from("hints")
       .update({
-        title: trimmedTitle,
+        title: trimmedTitle || "Saved hint",
         url: trimmedUrl,
         retailer: trimmedUrl ? normaliseRetailer(trimmedUrl) : null,
         updated_at: new Date().toISOString(),
@@ -942,7 +968,6 @@ export default function HintsPage() {
     if (!currentUser || !editingHintId) return;
 
     const supabase = createClient();
-
     const { error } = await supabase.from("hints").delete().eq("id", editingHintId);
 
     if (error) {
@@ -1008,7 +1033,6 @@ export default function HintsPage() {
 
   async function refreshHintFromLink() {
     const trimmed = editForm.url.trim();
-
     if (!trimmed || editingHintId == null) return;
 
     setIsRefreshingEdit(true);
@@ -1034,8 +1058,12 @@ export default function HintsPage() {
         data.siteName || normaliseRetailer(trimmed)
       );
 
-      const currentIndex = hints.findIndex((hint) => hint.id === editingHintId);
-      const nextSize = getBoardSize(numericPrice, currentIndex, numericPrices);
+      const nextPrices = [
+        ...numericPrices.filter((value) => value !== null),
+        ...(numericPrice != null ? [numericPrice] : []),
+      ];
+
+      const nextSize = getRelativePriceSize(numericPrice, nextPrices);
 
       const supabase = createClient();
 
@@ -1169,9 +1197,10 @@ export default function HintsPage() {
         priceBand: getPriceBand(draftHint.numericPrice),
         image: draftHint.image || "",
         fallbackGradient: buildFallbackGradient(hints.length),
+        tags: [],
         starred: false,
         private: draftHint.private,
-        size: getBoardSize(draftHint.numericPrice, hints.length, incomingPriceSet),
+        size: getRelativePriceSize(draftHint.numericPrice, incomingPriceSet),
         url: draftHint.url,
         position: 0,
       };
@@ -1224,8 +1253,7 @@ export default function HintsPage() {
     const { active, over } = event;
     setActiveId(null);
 
-    if (!over || active.id === over.id) return;
-    if (!currentUser) return;
+    if (!over || active.id === over.id || !currentUser) return;
 
     const oldIndex = hints.findIndex((hint) => hint.id === active.id);
     const newIndex = hints.findIndex((hint) => hint.id === over.id);
@@ -1244,7 +1272,7 @@ export default function HintsPage() {
   return (
     <main className="min-h-screen bg-[#fff8f4] text-slate-800">
       <header className="border-b border-[#efe0d7] bg-[#fff8f4]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1480px] items-center justify-between px-5 py-4 md:px-8">
+        <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
           <Link href="/feed" className="flex items-center gap-3.5">
             <LogoMark />
             <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
@@ -1254,10 +1282,30 @@ export default function HintsPage() {
 
           <div className="flex items-center gap-3 sm:gap-4">
             <nav className="flex items-center gap-2 sm:gap-3">
-              <Link href="/feed" className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Feed</Link>
-              <Link href="/hints" className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5">Hints</Link>
-              <Link href="/circles" className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Circles</Link>
-              <Link href="/shop" className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">Shop</Link>
+              <Link
+                href="/feed"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Feed
+              </Link>
+              <Link
+                href="/hints"
+                className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5"
+              >
+                Hints
+              </Link>
+              <Link
+                href="/circles"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Circles
+              </Link>
+              <Link
+                href="/shop"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Shop
+              </Link>
             </nav>
 
             <AvatarMenu />
@@ -1265,9 +1313,9 @@ export default function HintsPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1480px] px-5 py-10 md:px-8 md:py-12">
-        <section className="mx-auto max-w-[920px] text-center">
-          <h1 className="text-[38px] font-extrabold tracking-[-0.07em] text-[#f19a78] sm:text-[48px] md:text-[58px]">
+      <div className="mx-auto max-w-[1380px] px-5 py-10 md:px-8">
+        <section className="text-center">
+          <h1 className="text-[32px] font-extrabold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
             Paste a link here...
           </h1>
 
@@ -1275,8 +1323,8 @@ export default function HintsPage() {
             Save things you’d genuinely love, keep some private, and we can even remind you when it goes on sale.
           </p>
 
-          <div className="mt-7">
-            <div className="mx-auto flex w-full max-w-[860px] flex-col gap-3 sm:flex-row">
+          <div className="mt-6">
+            <div className="mx-auto flex w-full max-w-[980px] flex-col gap-3 sm:flex-row">
               <input
                 id="hint-link"
                 type="url"
@@ -1311,36 +1359,30 @@ export default function HintsPage() {
           </div>
         </section>
 
-        <section className="mt-14">
-          <div className="relative overflow-hidden rounded-[40px] border border-[#efdfd6] bg-[#fffdfb] p-4 sm:p-6 md:p-7">
+        <section className="mt-12">
+          <div className="relative rounded-[36px] border border-[#efdfd6] bg-[#fffdfb] p-4 sm:p-5">
             <div
-              className="pointer-events-none absolute inset-0 opacity-90"
+              className="pointer-events-none absolute inset-0 rounded-[36px] opacity-70"
               style={{
                 backgroundImage: `
-                  linear-gradient(to right, rgba(217, 196, 184, 0.45) 1px, transparent 1px),
-                  linear-gradient(to bottom, rgba(217, 196, 184, 0.45) 1px, transparent 1px)
+                  linear-gradient(to right, rgba(214, 195, 184, 0.28) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(214, 195, 184, 0.28) 1px, transparent 1px)
                 `,
-                backgroundSize: "88px 88px",
+                backgroundSize: "76px 76px",
                 backgroundPosition: "center center",
               }}
             />
 
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.88),transparent_44%)]" />
-
             {isLoading ? (
-              <div className="relative grid auto-rows-[34px] grid-cols-1 gap-8 md:grid-cols-12">
+              <div className="relative columns-1 gap-6 sm:columns-2 lg:columns-3 xl:columns-4">
                 {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
-                    className={`overflow-hidden rounded-[32px] border border-[#efdfd6] bg-[#f9f8f5] ${
-                      i === 1
-                        ? "md:col-span-6 md:row-span-12"
-                        : i === 2
-                        ? "md:col-span-4 md:row-span-10"
-                        : "md:col-span-4 md:row-span-8"
+                    className={`mb-6 break-inside-avoid overflow-hidden rounded-[32px] border border-[#efdfd6] bg-[#f9f8f5] ${
+                      i === 1 ? "min-h-[500px]" : i === 2 ? "min-h-[410px]" : "min-h-[330px]"
                     }`}
                   >
-                    <div className="skeleton h-full min-h-[320px] w-full" />
+                    <div className="skeleton h-full w-full" />
                   </div>
                 ))}
               </div>
@@ -1355,22 +1397,23 @@ export default function HintsPage() {
                   items={visibleHints.map((hint) => hint.id)}
                   strategy={rectSortingStrategy}
                 >
-                  <div className="relative grid auto-rows-[34px] grid-cols-1 gap-8 md:grid-cols-12">
+                  <div className="relative columns-1 gap-6 sm:columns-2 lg:columns-3 xl:columns-4">
                     {visibleHints.map((hint) => (
-                      <SortableHintTile
-                        key={hint.id}
-                        hint={hint}
-                        onEdit={openEditModal}
-                        onToggleStarred={toggleStarred}
-                        onTogglePrivate={togglePrivate}
-                      />
+                      <div key={hint.id} className="mb-6 break-inside-avoid">
+                        <SortableHintTile
+                          hint={hint}
+                          onEdit={openEditModal}
+                          onToggleStarred={toggleStarred}
+                          onTogglePrivate={togglePrivate}
+                        />
+                      </div>
                     ))}
                   </div>
                 </SortableContext>
 
                 <DragOverlay dropAnimation={{ duration: 220, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }}>
                   {activeHint ? (
-                    <div className={`${getTileClass(activeHint.size)} w-[min(92vw,420px)]`}>
+                    <div className="w-[min(92vw,360px)]">
                       <HintCard hint={activeHint} dragging />
                     </div>
                   ) : null}
