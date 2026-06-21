@@ -2021,6 +2021,10 @@ export default function FeedClient() {
   }
 
   const eventsByDate = useMemo(() => {
+    return (calendarEvents || []).reduce((acc) => acc, {}) || {};
+  }, [calendarEvents]);
+
+  const safeEventsByDate = useMemo(() => {
     return (calendarEvents || []).reduce((acc, row) => {
       const key = row.event_date;
       if (!key) return acc;
@@ -2104,31 +2108,43 @@ export default function FeedClient() {
       .sort((a, b) => a.reminderDiffDays - b.reminderDiffDays);
   }, [calendarEvents]);
 
-  const hasLiveFeedContent = feedItems.length > 0;
-  const hasLiveReminderContent = sidebarReminders.length > 0;
-  const shouldUseDemoFeed = demoMode && !hasLiveFeedContent && !hasLiveReminderContent;
-  const shouldUseDemoContacts = demoMode && contacts.length === 0;
+  const hasRealContacts = contacts.length > 0;
+  const hasLiveSocialFeedContent = feedItems.length > 0;
 
-  const displayContacts = contacts.length > 0 ? contacts : demoContacts;
-  const sourceFeedItems = shouldUseDemoFeed
-    ? demoFeedItems.map((item) => transformFeedItem(item, sessionUser?.id || "demo"))
-    : feedItems;
+  const shouldShowFirstLook = demoMode && !hasRealContacts;
+  const shouldShowSingleDemoFeedCard = demoMode && !hasLiveSocialFeedContent;
+  const shouldUseDemoContacts = demoMode && !hasRealContacts;
+
+  const displayContacts = hasRealContacts ? contacts : demoContacts;
+
+  const singleDemoFeedCard = useMemo(() => {
+    const demoItem = demoFeedItems[0];
+    return demoItem ? transformFeedItem(demoItem, sessionUser?.id || "demo") : null;
+  }, [sessionUser?.id, transformFeedItem]);
 
   const combinedFeedItems = useMemo(() => {
-    if (shouldUseDemoFeed) {
-      return [...sourceFeedItems];
+    const socialItems = [...feedItems];
+    const reminderItems = [...feedReminderItems];
+
+    if (shouldShowSingleDemoFeedCard && singleDemoFeedCard) {
+      socialItems.unshift(singleDemoFeedCard);
     }
 
-    const combined = [...sourceFeedItems, ...feedReminderItems];
-    return combined.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  }, [shouldUseDemoFeed, sourceFeedItems, feedReminderItems]);
+    return [...socialItems, ...reminderItems].sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+  }, [feedItems, feedReminderItems, shouldShowSingleDemoFeedCard, singleDemoFeedCard]);
 
   const visibleFeedItems = useMemo(() => {
     if (activeFilter === "all") return combinedFeedItems;
-    return combinedFeedItems.filter((item) => item.event_type === activeFilter);
+
+    return combinedFeedItems.filter((item) => {
+      if (item.isDemo) return false;
+      return item.event_type === activeFilter;
+    });
   }, [activeFilter, combinedFeedItems]);
 
-  const showDemoGuide = shouldUseDemoFeed && contacts.length === 0;
+  const showDemoGuide = shouldShowFirstLook;
 
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
@@ -2216,7 +2232,7 @@ export default function FeedClient() {
                   </h1>
                 </div>
 
-                {shouldUseDemoFeed ? (
+                {shouldShowSingleDemoFeedCard || shouldShowFirstLook ? (
                   <span className="rounded-full bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e77756]">
                     Demo
                   </span>
@@ -2255,7 +2271,7 @@ export default function FeedClient() {
                   How this feed will work
                 </h2>
                 <p className="mt-2 text-[14px] leading-6 text-slate-600">
-                  You’re seeing a demo version of your feed only because there are no live feed events and no live reminders yet.
+                  You’re seeing onboarding guidance until you add your first real contact.
                 </p>
 
                 <div className="mt-5 space-y-3">
@@ -2356,9 +2372,9 @@ export default function FeedClient() {
                     </p>
                   </div>
 
-                  {shouldUseDemoFeed ? (
+                  {shouldShowSingleDemoFeedCard ? (
                     <div className="rounded-[20px] border border-[#f3dfd6] bg-[#fffaf7] px-4 py-3 text-[13px] leading-6 text-slate-600">
-                      Demo mode is showing because there are no live feed events and no live reminders yet.
+                      A demo social card is showing until real friend, hint, or circle activity begins.
                     </div>
                   ) : null}
                 </div>
@@ -2560,55 +2576,70 @@ export default function FeedClient() {
               </section>
             ) : null}
 
+            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    Upcoming reminders
+                  </p>
+                  <h2 className="mt-1 text-base font-semibold text-slate-900">
+                    Your next 3 reminders
+                  </h2>
+                </div>
+
+                <span className="rounded-full bg-[#fff5ef] px-2.5 py-1 text-[11px] font-semibold text-[#e77756]">
+                  {sidebarReminders.length}
+                </span>
+              </div>
+
+              {sidebarReminders.length === 0 ? (
+                <div className="mt-4 rounded-[22px] border border-dashed border-[#ecd9cf] bg-[#fcf8f5] px-4 py-5">
+                  <p className="text-sm font-medium text-slate-700">
+                    No upcoming reminders yet.
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    Add a calendar event and it will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {sidebarReminders.map((reminder) => (
+                    <article
+                      key={reminder.id}
+                      className="rounded-[22px] border border-[#ecd9cf] bg-[#fcf8f5] p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{reminder.title}</p>
+                          <p className="mt-1 text-sm text-slate-500">{reminder.prettyDate}</p>
+                        </div>
+
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#e77756]">
+                          {reminder.distanceLabel}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Link
+                          href="/shop"
+                          className="inline-flex items-center justify-center rounded-full border border-[#ead7cd] bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                        >
+                          Shop
+                        </Link>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+
             <MiniCalendar
-              eventsByDate={eventsByDate}
+              eventsByDate={safeEventsByDate}
               calendarLoading={calendarLoading}
               calendarError={calendarError}
               onCreateEvent={handleCreateCalendarEvent}
               onDeleteEvent={handleDeleteCalendarEvent}
             />
-
-            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-base font-semibold text-slate-900">Upcoming reminders</h2>
-                <span className="rounded-full bg-[#fff5ef] px-2.5 py-1 text-[11px] font-semibold text-[#e77756]">
-                  {sidebarReminders.length} soon
-                </span>
-              </div>
-
-              {calendarLoading ? (
-                <div className="mt-4 rounded-[18px] bg-[#faf7f4] px-4 py-3 text-sm text-slate-500">
-                  Loading reminders...
-                </div>
-              ) : calendarError ? (
-                <div className="mt-4 rounded-[18px] border border-[#f3d7cc] bg-[#fff4ef] px-4 py-3 text-sm text-[#c46545]">
-                  {calendarError}
-                </div>
-              ) : sidebarReminders.length === 0 ? (
-                <div className="mt-4 rounded-[18px] bg-[#faf7f4] px-4 py-3 text-sm text-slate-500">
-                  No upcoming reminders yet.
-                </div>
-              ) : (
-                <div className="mt-4 space-y-3">
-                  {sidebarReminders.map((item) => {
-                    const style = eventTypeStyles[item.type] || eventTypeStyles.reminder;
-
-                    return (
-                      <div key={item.id} className="rounded-[22px] border border-[#f1e4dc] bg-[#fffdfa] p-4">
-                        <div className="flex items-start gap-3">
-                          <div className={`mt-1 h-3 w-3 shrink-0 rounded-full ${style.dot}`} />
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-slate-800">{item.title}</p>
-                            <p className="mt-1 text-xs text-slate-500">{item.prettyDate}</p>
-                            <p className="mt-1 text-xs text-slate-400">{item.distanceLabel}</p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
           </aside>
         </div>
       </div>
@@ -2616,14 +2647,7 @@ export default function FeedClient() {
       <AddContactModal
         open={isAddContactOpen}
         onClose={() => setIsAddContactOpen(false)}
-        onSave={async (payload) => {
-          try {
-            await handleSaveContact(payload);
-          } catch (error) {
-            setContactError(error?.message || "Failed to save contact.");
-            throw error;
-          }
-        }}
+        onSave={handleSaveContact}
         supabase={supabase}
       />
 
