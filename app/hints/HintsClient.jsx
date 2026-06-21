@@ -27,18 +27,8 @@ import AvatarMenu from "../components/AvatarMenu";
 const ACTIVE_CURRENCY = "GBP";
 const PREVIEW_TIMEOUT_MS = 18000;
 const CARD_MAX_HEIGHT = "min(540px, 68vh)";
-
-const PREVIEW_NOTICE_BLOCKED =
-  "This shop didn’t give us a usable preview, so you’ll need to add the details yourself.";
-
-const PREVIEW_NOTICE_TIMEOUT =
-  "This took too long to load, so you can carry on by adding the details manually.";
-
-const PREVIEW_NOTICE_PARTIAL =
-  "We found part of the information, but some details still need checking.";
-
-const PREVIEW_NOTICE_INVALID =
-  "Paste a valid product or retailer link to start.";
+const TIMEOUT_MODAL_MESSAGE =
+  "We tried to get the title, image, and price, but this shop asked you to add them instead.";
 
 const EMPTY_NEW_HINT_FORM = {
   title: "",
@@ -491,7 +481,9 @@ function ModalShell({ isOpen, onClose, eyebrow, title, children, footer }) {
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 sm:px-7">{children}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 sm:px-7">
+            {children}
+          </div>
 
           <div className="shrink-0 border-t border-[#f2e5de] bg-white px-6 py-4 sm:px-7">
             {footer}
@@ -499,17 +491,6 @@ function ModalShell({ isOpen, onClose, eyebrow, title, children, footer }) {
         </div>
       </div>
     </div>
-  );
-}
-
-function FieldHint({ id, children, tone = "muted" }) {
-  const toneClass =
-    tone === "error" ? "text-[#c46545]" : tone === "warning" ? "text-[#9b553d]" : "text-slate-500";
-
-  return (
-    <p id={id} className={`mt-2 text-sm ${toneClass}`}>
-      {children}
-    </p>
   );
 }
 
@@ -530,16 +511,11 @@ function HintFormFields({
         </label>
         <input
           id={`${prefix}-link`}
-          aria-describedby={`${prefix}-link-help`}
           type="url"
           value={form.url}
           onChange={(e) => setForm((current) => ({ ...current, url: e.target.value }))}
-          placeholder="Paste the store or product link"
           className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
         />
-        <FieldHint id={`${prefix}-link-help`}>
-          Add the original retailer link so this card still opens to the right page.
-        </FieldHint>
       </div>
 
       <div>
@@ -548,16 +524,12 @@ function HintFormFields({
         </label>
         <input
           id={`${prefix}-title`}
-          aria-describedby={`${prefix}-title-help`}
           type="text"
           value={form.title}
           onChange={(e) => setForm((current) => ({ ...current, title: e.target.value }))}
           placeholder="Give this hint a clear name"
           className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
         />
-        <FieldHint id={`${prefix}-title-help`}>
-          Use the short name you want people to see on the card.
-        </FieldHint>
       </div>
 
       <div>
@@ -566,16 +538,12 @@ function HintFormFields({
         </label>
         <input
           id={`${prefix}-price`}
-          aria-describedby={`${prefix}-price-help`}
           type="text"
           value={form.priceInput}
           onChange={(e) => setForm((current) => ({ ...current, priceInput: e.target.value }))}
           placeholder="Leave blank if you don’t want to add a price"
           className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
         />
-        <FieldHint id={`${prefix}-price-help`}>
-          Add a price only if you want it shown on the card.
-        </FieldHint>
       </div>
 
       <div>
@@ -584,7 +552,6 @@ function HintFormFields({
         </label>
         <input
           id={`${prefix}-image`}
-          aria-describedby={`${prefix}-image-help`}
           type="file"
           accept="image/*"
           onChange={async (e) => {
@@ -595,7 +562,6 @@ function HintFormFields({
           }}
           className="block w-full rounded-[18px] border border-dashed border-[#eadcd3] bg-[#fcfaf8] px-4 py-4 text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-[#fff1e9] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#df7c59]"
         />
-        <FieldHint id={`${prefix}-image-help`}>{imageHelpText}</FieldHint>
 
         {previewImage ? (
           <div className="mt-3 overflow-hidden rounded-[20px] border border-[#efe0d7] bg-[#faf6f3]">
@@ -607,7 +573,7 @@ function HintFormFields({
           </div>
         ) : (
           <div className="mt-3 rounded-[20px] border border-dashed border-[#efe0d7] bg-[#faf6f3] px-4 py-8 text-center text-sm text-slate-500">
-            No image yet. Upload one if you want to add a photo now.
+            {imageHelpText}
           </div>
         )}
       </div>
@@ -651,38 +617,17 @@ function AddHintModal({
   onSubmit,
   isSaving,
   notice,
-  previewState,
 }) {
-  const modalState =
-    previewState === "success"
-      ? {
-          eyebrow: "New hint",
-          title: "Review before saving",
-          helper: "We found some details from the link. Check everything before you save.",
-          primaryCta: "Save hint",
-        }
-      : previewState === "partial"
-        ? {
-            eyebrow: "New hint",
-            title: "Check details before saving",
-            helper:
-              "We found part of the information, but some details still need your input.",
-            primaryCta: "Save hint",
-          }
-        : {
-            eyebrow: "New hint",
-            title: "Add details manually",
-            helper:
-              "We couldn’t pull everything from this shop, so add the name, photo, and price yourself.",
-            primaryCta: "Save hint",
-          };
+  const helperCopy = notice
+    ? "We tried to get your info, but this shop asked you to put it in instead."
+    : "We found what we could. Check the details and fix anything before saving.";
 
   return (
     <ModalShell
       isOpen={isOpen}
       onClose={onClose}
-      eyebrow={modalState.eyebrow}
-      title={modalState.title}
+      eyebrow="New hint"
+      title="Review before saving"
       footer={
         <div className="flex justify-end">
           <button
@@ -691,7 +636,7 @@ function AddHintModal({
             disabled={isSaving}
             className="inline-flex h-12 items-center justify-center rounded-full border border-[#ee8d69] bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg disabled:opacity-70"
           >
-            {isSaving ? "Saving..." : modalState.primaryCta}
+            {isSaving ? "Saving..." : "Save hint"}
           </button>
         </div>
       }
@@ -703,7 +648,7 @@ function AddHintModal({
           </div>
         ) : null}
 
-        <p className="text-sm text-slate-500">{modalState.helper}</p>
+        <p className="text-sm text-slate-500">{helperCopy}</p>
 
         <HintFormFields
           form={form}
@@ -967,7 +912,6 @@ function SortableHintCard({ hint, imageRatios, onEdit, onToggleStarred, onToggle
 export default function HintsClient() {
   const [hints, setHints] = useState([]);
   const [link, setLink] = useState("");
-  const [linkError, setLinkError] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState("");
   const [editingHintId, setEditingHintId] = useState(null);
@@ -983,7 +927,6 @@ export default function HintsClient() {
   const [pendingHint, setPendingHint] = useState(null);
   const [newHintForm, setNewHintForm] = useState(EMPTY_NEW_HINT_FORM);
   const [addModalNotice, setAddModalNotice] = useState("");
-  const [previewState, setPreviewState] = useState("success");
   const [busyState, setBusyState] = useState({ open: false, title: "", message: "" });
   const busyLongTimerRef = useRef(null);
 
@@ -1024,7 +967,7 @@ export default function HintsClient() {
               ...current,
               title: "Still fetching...",
               message:
-                "This is taking a little longer than expected. You’ll be able to fill in the details yourself if the shop doesn’t respond.",
+                "This is taking a little longer than expected. Some retailers are slower to respond.",
             }
           : current
       );
@@ -1105,7 +1048,7 @@ export default function HintsClient() {
           private: Boolean(row.is_private),
           url: row.url || "",
           position: row.position ?? index,
-          needsReview: Boolean(row.needs_review),
+          needsReview: false,
         }))
       );
 
@@ -1117,7 +1060,6 @@ export default function HintsClient() {
 
   const visibleHints = hints.length > 0 ? hints : demoHints;
   const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
-  const editingHint = hints.find((hint) => hint.id === editingHintId) || null;
   const columns = useMemo(() => splitIntoColumns(visibleHints, 3), [visibleHints]);
 
   useEffect(() => {
@@ -1190,7 +1132,6 @@ export default function HintsClient() {
     setIsSubmittingNewHint(false);
     setNewHintForm(EMPTY_NEW_HINT_FORM);
     setAddModalNotice("");
-    setPreviewState("success");
   }
 
   async function saveEditChanges() {
@@ -1218,7 +1159,6 @@ export default function HintsClient() {
           image_url: finalImage,
           price_text: priceMeta.priceLabel,
           numeric_price: priceMeta.numericPrice,
-          needs_review: false,
         })
         .eq("id", editingHintId);
 
@@ -1264,7 +1204,7 @@ export default function HintsClient() {
   }
 
   async function deleteHint() {
-    if (!currentUser || editingHintId == null) return;
+    if (!currentUser) return;
     const supabase = createClient();
     const { error } = await supabase.from("hints").delete().eq("id", editingHintId);
 
@@ -1322,161 +1262,177 @@ export default function HintsClient() {
     beginFetchBusy();
 
     try {
-      const preview = await fetchPreviewWithTimeout(trimmed);
-      const draft = buildDraftFromPreview(preview, trimmed);
+      const data = await fetchPreviewWithTimeout(normaliseInputUrl(trimmed), PREVIEW_TIMEOUT_MS);
+      const draft = buildDraftFromPreview(data, trimmed);
+
+      if (draft.image) {
+        const ratio = await loadImageAspectRatio(draft.image);
+        if (ratio) {
+          setImageRatios((current) => ({ ...current, [editingHintId]: ratio }));
+        }
+      }
+
+      setHints((current) =>
+        current.map((hint) =>
+          hint.id === editingHintId
+            ? {
+                ...hint,
+                title: draft.title,
+                retailer: draft.retailer,
+                priceLabel: draft.priceLabel,
+                numericPrice: draft.numericPrice,
+                image: draft.image || hint.image,
+                url: draft.url,
+                needsReview: draft.needsReview,
+              }
+            : hint
+        )
+      );
 
       setEditForm((current) => ({
         ...current,
-        title: draft.title || current.title,
-        retailer: draft.retailer || current.retailer,
+        title: draft.title,
+        url: draft.url,
+        retailer: draft.retailer,
         image: draft.image || current.image,
-        uploadedImage: null,
-        priceInput: draft.numericPrice != null ? String(draft.numericPrice) : current.priceInput,
-        url: draft.url || current.url,
+        priceInput: draft.priceInput,
       }));
     } catch (err) {
-      setError(
-        err?.code === "PREVIEW_TIMEOUT"
-          ? PREVIEW_NOTICE_TIMEOUT
-          : "We couldn’t refresh that link automatically."
-      );
+      if (err?.code === "PREVIEW_TIMEOUT" || err?.message === "PREVIEW_TIMEOUT") {
+        setError(
+          "We couldn’t fetch that item in time. You can still edit it here and add the photo manually."
+        );
+      } else {
+        setError(errorToMessage(err));
+      }
     } finally {
       setIsRefreshingEdit(false);
       closeBusy();
     }
   }
 
-  async function saveNewHint() {
-    if (!currentUser || !pendingHint) return;
+  async function handleAddHint() {
+    if (!currentUser) {
+      setError("You must be signed in to add hints.");
+      return;
+    }
 
-    const trimmedTitle = newHintForm.title.trim() || "Saved hint";
-    const trimmedUrl = newHintForm.url.trim();
-    const trimmedRetailer = newHintForm.retailer?.trim() || normaliseRetailer(trimmedUrl);
-    const parsedNumericPrice = extractNumericPrice(newHintForm.priceInput);
-    const priceMeta = sanitisePrice(newHintForm.priceInput, parsedNumericPrice);
-    const finalImage = newHintForm.uploadedImage || newHintForm.image || "";
-    const nextPosition = hints.length;
+    const trimmed = link.trim();
+
+    if (!trimmed) {
+      setError("Paste a link first.");
+      return;
+    }
+
+    if (!isValidHttpUrl(trimmed)) {
+      setError("Please paste a valid product or experience URL.");
+      return;
+    }
+
+    setIsAdding(true);
+    setError("");
+    setAddModalNotice("");
+    beginFetchBusy();
+
+    try {
+      const normalisedUrl = normaliseInputUrl(trimmed);
+      const data = await fetchPreviewWithTimeout(normalisedUrl, PREVIEW_TIMEOUT_MS);
+      const draft = buildDraftFromPreview(data, trimmed);
+
+      setPendingHint(draft);
+      setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...draft });
+      setIsAddModalOpen(true);
+      setLink("");
+    } catch (err) {
+      if (err?.code === "PREVIEW_TIMEOUT" || err?.message === "PREVIEW_TIMEOUT") {
+        const manualDraft = buildManualDraft(trimmed);
+
+        setPendingHint(manualDraft);
+        setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...manualDraft });
+        setAddModalNotice(TIMEOUT_MODAL_MESSAGE);
+        setIsAddModalOpen(true);
+        setLink("");
+      } else {
+        const manualDraft = buildManualDraft(trimmed);
+
+        setPendingHint(manualDraft);
+        setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...manualDraft });
+        setAddModalNotice(TIMEOUT_MODAL_MESSAGE);
+        setIsAddModalOpen(true);
+        setLink("");
+      }
+    } finally {
+      setIsAdding(false);
+      closeBusy();
+    }
+  }
+
+  async function submitNewHint() {
+    if (!currentUser || !pendingHint) return;
 
     setIsSubmittingNewHint(true);
     setError("");
     beginSaveBusy();
 
     try {
-      const supabase = createClient();
+      const title = newHintForm.title.trim() || pendingHint.title || "Saved hint";
+      const url = newHintForm.url.trim() || pendingHint.url;
+      const retailer = newHintForm.retailer?.trim() || normaliseRetailer(url);
+      const numericPrice = extractNumericPrice(newHintForm.priceInput);
+      const priceMeta = sanitisePrice(newHintForm.priceInput, numericPrice);
+      const image = newHintForm.uploadedImage || newHintForm.image || "";
 
-      const payload = {
-        user_id: currentUser.id,
-        title: trimmedTitle,
-        url: trimmedUrl,
-        retailer: trimmedRetailer,
-        image_url: finalImage,
-        price_text: priceMeta.priceLabel,
-        numeric_price: priceMeta.numericPrice,
+      const newHint = {
+        id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `hint-${Date.now()}`,
+        title,
+        retailer,
+        priceLabel: priceMeta.priceLabel,
+        numericPrice: priceMeta.numericPrice,
+        image,
+        fallbackGradient: buildFallbackGradient(hints.length),
         starred: Boolean(newHintForm.starred),
-        is_private: Boolean(newHintForm.private),
-        position: nextPosition,
-        needs_review: Boolean(
-          !trimmedTitle || !finalImage || priceMeta.numericPrice == null || newHintForm.needsReview
-        ),
+        private: Boolean(newHintForm.private),
+        url,
+        position: 0,
+        needsReview: false,
       };
 
-      const { data, error } = await supabase.from("hints").insert(payload).select("*").single();
+      const supabase = createClient();
+      const { error } = await supabase.from("hints").insert({
+        id: newHint.id,
+        user_id: currentUser.id,
+        title: newHint.title,
+        url: newHint.url,
+        image_url: newHint.image,
+        retailer: newHint.retailer,
+        price_text: newHint.priceLabel,
+        numeric_price: newHint.numericPrice,
+        starred: newHint.starred,
+        is_private: newHint.private,
+        position: 0,
+        source: newHintForm.source || "user",
+      });
 
-      if (error) {
-        setError(errorToMessage(error));
-        setIsSubmittingNewHint(false);
-        closeBusy();
-        return;
-      }
+      if (error) throw new Error(errorToMessage(error));
 
-      if (finalImage) {
-        const ratio = await loadImageAspectRatio(finalImage);
+      if (image) {
+        const ratio = await loadImageAspectRatio(image);
         if (ratio) {
-          setImageRatios((current) => ({ ...current, [data.id]: ratio }));
+          setImageRatios((current) => ({ ...current, [newHint.id]: ratio }));
         }
       }
 
-      setHints((current) => [
-        ...current,
-        {
-          id: data.id,
-          title: data.title || trimmedTitle,
-          retailer: data.retailer || trimmedRetailer,
-          priceLabel: data.price_text || priceMeta.priceLabel,
-          numericPrice: data.numeric_price,
-          image: data.image_url || finalImage,
-          fallbackGradient: buildFallbackGradient(current.length),
-          starred: Boolean(data.starred),
-          private: Boolean(data.is_private),
-          url: data.url || trimmedUrl,
-          position: data.position ?? current.length,
-          needsReview: Boolean(data.needs_review),
-        },
-      ]);
-
-      setLink("");
-      setLinkError("");
-      setIsSubmittingNewHint(false);
-      closeBusy();
+      setHints((current) => [newHint, ...current].map((item, index) => ({ ...item, position: index })));
       closeAddModal();
     } catch (err) {
       setError(errorToMessage(err));
       setIsSubmittingNewHint(false);
       closeBusy();
-    }
-  }
-
-  async function handleAddFromLink(e) {
-    e.preventDefault();
-    setError("");
-    setLinkError("");
-
-    const trimmed = link.trim();
-
-    if (!trimmed || !isValidHttpUrl(trimmed)) {
-      setLinkError(PREVIEW_NOTICE_INVALID);
       return;
     }
 
-    setIsAdding(true);
-    beginFetchBusy();
-
-    try {
-      const preview = await fetchPreviewWithTimeout(trimmed);
-      const draft = buildDraftFromPreview(preview, trimmed);
-
-      const isBlocked = Boolean(preview?.blocked);
-      const isPartial =
-        draft.needsReview || !draft.title || !draft.image || draft.numericPrice == null;
-
-      setPendingHint(draft);
-      setNewHintForm(draft);
-
-      if (isBlocked) {
-        setAddModalNotice(PREVIEW_NOTICE_BLOCKED);
-        setPreviewState("manual");
-      } else if (isPartial) {
-        setAddModalNotice(PREVIEW_NOTICE_PARTIAL);
-        setPreviewState("partial");
-      } else {
-        setAddModalNotice("");
-        setPreviewState("success");
-      }
-
-      setIsAddModalOpen(true);
-    } catch (err) {
-      const isTimeout = err?.code === "PREVIEW_TIMEOUT" || err?.message === "PREVIEW_TIMEOUT";
-
-      const manualDraft = buildManualDraft(trimmed);
-      setPendingHint(manualDraft);
-      setNewHintForm(manualDraft);
-      setAddModalNotice(isTimeout ? PREVIEW_NOTICE_TIMEOUT : PREVIEW_NOTICE_BLOCKED);
-      setPreviewState("manual");
-      setIsAddModalOpen(true);
-    } finally {
-      closeBusy();
-      setIsAdding(false);
-    }
+    setIsSubmittingNewHint(false);
+    closeBusy();
   }
 
   function handleDragStart(event) {
@@ -1489,16 +1445,29 @@ export default function HintsClient() {
 
     if (!over || active.id === over.id || hints.length === 0) return;
 
-    const oldIndex = hints.findIndex((item) => item.id === active.id);
-    const newIndex = hints.findIndex((item) => item.id === over.id);
+    const nextColumns = splitIntoColumns(hints, 3);
+    const fromColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === active.id));
+    const toColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === over.id));
 
-    if (oldIndex < 0 || newIndex < 0) return;
+    if (fromColumnIndex === -1 || toColumnIndex === -1) return;
 
-    const nextHints = arrayMove(hints, oldIndex, newIndex).map((hint, index) => ({
-      ...hint,
-      position: index,
-    }));
+    const fromItems = [...nextColumns[fromColumnIndex]];
+    const toItems = fromColumnIndex === toColumnIndex ? fromItems : [...nextColumns[toColumnIndex]];
+    const oldIndex = fromItems.findIndex((item) => item.id === active.id);
+    const newIndex = toItems.findIndex((item) => item.id === over.id);
 
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    if (fromColumnIndex === toColumnIndex) {
+      nextColumns[fromColumnIndex] = arrayMove(fromItems, oldIndex, newIndex);
+    } else {
+      const [moved] = fromItems.splice(oldIndex, 1);
+      toItems.splice(newIndex, 0, moved);
+      nextColumns[fromColumnIndex] = fromItems;
+      nextColumns[toColumnIndex] = toItems;
+    }
+
+    const nextHints = rebuildFromColumns(nextColumns);
     setHints(nextHints);
     await persistOrder(nextHints);
   }
@@ -1507,23 +1476,201 @@ export default function HintsClient() {
     setActiveId(null);
   }
 
+  const editingHint = visibleHints.find((hint) => hint.id === editingHintId) || null;
+
   return (
-    <div className="min-h-screen bg-[#f8f4f1] text-slate-900">
-      <BusyOverlay open={busyState.open} title={busyState.title} message={busyState.message} />
+    <main className="min-h-screen bg-[#fffaf7] text-slate-800">
+      <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur">
+        <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
+          <Link href="/feed" className="flex items-center gap-3.5">
+            <LogoMark />
+            <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
+              Hinted<span className="text-[#f36f64]">.io</span>
+            </div>
+          </Link>
+
+          <div className="flex items-center gap-3 sm:gap-4">
+            <nav className="flex items-center gap-2 sm:gap-3">
+              <Link
+                href="/feed"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Feed
+              </Link>
+              <Link
+                href="/hints"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#3c4d39] bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5"
+              >
+                Hints
+              </Link>
+              <Link
+                href="/circles"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Circles
+              </Link>
+              <Link
+                href="/shop"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Shop
+              </Link>
+            </nav>
+            <AvatarMenu />
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-[1380px] px-5 py-10 md:px-8">
+        <section className="text-center">
+          <h1 className="text-[32px] font-extrabold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
+            Paste a link here...
+          </h1>
+
+          <div className="mt-6">
+            <div className="mx-auto flex w-full max-w-[980px] flex-col gap-3 sm:flex-row">
+              <input
+                id="hint-link"
+                type="url"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddHint();
+                  }
+                }}
+                placeholder="Paste a link here..."
+                className="h-[72px] w-full rounded-full border border-[#eadcd3] bg-white px-8 text-[16px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
+              />
+              <button
+                type="button"
+                onClick={handleAddHint}
+                disabled={isAdding || isLoading}
+                className="inline-flex h-[72px] shrink-0 items-center justify-center rounded-full border border-[#ee8d69] bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-8 text-sm font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[170px]"
+              >
+                {isAdding ? "Checking..." : isLoading ? "Loading..." : "Add hint"}
+              </button>
+            </div>
+
+            {error ? (
+              <p className="mt-3 text-sm font-medium text-[#c45c42]">{error}</p>
+            ) : (
+              <div className="mt-3 space-y-1 text-sm text-slate-500">
+                <p>
+                  We’ll try our best to pull the title, image, and price before you review it.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="relative rounded-[36px] border border-[#efe0d7] bg-[#fffdfb] p-3 shadow-[0_12px_32px_rgba(176,118,86,0.08)] sm:p-5">
+            <div
+              className="pointer-events-none absolute inset-0 rounded-[36px] opacity-70"
+              style={{
+                backgroundImage: `
+                  linear-gradient(to right, rgba(214, 195, 184, 0.28) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(214, 195, 184, 0.28) 1px, transparent 1px)
+                `,
+                backgroundSize: "76px 76px",
+                backgroundPosition: "center center",
+              }}
+            />
+
+            {isLoading ? (
+              <div className="columns-1 gap-6 md:columns-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="mb-6 break-inside-avoid">
+                    <div
+                      className="w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[#f9f8f5]"
+                      style={{ aspectRatio: i === 1 ? "0.78" : "1", maxHeight: CARD_MAX_HEIGHT }}
+                    >
+                      <div className="skeleton h-full w-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : hints.length > 0 ? (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                measuring={measuring}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragCancel={handleDragCancel}
+              >
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                  {columns.map((columnHints, columnIndex) => (
+                    <SortableContext
+                      key={`column-${columnIndex}`}
+                      items={columnHints.map((hint) => hint.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-0">
+                        {columnHints.map((hint) => (
+                          <SortableHintCard
+                            key={hint.id}
+                            hint={hint}
+                            imageRatios={imageRatios}
+                            onEdit={openEditModal}
+                            onToggleStarred={toggleStarred}
+                            onTogglePrivate={togglePrivate}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  ))}
+                </div>
+
+                <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.25, 1, 0.5, 1)" }}>
+                  {activeHint ? (
+                    <div className="w-full max-w-[420px]">
+                      <HintCard
+                        hint={activeHint}
+                        imageRatios={imageRatios}
+                        onEdit={() => {}}
+                        onToggleStarred={() => {}}
+                        onTogglePrivate={() => {}}
+                        isDragging
+                      />
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            ) : (
+              <div className="columns-1 gap-6 md:columns-3">
+                {demoHints.map((hint) => (
+                  <div key={hint.id} className="mb-6 break-inside-avoid">
+                    <HintCard
+                      hint={hint}
+                      imageRatios={imageRatios}
+                      onEdit={() => {}}
+                      onToggleStarred={() => {}}
+                      onTogglePrivate={() => {}}
+                      isDragging={false}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
 
       <AddHintModal
         isOpen={isAddModalOpen}
         form={newHintForm}
         setForm={setNewHintForm}
         onClose={closeAddModal}
-        onSubmit={saveNewHint}
+        onSubmit={submitNewHint}
         isSaving={isSubmittingNewHint}
         notice={addModalNotice}
-        previewState={previewState}
       />
 
       <EditHintModal
-        isOpen={Boolean(editingHintId)}
+        isOpen={editingHintId !== null}
         editForm={editForm}
         setEditForm={setEditForm}
         onClose={closeEditModal}
@@ -1535,176 +1682,7 @@ export default function HintsClient() {
         hint={editingHint}
       />
 
-      <header className="sticky top-0 z-40 border-b border-[#efe2da] bg-[rgba(248,244,241,0.86)] backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 px-5 py-4 sm:px-8">
-          <div className="flex items-center gap-3">
-            <LogoMark />
-            <div>
-              <Link href="/" className="text-[18px] font-semibold tracking-[-0.04em] text-slate-900">
-                Hint board
-              </Link>
-              <p className="text-sm text-slate-500">Save ideas people will actually want.</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="hidden rounded-full border border-[#eadbd2] bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm sm:inline-flex"
-            >
-              Home
-            </Link>
-            <AvatarMenu />
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-[1280px] px-5 py-8 sm:px-8">
-        <section className="rounded-[32px] border border-[#efdfd5] bg-white p-6 shadow-[0_18px_60px_rgba(132,94,72,0.08)] sm:p-8">
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-            <div>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#df7c59]">
-                Add a new hint
-              </p>
-              <h1 className="mt-3 text-[40px] font-semibold tracking-[-0.06em] text-slate-900 sm:text-[52px]">
-                Add a link, then check the details before it goes on your board.
-              </h1>
-              <p className="mt-4 max-w-[62ch] text-[16px] leading-7 text-slate-600">
-                Paste a retailer or product link and we’ll try to pull in the title, image, and
-                price. If the shop blocks us or takes too long, you can still add everything
-                manually.
-              </p>
-            </div>
-
-            <div className="rounded-[28px] border border-[#f0e2d9] bg-[#fcfaf8] p-5 sm:p-6">
-              <form className="space-y-4" onSubmit={handleAddFromLink}>
-                <div>
-                  <label htmlFor="new-link" className="mb-2 block text-sm font-medium text-slate-700">
-                    Product or retailer link
-                  </label>
-                  <input
-                    id="new-link"
-                    type="url"
-                    aria-describedby="new-link-help new-link-error"
-                    value={link}
-                    onChange={(e) => {
-                      setLink(e.target.value);
-                      if (linkError) setLinkError("");
-                    }}
-                    placeholder="Paste the link here"
-                    className={`h-14 w-full rounded-[18px] bg-white px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50 ${
-                      linkError ? "border border-[#efb6a2]" : "border border-[#eadcd3]"
-                    }`}
-                  />
-                  <FieldHint id="new-link-help">
-                    We’ll try to fetch the name, image, and price from this page first.
-                  </FieldHint>
-                  {linkError ? (
-                    <FieldHint id="new-link-error" tone="error">
-                      {linkError}
-                    </FieldHint>
-                  ) : null}
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isAdding}
-                  className="inline-flex h-13 w-full items-center justify-center rounded-full border border-[#ee8d69] bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isAdding ? "Fetching..." : "Fetch details"}
-                </button>
-              </form>
-
-              <div className="mt-5 rounded-[20px] border border-[#f2e5de] bg-white px-4 py-4">
-                <p className="text-sm font-semibold text-slate-800">What happens next</p>
-                <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
-                  <li>We try to pull the title, image, and price from the link.</li>
-                  <li>If anything is missing, you can edit it before saving.</li>
-                  <li>If the shop blocks us, you can still fill in the card manually.</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {error ? (
-          <div className="mt-6 rounded-[22px] border border-[#f2cbbb] bg-[#fff5ef] px-5 py-4 text-sm text-[#a05941]">
-            {error}
-          </div>
-        ) : null}
-
-        <section className="mt-8">
-          <div className="mb-5 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#df7c59]">
-                Your hints
-              </p>
-              <h2 className="mt-2 text-[30px] font-semibold tracking-[-0.05em] text-slate-900">
-                Saved cards
-              </h2>
-            </div>
-
-            <p className="text-sm text-slate-500">
-              Drag cards to reorder them. Edit any card to fix missing details.
-            </p>
-          </div>
-
-          {isLoading ? (
-            <div className="rounded-[28px] border border-[#efe0d7] bg-white p-8 text-sm text-slate-500 shadow-[0_18px_60px_rgba(132,94,72,0.06)]">
-              Loading your hints...
-            </div>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              measuring={measuring}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              onDragCancel={handleDragCancel}
-            >
-              <div className="grid gap-6 lg:grid-cols-3">
-                {columns.map((column, columnIndex) => (
-                  <SortableContext
-                    key={`column-${columnIndex}`}
-                    items={column.map((hint) => hint.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div className="min-w-0">
-                      {column.map((hint) => (
-                        <SortableHintCard
-                          key={hint.id}
-                          hint={hint}
-                          imageRatios={imageRatios}
-                          onEdit={openEditModal}
-                          onToggleStarred={toggleStarred}
-                          onTogglePrivate={togglePrivate}
-                        />
-                      ))}
-                    </div>
-                  </SortableContext>
-                ))}
-              </div>
-
-              <DragOverlay>
-                {activeHint ? (
-                  <div className="w-[320px] max-w-[92vw] opacity-95">
-                    <HintCard
-                      hint={activeHint}
-                      imageRatios={imageRatios}
-                      onEdit={() => {}}
-                      onToggleStarred={() => {}}
-                      onTogglePrivate={() => {}}
-                      isDragging
-                      dragHandleAttributes={{}}
-                      dragHandleListeners={{}}
-                    />
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          )}
-        </section>
-      </main>
-    </div>
+      <BusyOverlay open={busyState.open} title={busyState.title} message={busyState.message} />
+    </main>
   );
 }
