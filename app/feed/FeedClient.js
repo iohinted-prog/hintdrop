@@ -1,1041 +1,1224 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  KeyboardSensor,
+  closestCenter,
+  MeasuringStrategy,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+  defaultAnimateLayoutChanges,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
 
-const demoMode = true;
+const ACTIVE_CURRENCY = "GBP";
 
-const relationshipOptions = [
-  "Partner",
-  "Spouse",
-  "Family",
-  "Friend",
-  "Parent",
-  "Child",
-  "Sibling",
-  "Cousin",
-  "Colleague",
-  "Roommate",
-  "Best friend",
-  "Other",
-];
+const EMPTY_NEW_HINT_FORM = {
+  title: "",
+  url: "",
+  retailer: "",
+  image: "",
+  uploadedImage: null,
+  priceInput: "",
+  private: false,
+  starred: false,
+  needsReview: false,
+  source: "preview",
+};
 
-const initialFilters = [
-  { key: "all", label: "All activity" },
-  { key: "friend_added", label: "Friends" },
-  { key: "hint_added", label: "Hints" },
-  { key: "circle_joined", label: "Circle joins" },
-  { key: "circle_top_up", label: "Top ups" },
-  { key: "circle_milestone", label: "Milestones" },
-  { key: "reminder", label: "Urgent reminders" },
-];
+const EMPTY_EDIT_FORM = {
+  title: "",
+  url: "",
+  retailer: "",
+  image: "",
+  uploadedImage: null,
+  priceInput: "",
+};
 
-const onboardingSteps = [
-  {
-    id: 1,
-    title: "Add your people",
-    text: "Start by adding contacts so Hinted can turn birthdays, plans, and gift moments into useful updates.",
-  },
-  {
-    id: 2,
-    title: "Save hints as you go",
-    text: "Hints you save for friends and family will begin to shape this feed automatically.",
-  },
-  {
-    id: 3,
-    title: "Watch the feed fill itself",
-    text: "Once contacts are added, demo activity is replaced by real reminders, shared circle updates, and reactions.",
-  },
-];
-
-const demoContacts = [
+const demoHints = [
   {
     id: "demo-1",
-    name: "Maya",
-    role: "Friend",
-    note: "On Hinted",
-    initials: "M",
-    colors: "from-[#efc3af] to-[#ae6e57]",
+    title: "Weekend cabin",
+    retailer: "airbnb.co.uk",
+    priceLabel: "From £320",
+    numericPrice: 320,
+    image:
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
+    fallbackGradient: "from-[#d9dfcf] via-[#b9c7aa] to-[#90a27e]",
+    starred: true,
+    private: false,
+    size: "medium",
+    url: "https://www.airbnb.co.uk/",
+    position: 0,
+    needsReview: false,
   },
   {
     id: "demo-2",
-    name: "James",
-    role: "Brother",
-    note: "Not on Hinted yet",
-    initials: "J",
-    colors: "from-[#4e596d] to-[#212a3c]",
+    title: "Sony headphones",
+    retailer: "amazon.co.uk",
+    priceLabel: "About £249",
+    numericPrice: 249,
+    image:
+      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
+    fallbackGradient: "from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]",
+    starred: false,
+    private: false,
+    size: "medium",
+    url: "https://www.amazon.co.uk/",
+    position: 1,
+    needsReview: false,
   },
   {
     id: "demo-3",
-    name: "Fiona",
-    role: "Friend",
-    note: "On Hinted",
-    initials: "F",
-    colors: "from-[#809168] to-[#41512e]",
+    title: "Silk pillowcases",
+    retailer: "johnlewis.com",
+    priceLabel: "About £45",
+    numericPrice: 45,
+    image:
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
+    fallbackGradient: "from-[#efe5de] via-[#e5d2c8] to-[#d1b2a4]",
+    starred: false,
+    private: true,
+    size: "small",
+    url: "https://www.johnlewis.com/",
+    position: 2,
+    needsReview: false,
   },
-];
-
-const demoFeedItems = [
   {
-    id: "demo-feed-1",
-    event_type: "friend_added",
-    actor_name: "Maya",
-    title: "was added as a friend",
-    body: "You’ve started building your gifting network.",
-    created_at: new Date().toISOString(),
-    comments: [],
-    reactions: [],
-    isDemo: true,
+    id: "demo-4",
+    title: "Hotel voucher",
+    retailer: "booking.com",
+    priceLabel: "From £1290",
+    numericPrice: 1290,
+    image:
+      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+    fallbackGradient: "from-[#d5dbee] via-[#b3c0df] to-[#8f9fc9]",
+    starred: true,
+    private: false,
+    size: "large",
+    url: "https://www.booking.com/",
+    position: 3,
+    needsReview: false,
   },
 ];
-
-const eventTypeConfig = {
-  friend_added: {
-    chip: "bg-[#fff3ee] text-[#e07c54]",
-    border: "border-[#f6ddd2]",
-    icon: "👋",
-    badge: "Friend",
-    actionText: "View hints",
-    actionHref: "/hints",
-    avatarColors: "from-[#efcdbf] to-[#c88c73]",
-  },
-  hint_added: {
-    chip: "bg-[#f5f3ff] text-[#7c5cbf]",
-    border: "border-[#e5defa]",
-    icon: "🎁",
-    badge: "Hint",
-    actionText: "View hint",
-    actionHref: "/shop",
-    avatarColors: "from-[#e7cab8] to-[#b97d66]",
-  },
-  circle_joined: {
-    chip: "bg-[#edf6eb] text-[#4a7a3a]",
-    border: "border-[#deebda]",
-    icon: "💍",
-    badge: "Circle",
-    actionText: "Open circle",
-    actionHref: "/circles",
-    avatarColors: "from-[#98a47d] to-[#5f7046]",
-  },
-  circle_top_up: {
-    chip: "bg-[#eef6ea] text-[#5b7a3c]",
-    border: "border-[#dcead4]",
-    icon: "💸",
-    badge: "Top up",
-    actionText: "Open circle",
-    actionHref: "/circles",
-    avatarColors: "from-[#aab88f] to-[#687a4e]",
-  },
-  circle_milestone: {
-    chip: "bg-[#fff7e8] text-[#af7b14]",
-    border: "border-[#f3e3b8]",
-    icon: "⭐",
-    badge: "Milestone",
-    actionText: "Open circle",
-    actionHref: "/circles",
-    avatarColors: "from-[#dcc4b5] to-[#b78972]",
-  },
-  reminder: {
-    chip: "bg-[#fff3ee] text-[#e07c54]",
-    border: "border-[#f6ddd2]",
-    icon: "🗓️",
-    badge: "Reminder",
-    actionText: "Shop",
-    actionHref: "/shop",
-    avatarColors: "from-[#efcdbf] to-[#c88c73]",
-  },
-};
-
-const reactionOptions = ["❤️", "🎉", "👏"];
-
-const eventTypeStyles = {
-  birthday: {
-    dot: "bg-[#efb39a]",
-    pill: "bg-[#fff1ea] text-[#c96d4f]",
-    label: "Birthday",
-  },
-  christmas: {
-    dot: "bg-[#cf6a6a]",
-    pill: "bg-[#fff0f0] text-[#b04a4a]",
-    label: "Christmas",
-  },
-  anniversary: {
-    dot: "bg-[#d69aae]",
-    pill: "bg-[#fff2f6] text-[#b85c79]",
-    label: "Anniversary",
-  },
-  celebration: {
-    dot: "bg-[#e6aa54]",
-    pill: "bg-[#fff7e8] text-[#af7b14]",
-    label: "Celebration",
-  },
-  reminder: {
-    dot: "bg-[#bca7de]",
-    pill: "bg-[#f5f0ff] text-[#7f62b2]",
-    label: "Reminder",
-  },
-  circle: {
-    dot: "bg-[#87986f]",
-    pill: "bg-[#eef5ea] text-[#5d7243]",
-    label: "Circle",
-  },
-};
-
-function getInitials(name) {
-  return String(name || "")
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() || "")
-    .join("");
-}
-
-function getRelationshipGradient(role) {
-  const normalized = String(role || "").toLowerCase();
-
-  if (normalized.includes("partner") || normalized.includes("spouse")) {
-    return "from-[#e8b9a7] to-[#bf755f]";
-  }
-  if (
-    normalized.includes("family") ||
-    normalized.includes("parent") ||
-    normalized.includes("child") ||
-    normalized.includes("sibling") ||
-    normalized.includes("cousin")
-  ) {
-    return "from-[#eac8b8] to-[#9d6957]";
-  }
-  if (normalized.includes("colleague")) {
-    return "from-[#b7c8db] to-[#6b88a7]";
-  }
-  if (normalized.includes("brother")) {
-    return "from-[#4e596d] to-[#212a3c]";
-  }
-
-  return "from-[#efcdbf] to-[#bb8168]";
-}
-
-function isValidEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim().toLowerCase());
-}
-
-function normalizeSupabaseError(error, fallback) {
-  if (!error) return fallback;
-  const parts = [error.message, error.details, error.hint].filter(Boolean);
-  return parts.length ? parts.join(" — ") : fallback;
-}
-
-function relationshipLabelFromArray(relationshipTypes) {
-  if (!Array.isArray(relationshipTypes) || relationshipTypes.length === 0) return "Friend";
-  return relationshipTypes[0] || "Friend";
-}
-
-function buildContactRecordFromRow(row) {
-  const relationship = relationshipLabelFromArray(row?.relationship_types);
-  const safeName = row?.name || row?.email || "Unnamed contact";
-
-  return {
-    id: row.id,
-    name: safeName,
-    role: relationship,
-    note: "Not on Hinted yet",
-    initials: getInitials(safeName),
-    colors: getRelationshipGradient(relationship),
-    email: row?.email || "",
-  };
-}
-
-function formatRelativeFromDate(dateString) {
-  if (!dateString) return "Recently";
-
-  const now = new Date();
-  const value = new Date(dateString);
-  const diffMs = now.getTime() - value.getTime();
-
-  if (Number.isNaN(diffMs)) return "Recently";
-
-  const minutes = Math.floor(diffMs / (1000 * 60));
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes}m ago`;
-
-  const hours = Math.floor(diffMs / (1000 * 60 * 60));
-  if (hours < 24) return `${hours}h ago`;
-
-  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (days < 7) return `${days}d ago`;
-
-  return value.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-  });
-}
-
-function parseDateOnly(dateString) {
-  if (!dateString) return null;
-  const [year, month, day] = String(dateString).split("-").map(Number);
-  if (!year || !month || !day) return null;
-  return new Date(year, month - 1, day);
-}
-
-function startOfDay(date) {
-  const value = new Date(date);
-  value.setHours(0, 0, 0, 0);
-  return value;
-}
-
-function diffInDaysFromToday(dateString) {
-  const target = parseDateOnly(dateString);
-  if (!target) return null;
-
-  const today = startOfDay(new Date());
-  const targetDay = startOfDay(target);
-  const diffMs = targetDay.getTime() - today.getTime();
-  return Math.round(diffMs / (1000 * 60 * 60 * 24));
-}
-
-function formatReminderDistance(diffDays) {
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Tomorrow";
-  if (diffDays < 7) return `In ${diffDays} days`;
-  if (diffDays === 7) return "In 1 week";
-
-  if (diffDays < 31) {
-    const weeks = Math.round(diffDays / 7);
-    return `In ${weeks} week${weeks === 1 ? "" : "s"}`;
-  }
-
-  const months = Math.round(diffDays / 30);
-  return `In ${months} month${months === 1 ? "" : "s"}`;
-}
-
-function getMonthData(date) {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const startDay = (firstDay.getDay() + 6) % 7;
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const daysInPrevMonth = new Date(year, month, 0).getDate();
-  const cells = [];
-
-  for (let i = 0; i < startDay; i++) {
-    const day = daysInPrevMonth - startDay + i + 1;
-    cells.push({
-      key: `prev-${day}`,
-      day,
-      currentMonth: false,
-      date: new Date(year, month - 1, day),
-    });
-  }
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    cells.push({
-      key: `current-${day}`,
-      day,
-      currentMonth: true,
-      date: new Date(year, month, day),
-    });
-  }
-
-  while (cells.length < 35) {
-    const day = cells.length - (startDay + daysInMonth) + 1;
-    cells.push({
-      key: `next-${day}`,
-      day,
-      currentMonth: false,
-      date: new Date(year, month + 1, day),
-    });
-  }
-
-  return cells;
-}
 
 function LogoMark() {
   return (
-    <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg">
+    <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] border border-[#efc4b2] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg">
       <span className="text-lg">🎁</span>
     </div>
   );
 }
 
-function FeedAction({ text, href, disabled = false }) {
-  if (href && !disabled) {
-    return (
-      <Link
-        href={href}
-        className="inline-flex h-10 items-center justify-center rounded-full border border-[#ebdfd8] bg-white px-4 text-sm font-medium text-slate-600 hover:bg-slate-50"
-      >
-        {text}
-      </Link>
+function errorToMessage(value) {
+  if (!value) return "Something went wrong.";
+  if (typeof value === "string") return value;
+  if (value instanceof Error) return value.message || "Something went wrong.";
+
+  if (typeof value === "object") {
+    if (typeof value.message === "string" && value.message.trim()) return value.message;
+    if (typeof value.error === "string" && value.error.trim()) return value.error;
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return "Something went wrong.";
+    }
+  }
+
+  return String(value);
+}
+
+function normaliseRetailer(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "Saved link";
+  }
+}
+
+function isValidHttpUrl(value = "") {
+  try {
+    const withProtocol =
+      value.startsWith("http://") || value.startsWith("https://") ? value : `https://${value}`;
+    const parsed = new URL(withProtocol);
+    return ["http:", "https:"].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
+function normaliseInputUrl(value = "") {
+  const trimmed = String(value).trim();
+  if (!trimmed) return "";
+  return trimmed.startsWith("http://") || trimmed.startsWith("https://")
+    ? trimmed
+    : `https://${trimmed}`;
+}
+
+function detectCurrency(raw = "") {
+  const text = String(raw || "").trim();
+  if (!text) return null;
+  if (text.includes("£")) return "GBP";
+  if (text.includes("$") && !text.includes("A$") && !text.includes("C$") && !text.includes("NZ$")) return "USD";
+  if (text.includes("€")) return "EUR";
+  if (/\bR\s?\d/i.test(text) || /\bZAR\b/i.test(text)) return "ZAR";
+  return null;
+}
+
+function extractNumericPrice(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (!value || typeof value !== "string") return null;
+
+  const cleaned = value.replace(/,/g, "");
+  const match =
+    cleaned.match(/(?:£|\$|€)\s?(\d+(?:\.\d{1,2})?)/) ||
+    cleaned.match(/\bR\s?(\d+(?:\.\d{1,2})?)/i) ||
+    cleaned.match(/(\d+(?:\.\d{1,2})?)/);
+
+  if (!match) return null;
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getSizeFromPrice(price) {
+  if (price == null || price <= 100) return "small";
+  if (price <= 1000) return "medium";
+  return "large";
+}
+
+function getAspectRatio(size) {
+  if (size === "large") return "1 / 1.7";
+  if (size === "medium") return "1 / 1.35";
+  return "1 / 1";
+}
+
+function formatPriceLabel(price, rawPrice, currency = ACTIVE_CURRENCY) {
+  if (currency !== ACTIVE_CURRENCY) return "Price unavailable";
+  if (rawPrice && typeof rawPrice === "string" && detectCurrency(rawPrice) === ACTIVE_CURRENCY) {
+    return rawPrice;
+  }
+  if (price == null) return "Price unavailable";
+  if (currency === "GBP") return `About £${Math.round(price)}`;
+  return `About ${Math.round(price)}`;
+}
+
+function sanitisePrice(rawPrice, numericPrice) {
+  const detectedCurrency = detectCurrency(rawPrice) || ACTIVE_CURRENCY;
+  if (detectedCurrency !== ACTIVE_CURRENCY) {
+    return { numericPrice: null, priceLabel: "Price unavailable" };
+  }
+  return {
+    numericPrice,
+    priceLabel: formatPriceLabel(numericPrice, rawPrice, ACTIVE_CURRENCY),
+  };
+}
+
+function buildFallbackGradient(index) {
+  const gradients = [
+    "from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]",
+    "from-[#d9dfcf] via-[#b9c7aa] to-[#90a27e]",
+    "from-[#f3d5cc] via-[#e9b39f] to-[#d98c76]",
+    "from-[#d5dbee] via-[#b3c0df] to-[#8f9fc9]",
+    "from-[#eadce8] via-[#d8bfd1] to-[#bb9ab6]",
+    "from-[#d6e7eb] via-[#b5ced7] to-[#8fb3c5]",
+  ];
+  return gradients[index % gradients.length];
+}
+
+function shortenTitle(title = "", retailer = "") {
+  const source = String(title || "").trim();
+  if (!source) return "Saved hint";
+
+  const cleanRetailer = String(retailer || "")
+    .replace(/^www\./i, "")
+    .replace(/\.(co\.uk|com|co|net|org)$/i, "")
+    .trim()
+    .toLowerCase();
+
+  const stopWords = new Set([
+    "the",
+    "and",
+    "with",
+    "for",
+    "from",
+    "new",
+    "latest",
+    "edition",
+    "model",
+    "official",
+    "amazon",
+    "uk",
+    "black",
+    "white",
+    "silver",
+    "blue",
+    "green",
+    "pink",
+    "grey",
+    "gray",
+    "wireless",
+    "bluetooth",
+  ]);
+
+  let cleaned = source
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\[[^\]]*\]/g, " ")
+    .replace(/[|:;,/]/g, " ")
+    .replace(/\b[A-Z0-9-]{6,}\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  let words = cleaned.split(" ").filter(Boolean);
+  words = words.filter((word) => {
+    const lower = word.toLowerCase();
+    if (stopWords.has(lower)) return false;
+    if (lower === cleanRetailer) return false;
+    if (/^\d+$/.test(lower)) return false;
+    return true;
+  });
+
+  if (!words.length) return "Saved hint";
+  const result = words.slice(0, 2).join(" ").trim();
+  return result.charAt(0).toUpperCase() + result.slice(1);
+}
+
+function splitIntoColumns(items, columnCount = 3) {
+  const columns = Array.from({ length: columnCount }, () => []);
+  items.forEach((item, index) => {
+    columns[index % columnCount].push(item);
+  });
+  return columns;
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(new Error("Could not read the selected image."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function buildDraftFromPreview(data, rawUrl) {
+  const extractedNumericPrice =
+    typeof data?.numericPrice === "number" ? data.numericPrice : extractNumericPrice(data?.priceText);
+  const priceMeta = sanitisePrice(data?.priceText, extractedNumericPrice);
+  const retailer = data?.siteName || normaliseRetailer(rawUrl);
+  const title = shortenTitle(data?.title || "Saved hint", retailer);
+  const image = typeof data?.image === "string" && data.image.startsWith("http") ? data.image : "";
+  const finalUrl = data?.url || normaliseInputUrl(rawUrl);
+  const needsReview = Boolean(data?.needsReview) || !image || !title || !priceMeta.numericPrice;
+
+  return {
+    title,
+    retailer,
+    image,
+    uploadedImage: null,
+    url: finalUrl,
+    priceInput: priceMeta.numericPrice != null ? String(priceMeta.numericPrice) : "",
+    priceLabel: priceMeta.priceLabel,
+    numericPrice: priceMeta.numericPrice,
+    starred: false,
+    private: false,
+    needsReview,
+    source: data?.source || "preview",
+  };
+}
+
+async function fetchPreview(url) {
+  const response = await fetch("/api/link-preview", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ url, currency: ACTIVE_CURRENCY }),
+  });
+
+  const raw = await response.text();
+  let data = null;
+
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    throw new Error(raw || "The preview service returned an invalid response.");
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error ||
+        data?.message ||
+        (typeof data === "string" ? data : "Could not fetch this link preview.")
     );
   }
 
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      className={`inline-flex h-10 items-center justify-center rounded-full border px-4 text-sm font-medium ${
-        disabled
-          ? "cursor-not-allowed border-[#efe6e1] bg-[#faf7f5] text-slate-400"
-          : "border-[#ebdfd8] bg-white text-slate-600 hover:bg-slate-50"
-      }`}
-    >
-      {text}
-    </button>
-  );
+  return data;
 }
 
-function ContactCard({ contact, onDeleteClick, demo = false }) {
+function HintFormFields({
+  form,
+  setForm,
+  prefix = "new",
+  showReviewCopy = false,
+  showToggles = true,
+  imageHelpText = "No image yet. Upload one here if you want to add a photo.",
+}) {
+  const previewImage = form.uploadedImage || form.image;
+
   return (
-    <article className="rounded-[22px] border border-[#f0dfd6] bg-white p-4 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div
-          className={`flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b text-[12px] font-bold text-white ${contact.colors}`}
-        >
-          {contact.initials}
+    <div className="space-y-4">
+      {showReviewCopy && form.needsReview ? (
+        <div className="rounded-[22px] border border-[#f4cdbd] bg-[#fff6f1] p-4 text-sm text-[#9b553d]">
+          We couldn’t fill everything automatically. You can still save this now, and image and price are optional.
         </div>
+      ) : null}
 
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-900">{contact.name}</p>
-          <p className="text-xs text-slate-500">
-            {contact.role}
-            {contact.note ? ` · ${contact.note}` : ""}
-          </p>
-        </div>
+      <div>
+        <label htmlFor={`${prefix}-link`} className="mb-2 block text-sm font-medium text-slate-700">
+          Link
+        </label>
+        <input
+          id={`${prefix}-link`}
+          type="url"
+          value={form.url}
+          onChange={(e) => setForm((current) => ({ ...current, url: e.target.value }))}
+          className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
+        />
+      </div>
 
-        {!demo ? (
+      <div>
+        <label htmlFor={`${prefix}-title`} className="mb-2 block text-sm font-medium text-slate-700">
+          Name
+        </label>
+        <input
+          id={`${prefix}-title`}
+          type="text"
+          value={form.title}
+          onChange={(e) => setForm((current) => ({ ...current, title: e.target.value }))}
+          placeholder="Give this hint a clear name"
+          className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
+        />
+      </div>
+
+      <div>
+        <label htmlFor={`${prefix}-price`} className="mb-2 block text-sm font-medium text-slate-700">
+          Price (optional)
+        </label>
+        <input
+          id={`${prefix}-price`}
+          type="text"
+          value={form.priceInput}
+          onChange={(e) => setForm((current) => ({ ...current, priceInput: e.target.value }))}
+          placeholder="Leave blank if you don’t want to add a price"
+          className="h-14 w-full rounded-[18px] border border-[#eadcd3] bg-[#fcfaf8] px-5 text-[15px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
+        />
+      </div>
+
+      <div>
+        <label htmlFor={`${prefix}-image`} className="mb-2 block text-sm font-medium text-slate-700">
+          Photo (optional)
+        </label>
+        <input
+          id={`${prefix}-image`}
+          type="file"
+          accept="image/*"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const imageUrl = await fileToDataUrl(file);
+            setForm((current) => ({ ...current, uploadedImage: imageUrl }));
+          }}
+          className="block w-full rounded-[18px] border border-dashed border-[#eadcd3] bg-[#fcfaf8] px-4 py-4 text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-[#fff1e9] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#df7c59]"
+        />
+
+        {previewImage ? (
+          <div className="mt-3 overflow-hidden rounded-[20px] border border-[#efe0d7] bg-[#faf6f3]">
+            <img
+              src={previewImage}
+              alt={form.title || "Selected hint image"}
+              className="h-40 w-full object-cover"
+            />
+          </div>
+        ) : (
+          <div className="mt-3 rounded-[20px] border border-dashed border-[#efe0d7] bg-[#faf6f3] px-4 py-8 text-center text-sm text-slate-500">
+            {imageHelpText}
+          </div>
+        )}
+      </div>
+
+      {showToggles ? (
+        <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => onDeleteClick(contact)}
-            className="inline-flex h-9 items-center justify-center rounded-full border border-[#efc0ba] bg-[#fff4f2] px-3 text-[12px] font-semibold text-[#b14f43]"
+            onClick={() => setForm((current) => ({ ...current, starred: !current.starred }))}
+            className={`rounded-full border px-4 py-2 text-sm font-semibold ${
+              form.starred
+                ? "border-[#ffd8c9] bg-[#fff2ea] text-[#e27956]"
+                : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
+            }`}
           >
-            Delete
+            {form.starred ? "★ Starred" : "★ Star"}
           </button>
-        ) : null}
-      </div>
-    </article>
+
+          <button
+            type="button"
+            onClick={() => setForm((current) => ({ ...current, private: !current.private }))}
+            className={`rounded-full border px-4 py-2 text-sm font-semibold ${
+              form.private
+                ? "border-[#ffd8c9] bg-[#fffaf7] text-[#e08a67]"
+                : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
+            }`}
+          >
+            {form.private ? "🔒 Private" : "🔓 Public"}
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
-function FeedItem({
-  item,
-  activeComposerId,
-  setActiveComposerId,
-  draftComment,
-  setDraftComment,
-  onSubmitComment,
-  onReact,
-}) {
-  const config = eventTypeConfig[item.event_type] || eventTypeConfig.friend_added;
-  const reactionCounts = item.reactionCounts || {};
-  const viewerReaction = item.viewerReaction || null;
-  const allowEngagement = item.allowEngagement;
-  const isDemo = Boolean(item.isDemo);
+function AddHintModal({ isOpen, form, setForm, onClose, onSubmit, isSaving }) {
+  if (!isOpen) return null;
 
   return (
-    <article className={`rounded-[28px] border bg-white p-5 shadow-sm ${config.border}`}>
-      <div className="flex items-start gap-4">
-        <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b text-[12px] font-bold text-white ${config.avatarColors}`}
-        >
-          {getInitials(item.actor_name || item.title || "H")}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${config.chip}`}>
-                  {config.icon} {config.badge}
-                </span>
-                {isDemo ? (
-                  <span className="rounded-full border border-[#eadfd7] bg-[#fffaf7] px-2.5 py-1 text-[11px] font-medium text-slate-500">
-                    Demo data
-                  </span>
-                ) : null}
-              </div>
-
-              <p className="mt-3 text-[15px] leading-7 text-slate-700">
-                <span className="font-semibold text-slate-900">{item.actor_name || "Activity"}</span>{" "}
-                {item.title}
-              </p>
-
-              {item.body ? (
-                <p className="mt-1 text-[14px] leading-6 text-slate-500">{item.body}</p>
-              ) : null}
-            </div>
-
-            <span className="shrink-0 text-[12px] text-slate-400">
-              {item.event_type === "reminder" && item.reminderLabel
-                ? item.reminderLabel
-                : formatRelativeFromDate(item.created_at)}
-            </span>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(33,24,20,0.42)] px-4 py-8 backdrop-blur-sm">
+      <div className="w-full max-w-[620px] rounded-[30px] border border-[#efdcd2] bg-white p-6 shadow-[0_28px_80px_rgba(75,45,30,0.18)] sm:p-7">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#e08a67]">
+              New hint
+            </p>
+            <h2 className="mt-2 text-[28px] font-semibold tracking-[-0.05em] text-slate-900">
+              Review before saving
+            </h2>
           </div>
 
-          {allowEngagement ? (
-            <>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                {reactionOptions.map((emoji) => {
-                  const count = reactionCounts[emoji] || 0;
-                  const active = viewerReaction?.emoji === emoji;
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-[#efe0d7] text-slate-500 hover:bg-[#faf6f3]"
+            aria-label="Close add modal"
+          >
+            ✕
+          </button>
+        </div>
 
-                  return (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => onReact(item, emoji)}
-                      className={`inline-flex h-10 items-center justify-center rounded-full border px-3 text-sm ${
-                        active
-                          ? "border-[#ee8d69] bg-[#fff1ea] text-[#d96d4f]"
-                          : "border-[#ebdfd8] bg-[#fffaf7] text-slate-700 hover:bg-[#fff2eb]"
-                      }`}
-                    >
-                      <span>{emoji}</span>
-                      <span className="ml-1 text-xs">{count}</span>
-                    </button>
-                  );
-                })}
+        <div className="mt-6">
+          <HintFormFields
+            form={form}
+            setForm={setForm}
+            prefix="new"
+            showReviewCopy
+            showToggles
+            imageHelpText="No image yet. Upload one only if you want to add a photo now."
+          />
+        </div>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    setActiveComposerId((current) => (current === item.id ? null : item.id))
-                  }
-                  className="inline-flex h-10 items-center justify-center rounded-full border border-[#ebdfd8] bg-white px-4 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                >
-                  Comment
-                </button>
+        <div className="mt-7 flex justify-end">
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={isSaving}
+            className="inline-flex h-12 items-center justify-center rounded-full border border-[#ee8d69] bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg disabled:opacity-70"
+          >
+            {isSaving ? "Saving..." : "Save hint"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-                <FeedAction text={config.actionText} href={config.actionHref} />
-              </div>
+function EditHintModal({
+  isOpen,
+  editForm,
+  setEditForm,
+  onClose,
+  onSave,
+  onRefreshFromLink,
+  onDelete,
+  isRefreshing,
+  isSaving,
+  hint,
+}) {
+  if (!isOpen || !hint) return null;
 
-              {(item.comments || []).length > 0 ? (
-                <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
-                  {item.comments.map((comment) => (
-                    <div key={comment.id} className="rounded-[18px] bg-[#faf7f4] px-4 py-3">
-                      <p className="text-[13px] leading-6 text-slate-600">
-                        <span className="font-semibold text-slate-900">
-                          {comment.author_name || "Someone"}
-                        </span>{" "}
-                        {comment.body}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(33,24,20,0.42)] px-4 py-8 backdrop-blur-sm">
+      <div className="w-full max-w-[620px] rounded-[30px] border border-[#efdcd2] bg-white p-6 shadow-[0_28px_80px_rgba(75,45,30,0.18)] sm:p-7">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#e08a67]">
+              Edit hint
+            </p>
+            <h2 className="mt-2 text-[28px] font-semibold tracking-[-0.05em] text-slate-900">
+              Update this card
+            </h2>
+          </div>
 
-              {activeComposerId === item.id ? (
-                <div className="mt-4 flex gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white">
-                    Y
-                  </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-[#efe0d7] text-slate-500 hover:bg-[#faf6f3]"
+            aria-label="Close edit modal"
+          >
+            ✕
+          </button>
+        </div>
 
-                  <div className="flex w-full gap-2">
-                    <input
-                      type="text"
-                      value={draftComment}
-                      onChange={(e) => setDraftComment(e.target.value)}
-                      placeholder="Write a comment..."
-                      className="h-11 w-full rounded-full border border-[#e9ddd6] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => onSubmitComment(item)}
-                      className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-sm font-semibold text-white"
-                    >
-                      Send
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <FeedAction
-                text={isDemo ? "Live interactions unlock once real activity begins" : config.actionText}
-                href={isDemo ? null : config.actionHref}
-                disabled={isDemo}
-              />
+        <div className="mt-6">
+          <HintFormFields
+            form={editForm}
+            setForm={setEditForm}
+            prefix="edit"
+            showReviewCopy={false}
+            showToggles={false}
+            imageHelpText="No image yet. Add or replace a photo here if you want."
+          />
+        </div>
+
+        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-between">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="inline-flex h-12 items-center justify-center rounded-full border border-[#f1c9bb] bg-[#fff4ef] px-5 text-sm font-semibold text-[#d56949] hover:bg-[#ffe9df]"
+          >
+            Delete hint
+          </button>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={onRefreshFromLink}
+              disabled={isRefreshing}
+              className="inline-flex h-12 items-center justify-center rounded-full border border-[#efe0d7] bg-[#f7f2ee] px-5 text-sm font-semibold text-slate-700 hover:bg-[#f1ebe6] disabled:opacity-60"
+            >
+              {isRefreshing ? "Refreshing..." : "Refresh from link"}
+            </button>
+
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={isSaving}
+              className="inline-flex h-12 items-center justify-center rounded-full border border-[#ee8d69] bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg disabled:opacity-70"
+            >
+              {isSaving ? "Saving..." : "Save changes"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HintCard({
+  hint,
+  onEdit,
+  onToggleStarred,
+  onTogglePrivate,
+  isDragging,
+  dragHandleListeners,
+  dragHandleAttributes,
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(hint.image) && !imageFailed;
+
+  return (
+    <article
+      className={`group relative w-full overflow-hidden rounded-[30px] border border-[#efe1d8] bg-white transition-all duration-300 ${
+        isDragging
+          ? "scale-[1.02] shadow-[0_26px_70px_rgba(113,74,49,0.22)]"
+          : "shadow-[0_10px_30px_rgba(176,118,86,0.10)] hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(176,118,86,0.14)]"
+      }`}
+      style={{ aspectRatio: getAspectRatio(hint.size) }}
+    >
+      <div className="absolute inset-0">
+        {showImage ? (
+          <>
+            <img
+              src={hint.image}
+              alt={hint.title}
+              className={`h-full w-full object-cover transition-transform duration-500 ${
+                isDragging ? "scale-[1.02]" : "group-hover:scale-[1.03]"
+              } ${hint.private ? "opacity-80" : ""}`}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={() => setImageFailed(true)}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.82)] via-[rgba(22,18,16,0.20)] to-[rgba(255,255,255,0.02)]" />
+          </>
+        ) : (
+          <>
+            <div
+              className={`absolute inset-0 bg-gradient-to-br ${hint.fallbackGradient} ${
+                hint.private ? "opacity-80" : ""
+              }`}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.70)] via-[rgba(22,18,16,0.16)] to-transparent" />
+          </>
+        )}
+      </div>
+
+      <div className="absolute left-4 right-4 top-4 z-10 flex items-start justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="flex cursor-grab active:cursor-grabbing items-center gap-1 rounded-full border border-white/60 bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm"
+            {...dragHandleAttributes}
+            {...dragHandleListeners}
+          >
+            ⋮⋮ Drag
+          </button>
+
+          {hint.starred && (
+            <div className="rounded-full border border-[#ffd8c9] bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
+              Top pick
+            </div>
+          )}
+
+          {hint.private && (
+            <div className="rounded-full border border-white/60 bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-sm">
+              Private
+            </div>
+          )}
+
+          {hint.needsReview && (
+            <div className="rounded-full border border-[#f6d2c2] bg-[#fff6f1] px-3 py-1 text-[11px] font-semibold text-[#c46545]">
+              Needs review
             </div>
           )}
         </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onEdit(hint)}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/78 text-[15px] text-slate-500 backdrop-blur-sm hover:text-slate-800"
+            aria-label="Edit hint"
+          >
+            ✎
+          </button>
+
+          <button
+            onClick={() => onToggleStarred(hint)}
+            className={`flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/78 text-[16px] backdrop-blur-sm ${
+              hint.starred ? "text-[#f36f64]" : "text-slate-400 hover:text-[#f36f64]"
+            }`}
+            aria-label={hint.starred ? "Unhighlight hint" : "Highlight hint"}
+            type="button"
+          >
+            ★
+          </button>
+        </div>
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 z-10 p-4 sm:p-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+              hint.size === "large"
+                ? "border-[#445541] bg-[#2f3b2d] text-white"
+                : hint.size === "medium"
+                  ? "border-[#ffd8c9] bg-[#fff1e9] text-[#df7c59]"
+                  : "border-[#d7e4ce] bg-[#f1f5ec] text-[#627f53]"
+            }`}
+          >
+            {hint.priceLabel}
+          </span>
+        </div>
+
+        <h2
+          className="mt-3 overflow-hidden text-[22px] font-semibold tracking-[-0.05em] text-white"
+          style={{
+            display: "-webkit-box",
+            WebkitBoxOrient: "vertical",
+            WebkitLineClamp: 2,
+            lineClamp: 2,
+          }}
+        >
+          {hint.title}
+        </h2>
+
+        <p className="mt-1 truncate text-[13px] text-white/78">{hint.retailer}</p>
+
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onTogglePrivate(hint)}
+            className="rounded-full border border-white/60 bg-white/85 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-sm hover:bg-white"
+          >
+            {hint.private ? "🔒 Private" : "🔓 Public"}
+          </button>
+
+          <a
+            href={hint.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full border border-white/60 bg-white/85 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-sm hover:bg-white"
+          >
+            Open
+          </a>
+        </div>
       </div>
     </article>
   );
 }
 
-export default function FeedClient() {
-  const supabase = createClient();
+function SortableHintCard({ hint, onEdit, onToggleStarred, onTogglePrivate }) {
+  const animateLayoutChanges = (args) => {
+    if (args.isSorting || args.wasDragging) return defaultAnimateLayoutChanges(args);
+    return true;
+  };
 
-  const [activeFilter, setActiveFilter] = useState("all");
-  const [sessionUser, setSessionUser] = useState(null);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: hint.id,
+    animateLayoutChanges,
+    transition: {
+      duration: 240,
+      easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+    },
+  });
 
-  const [contacts, setContacts] = useState([]);
-  const [isLoadingContacts, setIsLoadingContacts] = useState(true);
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 20 : 1,
+    position: "relative",
+  };
 
-  const [feedItems, setFeedItems] = useState([]);
-  const [feedLoading, setFeedLoading] = useState(true);
-  const [feedError, setFeedError] = useState("");
+  return (
+    <div ref={setNodeRef} style={style} className="mb-6 break-inside-avoid">
+      <HintCard
+        hint={hint}
+        onEdit={onEdit}
+        onToggleStarred={onToggleStarred}
+        onTogglePrivate={onTogglePrivate}
+        isDragging={isDragging}
+        dragHandleAttributes={attributes}
+        dragHandleListeners={listeners}
+      />
+    </div>
+  );
+}
 
-  const [calendarEvents, setCalendarEvents] = useState([]);
-  const [calendarLoading, setCalendarLoading] = useState(true);
+export default function HintsClient() {
+  const [hints, setHints] = useState([]);
+  const [link, setLink] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+  const [error, setError] = useState("");
+  const [editingHintId, setEditingHintId] = useState(null);
+  const [editForm, setEditForm] = useState(EMPTY_EDIT_FORM);
+  const [isRefreshingEdit, setIsRefreshingEdit] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeId, setActiveId] = useState(null);
 
-  const [pendingInvites, setPendingInvites] = useState([]);
-  const [invitesLoading, setInvitesLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSubmittingNewHint, setIsSubmittingNewHint] = useState(false);
+  const [pendingHint, setPendingHint] = useState(null);
+  const [newHintForm, setNewHintForm] = useState(EMPTY_NEW_HINT_FORM);
 
-  const [activeComposerId, setActiveComposerId] = useState(null);
-  const [draftComment, setDraftComment] = useState("");
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
-  const loadContacts = useCallback(
-    async (userId) => {
-      setIsLoadingContacts(true);
+  const measuring = {
+    droppable: { strategy: MeasuringStrategy.Always },
+  };
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    async function loadSession() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setCurrentUser(user || null);
+    }
+
+    loadSession();
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setHints([]);
+      setIsLoading(false);
+      return;
+    }
+
+    const supabase = createClient();
+
+    async function loadHints() {
+      setIsLoading(true);
 
       const { data, error } = await supabase
-        .from("profile_connections")
+        .from("hints")
         .select("*")
-        .eq("profile_id", userId)
+        .eq("user_id", currentUser.id)
+        .order("position", { ascending: true })
         .order("created_at", { ascending: false });
 
       if (error) {
-        setContacts([]);
-        setIsLoadingContacts(false);
-        throw new Error(
-          normalizeSupabaseError(error, "Failed to load contacts from profile_connections.")
-        );
+        setError(errorToMessage(error));
+        setHints([]);
+        setIsLoading(false);
+        return;
       }
 
-      const mapped = Array.isArray(data) ? data.map(buildContactRecordFromRow) : [];
-      setContacts(mapped);
-      setIsLoadingContacts(false);
-      return mapped;
-    },
-    [supabase]
-  );
-
-  const transformFeedItem = useCallback((item, userId) => {
-    const comments = Array.isArray(item.feed_comments) ? item.feed_comments : [];
-    const reactions = Array.isArray(item.feed_reactions) ? item.feed_reactions : [];
-
-    const reactionCounts = reactions.reduce((acc, reaction) => {
-      const key = reaction.emoji;
-      if (!key) return acc;
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {});
-
-    const viewerReaction = reactions.find((reaction) => reaction.user_id === userId) || null;
-
-    const allowEngagement =
-      !item.isDemo &&
-      ["friend_added", "hint_added", "circle_joined", "circle_top_up", "circle_milestone"].includes(
-        item.event_type
+      setHints(
+        (data || []).map((row, index) => ({
+          id: row.id,
+          title: row.title || "Saved hint",
+          retailer: row.retailer || normaliseRetailer(row.url || ""),
+          priceLabel: row.price_text || formatPriceLabel(row.numeric_price, null, ACTIVE_CURRENCY),
+          numericPrice: row.numeric_price,
+          image: row.image_url || "",
+          fallbackGradient: buildFallbackGradient(index),
+          starred: Boolean(row.starred),
+          private: Boolean(row.is_private),
+          size: getSizeFromPrice(row.numeric_price),
+          url: row.url || "",
+          position: row.position ?? index,
+          needsReview: false,
+        }))
       );
 
-    return {
-      ...item,
-      comments,
-      reactions,
-      reactionCounts,
-      viewerReaction,
-      allowEngagement,
-    };
-  }, []);
-
-  const loadFeed = useCallback(
-    async (userId) => {
-      setFeedLoading(true);
-      setFeedError("");
-
-      const { data: events, error: eventsError } = await supabase
-        .from("feed_events")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      if (eventsError) {
-        setFeedItems([]);
-        setFeedLoading(false);
-        throw new Error(eventsError.message || "Could not load feed events.");
-      }
-
-      const eventIds = Array.isArray(events) ? events.map((item) => item.id).filter(Boolean) : [];
-
-      let comments = [];
-      let reactions = [];
-
-      if (eventIds.length > 0) {
-        const { data: commentsData } = await supabase
-          .from("feed_comments")
-          .select("id, feed_item_id, user_id, body, created_at")
-          .in("feed_item_id", eventIds)
-          .order("created_at", { ascending: true });
-
-        const { data: reactionsData } = await supabase
-          .from("feed_reactions")
-          .select("id, feed_item_id, user_id, emoji, created_at")
-          .in("feed_item_id", eventIds);
-
-        comments = commentsData || [];
-        reactions = reactionsData || [];
-      }
-
-      const commentsByItem = comments.reduce((acc, comment) => {
-        if (!acc[comment.feed_item_id]) acc[comment.feed_item_id] = [];
-        acc[comment.feed_item_id].push(comment);
-        return acc;
-      }, {});
-
-      const reactionsByItem = reactions.reduce((acc, reaction) => {
-        if (!acc[reaction.feed_item_id]) acc[reaction.feed_item_id] = [];
-        acc[reaction.feed_item_id].push(reaction);
-        return acc;
-      }, {});
-
-      const mapped = (events || []).map((item) =>
-        transformFeedItem(
-          {
-            ...item,
-            feed_comments: commentsByItem[item.id] || [],
-            feed_reactions: reactionsByItem[item.id] || [],
-          },
-          userId
-        )
-      );
-
-      setFeedItems(mapped);
-      setFeedLoading(false);
-      return mapped;
-    },
-    [supabase, transformFeedItem]
-  );
-
-  const loadCalendarEvents = useCallback(
-    async (userId) => {
-      setCalendarLoading(true);
-
-      const { data } = await supabase
-        .from("calendar_events")
-        .select("id, user_id, title, event_date, event_time, type, source, created_at")
-        .or(`source.eq.system,user_id.eq.${userId}`)
-        .order("event_date", { ascending: true });
-
-      setCalendarEvents(data || []);
-      setCalendarLoading(false);
-    },
-    [supabase]
-  );
-
-  const loadPendingInvites = useCallback(async () => {
-    setInvitesLoading(true);
-
-    const { data } = await supabase
-      .from("circle_invites")
-      .select("id, circle_id, invite_name, invite_email, status, created_at")
-      .in("status", ["pending", "viewed"])
-      .order("created_at", { ascending: false });
-
-    setPendingInvites(data || []);
-    setInvitesLoading(false);
-  }, [supabase]);
-
-  useEffect(() => {
-    let active = true;
-
-    async function bootstrap() {
-      try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError) {
-          throw new Error(normalizeSupabaseError(userError, "Failed to get logged-in user."));
-        }
-
-        if (!user) {
-          throw new Error("You must be signed in to view the feed.");
-        }
-
-        if (!active) return;
-        setSessionUser(user);
-
-        await Promise.all([
-          loadContacts(user.id),
-          loadFeed(user.id),
-          loadCalendarEvents(user.id),
-          loadPendingInvites(),
-        ]);
-      } catch (error) {
-        if (active) {
-          setFeedError(error?.message || "Failed to load the feed page.");
-          setIsLoadingContacts(false);
-          setFeedLoading(false);
-          setCalendarLoading(false);
-          setInvitesLoading(false);
-        }
-      }
+      setIsLoading(false);
     }
 
-    bootstrap();
+    loadHints();
+  }, [currentUser]);
 
-    return () => {
-      active = false;
-    };
-  }, [supabase, loadContacts, loadFeed, loadCalendarEvents, loadPendingInvites]);
+  const visibleHints = hints.length > 0 ? hints : demoHints;
+  const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
+  const columns = useMemo(() => splitIntoColumns(visibleHints, 3), [visibleHints]);
 
-  async function createFeedEvent(payload) {
-    if (!sessionUser?.id) return;
-
-    const insertPayload = {
-      user_id: sessionUser.id,
-      event_type: payload.event_type,
-      actor_name: payload.actor_name,
-      title: payload.title,
-      body: payload.body,
-      entity_type: payload.entity_type || null,
-      entity_id: payload.entity_id || null,
-      metadata: payload.metadata || {},
-    };
-
-    const { error } = await supabase.from("feed_events").insert(insertPayload);
-
-    if (error) {
-      throw new Error(error.message || "Could not create feed activity.");
-    }
+  async function persistOrder(nextHints) {
+    if (!currentUser) return;
+    const supabase = createClient();
+    await Promise.all(
+      nextHints.map((hint, index) => supabase.from("hints").update({ position: index }).eq("id", hint.id))
+    );
   }
 
-  async function handleAddContact() {
-    if (!sessionUser?.id) return;
+  function rebuildFromColumns(nextColumns) {
+    return nextColumns.flat().map((hint, index) => ({ ...hint, position: index }));
+  }
 
-    const fallbackName = "New contact";
-    const email = `contact-${Date.now()}@example.com`;
-
-    const { data, error } = await supabase
-      .from("profile_connections")
-      .insert({
-        profile_id: sessionUser.id,
-        name: fallbackName,
-        email,
-        relationship_types: ["Friend"],
-      })
-      .select()
-      .single();
-
-    if (error) {
-      setFeedError(error.message || "Could not save contact.");
-      return;
-    }
-
-    await createFeedEvent({
-      event_type: "friend_added",
-      actor_name: fallbackName,
-      title: "was added as a friend",
-      body: email,
-      entity_type: "profile_connection",
-      entity_id: data?.id || null,
+  function openEditModal(hint) {
+    setEditingHintId(hint.id);
+    setEditForm({
+      title: hint.title || "",
+      url: hint.url || "",
+      retailer: hint.retailer || "",
+      image: hint.image || "",
+      uploadedImage: null,
+      priceInput: hint.numericPrice != null ? String(hint.numericPrice) : "",
     });
-
-    await Promise.all([loadContacts(sessionUser.id), loadFeed(sessionUser.id)]);
   }
 
-  async function handleDeleteContact(contact) {
+  function closeEditModal() {
+    setEditingHintId(null);
+    setEditForm(EMPTY_EDIT_FORM);
+    setIsRefreshingEdit(false);
+    setIsSavingEdit(false);
+  }
+
+  function closeAddModal() {
+    setIsAddModalOpen(false);
+    setPendingHint(null);
+    setIsSubmittingNewHint(false);
+    setNewHintForm(EMPTY_NEW_HINT_FORM);
+  }
+
+  async function saveEditChanges() {
+    if (!currentUser || editingHintId == null) return;
+
+    const trimmedTitle = editForm.title.trim() || "Saved hint";
+    const trimmedUrl = editForm.url.trim();
+    const trimmedRetailer = editForm.retailer?.trim() || normaliseRetailer(trimmedUrl);
+    const parsedNumericPrice = extractNumericPrice(editForm.priceInput);
+    const priceMeta = sanitisePrice(editForm.priceInput, parsedNumericPrice);
+    const finalImage = editForm.uploadedImage || editForm.image || "";
+
+    setIsSavingEdit(true);
+
+    const supabase = createClient();
     const { error } = await supabase
-      .from("profile_connections")
-      .delete()
-      .eq("id", contact.id);
-
-    if (error) {
-      setFeedError(error.message || "Could not delete contact.");
-      return;
-    }
-
-    setContacts((prev) => prev.filter((item) => item.id !== contact.id));
-  }
-
-  async function handleSubmitComment(item) {
-    if (!sessionUser?.id) return;
-    if (!draftComment.trim()) return;
-    if (item.isDemo) return;
-
-    const { data, error } = await supabase
-      .from("feed_comments")
-      .insert({
-        feed_item_id: item.id,
-        user_id: sessionUser.id,
-        body: draftComment.trim(),
+      .from("hints")
+      .update({
+        title: trimmedTitle,
+        url: trimmedUrl,
+        retailer: trimmedRetailer,
+        image_url: finalImage,
+        price_text: priceMeta.priceLabel,
+        numeric_price: priceMeta.numericPrice,
+        size: getSizeFromPrice(priceMeta.numericPrice),
       })
-      .select()
-      .single();
+      .eq("id", editingHintId);
 
     if (error) {
-      setFeedError(error.message || "Could not save comment.");
+      setError(errorToMessage(error));
+      setIsSavingEdit(false);
       return;
     }
 
-    const newComment = {
-      ...data,
-      author_name: "You",
-    };
-
-    setFeedItems((prev) =>
-      prev.map((feedItem) =>
-        feedItem.id === item.id
+    setHints((current) =>
+      current.map((hint) =>
+        hint.id === editingHintId
           ? {
-              ...feedItem,
-              comments: [...(feedItem.comments || []), newComment],
+              ...hint,
+              title: trimmedTitle,
+              url: trimmedUrl || hint.url,
+              retailer: trimmedRetailer,
+              image: finalImage,
+              priceLabel: priceMeta.priceLabel,
+              numericPrice: priceMeta.numericPrice,
+              size: getSizeFromPrice(priceMeta.numericPrice),
+              needsReview: false,
             }
-          : feedItem
+          : hint
       )
     );
 
-    setDraftComment("");
-    setActiveComposerId(null);
+    setIsSavingEdit(false);
+    closeEditModal();
   }
 
-  async function handleReact(item, emoji) {
-    if (!sessionUser?.id) return;
-    if (!item.allowEngagement || item.isDemo) return;
+  async function deleteHint() {
+    if (!currentUser) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("hints").delete().eq("id", editingHintId);
+    if (error) {
+      setError(errorToMessage(error));
+      return;
+    }
+    setHints((current) => current.filter((hint) => hint.id !== editingHintId));
+    closeEditModal();
+  }
 
-    const existing = item.viewerReaction || null;
+  async function toggleStarred(hint) {
+    if (!currentUser) return;
+    const supabase = createClient();
+    const newStarred = !hint.starred;
 
-    if (existing && existing.emoji === emoji) {
-      const { error } = await supabase
-        .from("feed_reactions")
-        .delete()
-        .eq("id", existing.id)
-        .eq("user_id", sessionUser.id);
+    setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, starred: newStarred } : h)));
 
-      if (error) {
-        setFeedError(error.message || "Could not remove reaction.");
-        return;
-      }
-    } else if (existing) {
-      const { error } = await supabase
-        .from("feed_reactions")
-        .update({ emoji })
-        .eq("id", existing.id)
-        .eq("user_id", sessionUser.id);
+    const { error } = await supabase.from("hints").update({ starred: newStarred }).eq("id", hint.id);
+    if (error) {
+      setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, starred: hint.starred } : h)));
+      setError(errorToMessage(error));
+    }
+  }
 
-      if (error) {
-        setFeedError(error.message || "Could not update reaction.");
-        return;
-      }
+  async function togglePrivate(hint) {
+    if (!currentUser) return;
+    const supabase = createClient();
+    const newPrivate = !hint.private;
+
+    setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, private: newPrivate } : h)));
+
+    const { error } = await supabase.from("hints").update({ is_private: newPrivate }).eq("id", hint.id);
+    if (error) {
+      setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, private: hint.private } : h)));
+      setError(errorToMessage(error));
+    }
+  }
+
+  async function refreshHintFromLink() {
+    const trimmed = editForm.url.trim();
+    if (!trimmed || editingHintId == null) return;
+    if (!isValidHttpUrl(trimmed)) {
+      setError("Please enter a valid URL.");
+      return;
+    }
+
+    setIsRefreshingEdit(true);
+    setError("");
+
+    try {
+      const data = await fetchPreview(normaliseInputUrl(trimmed));
+      const draft = buildDraftFromPreview(data, trimmed);
+
+      setHints((current) =>
+        current.map((hint) =>
+          hint.id === editingHintId
+            ? {
+                ...hint,
+                title: draft.title,
+                retailer: draft.retailer,
+                priceLabel: draft.priceLabel,
+                numericPrice: draft.numericPrice,
+                size: getSizeFromPrice(draft.numericPrice),
+                image: draft.image || hint.image,
+                url: draft.url,
+                needsReview: draft.needsReview,
+              }
+            : hint
+        )
+      );
+
+      setEditForm((current) => ({
+        ...current,
+        title: draft.title,
+        url: draft.url,
+        retailer: draft.retailer,
+        image: draft.image || current.image,
+        priceInput: draft.priceInput,
+      }));
+    } catch (err) {
+      setError(errorToMessage(err));
+    } finally {
+      setIsRefreshingEdit(false);
+    }
+  }
+
+  async function handleAddHint() {
+    if (!currentUser) {
+      setError("You must be signed in to add hints.");
+      return;
+    }
+
+    const trimmed = link.trim();
+    if (!trimmed) {
+      setError("Paste a link first.");
+      return;
+    }
+    if (!isValidHttpUrl(trimmed)) {
+      setError("Please paste a valid product or experience URL.");
+      return;
+    }
+
+    setIsAdding(true);
+    setError("");
+
+    try {
+      const data = await fetchPreview(normaliseInputUrl(trimmed));
+      const draft = buildDraftFromPreview(data, trimmed);
+
+      setPendingHint(draft);
+      setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...draft });
+      setIsAddModalOpen(true);
+      setLink("");
+    } catch (err) {
+      setError(errorToMessage(err));
+    } finally {
+      setIsAdding(false);
+    }
+  }
+
+  async function submitNewHint() {
+    if (!currentUser || !pendingHint) return;
+
+    setIsSubmittingNewHint(true);
+    setError("");
+
+    try {
+      const title = newHintForm.title.trim() || pendingHint.title || "Saved hint";
+      const url = newHintForm.url.trim() || pendingHint.url;
+      const retailer = newHintForm.retailer?.trim() || normaliseRetailer(url);
+      const numericPrice = extractNumericPrice(newHintForm.priceInput);
+      const priceMeta = sanitisePrice(newHintForm.priceInput, numericPrice);
+      const size = getSizeFromPrice(priceMeta.numericPrice);
+      const image = newHintForm.uploadedImage || newHintForm.image || "";
+
+      const newHint = {
+        id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `hint-${Date.now()}`,
+        title,
+        retailer,
+        priceLabel: priceMeta.priceLabel,
+        numericPrice: priceMeta.numericPrice,
+        image,
+        fallbackGradient: buildFallbackGradient(hints.length),
+        starred: Boolean(newHintForm.starred),
+        private: Boolean(newHintForm.private),
+        size,
+        url,
+        position: 0,
+        needsReview: false,
+      };
+
+      const supabase = createClient();
+      const { error } = await supabase.from("hints").insert({
+        id: newHint.id,
+        user_id: currentUser.id,
+        title: newHint.title,
+        url: newHint.url,
+        image_url: newHint.image,
+        retailer: newHint.retailer,
+        price_text: newHint.priceLabel,
+        numeric_price: newHint.numericPrice,
+        starred: newHint.starred,
+        is_private: newHint.private,
+        position: 0,
+        size: newHint.size,
+        source: newHintForm.source || "user",
+      });
+
+      if (error) throw new Error(errorToMessage(error));
+
+      setHints((current) => [newHint, ...current].map((item, index) => ({ ...item, position: index })));
+      closeAddModal();
+    } catch (err) {
+      setError(errorToMessage(err));
+      setIsSubmittingNewHint(false);
+    }
+  }
+
+  function handleDragStart(event) {
+    setActiveId(event.active.id);
+  }
+
+  async function handleDragEnd(event) {
+    const { active, over } = event;
+    setActiveId(null);
+    if (!over || active.id === over.id || hints.length === 0) return;
+
+    const nextColumns = splitIntoColumns(hints, 3);
+    const fromColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === active.id));
+    const toColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === over.id));
+    if (fromColumnIndex === -1 || toColumnIndex === -1) return;
+
+    const fromItems = [...nextColumns[fromColumnIndex]];
+    const toItems = fromColumnIndex === toColumnIndex ? fromItems : [...nextColumns[toColumnIndex]];
+    const oldIndex = fromItems.findIndex((item) => item.id === active.id);
+    const newIndex = toItems.findIndex((item) => item.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    if (fromColumnIndex === toColumnIndex) {
+      nextColumns[fromColumnIndex] = arrayMove(fromItems, oldIndex, newIndex);
     } else {
-      const { error } = await supabase
-        .from("feed_reactions")
-        .insert({
-          feed_item_id: item.id,
-          user_id: sessionUser.id,
-          emoji,
-        });
-
-      if (error) {
-        setFeedError(error.message || "Could not save reaction.");
-        return;
-      }
+      const [moved] = fromItems.splice(oldIndex, 1);
+      toItems.splice(newIndex, 0, moved);
+      nextColumns[fromColumnIndex] = fromItems;
+      nextColumns[toColumnIndex] = toItems;
     }
 
-    await loadFeed(sessionUser.id);
+    const nextHints = rebuildFromColumns(nextColumns);
+    setHints(nextHints);
+    await persistOrder(nextHints);
   }
 
-  const sidebarReminders = useMemo(() => {
-    return (calendarEvents || [])
-      .map((event) => {
-        const diffDays = diffInDaysFromToday(event.event_date);
-        if (diffDays === null || diffDays < 0) return null;
+  function handleDragCancel() {
+    setActiveId(null);
+  }
 
-        const eventDate = parseDateOnly(event.event_date);
-        if (!eventDate) return null;
-
-        return {
-          id: `sidebar-reminder-${event.id}`,
-          title: event.title,
-          prettyDate: eventDate.toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "long",
-          }),
-          distanceLabel: formatReminderDistance(diffDays),
-          diffDays,
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.diffDays - b.diffDays)
-      .slice(0, 3);
-  }, [calendarEvents]);
-
-  const feedReminderItems = useMemo(() => {
-    return (calendarEvents || [])
-      .map((event) => {
-        const diffDays = diffInDaysFromToday(event.event_date);
-        if (diffDays === null || diffDays < 0 || diffDays > 7) return null;
-
-        const eventDate = parseDateOnly(event.event_date);
-        if (!eventDate) return null;
-
-        return {
-          id: `feed-reminder-${event.id}`,
-          event_type: "reminder",
-          actor_name: event.title,
-          title:
-            diffDays === 0
-              ? "is happening today"
-              : diffDays === 1
-                ? "is tomorrow"
-                : "is coming up soon",
-          body: `${eventDate.toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "long",
-          })} · ${formatReminderDistance(diffDays)}`,
-          created_at: event.created_at || new Date().toISOString(),
-          comments: [],
-          reactions: [],
-          reactionCounts: {},
-          viewerReaction: null,
-          allowEngagement: false,
-          reminderLabel: formatReminderDistance(diffDays),
-          reminderDiffDays: diffDays,
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.reminderDiffDays - b.reminderDiffDays);
-  }, [calendarEvents]);
-
-  const hasRealContacts = contacts.length > 0;
-  const hasLiveSocialFeedContent = feedItems.length > 0;
-
-  const shouldShowFirstLook = demoMode && !hasRealContacts;
-  const shouldShowSingleDemoFeedCard = demoMode && !hasLiveSocialFeedContent;
-  const shouldUseDemoContacts = demoMode && !hasRealContacts;
-
-  const displayContacts = hasRealContacts ? contacts : demoContacts;
-
-  const singleDemoFeedCard = useMemo(() => {
-    const demoItem = demoFeedItems[0];
-    return demoItem ? transformFeedItem(demoItem, sessionUser?.id || "demo") : null;
-  }, [sessionUser?.id, transformFeedItem]);
-
-  const combinedFeedItems = useMemo(() => {
-    const socialItems = [...feedItems];
-    const reminderItems = [...feedReminderItems];
-
-    if (shouldShowSingleDemoFeedCard && singleDemoFeedCard) {
-      socialItems.unshift(singleDemoFeedCard);
-    }
-
-    return [...socialItems, ...reminderItems].sort(
-      (a, b) => new Date(b.created_at) - new Date(a.created_at)
-    );
-  }, [feedItems, feedReminderItems, shouldShowSingleDemoFeedCard, singleDemoFeedCard]);
-
-  const visibleFeedItems = useMemo(() => {
-    if (activeFilter === "all") return combinedFeedItems;
-
-    return combinedFeedItems.filter((item) => {
-      if (item.isDemo) return false;
-      return item.event_type === activeFilter;
-    });
-  }, [activeFilter, combinedFeedItems]);
+  const editingHint = visibleHints.find((hint) => hint.id === editingHintId) || null;
 
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
@@ -1050,287 +1233,184 @@ export default function FeedClient() {
 
           <div className="flex items-center gap-3 sm:gap-4">
             <nav className="flex items-center gap-2 sm:gap-3">
-              <Link href="/feed" className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5">
+              <Link href="/feed" className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">
                 Feed
               </Link>
-              <Link href="/hints" className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 sm:px-5">
+              <Link href="/hints" className="inline-flex h-11 items-center justify-center rounded-full border border-[#3c4d39] bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5">
                 Hints
               </Link>
-              <Link href="/circles" className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 sm:px-5">
+              <Link href="/circles" className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">
                 Circles
               </Link>
-              <Link href="/shop" className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 sm:px-5">
+              <Link href="/shop" className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5">
                 Shop
               </Link>
             </nav>
-
             <AvatarMenu />
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-[1380px] px-5 py-8 md:px-8">
-        {feedError ? (
-          <div className="mb-5 rounded-[22px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">
-            {feedError}
-          </div>
-        ) : null}
+      <div className="mx-auto max-w-[1380px] px-5 py-10 md:px-8">
+        <section className="text-center">
+          <h1 className="text-[32px] font-extrabold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
+            Paste a link here...
+          </h1>
 
-        <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)_360px]">
-          <aside className="space-y-5">
-            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Filters
-                  </p>
-                  <h1 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
-                    Activity
-                  </h1>
-                </div>
-
-                {shouldShowSingleDemoFeedCard || shouldShowFirstLook ? (
-                  <span className="rounded-full bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e77756]">
-                    Demo
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="mt-4 flex flex-col gap-2">
-                {initialFilters.map((filter) => {
-                  const selected = activeFilter === filter.key;
-
-                  return (
-                    <button
-                      key={filter.key}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => setActiveFilter(filter.key)}
-                      className={`rounded-[18px] px-4 py-3 text-left text-sm font-medium ${
-                        selected
-                          ? "bg-[#2f3b2d] text-white shadow-sm"
-                          : "border border-[#efe4dd] bg-[#fffdfa] text-slate-600"
-                      }`}
-                    >
-                      {filter.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            {shouldShowFirstLook ? (
-              <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  First look
-                </p>
-                <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.04em] text-slate-900">
-                  How this feed will work
-                </h2>
-
-                <div className="mt-5 space-y-3">
-                  {onboardingSteps.map((step) => (
-                    <div key={step.id} className="rounded-[20px] bg-[#faf7f4] p-4">
-                      <div className="flex gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2f3b2d] text-[12px] font-semibold text-white">
-                          {step.id}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">{step.title}</p>
-                          <p className="mt-1 text-[13px] leading-6 text-slate-600">{step.text}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-
-            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-semibold text-slate-900">Contacts</h2>
-                  <p className="mt-1 text-xs text-slate-500">People you track.</p>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                {isLoadingContacts ? (
-                  <div className="rounded-[22px] border border-dashed border-[#e5d8cf] bg-[#fffaf7] p-4 text-[13px] text-slate-500">
-                    Loading contacts...
-                  </div>
-                ) : displayContacts.length ? (
-                  displayContacts.map((contact) => (
-                    <ContactCard
-                      key={contact.id}
-                      contact={contact}
-                      onDeleteClick={handleDeleteContact}
-                      demo={shouldUseDemoContacts}
-                    />
-                  ))
-                ) : (
-                  <div className="rounded-[22px] border border-dashed border-[#e5d8cf] bg-[#fffaf7] p-4 text-[13px] text-slate-500">
-                    No contacts added yet.
-                  </div>
-                )}
-              </div>
-
+          <div className="mt-6">
+            <div className="mx-auto flex w-full max-w-[980px] flex-col gap-3 sm:flex-row">
+              <input
+                id="hint-link"
+                type="url"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddHint();
+                  }
+                }}
+                placeholder="Paste a link here..."
+                className="h-[72px] w-full rounded-full border border-[#eadcd3] bg-white px-8 text-[16px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
+              />
               <button
                 type="button"
-                onClick={handleAddContact}
-                className="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-sm font-semibold text-white shadow-lg"
+                onClick={handleAddHint}
+                disabled={isAdding || isLoading}
+                className="inline-flex h-[72px] shrink-0 items-center justify-center rounded-full border border-[#ee8d69] bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-8 text-sm font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[170px]"
               >
-                Add contact
+                {isAdding ? "Checking..." : isLoading ? "Loading..." : "Add hint"}
               </button>
-            </section>
-          </aside>
-
-          <section className="min-w-0">
-            <div className="rounded-[32px] border border-[#eeddd3] bg-[#fff7f2] p-4 shadow-[0_18px_60px_rgba(173,101,72,0.1)] sm:p-5">
-              <div className="rounded-[28px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
-                <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-100 pb-5">
-                  <div>
-                    <div className="inline-flex rounded-full bg-[#fff5ef] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e07c54]">
-                      Activity stream
-                    </div>
-                    <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.05em] text-slate-900">
-                      Your people, moments, and nudges.
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="mt-5 space-y-4">
-                  {feedLoading ? (
-                    <div className="rounded-[24px] border border-[#f0dfd6] bg-[#fffdfa] p-5 text-sm text-slate-500">
-                      Loading feed...
-                    </div>
-                  ) : visibleFeedItems.length > 0 ? (
-                    visibleFeedItems.map((item) => (
-                      <FeedItem
-                        key={item.id}
-                        item={item}
-                        activeComposerId={activeComposerId}
-                        setActiveComposerId={setActiveComposerId}
-                        draftComment={draftComment}
-                        setDraftComment={setDraftComment}
-                        onSubmitComment={handleSubmitComment}
-                        onReact={handleReact}
-                      />
-                    ))
-                  ) : (
-                    <div className="rounded-[24px] border border-[#f0dfd6] bg-[#fffdfa] p-5 text-sm text-slate-500">
-                      No activity matches this filter yet.
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
-          </section>
 
-          <aside className="space-y-5">
-            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Pending invites
-                  </p>
-                  <h2 className="mt-1 text-base font-semibold text-slate-900">
-                    Invites waiting for you
-                  </h2>
-                </div>
-
-                <span className="rounded-full bg-[#fff5ef] px-2.5 py-1 text-[11px] font-semibold text-[#e77756]">
-                  {pendingInvites.length}
-                </span>
+            {error ? (
+              <p className="mt-3 text-sm font-medium text-[#c45c42]">{error}</p>
+            ) : (
+              <div className="mt-3 space-y-1 text-sm text-slate-500">
+                <p>We’ll pull the title, image, and price, then let you fix anything before saving.</p>
+                <p>You can also save private hints, and both image and price are optional.</p>
               </div>
+            )}
+          </div>
+        </section>
 
-              {invitesLoading ? (
-                <p className="mt-4 text-sm text-slate-500">Loading invites...</p>
-              ) : pendingInvites.length === 0 ? (
-                <div className="mt-4 rounded-[22px] border border-dashed border-[#ecd9cf] bg-[#fcf8f5] px-4 py-5">
-                  <p className="text-sm font-medium text-slate-700">
-                    No invites need a response right now.
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-4 space-y-3">
-                  {pendingInvites.map((invite) => (
-                    <article
-                      key={invite.id}
-                      className="rounded-[22px] border border-[#ecd9cf] bg-[#fcf8f5] p-4"
+        <section className="mt-12">
+          <div className="relative rounded-[36px] border border-[#efe0d7] bg-[#fffdfb] p-3 sm:p-5 shadow-[0_12px_32px_rgba(176,118,86,0.08)]">
+            <div
+              className="pointer-events-none absolute inset-0 rounded-[36px] opacity-70"
+              style={{
+                backgroundImage: `
+                  linear-gradient(to right, rgba(214, 195, 184, 0.28) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(214, 195, 184, 0.28) 1px, transparent 1px)
+                `,
+                backgroundSize: "76px 76px",
+                backgroundPosition: "center center",
+              }}
+            />
+
+            {isLoading ? (
+              <div className="columns-1 gap-6 md:columns-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="mb-6 break-inside-avoid">
+                    <div
+                      className="w-full overflow-hidden rounded-[30px] border border-[#efe1d8] bg-[#f9f8f5]"
+                      style={{ aspectRatio: i === 1 ? "1 / 1.35" : "1 / 1" }}
                     >
-                      <p className="text-sm font-semibold text-slate-900">
-                        {invite.invite_name || invite.invite_email || "Circle invite"}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {invite.invite_email || "No email attached"}
-                      </p>
-                    </article>
+                      <div className="skeleton h-full w-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : hints.length > 0 ? (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                measuring={measuring}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragCancel={handleDragCancel}
+              >
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                  {columns.map((columnHints, columnIndex) => (
+                    <SortableContext
+                      key={`column-${columnIndex}`}
+                      items={columnHints.map((hint) => hint.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-0">
+                        {columnHints.map((hint) => (
+                          <SortableHintCard
+                            key={hint.id}
+                            hint={hint}
+                            onEdit={openEditModal}
+                            onToggleStarred={toggleStarred}
+                            onTogglePrivate={togglePrivate}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
                   ))}
                 </div>
-              )}
-            </section>
 
-            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Upcoming reminders
-                  </p>
-                  <h2 className="mt-1 text-base font-semibold text-slate-900">
-                    Your next 3 reminders
-                  </h2>
-                </div>
-
-                <span className="rounded-full bg-[#fff5ef] px-2.5 py-1 text-[11px] font-semibold text-[#e77756]">
-                  {calendarLoading ? "…" : sidebarReminders.length}
-                </span>
+                <DragOverlay
+                  dropAnimation={{
+                    duration: 180,
+                    easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+                  }}
+                >
+                  {activeHint ? (
+                    <div className="w-full max-w-[420px]">
+                      <HintCard
+                        hint={activeHint}
+                        onEdit={() => {}}
+                        onToggleStarred={() => {}}
+                        onTogglePrivate={() => {}}
+                        isDragging
+                      />
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            ) : (
+              <div className="columns-1 gap-6 md:columns-3">
+                {demoHints.map((hint) => (
+                  <div key={hint.id} className="mb-6 break-inside-avoid">
+                    <HintCard
+                      hint={hint}
+                      onEdit={() => {}}
+                      onToggleStarred={() => {}}
+                      onTogglePrivate={() => {}}
+                      isDragging={false}
+                    />
+                  </div>
+                ))}
               </div>
-
-              {calendarLoading ? (
-                <div className="mt-4 rounded-[22px] border border-dashed border-[#ecd9cf] bg-[#fcf8f5] px-4 py-5">
-                  <p className="text-sm text-slate-500">Loading reminders...</p>
-                </div>
-              ) : sidebarReminders.length === 0 ? (
-                <div className="mt-4 rounded-[22px] border border-dashed border-[#ecd9cf] bg-[#fcf8f5] px-4 py-5">
-                  <p className="text-sm font-medium text-slate-700">
-                    No upcoming reminders yet.
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-4 space-y-3">
-                  {sidebarReminders.map((reminder) => (
-                    <article
-                      key={reminder.id}
-                      className="rounded-[22px] border border-[#ecd9cf] bg-[#fcf8f5] p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">{reminder.title}</p>
-                          <p className="mt-1 text-sm text-slate-500">{reminder.prettyDate}</p>
-                        </div>
-
-                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#e77756]">
-                          {reminder.distanceLabel}
-                        </span>
-                      </div>
-
-                      <div className="mt-4">
-                        <Link
-                          href="/shop"
-                          className="inline-flex items-center justify-center rounded-full border border-[#ead7cd] bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-                        >
-                          Shop
-                        </Link>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-          </aside>
-        </div>
+            )}
+          </div>
+        </section>
       </div>
+
+      <AddHintModal
+        isOpen={isAddModalOpen}
+        form={newHintForm}
+        setForm={setNewHintForm}
+        onClose={closeAddModal}
+        onSubmit={submitNewHint}
+        isSaving={isSubmittingNewHint}
+      />
+
+      <EditHintModal
+        isOpen={editingHintId !== null}
+        editForm={editForm}
+        setEditForm={setEditForm}
+        onClose={closeEditModal}
+        onSave={saveEditChanges}
+        onRefreshFromLink={refreshHintFromLink}
+        onDelete={deleteHint}
+        isRefreshing={isRefreshingEdit}
+        isSaving={isSavingEdit}
+        hint={editingHint}
+      />
     </main>
   );
 }
