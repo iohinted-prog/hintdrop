@@ -7,6 +7,9 @@ import AvatarMenu from "../components/AvatarMenu";
 
 const demoMode = true;
 const hasContacts = false;
+const [pendingInvites, setPendingInvites] = useState([]);
+const [invitesLoading, setInvitesLoading] = useState(true);
+const [invitesError, setInvitesError] = useState("");
 
 const initialFilters = [
   { key: "all", label: "All activity" },
@@ -799,6 +802,9 @@ export default function FeedClient() {
     birthday: "",
     phone: "",
   });
+  const [pendingInvites, setPendingInvites] = useState([]);
+  const [invitesLoading, setInvitesLoading] = useState(true);
+  const [invitesError, setInvitesError] = useState("");
 
   const showDemoGuide = demoMode && !hasContacts;
 
