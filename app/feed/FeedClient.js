@@ -169,20 +169,20 @@ const eventTypeStyles = {
     pill: "bg-[#fff2f6] text-[#b85c79]",
     label: "Anniversary",
   },
-  circle: {
-    dot: "bg-[#87986f]",
-    pill: "bg-[#eef5ea] text-[#5d7243]",
-    label: "Circle",
+  celebration: {
+    dot: "bg-[#e6aa54]",
+    pill: "bg-[#fff7e8] text-[#af7b14]",
+    label: "Celebration",
   },
   reminder: {
     dot: "bg-[#bca7de]",
     pill: "bg-[#f5f0ff] text-[#7f62b2]",
     label: "Reminder",
   },
-  celebration: {
-    dot: "bg-[#e6aa54]",
-    pill: "bg-[#fff7e8] text-[#af7b14]",
-    label: "Celebration",
+  circle: {
+    dot: "bg-[#87986f]",
+    pill: "bg-[#eef5ea] text-[#5d7243]",
+    label: "Circle",
   },
 };
 
@@ -545,7 +545,7 @@ function CalendarPopover({
       <div className="mt-4 space-y-3">
         {events.length > 0 ? (
           events.map((event) => {
-            const style = eventTypeStyles[event.type] || eventTypeStyles.reminder;
+            const style = eventTypeStyles[event.type] || eventTypeStyles.celebration;
 
             return (
               <div key={event.id} className="rounded-[18px] border border-[#eee1da] bg-white p-4">
@@ -563,7 +563,9 @@ function CalendarPopover({
                       ) : null}
                     </div>
                     <p className="mt-2 text-sm font-semibold text-slate-900">{event.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">{event.time}</p>
+                    {event.time ? (
+                      <p className="mt-1 text-xs text-slate-500">{event.time}</p>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -588,26 +590,16 @@ function CalendarPopover({
             className="h-11 w-full rounded-[16px] border border-[#eaded6] bg-white px-4 text-sm outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
           />
 
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="text"
-              value={draft.time}
-              onChange={(e) => setDraft((prev) => ({ ...prev, time: e.target.value }))}
-              placeholder="Time"
-              className="h-11 w-full rounded-[16px] border border-[#eaded6] bg-white px-4 text-sm outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
-            />
-
+          <div className="grid grid-cols-1 gap-3">
             <select
               value={draft.type}
               onChange={(e) => setDraft((prev) => ({ ...prev, type: e.target.value }))}
               className="h-11 w-full rounded-[16px] border border-[#eaded6] bg-white px-4 text-sm outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
             >
               <option value="birthday">Birthday</option>
-              <option value="christmas">Christmas</option>
               <option value="anniversary">Anniversary</option>
-              <option value="circle">Circle gift</option>
-              <option value="reminder">Reminder</option>
               <option value="celebration">Celebration</option>
+              <option value="christmas">Christmas</option>
             </select>
           </div>
 
@@ -632,7 +624,6 @@ function MiniCalendar() {
   const [eventsByDate, setEventsByDate] = useState({});
   const [draft, setDraft] = useState({
     title: "",
-    time: "",
     type: "birthday",
   });
   const [calendarLoading, setCalendarLoading] = useState(true);
@@ -665,7 +656,7 @@ function MiniCalendar() {
         id: row.id,
         title: row.title,
         type: row.type,
-        time: row.event_time || "All day",
+        time: row.event_time || null,
         source: row.source || "user",
       });
       return acc;
@@ -748,7 +739,7 @@ function MiniCalendar() {
       user_id: user.id,
       title: draft.title.trim(),
       event_date: selectedKey,
-      event_time: draft.time.trim() || null,
+      event_time: null,
       type: draft.type,
       source: "user",
       slug: null,
@@ -771,7 +762,7 @@ function MiniCalendar() {
       id: data.id,
       title: data.title,
       type: data.type,
-      time: data.event_time || "All day",
+      time: data.event_time || null,
       source: data.source || "user",
     };
 
@@ -782,7 +773,6 @@ function MiniCalendar() {
 
     setDraft({
       title: "",
-      time: "",
       type: "birthday",
     });
 
@@ -837,7 +827,13 @@ function MiniCalendar() {
       ) : null}
 
       <div className="mt-4 grid grid-cols-7 gap-2 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">
-        <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+        <div>Mon</div>
+        <div>Tue</div>
+        <div>Wed</div>
+        <div>Thu</div>
+        <div>Fri</div>
+        <div>Sat</div>
+        <div>Sun</div>
       </div>
 
       <div className="mt-2 grid grid-cols-7 gap-2">
@@ -846,7 +842,7 @@ function MiniCalendar() {
           const selected = key === selectedKey;
           const dayEvents = eventsByDate[key] || [];
           const leadType = dayEvents[0]?.type;
-          const dotClass = leadType ? (eventTypeStyles[leadType] || eventTypeStyles.reminder).dot : null;
+          const dotClass = leadType ? (eventTypeStyles[leadType] || eventTypeStyles.celebration).dot : null;
 
           return (
             <button
@@ -1274,9 +1270,7 @@ export default function FeedClient() {
                           type="button"
                           onClick={() =>
                             setHiddenInviteIds((current) =>
-                              current.includes(invite.id)
-                                ? current
-                                : [...current, invite.id]
+                              current.includes(invite.id) ? current : [...current, invite.id]
                             )
                           }
                           className="inline-flex items-center justify-center rounded-full border border-[#ead7cd] bg-white px-4 py-2 text-sm font-semibold text-slate-700"
@@ -1298,9 +1292,7 @@ export default function FeedClient() {
                       Selected invite
                     </p>
                     <h3 className="mt-1 text-base font-semibold text-slate-900">
-                      {activeInvite.invite_name ||
-                        activeInvite.invite_email ||
-                        "Circle invite"}
+                      {activeInvite.invite_name || activeInvite.invite_email || "Circle invite"}
                     </h3>
                   </div>
 
