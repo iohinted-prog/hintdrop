@@ -81,13 +81,13 @@ const demoFeedItems = [
     headline: "Maya added 4 new public hints",
     body: "A neat batched update after one browsing session, so the feed stays tidy.",
     cta_label: "See hints",
-    cta_href: "/people/maya-demo/hints",
+    cta_href: "/hints",
     occurred_at: new Date().toISOString(),
     created_at: new Date().toISOString(),
     metadata: {
       social_enabled: true,
       actor_name: "Maya",
-      actor_profile_href: "/people/maya-demo/hints",
+      actor_profile_href: "/hints",
       actor_avatar_initials: "M",
       demo_reactions: [
         { id: "r1", emoji: "❤️", count: 7 },
@@ -412,7 +412,6 @@ function AddContactModal({ open, onClose, onSave }) {
   const [form, setForm] = useState({
     name: "",
     email: "",
-    note: "",
   });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -424,7 +423,7 @@ function AddContactModal({ open, onClose, onSave }) {
       setSearchingContacts(false);
       setContactsMessage("");
       setSelectedRelationship("Friend");
-      setForm({ name: "", email: "", note: "" });
+      setForm({ name: "", email: "" });
       setSaving(false);
       setSaveError("");
     }
@@ -490,7 +489,7 @@ function AddContactModal({ open, onClose, onSave }) {
       setContactResults(mapped);
 
       if (mapped.length === 0) {
-        setContactsMessage("No matching Gmail contacts found. You can still add them manually.");
+        setContactsMessage("No matching Gmail contacts found. You can still invite them manually.");
       }
     } catch (error) {
       setContactResults([]);
@@ -538,12 +537,11 @@ function AddContactModal({ open, onClose, onSave }) {
         name: form.name.trim(),
         email: cleanedEmail,
         role: selectedRelationship,
-        note: form.note.trim(),
       });
       setSaving(false);
       onClose();
     } catch (error) {
-      setSaveError(error?.message || "Failed to save contact.");
+      setSaveError(error?.message || "Failed to invite contact.");
       setSaving(false);
     }
   }
@@ -553,7 +551,7 @@ function AddContactModal({ open, onClose, onSave }) {
       open={open}
       onClose={onClose}
       eyebrow="Contact"
-      title="Add a contact"
+      title="Invite a contact"
       maxWidth="max-w-[760px]"
       hideHeaderBorder
     >
@@ -563,7 +561,7 @@ function AddContactModal({ open, onClose, onSave }) {
             Bring someone in quickly
           </p>
           <h3 className="mt-3 text-[18px] font-semibold tracking-[-0.03em] text-slate-900">
-            Add from Gmail or type their email
+            Invite from Gmail or type their email
           </h3>
 
           <div className="mt-5">
@@ -627,31 +625,28 @@ function AddContactModal({ open, onClose, onSave }) {
             />
           </label>
 
-          <label className="block">
+          <div>
             <span className="block text-sm font-medium text-slate-900">Relationship</span>
-            <select
-              value={selectedRelationship}
-              onChange={(e) => setSelectedRelationship(e.target.value)}
-              className="mt-2 h-[48px] w-full rounded-[18px] border border-[#d9dce3] bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-[#f19b7e]"
-            >
-              {relationshipOptions.map((relationship) => (
-                <option key={relationship} value={relationship}>
-                  {relationship}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="block text-sm font-medium text-slate-900">Note</span>
-            <textarea
-              value={form.note}
-              onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
-              placeholder="Optional note"
-              rows={3}
-              className="mt-2 w-full rounded-[18px] border border-[#d9dce3] bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#f19b7e]"
-            />
-          </label>
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {relationshipOptions.map((relationship) => {
+                const selected = selectedRelationship === relationship;
+                return (
+                  <button
+                    key={relationship}
+                    type="button"
+                    onClick={() => setSelectedRelationship(relationship)}
+                    className={`rounded-[18px] border px-4 py-3 text-sm font-medium transition ${
+                      selected
+                        ? "border-[#f19b7e] bg-[#fff1ea] text-[#d96d4f]"
+                        : "border-[#e5ddd8] bg-white text-slate-700 hover:bg-[#fff7f2]"
+                    }`}
+                  >
+                    {relationship}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {saveError ? (
             <div className="rounded-[18px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">
@@ -678,7 +673,7 @@ function AddContactModal({ open, onClose, onSave }) {
                 : "bg-gradient-to-b from-[#ff946d] to-[#f36f64]"
             }`}
           >
-            {saving ? "Saving..." : "Save contact"}
+            {saving ? "Inviting..." : "Invite contact"}
           </button>
         </div>
       </div>
@@ -772,6 +767,8 @@ function FeedItem({
   draftComment,
   setDraftComment,
   onSubmitComment,
+  demoReactionsState,
+  onToggleDemoReaction,
 }) {
   const metadata = item.metadata || {};
   const socialEnabled = isSocialFeedItem(item);
@@ -797,7 +794,11 @@ function FeedItem({
 
   const actorHref = metadata.actor_profile_href || item.cta_href || "#";
   const actorInitials = metadata.actor_avatar_initials || getInitials(metadata.actor_name || item.headline || "H");
-  const demoReactions = Array.isArray(metadata.demo_reactions) ? metadata.demo_reactions : [];
+  const demoReactions = item.isDemo
+    ? demoReactionsState || []
+    : Array.isArray(metadata.demo_reactions)
+      ? metadata.demo_reactions
+      : [];
   const canInteract = item.isDemo || socialEnabled;
 
   return (
@@ -863,7 +864,14 @@ function FeedItem({
                   <button
                     key={reaction.id}
                     type="button"
-                    className="inline-flex h-9 items-center justify-center rounded-full border border-[#ebdfd8] bg-white px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                    onClick={() => item.isDemo && onToggleDemoReaction(item.id, reaction.id)}
+                    className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm font-medium ${
+                      item.isDemo
+                        ? reaction.active
+                          ? "border-[#f1a58a] bg-[#fff1ea] text-[#d96d4f]"
+                          : "border-[#ebdfd8] bg-white text-slate-600 hover:bg-slate-50"
+                        : "border-[#ebdfd8] bg-white text-slate-600"
+                    }`}
                   >
                     <span className="mr-1">{reaction.emoji}</span>
                     {reaction.count}
@@ -1342,6 +1350,16 @@ export default function FeedClient() {
   const [activeComposerId, setActiveComposerId] = useState(null);
   const [draftComment, setDraftComment] = useState("");
   const [demoCommentsByFeedId, setDemoCommentsByFeedId] = useState({});
+  const [demoReactionsByFeedId, setDemoReactionsByFeedId] = useState(() => {
+    const initial = {};
+    for (const item of demoFeedItems) {
+      initial[item.id] = (item.metadata?.demo_reactions || []).map((reaction) => ({
+        ...reaction,
+        active: false,
+      }));
+    }
+    return initial;
+  });
 
   const [pendingInvites, setPendingInvites] = useState([]);
   const [invitesLoading, setInvitesLoading] = useState(true);
@@ -1551,7 +1569,7 @@ export default function FeedClient() {
     setContactSuccess("");
 
     if (!sessionUser?.id) {
-      throw new Error("You must be signed in to save contacts.");
+      throw new Error("You must be signed in to invite contacts.");
     }
 
     const cleanedEmail = String(payload.email || "").trim().toLowerCase();
@@ -1563,17 +1581,16 @@ export default function FeedClient() {
       user_id: sessionUser.id,
       name: payload.name,
       role: payload.role || "Friend",
-      note: payload.note || null,
       email: cleanedEmail,
-      status: "accepted",
+      status: "pending",
     };
 
     const { error } = await supabase.from("contacts").insert(insertPayload);
 
-    if (error) throw new Error(normalizeSupabaseError(error, "Failed to save contact."));
+    if (error) throw new Error(normalizeSupabaseError(error, "Failed to invite contact."));
 
     await loadContacts(sessionUser.id);
-    setContactSuccess("Contact saved successfully.");
+    setContactSuccess("Invite sent successfully.");
   }
 
   function openDeleteContactModal(contact) {
@@ -1642,6 +1659,24 @@ export default function FeedClient() {
     } catch (error) {
       setFeedError(error?.message || "Could not save comment.");
     }
+  }
+
+  function handleToggleDemoReaction(feedId, reactionId) {
+    setDemoReactionsByFeedId((prev) => {
+      const current = prev[feedId] || [];
+      return {
+        ...prev,
+        [feedId]: current.map((reaction) => {
+          if (reaction.id !== reactionId) return reaction;
+          const nextActive = !reaction.active;
+          return {
+            ...reaction,
+            active: nextActive,
+            count: nextActive ? reaction.count + 1 : reaction.count - 1,
+          };
+        }),
+      };
+    });
   }
 
   async function handleInviteDecision(invite, nextStatus) {
@@ -1863,148 +1898,6 @@ export default function FeedClient() {
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Filters
-                </p>
-                <h1 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
-                  Activity
-                </h1>
-              </div>
-
-              <div className="mt-4 flex flex-col gap-2">
-                {feedFilters.map((filter) => {
-                  const selected = activeFilter === filter.key;
-
-                  return (
-                    <button
-                      key={filter.key}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => setActiveFilter(filter.key)}
-                      className={`rounded-[18px] px-4 py-3 text-left text-sm font-medium transition ${
-                        selected
-                          ? "bg-[#2f3b2d] text-white shadow-sm"
-                          : "border border-[#efe4dd] bg-[#fffdfa] text-slate-600 hover:bg-[#faf7f5]"
-                      }`}
-                    >
-                      {filter.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">Contacts</h2>
-                <p className="mt-1 text-xs text-slate-500">Invitees and Hinted users live here.</p>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                {contactsLoading ? (
-                  <div className="rounded-[22px] border border-dashed border-[#e5d8cf] bg-[#fffaf7] p-4 text-[13px] leading-6 text-slate-500">
-                    Loading contacts...
-                  </div>
-                ) : displayContacts.length ? (
-                  displayContacts.map((contact) => (
-                    <ContactCard
-                      key={contact.id}
-                      contact={contact}
-                      onDeleteClick={openDeleteContactModal}
-                    />
-                  ))
-                ) : (
-                  <div className="rounded-[22px] border border-dashed border-[#e5d8cf] bg-[#fffaf7] p-4 text-[13px] leading-6 text-slate-500">
-                    No contacts added yet.
-                  </div>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsAddContactOpen(true)}
-                className="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-sm font-semibold text-white shadow-lg"
-              >
-                Add contact
-              </button>
-            </section>
-          </aside>
-
-          <section className="min-w-0">
-            <div className="rounded-[32px] border border-[#eeddd3] bg-[#fff7f2] p-4 shadow-[0_18px_60px_rgba(173,101,72,0.1)] sm:p-5">
-              <div className="rounded-[28px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
-                <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-100 pb-5">
-                  <div>
-                    <div className="inline-flex rounded-full bg-[#fff5ef] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e07c54]">
-                      Activity stream
-                    </div>
-                    <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.05em] text-slate-900">
-                      Your people, moments, and nudges.
-                    </h2>
-                  </div>
-
-                  <div className="rounded-[20px] border border-[#f3dfd6] bg-[#fffaf7] px-4 py-3 text-[13px] leading-6 text-slate-600">
-                    Only automatic user updates can be commented on.
-                  </div>
-                </div>
-
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddContactOpen(true)}
-                    className="inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg"
-                  >
-                    Add contact
-                  </button>
-
-                  <Link
-                    href="/circles"
-                    className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
-                  >
-                    Create circle
-                  </Link>
-                </div>
-
-                <div className="mt-5 space-y-4">
-                  {feedLoading ? (
-                    <div className="rounded-[24px] border border-[#f0dfd6] bg-[#fffdfa] p-5 text-sm text-slate-500">
-                      Loading feed...
-                    </div>
-                  ) : visibleFeedItems.length > 0 ? (
-                    visibleFeedItems.map((item) => {
-                      const realComments = commentsByFeedId[item.id] || [];
-                      const demoSeedComments = item.metadata?.demo_comments || [];
-                      const localDemoComments = demoCommentsByFeedId[item.id] || [];
-                      const mergedComments = item.isDemo
-                        ? [...demoSeedComments, ...localDemoComments]
-                        : realComments;
-
-                      return (
-                        <FeedItem
-                          key={item.id}
-                          item={item}
-                          comments={mergedComments}
-                          activeComposerId={activeComposerId}
-                          setActiveComposerId={setActiveComposerId}
-                          draftComment={draftComment}
-                          setDraftComment={setDraftComment}
-                          onSubmitComment={handleSubmitComment}
-                        />
-                      );
-                    })
-                  ) : (
-                    <div className="rounded-[24px] border border-[#f0dfd6] bg-[#fffdfa] p-5 text-sm text-slate-500">
-                      No activity matches this filter yet.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <aside className="space-y-5">
-            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                   Pending invites
                 </p>
                 <h2 className="mt-1 text-base font-semibold text-slate-900">
@@ -2106,6 +1999,150 @@ export default function FeedClient() {
               </section>
             ) : null}
 
+            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">Contacts</h2>
+                <p className="mt-1 text-xs text-slate-500">Invitees and Hinted users live here.</p>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {contactsLoading ? (
+                  <div className="rounded-[22px] border border-dashed border-[#e5d8cf] bg-[#fffaf7] p-4 text-[13px] leading-6 text-slate-500">
+                    Loading contacts...
+                  </div>
+                ) : displayContacts.length ? (
+                  displayContacts.map((contact) => (
+                    <ContactCard
+                      key={contact.id}
+                      contact={contact}
+                      onDeleteClick={openDeleteContactModal}
+                    />
+                  ))
+                ) : (
+                  <div className="rounded-[22px] border border-dashed border-[#e5d8cf] bg-[#fffaf7] p-4 text-[13px] leading-6 text-slate-500">
+                    No contacts added yet.
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsAddContactOpen(true)}
+                className="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-sm font-semibold text-white shadow-lg"
+              >
+                Invite contact
+              </button>
+            </section>
+
+            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Filters
+                </p>
+                <h1 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
+                  Activity
+                </h1>
+              </div>
+
+              <div className="mt-4 flex flex-col gap-2">
+                {feedFilters.map((filter) => {
+                  const selected = activeFilter === filter.key;
+
+                  return (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setActiveFilter(filter.key)}
+                      className={`rounded-[18px] px-4 py-3 text-left text-sm font-medium transition ${
+                        selected
+                          ? "bg-[#2f3b2d] text-white shadow-sm"
+                          : "border border-[#efe4dd] bg-[#fffdfa] text-slate-600 hover:bg-[#faf7f5]"
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          </aside>
+
+          <section className="min-w-0">
+            <div className="rounded-[32px] border border-[#eeddd3] bg-[#fff7f2] p-4 shadow-[0_18px_60px_rgba(173,101,72,0.1)] sm:p-5">
+              <div className="rounded-[28px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
+                <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-100 pb-5">
+                  <div>
+                    <div className="inline-flex rounded-full bg-[#fff5ef] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e07c54]">
+                      Activity stream
+                    </div>
+                    <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.05em] text-slate-900">
+                      Your people, moments, and nudges.
+                    </h2>
+                  </div>
+
+                  <div className="rounded-[20px] border border-[#f3dfd6] bg-[#fffaf7] px-4 py-3 text-[13px] leading-6 text-slate-600">
+                    Only automatic user updates can be commented on.
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddContactOpen(true)}
+                    className="inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg"
+                  >
+                    Invite contact
+                  </button>
+
+                  <Link
+                    href="/circles"
+                    className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
+                  >
+                    Create circle
+                  </Link>
+                </div>
+
+                <div className="mt-5 space-y-4">
+                  {feedLoading ? (
+                    <div className="rounded-[24px] border border-[#f0dfd6] bg-[#fffdfa] p-5 text-sm text-slate-500">
+                      Loading feed...
+                    </div>
+                  ) : visibleFeedItems.length > 0 ? (
+                    visibleFeedItems.map((item) => {
+                      const realComments = commentsByFeedId[item.id] || [];
+                      const demoSeedComments = item.metadata?.demo_comments || [];
+                      const localDemoComments = demoCommentsByFeedId[item.id] || [];
+                      const mergedComments = item.isDemo
+                        ? [...demoSeedComments, ...localDemoComments]
+                        : realComments;
+
+                      return (
+                        <FeedItem
+                          key={item.id}
+                          item={item}
+                          comments={mergedComments}
+                          activeComposerId={activeComposerId}
+                          setActiveComposerId={setActiveComposerId}
+                          draftComment={draftComment}
+                          setDraftComment={setDraftComment}
+                          onSubmitComment={handleSubmitComment}
+                          demoReactionsState={demoReactionsByFeedId[item.id]}
+                          onToggleDemoReaction={handleToggleDemoReaction}
+                        />
+                      );
+                    })
+                  ) : (
+                    <div className="rounded-[24px] border border-[#f0dfd6] bg-[#fffdfa] p-5 text-sm text-slate-500">
+                      No activity matches this filter yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside className="space-y-5">
             <MiniCalendar
               eventsByDate={eventsByDate}
               calendarLoading={calendarLoading}
