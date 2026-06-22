@@ -6,7 +6,6 @@ import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
 
 const supabase = createClient();
-const demoMode = true;
 
 const feedFilters = [
   { key: "all", label: "All activity" },
@@ -36,30 +35,33 @@ const demoContacts = [
     id: "demo-1",
     name: "Maya",
     role: "Friend",
-    note: "Saved 8 hints",
+    note: "Hinted user",
     initials: "M",
     colors: "from-[#efc3af] to-[#ae6e57]",
-    email: "",
+    email: "maya@example.com",
+    contactState: "user",
     isDemo: true,
   },
   {
     id: "demo-2",
     name: "James",
     role: "Brother",
-    note: "Saved 5 hints",
+    note: "Invitee",
     initials: "J",
     colors: "from-[#4e596d] to-[#212a3c]",
-    email: "",
+    email: "james@example.com",
+    contactState: "invitee",
     isDemo: true,
   },
   {
     id: "demo-3",
     name: "Fiona",
     role: "Friend",
-    note: "Saved 4 hints",
+    note: "Hinted user",
     initials: "F",
     colors: "from-[#809168] to-[#41512e]",
-    email: "",
+    email: "fiona@example.com",
+    contactState: "user",
     isDemo: true,
   },
 ];
@@ -68,7 +70,7 @@ const demoFeedItems = [
   {
     id: "demo-feed-1",
     owner_user_id: "demo-owner",
-    actor_user_id: "demo-actor",
+    actor_user_id: "maya-demo",
     target_user_id: null,
     family: "hint",
     item_type: "hint_session",
@@ -77,16 +79,26 @@ const demoFeedItems = [
     activity_session_id: null,
     source_event_id: null,
     headline: "Maya added 4 new public hints",
-    body: "Grouped into one update after her session so the feed stays clean.",
-    cta_label: "View hints",
-    cta_href: "/hints",
+    body: "A neat batched update after one browsing session, so the feed stays tidy.",
+    cta_label: "See hints",
+    cta_href: "/people/maya-demo/hints",
     occurred_at: new Date().toISOString(),
     created_at: new Date().toISOString(),
     metadata: {
       social_enabled: true,
       actor_name: "Maya",
+      actor_profile_href: "/people/maya-demo/hints",
+      actor_avatar_initials: "M",
+      demo_reactions: [
+        { id: "r1", emoji: "❤️", count: 7 },
+        { id: "r2", emoji: "🔥", count: 2 },
+        { id: "r3", emoji: "👏", count: 3 },
+      ],
+      demo_comments: [
+        { id: "c1", author_name: "James", body: "These are very you." },
+        { id: "c2", author_name: "Fiona", body: "The tote is perfect." },
+      ],
     },
-    comments: [],
     isDemo: true,
   },
 ];
@@ -106,6 +118,16 @@ const eventTypeStyles = {
     dot: "bg-[#d69aae]",
     pill: "bg-[#fff2f6] text-[#b85c79]",
     label: "Anniversary",
+  },
+  fathers_day: {
+    dot: "bg-[#8da9c6]",
+    pill: "bg-[#eff5ff] text-[#597a9d]",
+    label: "Father’s Day",
+  },
+  mothers_day: {
+    dot: "bg-[#d69aae]",
+    pill: "bg-[#fff2f6] text-[#b85c79]",
+    label: "Mother’s Day",
   },
   celebration: {
     dot: "bg-[#e6aa54]",
@@ -184,10 +206,8 @@ function formatReminderDistance(diffDays) {
   if (diffDays === 1) return "Tomorrow";
   if (diffDays === 7) return "In 1 week";
   if (diffDays < 7) return `In ${diffDays} days`;
-
   const weeks = Math.round(diffDays / 7);
   if (diffDays < 31) return `In ${weeks} week${weeks === 1 ? "" : "s"}`;
-
   const months = Math.round(diffDays / 30);
   return `In ${months} month${months === 1 ? "" : "s"}`;
 }
@@ -259,11 +279,10 @@ function getFeedBucket(item) {
 }
 
 function isSocialFeedItem(item) {
+  if (item.isDemo) return true;
   const metadata = item.metadata || {};
   if (typeof metadata.social_enabled === "boolean") return metadata.social_enabled;
-
-  const bucket = getFeedBucket(item);
-  return bucket !== "reminder";
+  return getFeedBucket(item) !== "reminder";
 }
 
 function ContactAvatar({ contact }) {
@@ -546,9 +565,6 @@ function AddContactModal({ open, onClose, onSave }) {
           <h3 className="mt-3 text-[18px] font-semibold tracking-[-0.03em] text-slate-900">
             Add from Gmail or type their email
           </h3>
-          <p className="mt-3 max-w-[62ch] text-[15px] leading-8 text-slate-500">
-            Search your Gmail contacts, or enter the details manually.
-          </p>
 
           <div className="mt-5">
             <input
@@ -681,9 +697,7 @@ function DeleteContactModal({
   const [typedName, setTypedName] = useState("");
 
   useEffect(() => {
-    if (!open) {
-      setTypedName("");
-    }
+    if (!open) setTypedName("");
   }, [open]);
 
   if (!open || !contact) return null;
@@ -750,7 +764,15 @@ function DeleteContactModal({
   );
 }
 
-function FeedItem({ item, comments, canComment, activeComposerId, setActiveComposerId, draftComment, setDraftComment, onSubmitComment }) {
+function FeedItem({
+  item,
+  comments,
+  activeComposerId,
+  setActiveComposerId,
+  draftComment,
+  setDraftComment,
+  onSubmitComment,
+}) {
   const metadata = item.metadata || {};
   const socialEnabled = isSocialFeedItem(item);
   const bucket = getFeedBucket(item);
@@ -773,12 +795,20 @@ function FeedItem({ item, comments, canComment, activeComposerId, setActiveCompo
           ? "Reminder"
           : "Contact";
 
+  const actorHref = metadata.actor_profile_href || item.cta_href || "#";
+  const actorInitials = metadata.actor_avatar_initials || getInitials(metadata.actor_name || item.headline || "H");
+  const demoReactions = Array.isArray(metadata.demo_reactions) ? metadata.demo_reactions : [];
+  const canInteract = item.isDemo || socialEnabled;
+
   return (
     <article className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
       <div className="flex items-start gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[12px] font-bold text-white">
-          {getInitials(metadata.actor_name || item.headline || "H")}
-        </div>
+        <Link
+          href={actorHref}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[12px] font-bold text-white transition hover:scale-[1.03]"
+        >
+          {actorInitials}
+        </Link>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -794,7 +824,16 @@ function FeedItem({ item, comments, canComment, activeComposerId, setActiveCompo
                 ) : null}
               </div>
 
-              <p className="mt-3 text-[15px] leading-7 text-slate-700">{item.headline}</p>
+              {metadata.actor_name ? (
+                <Link
+                  href={actorHref}
+                  className="mt-3 inline-block text-[13px] font-semibold text-slate-900 hover:text-[#d96d4f]"
+                >
+                  {metadata.actor_name}
+                </Link>
+              ) : null}
+
+              <p className="mt-1 text-[15px] leading-7 text-slate-700">{item.headline}</p>
 
               {item.body ? (
                 <p className="mt-1 text-[14px] leading-6 text-slate-500">{item.body}</p>
@@ -806,7 +845,7 @@ function FeedItem({ item, comments, canComment, activeComposerId, setActiveCompo
             </span>
           </div>
 
-          {(item.cta_label && item.cta_href) ? (
+          {item.cta_label && item.cta_href ? (
             <div className="mt-4">
               <Link
                 href={item.cta_href}
@@ -817,8 +856,31 @@ function FeedItem({ item, comments, canComment, activeComposerId, setActiveCompo
             </div>
           ) : null}
 
-          {socialEnabled && canComment ? (
+          {canInteract ? (
             <>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {demoReactions.map((reaction) => (
+                  <button
+                    key={reaction.id}
+                    type="button"
+                    className="inline-flex h-9 items-center justify-center rounded-full border border-[#ebdfd8] bg-white px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  >
+                    <span className="mr-1">{reaction.emoji}</span>
+                    {reaction.count}
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveComposerId((current) => (current === item.id ? null : item.id))
+                  }
+                  className="inline-flex h-9 items-center justify-center rounded-full border border-[#ebdfd8] bg-white px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Comment
+                </button>
+              </div>
+
               {comments.length > 0 ? (
                 <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
                   {comments.map((comment) => (
@@ -833,16 +895,6 @@ function FeedItem({ item, comments, canComment, activeComposerId, setActiveCompo
                   ))}
                 </div>
               ) : null}
-
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveComposerId((current) => (current === item.id ? null : item.id))}
-                  className="inline-flex h-10 items-center justify-center rounded-full border border-[#ebdfd8] bg-white px-4 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                >
-                  Comment
-                </button>
-              </div>
 
               {activeComposerId === item.id ? (
                 <div className="mt-4 flex gap-3">
@@ -978,6 +1030,8 @@ function CalendarPopover({
             <option value="anniversary">Anniversary</option>
             <option value="celebration">Celebration</option>
             <option value="christmas">Christmas</option>
+            <option value="fathers_day">Father’s Day</option>
+            <option value="mothers_day">Mother’s Day</option>
           </select>
 
           <button
@@ -1285,9 +1339,9 @@ export default function FeedClient() {
   const [activeFilter, setActiveFilter] = useState("all");
 
   const [commentsByFeedId, setCommentsByFeedId] = useState({});
-  const [commentsLoading, setCommentsLoading] = useState(false);
   const [activeComposerId, setActiveComposerId] = useState(null);
   const [draftComment, setDraftComment] = useState("");
+  const [demoCommentsByFeedId, setDemoCommentsByFeedId] = useState({});
 
   const [pendingInvites, setPendingInvites] = useState([]);
   const [invitesLoading, setInvitesLoading] = useState(true);
@@ -1299,18 +1353,13 @@ export default function FeedClient() {
   const [calendarLoading, setCalendarLoading] = useState(true);
   const [calendarError, setCalendarError] = useState("");
 
-  const [demoFeedState] = useState(demoFeedItems);
-
   const loadSession = useCallback(async () => {
     const {
       data: { user },
       error,
     } = await supabase.auth.getUser();
 
-    if (error) {
-      throw new Error(normalizeSupabaseError(error, "Failed to get signed-in user."));
-    }
-
+    if (error) throw new Error(normalizeSupabaseError(error, "Failed to get signed-in user."));
     setSessionUser(user || null);
     return user || null;
   }, []);
@@ -1380,18 +1429,13 @@ export default function FeedClient() {
       return;
     }
 
-    setCommentsLoading(true);
-
     const { data, error } = await supabase
       .from("feed_comments")
       .select("id, feed_item_id, user_id, body, created_at")
       .in("feed_item_id", feedIds)
       .order("created_at", { ascending: true });
 
-    if (error) {
-      setCommentsLoading(false);
-      throw new Error(normalizeSupabaseError(error, "Failed to load comments."));
-    }
+    if (error) throw new Error(normalizeSupabaseError(error, "Failed to load comments."));
 
     const grouped = (data || []).reduce((acc, row) => {
       if (!acc[row.feed_item_id]) acc[row.feed_item_id] = [];
@@ -1403,7 +1447,6 @@ export default function FeedClient() {
     }, {});
 
     setCommentsByFeedId(grouped);
-    setCommentsLoading(false);
   }, []);
 
   const loadInvites = useCallback(async () => {
@@ -1477,7 +1520,7 @@ export default function FeedClient() {
         ]);
       } catch (error) {
         if (active) {
-          setFeedError(error?.message || "Failed to load feed page.");
+          setFeedError(error?.message || "Failed to load page.");
           setContactsLoading(false);
           setInvitesLoading(false);
           setCalendarLoading(false);
@@ -1527,9 +1570,7 @@ export default function FeedClient() {
 
     const { error } = await supabase.from("contacts").insert(insertPayload);
 
-    if (error) {
-      throw new Error(normalizeSupabaseError(error, "Failed to save contact."));
-    }
+    if (error) throw new Error(normalizeSupabaseError(error, "Failed to save contact."));
 
     await loadContacts(sessionUser.id);
     setContactSuccess("Contact saved successfully.");
@@ -1551,10 +1592,7 @@ export default function FeedClient() {
 
     try {
       const { error } = await supabase.from("contacts").delete().eq("id", contact.id);
-
-      if (error) {
-        throw new Error(normalizeSupabaseError(error, "Failed to delete contact."));
-      }
+      if (error) throw new Error(normalizeSupabaseError(error, "Failed to delete contact."));
 
       await loadContacts(sessionUser.id);
       setIsDeleteContactOpen(false);
@@ -1568,9 +1606,26 @@ export default function FeedClient() {
   }
 
   async function handleSubmitComment(item) {
-    if (!sessionUser?.id) return;
     if (!draftComment.trim()) return;
-    if (!isSocialFeedItem(item)) return;
+
+    if (item.isDemo) {
+      setDemoCommentsByFeedId((prev) => ({
+        ...prev,
+        [item.id]: [
+          ...(prev[item.id] || []),
+          {
+            id: `demo-comment-${Date.now()}`,
+            author_name: "You",
+            body: draftComment.trim(),
+          },
+        ],
+      }));
+      setDraftComment("");
+      setActiveComposerId(null);
+      return;
+    }
+
+    if (!sessionUser?.id || !isSocialFeedItem(item)) return;
 
     try {
       const { error } = await supabase.from("feed_comments").insert({
@@ -1579,9 +1634,7 @@ export default function FeedClient() {
         body: draftComment.trim(),
       });
 
-      if (error) {
-        throw new Error(normalizeSupabaseError(error, "Could not save comment."));
-      }
+      if (error) throw new Error(normalizeSupabaseError(error, "Could not save comment."));
 
       await loadComments(feedItems.filter(isSocialFeedItem).map((feedItem) => feedItem.id));
       setDraftComment("");
@@ -1601,9 +1654,7 @@ export default function FeedClient() {
         .update({ status: nextStatus })
         .eq("id", invite.id);
 
-      if (error) {
-        throw new Error(normalizeSupabaseError(error, "Could not update invite."));
-      }
+      if (error) throw new Error(normalizeSupabaseError(error, "Could not update invite."));
 
       await loadInvites();
       setActiveInvite(null);
@@ -1615,9 +1666,7 @@ export default function FeedClient() {
   }
 
   async function handleCreateCalendarEvent(payload) {
-    if (!sessionUser?.id) {
-      throw new Error("You need to be signed in to save calendar events.");
-    }
+    if (!sessionUser?.id) throw new Error("You need to be signed in to save calendar events.");
 
     const insertPayload = {
       user_id: sessionUser.id,
@@ -1633,30 +1682,66 @@ export default function FeedClient() {
       .select()
       .single();
 
-    if (error) {
-      throw new Error(normalizeSupabaseError(error, "Could not save event."));
-    }
+    if (error) throw new Error(normalizeSupabaseError(error, "Could not save event."));
 
     setCalendarEvents((prev) => [...prev, data]);
   }
 
   async function handleDeleteCalendarEvent(eventToDelete) {
     const { error } = await supabase.from("calendar_events").delete().eq("id", eventToDelete.id);
-
-    if (error) {
-      throw new Error(normalizeSupabaseError(error, "Could not delete event."));
-    }
-
+    if (error) throw new Error(normalizeSupabaseError(error, "Could not delete event."));
     setCalendarEvents((prev) => prev.filter((item) => item.id !== eventToDelete.id));
   }
 
   const displayContacts = contacts.length > 0 ? contacts : demoContacts;
 
+  const shortReminderFeedItems = useMemo(() => {
+    return (calendarEvents || [])
+      .map((event) => {
+        const diffDays = diffInDaysFromToday(event.event_date);
+        if (![7, 1, 0].includes(diffDays)) return null;
+
+        const label = diffDays === 7 ? "In 1 week" : diffDays === 1 ? "Tomorrow" : "Today";
+        const typeLabel = (eventTypeStyles[event.type]?.label || "Event").toLowerCase();
+
+        return {
+          id: `reminder-${event.id}-${diffDays}`,
+          owner_user_id: sessionUser?.id || "me",
+          actor_user_id: null,
+          target_user_id: null,
+          family: "reminder",
+          item_type: "event_reminder",
+          visibility: "private",
+          circle_id: null,
+          activity_session_id: null,
+          source_event_id: event.id,
+          headline: `${event.title} is ${label.toLowerCase()}`,
+          body: `A ${typeLabel} reminder so you have time to sort the gift.`,
+          cta_label: "Shop",
+          cta_href: "/shop",
+          occurred_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          metadata: {
+            social_enabled: false,
+            reminder_distance: label,
+            event_date: event.event_date,
+          },
+          isDemo: false,
+        };
+      })
+      .filter(Boolean);
+  }, [calendarEvents, sessionUser]);
+
   const combinedFeedItems = useMemo(() => {
-    if (feedItems.length > 0) return feedItems;
-    if (demoMode) return demoFeedState;
-    return [];
-  }, [feedItems, demoFeedState]);
+    const base = feedItems.length > 0 ? feedItems : demoFeedItems;
+    const merged = [...shortReminderFeedItems, ...base];
+
+    return merged.sort((a, b) => {
+      const aDate = new Date(a.occurred_at || a.created_at).getTime();
+      const bDate = new Date(b.occurred_at || b.created_at).getTime();
+      return bDate - aDate;
+    });
+  }, [feedItems, shortReminderFeedItems]);
 
   const visibleFeedItems = useMemo(() => {
     if (activeFilter === "all") return combinedFeedItems;
@@ -1755,19 +1840,16 @@ export default function FeedClient() {
                 {contactError}
               </div>
             ) : null}
-
             {feedError ? (
               <div className="rounded-[22px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">
                 {feedError}
               </div>
             ) : null}
-
             {invitesError ? (
               <div className="rounded-[22px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">
                 {invitesError}
               </div>
             ) : null}
-
             {contactSuccess ? (
               <div className="rounded-[22px] border border-[#d8e8d3] bg-[#f3fbf1] px-4 py-3 text-sm text-[#4a7a3a]">
                 {contactSuccess}
@@ -1812,11 +1894,9 @@ export default function FeedClient() {
             </section>
 
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-semibold text-slate-900">Contacts</h2>
-                  <p className="mt-1 text-xs text-slate-500">Invitees and Hinted users live here.</p>
-                </div>
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">Contacts</h2>
+                <p className="mt-1 text-xs text-slate-500">Invitees and Hinted users live here.</p>
               </div>
 
               <div className="mt-4 space-y-3">
@@ -1860,13 +1940,10 @@ export default function FeedClient() {
                     <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.05em] text-slate-900">
                       Your people, moments, and nudges.
                     </h2>
-                    <p className="mt-2 max-w-[620px] text-[15px] leading-7 text-slate-600">
-                      The feed shows user-driven updates and short reminders. Long reminders stay on the right.
-                    </p>
                   </div>
 
                   <div className="rounded-[20px] border border-[#f3dfd6] bg-[#fffaf7] px-4 py-3 text-[13px] leading-6 text-slate-600">
-                    {commentsLoading ? "Loading comments..." : "Only user-based updates can be commented on."}
+                    Only automatic user updates can be commented on.
                   </div>
                 </div>
 
@@ -1893,19 +1970,27 @@ export default function FeedClient() {
                       Loading feed...
                     </div>
                   ) : visibleFeedItems.length > 0 ? (
-                    visibleFeedItems.map((item) => (
-                      <FeedItem
-                        key={item.id}
-                        item={item}
-                        comments={commentsByFeedId[item.id] || []}
-                        canComment={!item.isDemo}
-                        activeComposerId={activeComposerId}
-                        setActiveComposerId={setActiveComposerId}
-                        draftComment={draftComment}
-                        setDraftComment={setDraftComment}
-                        onSubmitComment={handleSubmitComment}
-                      />
-                    ))
+                    visibleFeedItems.map((item) => {
+                      const realComments = commentsByFeedId[item.id] || [];
+                      const demoSeedComments = item.metadata?.demo_comments || [];
+                      const localDemoComments = demoCommentsByFeedId[item.id] || [];
+                      const mergedComments = item.isDemo
+                        ? [...demoSeedComments, ...localDemoComments]
+                        : realComments;
+
+                      return (
+                        <FeedItem
+                          key={item.id}
+                          item={item}
+                          comments={mergedComments}
+                          activeComposerId={activeComposerId}
+                          setActiveComposerId={setActiveComposerId}
+                          draftComment={draftComment}
+                          setDraftComment={setDraftComment}
+                          onSubmitComment={handleSubmitComment}
+                        />
+                      );
+                    })
                   ) : (
                     <div className="rounded-[24px] border border-[#f0dfd6] bg-[#fffdfa] p-5 text-sm text-slate-500">
                       No activity matches this filter yet.
@@ -1918,15 +2003,13 @@ export default function FeedClient() {
 
           <aside className="space-y-5">
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Pending invites
-                  </p>
-                  <h2 className="mt-1 text-base font-semibold text-slate-900">
-                    Invites waiting for you
-                  </h2>
-                </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Pending invites
+                </p>
+                <h2 className="mt-1 text-base font-semibold text-slate-900">
+                  Invites waiting for you
+                </h2>
               </div>
 
               {invitesLoading ? (
@@ -2032,20 +2115,18 @@ export default function FeedClient() {
             />
 
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Upcoming reminders
-                  </p>
-                  <h2 className="mt-1 text-base font-semibold text-slate-900">
-                    Your next 3 long reminders
-                  </h2>
-                </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Upcoming reminders
+                </p>
+                <h2 className="mt-1 text-base font-semibold text-slate-900">
+                  Your next 3 events
+                </h2>
               </div>
 
               {sidebarReminders.length === 0 ? (
                 <div className="mt-4 rounded-[22px] border border-dashed border-[#ecd9cf] bg-[#fcf8f5] px-4 py-5">
-                  <p className="text-sm font-medium text-slate-700">No long reminders yet.</p>
+                  <p className="text-sm font-medium text-slate-700">No upcoming events yet.</p>
                   <p className="mt-1 text-sm leading-6 text-slate-500">
                     Events more than a week away will appear here.
                   </p>
