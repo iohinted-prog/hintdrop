@@ -1412,23 +1412,22 @@ export default function FeedClient() {
     }
 
     const mapped = (data || []).map((row) => {
-      const contactState = mapContactState(row.status);
-      const relationshipTypes = Array.isArray(row.relationship_types) ? row.relationship_types : [];
+  const contactState = mapContactState(row.status);
+  const role = row.role || "Friend";
 
-      return {
-        id: row.id,
-        name: row.name || row.email || "Unnamed contact",
-        role: relationshipToRoleLabel(relationshipTypes, row.role),
-        note: contactState === "user" ? "Hinted user" : "Invitee",
-        initials: getInitials(row.name || row.email || "C"),
-        email: row.email || "",
-        relationshipTypes,
-        contactState,
-        status: row.status,
-        isDemo: false,
-        raw: row,
-      };
-    });
+  return {
+    id: row.id,
+    name: row.name || row.email || "Unnamed contact",
+    role,
+    note: contactState === "user" ? "Hinted user" : "Invitee",
+    initials: getInitials(row.name || row.email || "C"),
+    email: row.email || "",
+    contactState,
+    status: row.status,
+    isDemo: false,
+    raw: row,
+  };
+});
 
     setContacts(mapped);
     setContactsLoading(false);
@@ -1579,41 +1578,43 @@ export default function FeedClient() {
     }
   }, [feedItems, loadComments]);
 
-  async function handleSaveContact(payload) {
-    setContactError("");
-    setContactSuccess("");
+async function handleSaveContact(payload) {
+  setContactError("");
+  setContactSuccess("");
 
-    if (!sessionUser?.id) {
-      throw new Error("You must be signed in to save contacts.");
-    }
-
-    const cleanedEmail = String(payload.email || "").trim().toLowerCase();
-    if (!cleanedEmail || !isValidEmail(cleanedEmail)) {
-      throw new Error("A valid email address is required.");
-    }
-
-    const relationshipTypes =
-      Array.isArray(payload.relationshipTypes) && payload.relationshipTypes.length
-        ? payload.relationshipTypes
-        : ["Friend"];
-
-    const insertPayload = {
-      user_id: sessionUser.id,
-      name: payload.name,
-      email: cleanedEmail,
-      relationship_types: relationshipTypes,
-      role: relationshipTypes[0],
-      status: "pending",
-      source: "manual",
-    };
-
-    const { error } = await supabase.from("contacts").insert(insertPayload);
-
-    if (error) throw new Error(normalizeSupabaseError(error, "Failed to save contact."));
-
-    await loadContacts(sessionUser.id);
-    setContactSuccess("Contact saved successfully.");
+  if (!sessionUser?.id) {
+    throw new Error("You must be signed in to save contacts.");
   }
+
+  const cleanedEmail = String(payload.email || "").trim().toLowerCase();
+
+  if (!cleanedEmail || !isValidEmail(cleanedEmail)) {
+    throw new Error("A valid email address is required.");
+  }
+
+  const role =
+    Array.isArray(payload.relationshipTypes) && payload.relationshipTypes.length
+      ? payload.relationshipTypes[0]
+      : "Friend";
+
+  const insertPayload = {
+    user_id: sessionUser.id,
+    name: payload.name,
+    email: cleanedEmail,
+    role,
+    status: "invitee",
+    source: "manual",
+  };
+
+  const { error } = await supabase.from("contacts").insert(insertPayload);
+
+  if (error) {
+    throw new Error(normalizeSupabaseError(error, "Failed to save contact."));
+  }
+
+  await loadContacts(sessionUser.id);
+  setContactSuccess("Contact saved successfully.");
+}
 
   function openDeleteContactModal(contact) {
     setDeleteContactError("");
