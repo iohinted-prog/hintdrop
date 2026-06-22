@@ -6,7 +6,6 @@ export const metadata = {
   description:
     "Hinted helps you remember important moments, save better gift ideas, build circles, and explore curated shopping with help from your friends.",
 };
-<meta name='impact-site-verification' value='e9b128fe-f48f-4547-98f7-037ee4183d82'>
 
 const hints = [
   {
