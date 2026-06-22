@@ -35,11 +35,11 @@ const demoContacts = [
     id: "demo-1",
     name: "Maya",
     role: "Contact",
-    note: "Hinted user",
+    note: "Accepted",
     initials: "M",
     colors: "from-[#efc3af] to-[#ae6e57]",
     email: "maya@example.com",
-    contactState: "user",
+    status: "accepted",
     isDemo: true,
   },
   {
@@ -50,18 +50,18 @@ const demoContacts = [
     initials: "J",
     colors: "from-[#4e596d] to-[#212a3c]",
     email: "james@example.com",
-    contactState: "invitee",
+    status: "invitee",
     isDemo: true,
   },
   {
     id: "demo-3",
     name: "Fiona",
     role: "Contact",
-    note: "Hinted user",
+    note: "Accepted",
     initials: "F",
     colors: "from-[#809168] to-[#41512e]",
     email: "fiona@example.com",
-    contactState: "user",
+    status: "accepted",
     isDemo: true,
   },
 ];
@@ -250,8 +250,53 @@ function relationshipToRoleLabel(relationshipTypes, fallbackRole) {
   return "Contact";
 }
 
-function mapContactState(status) {
-  return status === "accepted" ? "user" : "invitee";
+function getAvatarState(status) {
+  return String(status || "").toLowerCase() === "accepted" ? "accepted" : "invitee";
+}
+
+function getStatusLabel(status) {
+  return getAvatarState(status) === "accepted" ? "Accepted" : "Invitee";
+}
+
+function getRelationshipGradient(role) {
+  const normalized = String(role || "").toLowerCase();
+
+  if (normalized.includes("partner") || normalized.includes("spouse")) {
+    return "from-[#e8b9a7] to-[#bf755f]";
+  }
+
+  if (
+    normalized.includes("family") ||
+    normalized.includes("parent") ||
+    normalized.includes("child") ||
+    normalized.includes("sibling") ||
+    normalized.includes("cousin")
+  ) {
+    return "from-[#eac8b8] to-[#9d6957]";
+  }
+
+  if (normalized.includes("colleague")) {
+    return "from-[#b7c8db] to-[#6b88a7]";
+  }
+
+  return "from-[#efcdbf] to-[#bb8168]";
+}
+
+function getAvatarClasses(colors, status, size = "md") {
+  const avatarState = getAvatarState(status);
+
+  const sizeClasses =
+    size === "sm"
+      ? "h-8 w-8 text-[11px]"
+      : size === "lg"
+        ? "h-11 w-11 text-[12px]"
+        : "h-10 w-10 text-[11px]";
+
+  if (avatarState === "accepted") {
+    return `flex items-center justify-center rounded-full bg-gradient-to-b ${sizeClasses} font-bold text-white ${colors}`;
+  }
+
+  return `flex items-center justify-center rounded-full border-2 border-dashed border-[#dfb39d] bg-[#fff5ef] ${sizeClasses} font-bold text-[#c87150]`;
 }
 
 function getFeedBucket(item) {
@@ -273,36 +318,9 @@ function isSocialFeedItem(item) {
 }
 
 function ContactAvatar({ contact }) {
-  if (contact.isDemo) {
-    return (
-      <div
-        className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b text-[11px] font-bold text-white ${contact.colors}`}
-      >
-        {contact.initials}
-      </div>
-    );
-  }
-
-  const isUser = contact.contactState === "user";
-
   return (
-    <div
-      className={`relative flex h-11 w-11 items-center justify-center rounded-full text-[12px] font-bold ${
-        isUser
-          ? "bg-gradient-to-b from-[#8aa587] to-[#4e684d] text-white"
-          : "border-2 border-dashed border-[#dfb39d] bg-[#fff5ef] text-[#c87150]"
-      }`}
-    >
+    <div className={getAvatarClasses(contact.colors, contact.status, "lg")}>
       {contact.initials}
-      <span
-        className={`absolute -bottom-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-[9px] font-bold ${
-          isUser
-            ? "bg-[#2f3b2d] text-white"
-            : "border border-[#e6c5b6] bg-[#fff0e8] text-[#c87150]"
-        }`}
-      >
-        {isUser ? "C" : "I"}
-      </span>
     </div>
   );
 }
@@ -1206,6 +1224,7 @@ function MiniCalendar({
               className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
             >
               →
+
             </button>
           </div>
         </div>
@@ -1412,22 +1431,23 @@ export default function FeedClient() {
     }
 
     const mapped = (data || []).map((row) => {
-  const contactState = mapContactState(row.status);
-  const role = row.role || "Friend";
+      const relationshipTypes = Array.isArray(row.relationship_types) ? row.relationship_types : [];
+      const role = relationshipToRoleLabel(relationshipTypes, row.role || "Friend");
 
-  return {
-    id: row.id,
-    name: row.name || row.email || "Unnamed contact",
-    role,
-    note: contactState === "user" ? "Hinted user" : "Invitee",
-    initials: getInitials(row.name || row.email || "C"),
-    email: row.email || "",
-    contactState,
-    status: row.status,
-    isDemo: false,
-    raw: row,
-  };
-});
+      return {
+        id: row.id,
+        name: row.name || row.email || "Unnamed contact",
+        role,
+        note: getStatusLabel(row.status),
+        initials: getInitials(row.name || row.email || "C"),
+        colors: getRelationshipGradient(role),
+        email: row.email || "",
+        relationshipTypes,
+        status: getAvatarState(row.status),
+        isDemo: false,
+        raw: row,
+      };
+    });
 
     setContacts(mapped);
     setContactsLoading(false);
@@ -1578,43 +1598,44 @@ export default function FeedClient() {
     }
   }, [feedItems, loadComments]);
 
-async function handleSaveContact(payload) {
-  setContactError("");
-  setContactSuccess("");
+  async function handleSaveContact(payload) {
+    setContactError("");
+    setContactSuccess("");
 
-  if (!sessionUser?.id) {
-    throw new Error("You must be signed in to save contacts.");
+    if (!sessionUser?.id) {
+      throw new Error("You must be signed in to save contacts.");
+    }
+
+    const cleanedEmail = String(payload.email || "").trim().toLowerCase();
+
+    if (!cleanedEmail || !isValidEmail(cleanedEmail)) {
+      throw new Error("A valid email address is required.");
+    }
+
+    const relationshipTypes =
+      Array.isArray(payload.relationshipTypes) && payload.relationshipTypes.length
+        ? payload.relationshipTypes
+        : ["Friend"];
+
+    const insertPayload = {
+      user_id: sessionUser.id,
+      name: payload.name,
+      email: cleanedEmail,
+      relationship_types: relationshipTypes,
+      role: relationshipTypes[0],
+      status: "pending",
+      source: "manual",
+    };
+
+    const { error } = await supabase.from("contacts").insert(insertPayload);
+
+    if (error) {
+      throw new Error(normalizeSupabaseError(error, "Failed to save contact."));
+    }
+
+    await loadContacts(sessionUser.id);
+    setContactSuccess("Contact saved successfully.");
   }
-
-  const cleanedEmail = String(payload.email || "").trim().toLowerCase();
-
-  if (!cleanedEmail || !isValidEmail(cleanedEmail)) {
-    throw new Error("A valid email address is required.");
-  }
-
-  const role =
-    Array.isArray(payload.relationshipTypes) && payload.relationshipTypes.length
-      ? payload.relationshipTypes[0]
-      : "Friend";
-
-  const insertPayload = {
-    user_id: sessionUser.id,
-    name: payload.name,
-    email: cleanedEmail,
-    role,
-    status: "invitee",
-    source: "manual",
-  };
-
-  const { error } = await supabase.from("contacts").insert(insertPayload);
-
-  if (error) {
-    throw new Error(normalizeSupabaseError(error, "Failed to save contact."));
-  }
-
-  await loadContacts(sessionUser.id);
-  setContactSuccess("Contact saved successfully.");
-}
 
   function openDeleteContactModal(contact) {
     setDeleteContactError("");
