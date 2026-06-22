@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Script from "next/script";
-import { createClient } from "../../../../lib/supabase/client";
+import { createClient } from "../../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
 
 const ACTIVE_CURRENCY = "GBP";
@@ -30,9 +30,6 @@ const OCCASION_OPTIONS = [
   "Graduation",
   "Just because",
 ];
-
-const EMPTY_STATE_COPY =
-  "Curated gift ideas will appear here based on the interests saved during onboarding.";
 
 const demoProducts = [
   {
@@ -168,20 +165,6 @@ function detectCurrency(raw) {
   return null;
 }
 
-function formatPriceLabel(price, rawPrice, currency = ACTIVE_CURRENCY) {
-  if (rawPrice && typeof rawPrice === "string" && rawPrice.trim()) return rawPrice;
-  if (price == null) return "Price unavailable";
-  try {
-    return new Intl.NumberFormat("en-GB", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: price % 1 === 0 ? 0 : 2,
-    }).format(Number(price));
-  } catch {
-    return `£${Math.round(Number(price))}`;
-  }
-}
-
 function extractNumericPrice(value) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (!value) return null;
@@ -192,10 +175,19 @@ function extractNumericPrice(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function getOutboundUrl(product) {
-  const affiliate = String(product?.affiliate_url || "").trim();
-  const canonical = String(product?.product_url || "").trim();
-  return affiliate || canonical || "";
+function formatPriceLabel(price, rawPrice, currency = ACTIVE_CURRENCY) {
+  if (rawPrice && typeof rawPrice === "string" && rawPrice.trim()) return rawPrice;
+  if (price == null) return "Price unavailable";
+
+  try {
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: price % 1 === 0 ? 0 : 2,
+    }).format(Number(price));
+  } catch {
+    return `£${Math.round(Number(price))}`;
+  }
 }
 
 function getInterestArray(value) {
@@ -216,11 +208,19 @@ function getProfileInterestTags(profile) {
     profile?.onboarding_interests,
     profile?.gift_interests,
   ];
+
   for (const candidate of candidates) {
     const parsed = getInterestArray(candidate);
     if (parsed.length) return parsed;
   }
+
   return [];
+}
+
+function getOutboundUrl(product) {
+  const affiliate = String(product?.affiliate_url || "").trim();
+  const productUrl = String(product?.product_url || "").trim();
+  return affiliate || productUrl || "";
 }
 
 function matchScore(product, selectedInterests, selectedOccasion) {
@@ -253,19 +253,19 @@ function buildHintInsertPayload(product, userId) {
       : extractNumericPrice(product?.price_text);
 
   return {
-    user_id: userId,
+    userid: userId,
     title: product?.title?.trim() || "Saved from shop",
     url: outboundUrl,
-    image_url: product?.image_url || "",
+    imageurl: product?.image_url || "",
     retailer: product?.retailer || normaliseRetailer(outboundUrl),
-    price_text: formatPriceLabel(
+    pricetext: formatPriceLabel(
       parsedNumericPrice,
       product?.price_text,
       detectCurrency(product?.price_text) || ACTIVE_CURRENCY
     ),
-    numeric_price: parsedNumericPrice,
+    numericprice: parsedNumericPrice,
     starred: false,
-    is_private: false,
+    isprivate: false,
     position: 0,
     source: "shop",
   };
@@ -296,6 +296,7 @@ function ShopProductCard({ product, onAddToHints, isSavingId }) {
               {product.tag}
             </span>
           ) : null}
+
           {product.source_type === "curated" ? (
             <span className="inline-flex rounded-full border border-[#efe0d7] bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-600 backdrop-blur">
               Curated
@@ -385,7 +386,7 @@ function EmptyState() {
   );
 }
 
-export default function ShopClient() {
+export default function ShopPage() {
   const supabase = createClient();
 
   const [currentUser, setCurrentUser] = useState(null);
@@ -413,8 +414,8 @@ export default function ShopClient() {
         } = await supabase.auth.getUser();
 
         if (userError) throw userError;
-
         if (!active) return;
+
         setCurrentUser(user || null);
 
         if (!user) {
@@ -444,7 +445,6 @@ export default function ShopClient() {
           .order("created_at", { ascending: false });
 
         if (shopError) throw shopError;
-
         if (!active) return;
 
         if (Array.isArray(shopRows) && shopRows.length) {
@@ -478,8 +478,8 @@ export default function ShopClient() {
           product.title,
           product.retailer,
           product.short_note,
-          ...(getInterestArray(product.interest_tags) || []),
-          ...(getInterestArray(product.occasion_tags) || []),
+          ...getInterestArray(product.interest_tags),
+          ...getInterestArray(product.occasion_tags),
         ]
           .filter(Boolean)
           .join(" ")
@@ -523,20 +523,7 @@ export default function ShopClient() {
 
     try {
       const payload = buildHintInsertPayload(product, currentUser.id);
-
-      const { error } = await supabase.from("hints").insert({
-        userid: currentUser.id,
-        title: payload.title,
-        url: payload.url,
-        imageurl: payload.image_url,
-        retailer: payload.retailer,
-        pricetext: payload.price_text,
-        numericprice: payload.numeric_price,
-        starred: false,
-        isprivate: false,
-        position: 0,
-        source: "shop",
-      });
+      const { error } = await supabase.from("hints").insert(payload);
 
       if (error) throw error;
 
@@ -679,7 +666,7 @@ export default function ShopClient() {
                 </p>
 
                 <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
-                  Curated first, checkout later
+                  Curated first, off-site second
                 </h2>
 
                 <div className="mt-4 space-y-3">
@@ -705,20 +692,20 @@ export default function ShopClient() {
 
                   <div className="rounded-[20px] bg-[#faf7f4] p-4">
                     <span className="inline-flex rounded-full bg-[#edf6eb] px-2.5 py-1 text-[11px] font-semibold text-[#4a7a3a]">
-                      3. Go off-site
+                      3. View item
                     </span>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      View item sends people straight to the retailer, which is the simplest affiliate
-                      path for this version of Shop.
+                      View item opens the retailer in a new tab using the affiliate link when one is
+                      available, or the product URL when it is not.
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-5 rounded-[20px] bg-[#fffaf7] p-4">
-                  <p className="text-sm font-semibold text-slate-900">For circles later</p>
+                  <p className="text-sm font-semibold text-slate-900">Built to stay aligned</p>
                   <p className="mt-2 text-[13px] leading-6 text-slate-500">
-                    Keep using the same gifting language elsewhere in the app: shared pot, from hints,
-                    paste a link, Flexible pot, All-or-nothing, and Organizer covers gap.
+                    Shop keeps the same gifting language as the rest of the app, so saved items can
+                    move naturally into hints and later into a shared pot flow.
                   </p>
                 </div>
               </aside>
@@ -759,12 +746,6 @@ export default function ShopClient() {
             <EmptyState />
           )}
         </section>
-
-        {!products.length && !isLoading ? (
-          <section className="mt-8 rounded-[26px] border border-dashed border-[#e5d8cf] bg-white p-5 text-sm leading-7 text-slate-500">
-            {EMPTY_STATE_COPY}
-          </section>
-        ) : null}
       </div>
     </main>
   );
