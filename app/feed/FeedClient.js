@@ -35,11 +35,11 @@ const demoContacts = [
     id: "demo-1",
     name: "Maya",
     role: "Contact",
-    note: "Accepted",
+    note: "Hinted user",
     initials: "M",
     colors: "from-[#efc3af] to-[#ae6e57]",
     email: "maya@example.com",
-    contactState: "accepted",
+    contactState: "user",
     isDemo: true,
   },
   {
@@ -57,11 +57,11 @@ const demoContacts = [
     id: "demo-3",
     name: "Fiona",
     role: "Contact",
-    note: "Accepted",
+    note: "Hinted user",
     initials: "F",
     colors: "from-[#809168] to-[#41512e]",
     email: "fiona@example.com",
-    contactState: "accepted",
+    contactState: "user",
     isDemo: true,
   },
 ];
@@ -140,7 +140,6 @@ function normalizeSupabaseError(error, fallback) {
 
 function formatRelativeFromDate(dateString) {
   if (!dateString) return "Recently";
-
   const now = new Date();
   const value = new Date(dateString);
   const diffMs = now.getTime() - value.getTime();
@@ -179,11 +178,9 @@ function startOfDay(date) {
 function diffInDaysFromToday(dateString) {
   const target = parseDateOnly(dateString);
   if (!target) return null;
-
   const today = startOfDay(new Date());
   const targetDay = startOfDay(target);
   const diffMs = targetDay.getTime() - today.getTime();
-
   return Math.round(diffMs / (1000 * 60 * 60 * 24));
 }
 
@@ -192,10 +189,8 @@ function formatReminderDistance(diffDays) {
   if (diffDays === 1) return "Tomorrow";
   if (diffDays === 7) return "In 1 week";
   if (diffDays < 7) return `In ${diffDays} days`;
-
   const weeks = Math.round(diffDays / 7);
   if (diffDays < 31) return `In ${weeks} week${weeks === 1 ? "" : "s"}`;
-
   const months = Math.round(diffDays / 30);
   return `In ${months} month${months === 1 ? "" : "s"}`;
 }
@@ -256,7 +251,7 @@ function relationshipToRoleLabel(relationshipTypes, fallbackRole) {
 }
 
 function mapContactState(status) {
-  return status === "accepted" ? "accepted" : "invitee";
+  return status === "accepted" ? "user" : "invitee";
 }
 
 function getFeedBucket(item) {
@@ -277,14 +272,8 @@ function isSocialFeedItem(item) {
   return getFeedBucket(item) !== "reminder";
 }
 
-function getAvatarState(status) {
-  return status === "accepted" ? "accepted" : "invitee";
-}
-
 function ContactAvatar({ contact }) {
-  const avatarState = getAvatarState(contact.contactState);
-
-  if (contact.isDemo && avatarState === "accepted") {
+  if (contact.isDemo) {
     return (
       <div
         className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b text-[11px] font-bold text-white ${contact.colors}`}
@@ -294,35 +283,25 @@ function ContactAvatar({ contact }) {
     );
   }
 
-  if (contact.isDemo) {
-    return (
-      <div className="relative flex h-11 w-11 items-center justify-center rounded-full border-2 border-dashed border-[#dfb39d] bg-[#fff5ef] text-[12px] font-bold text-[#c87150]">
-        {contact.initials}
-        <span className="absolute -bottom-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full border border-[#e6c5b6] bg-[#fff0e8] px-1 text-[9px] font-bold text-[#c87150]">
-          I
-        </span>
-      </div>
-    );
-  }
-
-  if (avatarState === "accepted") {
-    return (
-      <div
-        className={`relative flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b text-[12px] font-bold text-white ${contact.colors}`}
-      >
-        {contact.initials}
-        <span className="absolute -bottom-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full border border-[#e6c5b6] bg-[#2f3b2d] px-1 text-[9px] font-bold text-white">
-          C
-        </span>
-      </div>
-    );
-  }
+  const isUser = contact.contactState === "user";
 
   return (
-    <div className="relative flex h-11 w-11 items-center justify-center rounded-full border-2 border-dashed border-[#dfb39d] bg-[#fff5ef] text-[12px] font-bold text-[#c87150]">
+    <div
+      className={`relative flex h-11 w-11 items-center justify-center rounded-full text-[12px] font-bold ${
+        isUser
+          ? "bg-gradient-to-b from-[#8aa587] to-[#4e684d] text-white"
+          : "border-2 border-dashed border-[#dfb39d] bg-[#fff5ef] text-[#c87150]"
+      }`}
+    >
       {contact.initials}
-      <span className="absolute -bottom-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full border border-[#e6c5b6] bg-[#fff0e8] px-1 text-[9px] font-bold text-[#c87150]">
-        I
+      <span
+        className={`absolute -bottom-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-[9px] font-bold ${
+          isUser
+            ? "bg-[#2f3b2d] text-white"
+            : "border border-[#e6c5b6] bg-[#fff0e8] text-[#c87150]"
+        }`}
+      >
+        {isUser ? "C" : "I"}
       </span>
     </div>
   );
@@ -417,7 +396,10 @@ function AddContactModal({ open, onClose, onSave, supabase }) {
   const [searchingContacts, setSearchingContacts] = useState(false);
   const [contactsMessage, setContactsMessage] = useState("");
   const [selectedRelationships, setSelectedRelationships] = useState(["Friend"]);
-  const [form, setForm] = useState({ name: "", email: "" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+  });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
@@ -456,7 +438,7 @@ function AddContactModal({ open, onClose, onSave, supabase }) {
       if (!providerToken) {
         setContactResults([]);
         setContactsMessage(
-          "We couldnt access your linked Google contacts right now because the Google provider token is missing."
+          "We couldn’t access your linked Google contacts right now because the Google provider token is missing."
         );
         return;
       }
@@ -472,7 +454,7 @@ function AddContactModal({ open, onClose, onSave, supabase }) {
 
       if (!warmupResponse.ok) {
         setContactResults([]);
-        setContactsMessage("We couldnt access your linked Google contacts right now.");
+        setContactsMessage("We couldn’t access your linked Google contacts right now.");
         return;
       }
 
@@ -491,7 +473,7 @@ function AddContactModal({ open, onClose, onSave, supabase }) {
 
       if (!response.ok) {
         setContactResults([]);
-        setContactsMessage(result?.error?.message || "We couldnt search Google contacts right now.");
+        setContactsMessage(result?.error?.message || "We couldn’t search Google contacts right now.");
         return;
       }
 
@@ -513,7 +495,7 @@ function AddContactModal({ open, onClose, onSave, supabase }) {
       }
     } catch (error) {
       setContactResults([]);
-      setContactsMessage(error?.message || "We couldnt search Google contacts right now.");
+      setContactsMessage(error?.message || "We couldn’t search Google contacts right now.");
     } finally {
       setSearchingContacts(false);
     }
@@ -629,7 +611,9 @@ function AddContactModal({ open, onClose, onSave, supabase }) {
             </div>
           ) : null}
 
-          {contactsMessage ? <p className="mt-3 text-xs text-slate-500">{contactsMessage}</p> : null}
+          {contactsMessage ? (
+            <p className="mt-3 text-xs text-slate-500">{contactsMessage}</p>
+          ) : null}
         </div>
 
         <div className="mt-6 space-y-5">
@@ -713,11 +697,20 @@ function AddContactModal({ open, onClose, onSave, supabase }) {
   );
 }
 
-function DeleteContactModal({ open, onClose, onConfirm, contact, isDeleting, errorMessage }) {
+function DeleteContactModal({
+  open,
+  onClose,
+  onConfirm,
+  contact,
+  isDeleting,
+  errorMessage,
+}) {
   const [typedName, setTypedName] = useState("");
 
   useEffect(() => {
-    if (!open) setTypedName("");
+    if (!open) {
+      setTypedName("");
+    }
   }, [open]);
 
   if (!open || !contact) return null;
@@ -771,7 +764,9 @@ function DeleteContactModal({ open, onClose, onConfirm, contact, isDeleting, err
             disabled={isDeleting || !matches}
             onClick={() => onConfirm(contact)}
             className={`inline-flex h-12 flex-1 items-center justify-center rounded-full px-6 text-sm font-semibold text-white ${
-              isDeleting || !matches ? "cursor-not-allowed bg-[#e9a48d]" : "bg-[#b14f43]"
+              isDeleting || !matches
+                ? "cursor-not-allowed bg-[#e9a48d]"
+                : "bg-[#b14f43]"
             }`}
           >
             {isDeleting ? "Deleting..." : "Delete contact"}
@@ -815,10 +810,10 @@ function FeedItem({
           ? "Reminder"
           : "Contact";
 
-  const actorHref = metadata.actor_profile_href || item.cta_href || "/feed";
+  const actorHref = metadata.actor_profile_href || item.cta_href || "#";
   const actorInitials = metadata.actor_avatar_initials || getInitials(metadata.actor_name || item.headline || "H");
   const demoReactions = item.isDemo
-    ? demoReactionsState
+    ? demoReactionsState || []
     : Array.isArray(metadata.demo_reactions)
       ? metadata.demo_reactions
       : [];
@@ -858,6 +853,7 @@ function FeedItem({
               ) : null}
 
               <p className="mt-1 text-[15px] leading-7 text-slate-700">{item.headline}</p>
+
               {item.body ? (
                 <p className="mt-1 text-[14px] leading-6 text-slate-500">{item.body}</p>
               ) : null}
@@ -880,82 +876,77 @@ function FeedItem({
           ) : null}
 
           {canInteract ? (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {demoReactions.map((reaction) => (
-                <button
-                  key={reaction.id}
-                  type="button"
-                  onClick={() => item.isDemo && onToggleDemoReaction(item.id, reaction.id)}
-                  className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm font-medium ${
-                    item.isDemo
-                      ? reaction.active
-                        ? "border-[#f1a58a] bg-[#fff1ea] text-[#d96d4f]"
-                        : "border-[#ebdfd8] bg-white text-slate-600 hover:bg-slate-50"
-                      : "border-[#ebdfd8] bg-white text-slate-600"
-                  }`}
-                >
-                  <span className="mr-1">{reaction.emoji}</span>
-                  {reaction.count}
-                </button>
-              ))}
+            <>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {demoReactions.map((reaction) => (
+                  <button
+                    key={reaction.id}
+                    type="button"
+                    onClick={() => item.isDemo && onToggleDemoReaction(item.id, reaction.id)}
+                    className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm font-medium ${
+                      item.isDemo
+                        ? reaction.active
+                          ? "border-[#f1a58a] bg-[#fff1ea] text-[#d96d4f]"
+                          : "border-[#ebdfd8] bg-white text-slate-600 hover:bg-slate-50"
+                        : "border-[#ebdfd8] bg-white text-slate-600"
+                    }`}
+                  >
+                    <span className="mr-1">{reaction.emoji}</span>
+                    {reaction.count}
+                  </button>
+                ))}
 
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveComposerId((current) => (current === item.id ? null : item.id))
-                }
-                className="inline-flex h-9 items-center justify-center rounded-full border border-[#ebdfd8] bg-white px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
-              >
-                Comment
-              </button>
-            </div>
-          ) : null}
-
-          {comments.length > 0 ? (
-            <div className="mt-4 space-y-3 border-t border-[#f2e5de] pt-4">
-              {comments.map((comment) => (
-                <div key={comment.id} className="rounded-[18px] bg-[#fffaf7] px-4 py-3">
-                  <p className="text-[12px] font-semibold text-slate-700">
-                    {comment.author_name || "Someone"}{" "}
-                    <span className="font-normal text-slate-400">
-                      {formatRelativeFromDate(comment.created_at)}
-                    </span>
-                  </p>
-                  <p className="mt-1 text-[13px] leading-6 text-slate-600">{comment.body}</p>
-                </div>
-              ))}
-            </div>
-          ) : null}
-
-          {activeComposerId === item.id ? (
-            <div className="mt-4 space-y-3 border-t border-[#f2e5de] pt-4">
-              <textarea
-                value={draftComment}
-                onChange={(e) => setDraftComment(e.target.value)}
-                rows={3}
-                placeholder="Add a comment"
-                className="w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-              />
-              <div className="flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveComposerId(null);
-                    setDraftComment("");
-                  }}
-                  className="inline-flex h-10 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
+                  onClick={() =>
+                    setActiveComposerId((current) => (current === item.id ? null : item.id))
+                  }
+                  className="inline-flex h-9 items-center justify-center rounded-full border border-[#ebdfd8] bg-white px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSubmitComment(item)}
-                  className="inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-4 text-sm font-semibold text-white shadow-lg"
-                >
-                  Post comment
+                  Comment
                 </button>
               </div>
-            </div>
+
+              {comments.length > 0 ? (
+                <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="rounded-[18px] bg-[#faf7f4] px-4 py-3">
+                      <p className="text-[13px] leading-6 text-slate-600">
+                        <span className="font-semibold text-slate-900">
+                          {comment.author_name || "Someone"}
+                        </span>{" "}
+                        {comment.body}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {activeComposerId === item.id ? (
+                <div className="mt-4 flex gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white">
+                    Y
+                  </div>
+
+                  <div className="flex w-full gap-2">
+                    <input
+                      type="text"
+                      value={draftComment}
+                      onChange={(e) => setDraftComment(e.target.value)}
+                      placeholder="Write a comment..."
+                      className="h-11 w-full rounded-full border border-[#e9ddd6] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onSubmitComment(item)}
+                      className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f3b2d] px-4 text-sm font-semibold text-white"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </>
           ) : null}
         </div>
       </div>
@@ -963,495 +954,898 @@ function FeedItem({
   );
 }
 
-function ReminderCalendar({ events, selectedDate, onSelectDate, currentMonth, setCurrentMonth }) {
-  const monthData = getMonthData(currentMonth);
+function CalendarPopover({
+  selectedDate,
+  events,
+  onClose,
+  onAddEvent,
+  onRequestDelete,
+  draft,
+  setDraft,
+  isSaving,
+}) {
+  if (!selectedDate) return null;
+
+  const prettyDate = selectedDate.toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
-    <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-            Planner
-          </p>
-          <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
-            Calendar
-          </h2>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() =>
-              setCurrentMonth(
-                (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
-              )
-            }
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#ead8ce] bg-white text-slate-500 hover:bg-[#fff5f0]"
-          >
-            ←
-          </button>
-          <div className="min-w-[120px] text-center text-sm font-semibold text-slate-700">
-            {currentMonth.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              setCurrentMonth(
-                (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
-              )
-            }
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#ead8ce] bg-white text-slate-500 hover:bg-[#fff5f0]"
-          >
-            →
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-5 grid grid-cols-7 gap-2 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
-        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => (
-          <div key={label}>{label}</div>
-        ))}
-      </div>
-
-      <div className="mt-3 grid grid-cols-7 gap-2">
-        {monthData.map((cell) => {
-          const isoDate = cell.date.toISOString().slice(0, 10);
-          const isSelected = selectedDate === isoDate;
-          const matchingEvents = events.filter((event) => event.date === isoDate);
-
-          return (
-            <button
-              key={cell.key}
-              type="button"
-              onClick={() => onSelectDate(isoDate)}
-              className={`min-h-[74px] rounded-[18px] border px-2 py-2 text-left transition ${
-                isSelected
-                  ? "border-[#f0a384] bg-[#fff4ee]"
-                  : cell.currentMonth
-                    ? "border-[#efe1d9] bg-[#fffdfa] hover:bg-[#fff8f4]"
-                    : "border-[#f3ebe6] bg-[#fdf9f7] text-slate-300"
-              }`}
-            >
-              <div className="text-[12px] font-semibold">{cell.day}</div>
-              <div className="mt-2 space-y-1">
-                {matchingEvents.slice(0, 2).map((event) => {
-                  const style =
-                    eventTypeStyles[String(event.type || "").toLowerCase()] ||
-                    eventTypeStyles.celebration;
-
-                  return (
-                    <div
-                      key={event.id}
-                      className={`truncate rounded-full px-2 py-1 text-[10px] font-semibold ${style.pill}`}
-                    >
-                      {event.title}
-                    </div>
-                  );
-                })}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function ReminderEventCard({ event, onDeleteClick }) {
-  const eventKey = String(event.type || "").toLowerCase();
-  const style = eventTypeStyles[eventKey] || eventTypeStyles.celebration;
-  const diffDays = diffInDaysFromToday(event.date);
-
-  return (
-    <article className="rounded-[24px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
+    <div className="mt-4 rounded-[24px] border border-[#efdcd2] bg-[#fffaf7] p-4 shadow-[0_18px_45px_rgba(123,84,64,0.12)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <span className={`h-2.5 w-2.5 rounded-full ${style.dot}`} />
-            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${style.pill}`}>
-              {style.label}
-            </span>
-          </div>
-
-          <h3 className="mt-3 text-[18px] font-semibold tracking-[-0.03em] text-slate-900">
-            {event.title}
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+            Selected day
+          </p>
+          <h3 className="mt-1 text-[18px] font-semibold tracking-[-0.03em] text-slate-900">
+            {prettyDate}
           </h3>
-          <p className="mt-1 text-[13px] text-slate-500">{event.date}</p>
         </div>
 
         <button
           type="button"
-          onClick={() => onDeleteClick(event)}
-          className="inline-flex h-9 items-center justify-center rounded-full border border-[#efc0ba] bg-[#fff4f2] px-3 text-[12px] font-semibold text-[#b14f43] hover:bg-[#ffe9e5]"
+          onClick={onClose}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-[#eaded6] bg-white text-slate-500 hover:bg-slate-50"
+          aria-label="Close calendar event panel"
         >
-          Delete
+          ×
         </button>
       </div>
 
-      <div className="mt-4 rounded-[18px] bg-[#fffaf7] p-4">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-          Selected day
-        </p>
-        <p className="mt-2 text-sm font-semibold text-slate-900">{event.title}</p>
-        <p className="mt-1 text-[13px] text-slate-500">
-          {diffDays === null ? "No timing available" : formatReminderDistance(diffDays)}
-        </p>
+      <div className="mt-4 space-y-3">
+        {events.length > 0 ? (
+          events.map((event) => {
+            const style = eventTypeStyles[event.type] || eventTypeStyles.celebration;
+            const canDelete = event.source === "user";
+
+            return (
+              <div key={event.id} className="rounded-[18px] border border-[#eee1da] bg-white p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`h-2.5 w-2.5 rounded-full ${style.dot}`} />
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${style.pill}`}>
+                        {style.label}
+                      </span>
+                    </div>
+
+                    <p className="mt-2 text-sm font-semibold text-slate-900">{event.title}</p>
+                  </div>
+
+                  {canDelete ? (
+                    <button
+                      type="button"
+                      onClick={() => onRequestDelete({ ...event, date: selectedDate })}
+                      className="inline-flex h-9 items-center justify-center rounded-full border border-[#efc0ba] bg-[#fff4f2] px-3 text-[12px] font-semibold text-[#b14f43] hover:bg-[#ffe9e5]"
+                    >
+                      Delete
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="rounded-[18px] bg-white p-4 text-sm text-slate-500">
+            No events yet for this day.
+          </div>
+        )}
       </div>
-    </article>
-  );
-}
 
-function AddReminderModal({ open, onClose, onSave, selectedDate }) {
-  const [form, setForm] = useState({
-    title: "",
-    date: selectedDate || "",
-    type: "Birthday",
-  });
+      <div className="mt-4 rounded-[20px] border border-[#efe2db] bg-white p-4">
+        <p className="text-sm font-semibold text-slate-900">Create new event</p>
 
-  useEffect(() => {
-    if (open) {
-      setForm({
-        title: "",
-        date: selectedDate || "",
-        type: "Birthday",
-      });
-    }
-  }, [open, selectedDate]);
-
-  async function handleSave() {
-    await onSave(form);
-  }
-
-  return (
-    <ModalShell
-      open={open}
-      onClose={onClose}
-      eyebrow="Planner"
-      title="Create new event"
-      maxWidth="max-w-[680px]"
-    >
-      <div className="space-y-5 p-6">
-        <label className="block">
-          <span className="block text-sm font-medium text-slate-900">Event title</span>
+        <div className="mt-3 space-y-3">
           <input
             type="text"
-            value={form.title}
-            onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-            placeholder="Dad's birthday"
-            className="mt-2 h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+            value={draft.title}
+            onChange={(e) => setDraft((prev) => ({ ...prev, title: e.target.value }))}
+            placeholder="Event title"
+            className="h-11 w-full rounded-[16px] border border-[#eaded6] bg-white px-4 text-sm outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
           />
-        </label>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="block text-sm font-medium text-slate-900">Date</span>
-            <input
-              type="date"
-              value={form.date}
-              onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
-              className="mt-2 h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-            />
-          </label>
+          <select
+            value={draft.type}
+            onChange={(e) => setDraft((prev) => ({ ...prev, type: e.target.value }))}
+            className="h-11 w-full rounded-[16px] border border-[#eaded6] bg-white px-4 text-sm outline-none focus:border-[#f19a78]/60 focus:ring-4 focus:ring-[#f19a78]/10"
+          >
+            <option value="birthday">Birthday</option>
+            <option value="anniversary">Anniversary</option>
+            <option value="celebration">Celebration</option>
+          </select>
 
-          <label className="block">
-            <span className="block text-sm font-medium text-slate-900">Type</span>
-            <select
-              value={form.type}
-              onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value }))}
-              className="mt-2 h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-            >
-              <option value="Birthday">Birthday</option>
-              <option value="Anniversary">Anniversary</option>
-              <option value="Celebration">Celebration</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="flex justify-end gap-3">
           <button
             type="button"
-            onClick={onClose}
-            className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-medium text-slate-700 hover:bg-[#fff5f0]"
+            onClick={onAddEvent}
+            disabled={isSaving}
+            className="inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-5 text-sm font-semibold text-white shadow-lg disabled:opacity-60"
           >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg"
-          >
-            Save event
+            {isSaving ? "Saving..." : "Save event"}
           </button>
         </div>
       </div>
-    </ModalShell>
+    </div>
   );
 }
 
-function DeleteReminderModal({ open, onClose, onConfirm, eventToDelete }) {
-  if (!open || !eventToDelete) return null;
+function MiniCalendar({
+  eventsByDate,
+  calendarLoading,
+  calendarError,
+  onCreateEvent,
+  onDeleteEvent,
+}) {
+  const today = useMemo(() => new Date(), []);
+  const [currentMonth, setCurrentMonth] = useState(
+    new Date(today.getFullYear(), today.getMonth(), 1)
+  );
+  const [selectedDate, setSelectedDate] = useState(today);
+  const [openPopover, setOpenPopover] = useState(true);
+  const [draft, setDraft] = useState({
+    title: "",
+    type: "birthday",
+  });
+  const [calendarSaving, setCalendarSaving] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState(null);
+  const [isDeletingEvent, setIsDeletingEvent] = useState(false);
+  const [localError, setLocalError] = useState("");
+
+  const monthLabel = useMemo(
+    () =>
+      currentMonth.toLocaleDateString("en-GB", {
+        month: "long",
+        year: "numeric",
+      }),
+    [currentMonth]
+  );
+
+  const days = useMemo(() => getMonthData(currentMonth), [currentMonth]);
+
+  const toKey = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const todayKey = toKey(today);
+  const selectedKey = selectedDate ? toKey(selectedDate) : null;
+  const selectedEvents = selectedKey ? eventsByDate[selectedKey] || [] : [];
+
+  const goMonth = (direction) => {
+    setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + direction, 1));
+    setOpenPopover(false);
+  };
+
+  const handleDayClick = (date) => {
+    setSelectedDate(date);
+    setOpenPopover(true);
+  };
+
+  const handleAddEvent = async () => {
+    if (!selectedKey || !draft.title.trim()) return;
+
+    setCalendarSaving(true);
+    setLocalError("");
+
+    try {
+      await onCreateEvent({
+        title: draft.title.trim(),
+        type: draft.type,
+        eventDate: selectedKey,
+      });
+
+      setDraft({
+        title: "",
+        type: "birthday",
+      });
+    } catch (error) {
+      setLocalError(error?.message || "Could not save event.");
+    } finally {
+      setCalendarSaving(false);
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!eventToDelete?.id) return;
+
+    setIsDeletingEvent(true);
+    setLocalError("");
+
+    try {
+      await onDeleteEvent(eventToDelete);
+      setEventToDelete(null);
+    } catch (error) {
+      setLocalError(error?.message || "Could not delete event.");
+    } finally {
+      setIsDeletingEvent(false);
+    }
+  };
 
   return (
-    <ModalShell
-      open={open}
-      onClose={onClose}
-      eyebrow="Delete event"
-      title="Delete reminder"
-      maxWidth="max-w-[620px]"
-    >
-      <div className="space-y-5 p-6">
-        <div className="rounded-[22px] border border-[#efc0ba] bg-[#fff4f2] p-4">
-          <p className="text-sm font-semibold text-[#b14f43]">
-            This will permanently delete {eventToDelete.title} from your calendar.
-          </p>
+    <>
+      <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Planner
+            </p>
+            <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
+              {monthLabel}
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+                setSelectedDate(now);
+                setOpenPopover(true);
+              }}
+              className="inline-flex h-9 items-center justify-center rounded-full border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={() => goMonth(-1)}
+              aria-label="Previous month"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              onClick={() => goMonth(1)}
+              aria-label="Next month"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
+            >
+              →
+            </button>
+          </div>
         </div>
 
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-12 flex-1 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-6 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => onConfirm(eventToDelete)}
-            className="inline-flex h-12 flex-1 items-center justify-center rounded-full bg-[#b14f43] px-6 text-sm font-semibold text-white"
-          >
-            Delete event
-          </button>
+        {calendarError || localError ? (
+          <div className="mt-4 rounded-[18px] border border-[#f3d7cc] bg-[#fff4ef] px-4 py-3 text-sm text-[#c46545]">
+            {localError || calendarError}
+          </div>
+        ) : null}
+
+        {calendarLoading ? (
+          <div className="mt-4 rounded-[18px] bg-[#faf7f4] px-4 py-3 text-sm text-slate-500">
+            Loading calendar...
+          </div>
+        ) : null}
+
+        <div className="mt-4 grid grid-cols-7 gap-2 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+          <div>Mon</div>
+          <div>Tue</div>
+          <div>Wed</div>
+          <div>Thu</div>
+          <div>Fri</div>
+          <div>Sat</div>
+          <div>Sun</div>
         </div>
-      </div>
-    </ModalShell>
+
+        <div className="mt-2 grid grid-cols-7 gap-2">
+          {days.map((item) => {
+            const key = toKey(item.date);
+            const selected = key === selectedKey;
+            const isToday = key === todayKey;
+            const dayEvents = eventsByDate[key] || [];
+            const leadType = dayEvents[0]?.type;
+            const dotClass = leadType
+              ? (eventTypeStyles[leadType] || eventTypeStyles.celebration).dot
+              : null;
+
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => handleDayClick(item.date)}
+                aria-label={item.date.toLocaleDateString("en-GB", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+                aria-pressed={selected}
+                className={`min-h-[58px] rounded-[16px] border p-2 text-left transition ${
+                  selected
+                    ? "border-[#f2b39a] bg-[#fff2ea] shadow-[inset_0_0_0_1px_rgba(242,179,154,0.35)]"
+                    : isToday
+                      ? "border-[#f3c8b7] bg-[#fff8f4]"
+                      : "border-slate-100 bg-[#fffdfa] hover:border-[#efc8b6] hover:bg-[#fff7f2]"
+                }`}
+              >
+                <div
+                  className={`text-[13px] font-semibold ${
+                    selected
+                      ? "text-[#d96d4f]"
+                      : isToday
+                        ? "text-slate-900"
+                        : item.currentMonth
+                          ? "text-slate-700"
+                          : "text-slate-300"
+                  }`}
+                >
+                  {item.day}
+                </div>
+
+                {dayEvents.length > 0 ? (
+                  <div className="mt-1.5 flex items-center gap-1">
+                    <span className={`h-2 w-2 rounded-full ${dotClass}`} />
+                    {dayEvents.length > 1 ? (
+                      <span className="text-[10px] text-slate-400">+{dayEvents.length - 1}</span>
+                    ) : null}
+                  </div>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        {openPopover ? (
+          <CalendarPopover
+            selectedDate={selectedDate}
+            events={selectedEvents}
+            onClose={() => setOpenPopover(false)}
+            onAddEvent={handleAddEvent}
+            onRequestDelete={setEventToDelete}
+            draft={draft}
+            setDraft={setDraft}
+            isSaving={calendarSaving}
+          />
+        ) : null}
+      </section>
+
+      {eventToDelete ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(42,26,20,0.38)] px-4 py-6 backdrop-blur-sm">
+          <div className="w-full max-w-[520px] rounded-[30px] border border-[#eddacf] bg-[#fffaf7] p-6 shadow-[0_24px_80px_rgba(88,46,31,0.22)]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#df7b59]">
+              Delete event
+            </p>
+            <h3 className="mt-2 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">
+              Remove this event?
+            </h3>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              This will permanently delete{" "}
+              <span className="font-semibold text-slate-900">{eventToDelete.title}</span> from your calendar.
+            </p>
+
+            <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setEventToDelete(null)}
+                disabled={isDeletingEvent}
+                className="inline-flex h-[44px] items-center justify-center rounded-full border border-[#ead8ce] bg-white px-6 text-sm font-medium text-slate-700 hover:bg-[#fff5f0] disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteEvent}
+                disabled={isDeletingEvent}
+                className="inline-flex h-[44px] items-center justify-center rounded-full bg-[#b14f43] px-6 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {isDeletingEvent ? "Deleting..." : "Delete event"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 
 export default function FeedClient() {
-  const [contacts, setContacts] = useState(demoContacts);
-  const [feedItems, setFeedItems] = useState([firstLookCard]);
-  const [commentsByItem, setCommentsByItem] = useState({
-    [firstLookCard.id]: firstLookCard.metadata.demo_comments,
-  });
-  const [demoReactionsByItem, setDemoReactionsByItem] = useState({
-    [firstLookCard.id]: firstLookCard.metadata.demo_reactions,
-  });
+  const [sessionUser, setSessionUser] = useState(null);
 
-  const [calendarEventsState, setCalendarEventsState] = useState([
-    { id: 1, title: "Sarah's Birthday", date: "2026-06-29", type: "Birthday" },
-    { id: 2, title: "Mum & Dad Anniversary", date: "2026-07-10", type: "Anniversary" },
-    { id: 3, title: "James Promotion Dinner", date: "2026-07-16", type: "Celebration" },
-  ]);
-
-  const [selectedFilter, setSelectedFilter] = useState("all");
-  const [activeComposerId, setActiveComposerId] = useState(null);
-  const [draftComment, setDraftComment] = useState("");
-
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-
+  const [contacts, setContacts] = useState([]);
+  const [contactsLoading, setContactsLoading] = useState(true);
+  const [contactError, setContactError] = useState("");
+  const [contactSuccess, setContactSuccess] = useState("");
   const [isAddContactOpen, setIsAddContactOpen] = useState(false);
   const [isDeleteContactOpen, setIsDeleteContactOpen] = useState(false);
-  const [contactToDelete, setContactToDelete] = useState(null);
+  const [selectedContactToDelete, setSelectedContactToDelete] = useState(null);
+  const [isDeletingContact, setIsDeletingContact] = useState(false);
+  const [deleteContactError, setDeleteContactError] = useState("");
 
-  const [isAddReminderOpen, setIsAddReminderOpen] = useState(false);
-  const [isDeleteReminderOpen, setIsDeleteReminderOpen] = useState(false);
-  const [eventToDelete, setEventToDelete] = useState(null);
+  const [feedItems, setFeedItems] = useState([]);
+  const [feedLoading, setFeedLoading] = useState(true);
+  const [feedError, setFeedError] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
 
-  const [pageError, setPageError] = useState("");
+  const [commentsByFeedId, setCommentsByFeedId] = useState({});
+  const [activeComposerId, setActiveComposerId] = useState(null);
+  const [draftComment, setDraftComment] = useState("");
+  const [demoCommentsByFeedId, setDemoCommentsByFeedId] = useState({});
+  const [demoReactionsByFeedId, setDemoReactionsByFeedId] = useState(() => {
+    const initial = {};
+    initial[firstLookCard.id] = (firstLookCard.metadata?.demo_reactions || []).map((reaction) => ({
+      ...reaction,
+      active: false,
+    }));
+    return initial;
+  });
 
-  const filteredFeedItems = useMemo(() => {
-    if (selectedFilter === "all") return feedItems;
-    return feedItems.filter((item) => getFeedBucket(item) === selectedFilter);
-  }, [feedItems, selectedFilter]);
+  const [pendingInvites, setPendingInvites] = useState([]);
+  const [invitesLoading, setInvitesLoading] = useState(true);
+  const [invitesError, setInvitesError] = useState("");
+  const [activeInvite, setActiveInvite] = useState(null);
+  const [inviteActionId, setInviteActionId] = useState(null);
 
-  const selectedDateEvents = useMemo(() => {
-    return calendarEventsState.filter((event) => event.date === selectedDate);
-  }, [calendarEventsState, selectedDate]);
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [calendarLoading, setCalendarLoading] = useState(true);
+  const [calendarError, setCalendarError] = useState("");
+
+  const loadSession = useCallback(async () => {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error) throw new Error(normalizeSupabaseError(error, "Failed to get signed-in user."));
+    setSessionUser(user || null);
+    return user || null;
+  }, []);
+
+  const loadContacts = useCallback(async (userId) => {
+    setContactsLoading(true);
+    setContactError("");
+
+    const { data, error } = await supabase
+      .from("contacts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      setContacts([]);
+      setContactsLoading(false);
+      throw new Error(normalizeSupabaseError(error, "Failed to load contacts."));
+    }
+
+    const mapped = (data || []).map((row) => {
+      const contactState = mapContactState(row.status);
+      const relationshipTypes = Array.isArray(row.relationship_types) ? row.relationship_types : [];
+
+      return {
+        id: row.id,
+        name: row.name || row.email || "Unnamed contact",
+        role: relationshipToRoleLabel(relationshipTypes, row.role),
+        note: contactState === "user" ? "Hinted user" : "Invitee",
+        initials: getInitials(row.name || row.email || "C"),
+        email: row.email || "",
+        relationshipTypes,
+        contactState,
+        status: row.status,
+        isDemo: false,
+        raw: row,
+      };
+    });
+
+    setContacts(mapped);
+    setContactsLoading(false);
+    return mapped;
+  }, []);
+
+  const loadFeedItems = useCallback(async () => {
+    setFeedLoading(true);
+    setFeedError("");
+
+    const { data, error } = await supabase
+      .from("feed_items")
+      .select("*")
+      .order("occurred_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      setFeedItems([]);
+      setFeedLoading(false);
+      throw new Error(normalizeSupabaseError(error, "Failed to load feed."));
+    }
+
+    setFeedItems(data || []);
+    setFeedLoading(false);
+    return data || [];
+  }, []);
+
+  const loadComments = useCallback(async (feedIds) => {
+    if (!feedIds.length) {
+      setCommentsByFeedId({});
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("feed_comments")
+      .select("id, feed_item_id, user_id, body, created_at")
+      .in("feed_item_id", feedIds)
+      .order("created_at", { ascending: true });
+
+    if (error) throw new Error(normalizeSupabaseError(error, "Failed to load comments."));
+
+    const grouped = (data || []).reduce((acc, row) => {
+      if (!acc[row.feed_item_id]) acc[row.feed_item_id] = [];
+      acc[row.feed_item_id].push({
+        ...row,
+        author_name: "User",
+      });
+      return acc;
+    }, {});
+
+    setCommentsByFeedId(grouped);
+  }, []);
+
+  const loadInvites = useCallback(async () => {
+    setInvitesLoading(true);
+    setInvitesError("");
+
+    const { data, error } = await supabase
+      .from("circle_invites")
+      .select(`
+        id,
+        circle_id,
+        user_id,
+        contact_id,
+        invite_name,
+        invite_email,
+        status,
+        viewed_at,
+        paid_at,
+        created_at,
+        updated_at,
+        invited_user_id
+      `)
+      .in("status", ["pending", "viewed"])
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      setPendingInvites([]);
+      setInvitesLoading(false);
+      throw new Error(normalizeSupabaseError(error, "Failed to load invites."));
+    }
+
+    setPendingInvites(data || []);
+    setInvitesLoading(false);
+    return data || [];
+  }, []);
+
+  const loadCalendarEvents = useCallback(async (userId) => {
+    setCalendarLoading(true);
+    setCalendarError("");
+
+    const { data, error } = await supabase
+      .from("calendar_events")
+      .select("*")
+      .or(`source.eq.system,user_id.eq.${userId}`)
+      .order("event_date", { ascending: true });
+
+    if (error) {
+      setCalendarEvents([]);
+      setCalendarLoading(false);
+      throw new Error(normalizeSupabaseError(error, "Could not load calendar events."));
+    }
+
+    setCalendarEvents(data || []);
+    setCalendarLoading(false);
+    return data || [];
+  }, []);
 
   useEffect(() => {
-    async function loadFeedData() {
+    let active = true;
+
+    async function bootstrap() {
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        const user = await loadSession();
+        if (!active || !user) return;
 
-        if (!user) return;
-
-        const { data: contactRows, error: contactError } = await supabase
-          .from("contacts")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
-
-        if (contactError) {
-          throw new Error(normalizeSupabaseError(contactError, "Failed to load contacts."));
-        }
-
-        if (Array.isArray(contactRows) && contactRows.length > 0) {
-          const mappedContacts = contactRows.map((row) => {
-            const roleLabel = relationshipToRoleLabel(row.relationship_types, row.role);
-            const contactState = mapContactState(row.status);
-            const isAccepted = contactState === "accepted";
-
-            return {
-              id: row.id,
-              name: row.name || row.email || "Unnamed contact",
-              role: roleLabel,
-              note: isAccepted ? "Accepted" : "Invitee",
-              initials: getInitials(row.name || row.email || "Unnamed contact"),
-              colors: isAccepted
-                ? "from-[#8aa587] to-[#4e684d]"
-                : "from-[#efcdbf] to-[#bb8168]",
-              email: row.email || "",
-              contactState,
-              isDemo: false,
-            };
-          });
-
-          setContacts(mappedContacts);
-        }
+        await Promise.all([
+          loadContacts(user.id),
+          loadFeedItems(),
+          loadInvites(),
+          loadCalendarEvents(user.id),
+        ]);
       } catch (error) {
-        setPageError(error?.message || "Failed to load feed.");
+        if (active) {
+          setFeedError(error?.message || "Failed to load page.");
+          setContactsLoading(false);
+          setInvitesLoading(false);
+          setCalendarLoading(false);
+        }
       }
     }
 
-    loadFeedData();
-  }, []);
+    bootstrap();
 
-  const handleSaveContact = useCallback(async (payload) => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    return () => {
+      active = false;
+    };
+  }, [loadSession, loadContacts, loadFeedItems, loadInvites, loadCalendarEvents]);
 
-    if (!user) {
+  useEffect(() => {
+    const socialFeedIds = feedItems.filter(isSocialFeedItem).map((item) => item.id);
+    if (socialFeedIds.length) {
+      loadComments(socialFeedIds).catch((error) => {
+        setFeedError(error?.message || "Failed to load comments.");
+      });
+    } else {
+      setCommentsByFeedId({});
+    }
+  }, [feedItems, loadComments]);
+
+  async function handleSaveContact(payload) {
+    setContactError("");
+    setContactSuccess("");
+
+    if (!sessionUser?.id) {
       throw new Error("You must be signed in to save contacts.");
     }
 
     const cleanedEmail = String(payload.email || "").trim().toLowerCase();
+    if (!cleanedEmail || !isValidEmail(cleanedEmail)) {
+      throw new Error("A valid email address is required.");
+    }
+
+    const relationshipTypes =
+      Array.isArray(payload.relationshipTypes) && payload.relationshipTypes.length
+        ? payload.relationshipTypes
+        : ["Friend"];
 
     const insertPayload = {
-      user_id: user.id,
+      user_id: sessionUser.id,
       name: payload.name,
       email: cleanedEmail,
-      role: Array.isArray(payload.relationshipTypes) ? payload.relationshipTypes[0] : "Friend",
-      relationship_types: payload.relationshipTypes,
-      status: "invitee",
+      relationship_types: relationshipTypes,
+      role: relationshipTypes[0],
+      status: "pending",
+      source: "manual",
     };
 
-    const { data, error } = await supabase.from("contacts").insert(insertPayload).select("*").single();
+    const { error } = await supabase.from("contacts").insert(insertPayload);
 
-    if (error) {
-      throw new Error(normalizeSupabaseError(error, "Failed to save contact."));
-    }
+    if (error) throw new Error(normalizeSupabaseError(error, "Failed to save contact."));
 
-    const roleLabel = relationshipToRoleLabel(data.relationship_types, data.role);
+    await loadContacts(sessionUser.id);
+    setContactSuccess("Contact saved successfully.");
+  }
 
-    setContacts((prev) => [
-      {
-        id: data.id,
-        name: data.name || data.email || "Unnamed contact",
-        role: roleLabel,
-        note: "Invitee",
-        initials: getInitials(data.name || data.email || "Unnamed contact"),
-        colors: "from-[#efcdbf] to-[#bb8168]",
-        email: data.email || "",
-        contactState: "invitee",
-        isDemo: false,
-      },
-      ...prev.filter((contact) => !contact.isDemo),
-    ]);
-  }, []);
-
-  const handleDeleteContact = useCallback((contact) => {
-    setContactToDelete(contact);
+  function openDeleteContactModal(contact) {
+    setDeleteContactError("");
+    setSelectedContactToDelete(contact);
     setIsDeleteContactOpen(true);
-  }, []);
+  }
 
-  const handleConfirmDeleteContact = useCallback(async (contact) => {
+  async function handleConfirmDeleteContact(contact) {
+    if (!contact?.id) return;
+
+    setIsDeletingContact(true);
+    setDeleteContactError("");
+    setContactError("");
+    setContactSuccess("");
+
     try {
       const { error } = await supabase.from("contacts").delete().eq("id", contact.id);
+      if (error) throw new Error(normalizeSupabaseError(error, "Failed to delete contact."));
 
-      if (error) {
-        throw new Error(normalizeSupabaseError(error, "Failed to delete contact."));
-      }
-
-      setContacts((prev) => prev.filter((item) => item.id !== contact.id));
+      await loadContacts(sessionUser.id);
       setIsDeleteContactOpen(false);
-      setContactToDelete(null);
+      setSelectedContactToDelete(null);
+      setContactSuccess("Contact deleted successfully.");
     } catch (error) {
-      setPageError(error?.message || "Failed to delete contact.");
+      setDeleteContactError(error?.message || "Failed to delete contact.");
+    } finally {
+      setIsDeletingContact(false);
     }
-  }, []);
+  }
 
-  const handleSubmitComment = useCallback((item) => {
+  async function handleSubmitComment(item) {
     if (!draftComment.trim()) return;
 
-    setCommentsByItem((prev) => {
-      const current = Array.isArray(prev[item.id]) ? prev[item.id] : [];
-      return {
+    if (item.isDemo) {
+      setDemoCommentsByFeedId((prev) => ({
         ...prev,
         [item.id]: [
-          ...current,
+          ...(prev[item.id] || []),
           {
-            id: `${item.id}-${Date.now()}`,
+            id: `demo-comment-${Date.now()}`,
             author_name: "You",
             body: draftComment.trim(),
-            created_at: new Date().toISOString(),
           },
         ],
-      };
-    });
+      }));
+      setDraftComment("");
+      setActiveComposerId(null);
+      return;
+    }
 
-    setDraftComment("");
-    setActiveComposerId(null);
-  }, [draftComment]);
+    if (!sessionUser?.id || !isSocialFeedItem(item)) return;
 
-  const handleToggleDemoReaction = useCallback((itemId, reactionId) => {
-    setDemoReactionsByItem((prev) => {
-      const existing = Array.isArray(prev[itemId]) ? prev[itemId] : [];
-      const updated = existing.map((reaction) => {
-        if (reaction.id !== reactionId) return reaction;
-
-        const active = !reaction.active;
-        return {
-          ...reaction,
-          active,
-          count: active ? reaction.count + 1 : Math.max(0, reaction.count - 1),
-        };
+    try {
+      const { error } = await supabase.from("feed_comments").insert({
+        feed_item_id: item.id,
+        user_id: sessionUser.id,
+        body: draftComment.trim(),
       });
 
+      if (error) throw new Error(normalizeSupabaseError(error, "Could not save comment."));
+
+      await loadComments(feedItems.filter(isSocialFeedItem).map((feedItem) => feedItem.id));
+      setDraftComment("");
+      setActiveComposerId(null);
+    } catch (error) {
+      setFeedError(error?.message || "Could not save comment.");
+    }
+  }
+
+  function handleToggleDemoReaction(feedId, reactionId) {
+    setDemoReactionsByFeedId((prev) => {
+      const current = prev[feedId] || [];
       return {
         ...prev,
-        [itemId]: updated,
+        [feedId]: current.map((reaction) => {
+          if (reaction.id !== reactionId) return reaction;
+          const nextActive = !reaction.active;
+          return {
+            ...reaction,
+            active: nextActive,
+            count: nextActive ? reaction.count + 1 : reaction.count - 1,
+          };
+        }),
       };
     });
-  }, []);
+  }
 
-  const handleSaveReminder = useCallback(async (form) => {
-    const nextEvent = {
-      id: Date.now(),
-      title: form.title,
-      date: form.date,
-      type: form.type,
+  async function handleInviteDecision(invite, nextStatus) {
+    setInviteActionId(invite.id);
+    setInvitesError("");
+
+    try {
+      const { error } = await supabase
+        .from("circle_invites")
+        .update({ status: nextStatus })
+        .eq("id", invite.id);
+
+      if (error) throw new Error(normalizeSupabaseError(error, "Could not update invite."));
+
+      await loadInvites();
+      setActiveInvite(null);
+    } catch (error) {
+      setInvitesError(error?.message || "Could not update invite.");
+    } finally {
+      setInviteActionId(null);
+    }
+  }
+
+  async function handleCreateCalendarEvent(payload) {
+    if (!sessionUser?.id) throw new Error("You need to be signed in to save calendar events.");
+
+    const insertPayload = {
+      user_id: sessionUser.id,
+      title: payload.title,
+      event_date: payload.eventDate,
+      type: payload.type,
+      source: "user",
     };
 
-    setCalendarEventsState((prev) => [...prev, nextEvent]);
-    setSelectedDate(form.date);
-    setCurrentMonth(parseDateOnly(form.date) || new Date());
-    setIsAddReminderOpen(false);
-  }, []);
+    const { data, error } = await supabase
+      .from("calendar_events")
+      .insert(insertPayload)
+      .select()
+      .single();
 
-  const handleDeleteReminder = useCallback((event) => {
-    setEventToDelete(event);
-    setIsDeleteReminderOpen(true);
-  }, []);
+    if (error) throw new Error(normalizeSupabaseError(error, "Could not save event."));
 
-  const handleConfirmDeleteReminder = useCallback((event) => {
-    setCalendarEventsState((prev) => prev.filter((item) => item.id !== event.id));
-    setIsDeleteReminderOpen(false);
-    setEventToDelete(null);
-  }, []);
+    setCalendarEvents((prev) => [...prev, data]);
+  }
+
+  async function handleDeleteCalendarEvent(eventToDelete) {
+    const { error } = await supabase.from("calendar_events").delete().eq("id", eventToDelete.id);
+    if (error) throw new Error(normalizeSupabaseError(error, "Could not delete event."));
+    setCalendarEvents((prev) => prev.filter((item) => item.id !== eventToDelete.id));
+  }
+
+  const displayContacts = contacts.length > 0 ? contacts : demoContacts;
+
+  const shortReminderFeedItems = useMemo(() => {
+    return (calendarEvents || [])
+      .map((event) => {
+        const diffDays = diffInDaysFromToday(event.event_date);
+        if (![7, 1, 0].includes(diffDays)) return null;
+
+        return {
+          id: `reminder-${event.id}-${diffDays}`,
+          owner_user_id: sessionUser?.id || "me",
+          actor_user_id: null,
+          target_user_id: null,
+          family: "reminder",
+          item_type: "event_reminder",
+          visibility: "private",
+          circle_id: null,
+          activity_session_id: null,
+          source_event_id: event.id,
+          headline:
+            diffDays === 7
+              ? `${event.title} is in 1 week`
+              : diffDays === 1
+                ? `${event.title} is tomorrow`
+                : `${event.title} is today`,
+          body: "A reminder so you have time to sort the gift.",
+          cta_label: "Shop",
+          cta_href: "/shop",
+          occurred_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          metadata: {
+            social_enabled: false,
+            event_date: event.event_date,
+          },
+          isDemo: false,
+        };
+      })
+      .filter(Boolean);
+  }, [calendarEvents, sessionUser]);
+
+  const combinedFeedItems = useMemo(() => {
+    const hasRealActivity = feedItems.length > 0;
+    const base = hasRealActivity ? feedItems : [firstLookCard];
+    const merged = [...shortReminderFeedItems, ...base];
+
+    return merged.sort((a, b) => {
+      const aDate = new Date(a.occurred_at || a.created_at).getTime();
+      const bDate = new Date(b.occurred_at || b.created_at).getTime();
+      return bDate - aDate;
+    });
+  }, [feedItems, shortReminderFeedItems]);
+
+  const visibleFeedItems = useMemo(() => {
+    if (activeFilter === "all") return combinedFeedItems;
+    return combinedFeedItems.filter((item) => getFeedBucket(item) === activeFilter);
+  }, [combinedFeedItems, activeFilter]);
+
+  const eventsByDate = useMemo(() => {
+    return (calendarEvents || []).reduce((acc, row) => {
+      const key = row.event_date;
+      if (!key) return acc;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push({
+        id: row.id,
+        title: row.title,
+        type: row.type || "celebration",
+        source: row.source || "user",
+      });
+      return acc;
+    }, {});
+  }, [calendarEvents]);
+
+  const sidebarReminders = useMemo(() => {
+    return (calendarEvents || [])
+      .map((event) => {
+        const diffDays = diffInDaysFromToday(event.event_date);
+        if (diffDays === null || diffDays < 8) return null;
+
+        const eventDate = parseDateOnly(event.event_date);
+        if (!eventDate) return null;
+
+        return {
+          id: `sidebar-reminder-${event.id}`,
+          title: event.title,
+          prettyDate: eventDate.toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "long",
+          }),
+          distanceLabel: formatReminderDistance(diffDays),
+          diffDays,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.diffDays - b.diffDays)
+      .slice(0, 3);
+  }, [calendarEvents]);
 
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
@@ -1498,137 +1892,327 @@ export default function FeedClient() {
       </header>
 
       <div className="mx-auto max-w-[1380px] px-5 py-8 md:px-8">
-        {pageError ? (
-          <div className="mb-5 rounded-[22px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">
-            {pageError}
+        {(contactError || contactSuccess || feedError || invitesError) ? (
+          <div className="mb-5 space-y-3">
+            {contactError ? (
+              <div className="rounded-[22px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">
+                {contactError}
+              </div>
+            ) : null}
+            {feedError ? (
+              <div className="rounded-[22px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">
+                {feedError}
+              </div>
+            ) : null}
+            {invitesError ? (
+              <div className="rounded-[22px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">
+                {invitesError}
+              </div>
+            ) : null}
+            {contactSuccess ? (
+              <div className="rounded-[22px] border border-[#d8e8d3] bg-[#f3fbf1] px-4 py-3 text-sm text-[#4a7a3a]">
+                {contactSuccess}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
-        <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)_360px]">
+        <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)_360px]">
           <aside className="space-y-5">
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Contacts
-                  </p>
-                  <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
-                    Your people
-                  </h2>
-                  <p className="mt-2 text-[14px] leading-7 text-slate-600">
-                    Accepted contacts show with a full avatar, while invitees stay dotted until they join.
-                  </p>
-                </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Pending invites
+                </p>
+                <h2 className="mt-1 text-base font-semibold text-slate-900">
+                  Invites waiting for you
+                </h2>
               </div>
 
-              <div className="mt-5 space-y-3">
-                {contacts.map((contact) => (
-                  <ContactCard key={contact.id} contact={contact} onDeleteClick={handleDeleteContact} />
-                ))}
+              {invitesLoading ? (
+                <p className="mt-4 text-sm text-slate-500">Loading invites...</p>
+              ) : pendingInvites.length === 0 ? (
+                <div className="mt-4 rounded-[22px] border border-dashed border-[#ecd9cf] bg-[#fcf8f5] px-4 py-5">
+                  <p className="text-sm font-medium text-slate-700">No invites need a response right now.</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    When someone adds you to a circle, it will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {pendingInvites.map((invite) => (
+                    <article
+                      key={invite.id}
+                      className="rounded-[22px] border border-[#ecd9cf] bg-[#fcf8f5] p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-slate-900">
+                            {invite.invite_name || invite.invite_email || "Circle invite"}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-500">
+                            {invite.invite_email || "No email attached"}
+                          </p>
+                        </div>
+
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#e77756]">
+                          {invite.status}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setActiveInvite(invite)}
+                          disabled={inviteActionId === invite.id}
+                          className="inline-flex items-center justify-center rounded-full border border-[#ee8d69] bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-60"
+                        >
+                          {inviteActionId === invite.id ? "Working..." : "View invite"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleInviteDecision(invite, "viewed")}
+                          disabled={inviteActionId === invite.id}
+                          className="inline-flex items-center justify-center rounded-full border border-[#dbe8d4] bg-[#eef8e9] px-4 py-2 text-sm font-semibold text-[#4b7a39] disabled:opacity-60"
+                        >
+                          {inviteActionId === invite.id ? "Working..." : "Mark viewed"}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleInviteDecision(invite, "declined")}
+                          disabled={inviteActionId === invite.id}
+                          className="inline-flex items-center justify-center rounded-full border border-[#ead7cd] bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-60"
+                        >
+                          {inviteActionId === invite.id ? "Working..." : "Decline"}
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {activeInvite ? (
+              <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      Selected invite
+                    </p>
+                    <h3 className="mt-1 text-base font-semibold text-slate-900">
+                      {activeInvite.invite_name || activeInvite.invite_email || "Circle invite"}
+                    </h3>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveInvite(null)}
+                    className="rounded-full border border-[#ead7cd] bg-white px-3 py-1.5 text-sm font-semibold text-slate-700"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="mt-4 space-y-2 text-sm text-slate-600">
+                  <p>Email: {activeInvite.invite_email || "No email attached"}</p>
+                  <p>Status: {activeInvite.status}</p>
+                  <p>Circle ID: {activeInvite.circle_id}</p>
+                </div>
+              </section>
+            ) : null}
+
+            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">Contacts</h2>
+                <p className="mt-1 text-xs text-slate-500">Invitees and contacts live here.</p>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {contactsLoading ? (
+                  <div className="rounded-[22px] border border-dashed border-[#e5d8cf] bg-[#fffaf7] p-4 text-[13px] leading-6 text-slate-500">
+                    Loading contacts...
+                  </div>
+                ) : displayContacts.length ? (
+                  displayContacts.map((contact) => (
+                    <ContactCard
+                      key={contact.id}
+                      contact={contact}
+                      onDeleteClick={openDeleteContactModal}
+                    />
+                  ))
+                ) : (
+                  <div className="rounded-[22px] border border-dashed border-[#e5d8cf] bg-[#fffaf7] p-4 text-[13px] leading-6 text-slate-500">
+                    No contacts added yet.
+                  </div>
+                )}
               </div>
 
               <button
                 type="button"
                 onClick={() => setIsAddContactOpen(true)}
-                className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-sm font-semibold text-white shadow-lg"
+                className="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-sm font-semibold text-white shadow-lg"
               >
                 Add contact
               </button>
             </section>
+
+            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Filters
+                </p>
+                <h1 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
+                  Activity
+                </h1>
+              </div>
+
+              <div className="mt-4 flex flex-col gap-2">
+                {feedFilters.map((filter) => {
+                  const selected = activeFilter === filter.key;
+
+                  return (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setActiveFilter(filter.key)}
+                      className={`rounded-[18px] px-4 py-3 text-left text-sm font-medium transition ${
+                        selected
+                          ? "bg-[#2f3b2d] text-white shadow-sm"
+                          : "border border-[#efe4dd] bg-[#fffdfa] text-slate-600 hover:bg-[#faf7f5]"
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
           </aside>
 
           <section className="min-w-0">
-            <div className="mb-5">
-              <div className="inline-flex rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e37b57]">
-                Activity
-              </div>
-              <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.06em] text-slate-900 sm:text-[40px]">
-                Keep up with hints, circles, reminders, and contacts.
-              </h1>
-              <p className="mt-3 max-w-[760px] text-[15px] leading-7 text-slate-600">
-                Your feed collects the small moments around gifting, planning, and shared circles so you can spot what matters without digging through separate screens.
-              </p>
-            </div>
+            <div className="rounded-[32px] border border-[#eeddd3] bg-[#fff7f2] p-4 shadow-[0_18px_60px_rgba(173,101,72,0.1)] sm:p-5">
+              <div className="rounded-[28px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
+                <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-100 pb-5">
+                  <div>
+                    <div className="inline-flex rounded-full bg-[#fff5ef] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e07c54]">
+                      Activity stream
+                    </div>
+                    <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.05em] text-slate-900">
+                      Your people, moments, and nudges.
+                    </h2>
+                  </div>
 
-            <div className="mb-5 flex flex-wrap gap-2">
-              {feedFilters.map((filter) => {
-                const selected = selectedFilter === filter.key;
+                  <div className="rounded-[20px] border border-[#f3dfd6] bg-[#fffaf7] px-4 py-3 text-[13px] leading-6 text-slate-600">
+                    Only automatic user updates can be commented on.
+                  </div>
+                </div>
 
-                return (
+                <div className="mt-5 flex flex-wrap gap-3">
                   <button
-                    key={filter.key}
                     type="button"
-                    onClick={() => setSelectedFilter(filter.key)}
-                    className={`inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-semibold transition ${
-                      selected
-                        ? "bg-[#2f3b2d] text-white"
-                        : "border border-[#ead8ce] bg-white text-slate-700 hover:bg-[#fff5f0]"
-                    }`}
+                    onClick={() => setIsAddContactOpen(true)}
+                    className="inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg"
                   >
-                    {filter.label}
+                    Add contact
                   </button>
-                );
-              })}
-            </div>
 
-            <div className="space-y-5">
-              {filteredFeedItems.map((item) => (
-                <FeedItem
-                  key={item.id}
-                  item={item}
-                  comments={commentsByItem[item.id] || []}
-                  activeComposerId={activeComposerId}
-                  setActiveComposerId={setActiveComposerId}
-                  draftComment={draftComment}
-                  setDraftComment={setDraftComment}
-                  onSubmitComment={handleSubmitComment}
-                  demoReactionsState={demoReactionsByItem[item.id] || []}
-                  onToggleDemoReaction={handleToggleDemoReaction}
-                />
-              ))}
+                  <Link
+                    href="/circles"
+                    className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
+                  >
+                    Create circle
+                  </Link>
+                </div>
+
+                <div className="mt-5 space-y-4">
+                  {feedLoading ? (
+                    <div className="rounded-[24px] border border-[#f0dfd6] bg-[#fffdfa] p-5 text-sm text-slate-500">
+                      Loading feed...
+                    </div>
+                  ) : visibleFeedItems.length > 0 ? (
+                    visibleFeedItems.map((item) => {
+                      const realComments = commentsByFeedId[item.id] || [];
+                      const demoSeedComments = item.metadata?.demo_comments || [];
+                      const localDemoComments = demoCommentsByFeedId[item.id] || [];
+                      const mergedComments = item.isDemo
+                        ? [...demoSeedComments, ...localDemoComments]
+                        : realComments;
+
+                      return (
+                        <FeedItem
+                          key={item.id}
+                          item={item}
+                          comments={mergedComments}
+                          activeComposerId={activeComposerId}
+                          setActiveComposerId={setActiveComposerId}
+                          draftComment={draftComment}
+                          setDraftComment={setDraftComment}
+                          onSubmitComment={handleSubmitComment}
+                          demoReactionsState={demoReactionsByFeedId[item.id]}
+                          onToggleDemoReaction={handleToggleDemoReaction}
+                        />
+                      );
+                    })
+                  ) : (
+                    <div className="rounded-[24px] border border-[#f0dfd6] bg-[#fffdfa] p-5 text-sm text-slate-500">
+                      No activity matches this filter yet.
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </section>
 
           <aside className="space-y-5">
-            <ReminderCalendar
-              events={calendarEventsState}
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-              currentMonth={currentMonth}
-              setCurrentMonth={setCurrentMonth}
+            <MiniCalendar
+              eventsByDate={eventsByDate}
+              calendarLoading={calendarLoading}
+              calendarError={calendarError}
+              onCreateEvent={handleCreateCalendarEvent}
+              onDeleteEvent={handleDeleteCalendarEvent}
             />
 
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                    Selected day
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Upcoming reminders
+                </p>
+                <h2 className="mt-1 text-base font-semibold text-slate-900">
+                  Your next 3 events
+                </h2>
+              </div>
+
+              {sidebarReminders.length === 0 ? (
+                <div className="mt-4 rounded-[22px] border border-dashed border-[#ecd9cf] bg-[#fcf8f5] px-4 py-5">
+                  <p className="text-sm font-medium text-slate-700">No upcoming events yet.</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    Events more than a week away will appear here.
                   </p>
-                  <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
-                    Events
-                  </h2>
                 </div>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {sidebarReminders.map((reminder) => (
+                    <article
+                      key={reminder.id}
+                      className="rounded-[22px] border border-[#ecd9cf] bg-[#fcf8f5] p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{reminder.title}</p>
+                          <p className="mt-1 text-sm text-slate-500">{reminder.prettyDate}</p>
+                        </div>
 
-                <button
-                  type="button"
-                  onClick={() => setIsAddReminderOpen(true)}
-                  className="inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-4 text-sm font-semibold text-white shadow-lg"
-                >
-                  Add
-                </button>
-              </div>
-
-              <div className="mt-5 space-y-3">
-                {selectedDateEvents.length ? (
-                  selectedDateEvents.map((event) => (
-                    <ReminderEventCard key={event.id} event={event} onDeleteClick={handleDeleteReminder} />
-                  ))
-                ) : (
-                  <div className="rounded-[20px] border border-dashed border-[#e5d8cf] bg-[#fffdfa] p-4 text-sm text-slate-500">
-                    No events saved on this date yet.
-                  </div>
-                )}
-              </div>
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#e77756]">
+                          {reminder.distanceLabel}
+                        </span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
             </section>
           </aside>
         </div>
@@ -1645,29 +2229,13 @@ export default function FeedClient() {
         open={isDeleteContactOpen}
         onClose={() => {
           setIsDeleteContactOpen(false);
-          setContactToDelete(null);
+          setSelectedContactToDelete(null);
+          setDeleteContactError("");
         }}
         onConfirm={handleConfirmDeleteContact}
-        contact={contactToDelete}
-        isDeleting={false}
-        errorMessage=""
-      />
-
-      <AddReminderModal
-        open={isAddReminderOpen}
-        onClose={() => setIsAddReminderOpen(false)}
-        onSave={handleSaveReminder}
-        selectedDate={selectedDate}
-      />
-
-      <DeleteReminderModal
-        open={isDeleteReminderOpen}
-        onClose={() => {
-          setIsDeleteReminderOpen(false);
-          setEventToDelete(null);
-        }}
-        onConfirm={handleConfirmDeleteReminder}
-        eventToDelete={eventToDelete}
+        contact={selectedContactToDelete}
+        isDeleting={isDeletingContact}
+        errorMessage={deleteContactError}
       />
     </main>
   );
