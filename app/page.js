@@ -5,6 +5,9 @@ export const metadata = {
   title: "Hinted.io | Never forget. Always thoughtful.",
   description:
     "Hinted helps you remember important moments, save better gift ideas, build circles, and explore curated shopping with help from your friends.",
+  other: {
+    "impact-site-verification": "e9b128fe-f48f-4547-98f7-037ee4183d82",
+  },
 };
 
 const hints = [
