@@ -12,18 +12,17 @@ const steps = [
 ];
 
 const interestOptions = [
-  "Travel",
-  "Food",
   "Home",
-  "Books",
-  "Coffee",
-  "Fashion",
-  "Fitness",
+  "Food",
   "Beauty",
   "Tech",
+  "Travel",
+  "Wellness",
+  "Books",
+  "Fashion",
   "Experiences",
-  "Music",
-  "Art",
+  "Gaming",
+  "Other",
 ];
 
 const relationshipOptions = [
@@ -99,6 +98,7 @@ export default function OnboardingPage() {
     birthday: "",
     inviteName: "",
     inviteEmail: "",
+    otherInterest: "",
   });
   const [errors, setErrors] = useState({});
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -132,7 +132,9 @@ export default function OnboardingPage() {
 
       const { data: existingProfile, error: profileError } = await supabase
         .from("profiles")
-        .select("full_name, avatar_url, birthday, interests, onboarding_completed")
+        .select(
+          "full_name, avatar_url, birthday, interests, onboarding_completed, other_interest"
+        )
         .eq("id", user.id)
         .maybeSingle();
 
@@ -151,20 +153,27 @@ export default function OnboardingPage() {
       const resolvedName = existingName || googleName || "";
       const resolvedAvatar = googleAvatar || existingAvatar || "";
 
+      const filteredExistingInterests = Array.isArray(existingProfile?.interests)
+        ? existingProfile.interests.filter((interest) =>
+            interestOptions.includes(interest)
+          )
+        : [];
+
+      const initialInterests =
+        filteredExistingInterests.length >= 2
+          ? filteredExistingInterests
+          : ["Travel", "Food"];
+
       if (!isActive) return;
 
       setForm((prev) => ({
         ...prev,
         fullName: resolvedName,
         birthday: existingProfile?.birthday || "",
+        otherInterest: existingProfile?.other_interest || "",
       }));
 
-      setSelectedInterests(
-        Array.isArray(existingProfile?.interests) && existingProfile.interests.length > 0
-          ? existingProfile.interests
-          : ["Travel", "Food"]
-      );
-
+      setSelectedInterests(initialInterests);
       setAvatarUrl(resolvedAvatar);
 
       const { error: syncError } = await supabase.from("profiles").upsert(
@@ -196,11 +205,26 @@ export default function OnboardingPage() {
   }
 
   function toggleInterest(interest) {
-    setSelectedInterests((prev) =>
-      prev.includes(interest)
-        ? prev.filter((item) => item !== interest)
-        : [...prev, interest]
-    );
+    setSelectedInterests((prev) => {
+      const isSelected = prev.includes(interest);
+
+      if (isSelected) {
+        if (prev.length <= 2) return prev;
+        return prev.filter((item) => item !== interest);
+      }
+
+      return [...prev, interest];
+    });
+
+    if (interest === "Other" && selectedInterests.includes("Other")) {
+      setForm((prev) => ({ ...prev, otherInterest: "" }));
+    }
+
+    setErrors((prev) => ({
+      ...prev,
+      interests: "",
+      otherInterest: "",
+    }));
   }
 
   function toggleRelationship(relationship) {
@@ -222,6 +246,19 @@ export default function OnboardingPage() {
 
       if (!form.birthday.trim()) {
         nextErrors.birthday = "Please add your birthday.";
+      }
+    }
+
+    if (step === 2) {
+      if (selectedInterests.length < 2) {
+        nextErrors.interests = "Pick at least 2 interests.";
+      }
+
+      if (
+        selectedInterests.includes("Other") &&
+        !form.otherInterest.trim()
+      ) {
+        nextErrors.otherInterest = "Tell us your other interest.";
       }
     }
 
@@ -260,6 +297,9 @@ export default function OnboardingPage() {
       avatar_url: avatarUrl || null,
       birthday: form.birthday || null,
       interests: selectedInterests,
+      other_interest: selectedInterests.includes("Other")
+        ? form.otherInterest.trim() || null
+        : null,
       ...values,
     };
 
@@ -314,13 +354,6 @@ export default function OnboardingPage() {
   function previousStep() {
     if (saving) return;
     setStep((prev) => Math.max(prev - 1, 1));
-  }
-
-  async function skipInterestsStep() {
-    if (saving) return;
-    const result = await saveProfile();
-    if (!result.ok) return;
-    setStep(3);
   }
 
   function skipInviteStep() {
@@ -604,7 +637,7 @@ export default function OnboardingPage() {
                 </h1>
 
                 <p className="mt-3 text-[15px] leading-7 text-slate-600">
-                  Pick 2-3 that interest you so we can improve your experience.
+                  Pick at least 2 interests so we can improve your experience.
                 </p>
 
                 <div className="mt-7 flex flex-wrap gap-2.5">
@@ -628,9 +661,39 @@ export default function OnboardingPage() {
                   })}
                 </div>
 
-                <p className="mt-4 text-xs leading-5 text-slate-500">
-                  Choose a few now, or skip and do it later.
-                </p>
+                {selectedInterests.includes("Other") ? (
+                  <div className="mt-6 max-w-[420px]">
+                    <label
+                      htmlFor="otherInterest"
+                      className="block text-sm font-medium text-slate-900"
+                    >
+                      Tell us another interest
+                    </label>
+                    <input
+                      id="otherInterest"
+                      type="text"
+                      value={form.otherInterest}
+                      onChange={(e) => updateField("otherInterest", e.target.value)}
+                      placeholder="Music, crafts, collectibles..."
+                      className={`mt-2 h-[56px] w-full rounded-[18px] border bg-white px-4 text-sm text-slate-900 outline-none transition focus:ring-4 ${
+                        errors.otherInterest
+                          ? "border-red-300 focus:border-red-300 focus:ring-red-100"
+                          : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
+                      }`}
+                    />
+                    {errors.otherInterest ? (
+                      <p className="mt-2 text-xs text-red-500">{errors.otherInterest}</p>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {errors.interests ? (
+                  <p className="mt-4 text-xs text-red-500">{errors.interests}</p>
+                ) : (
+                  <p className="mt-4 text-xs leading-5 text-slate-500">
+                    Choose at least 2 to continue.
+                  </p>
+                )}
               </div>
             )}
 
@@ -785,21 +848,6 @@ export default function OnboardingPage() {
               </button>
 
               <div className="flex flex-wrap items-center gap-3">
-                {step === 2 ? (
-                  <button
-                    type="button"
-                    onClick={skipInterestsStep}
-                    disabled={saving}
-                    className={`inline-flex h-[50px] min-w-[120px] items-center justify-center rounded-full border px-5 text-sm font-medium ${
-                      saving
-                        ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    Skip for now
-                  </button>
-                ) : null}
-
                 {step === 3 ? (
                   <button
                     type="button"
