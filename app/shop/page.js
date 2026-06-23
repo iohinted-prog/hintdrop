@@ -37,8 +37,8 @@ const OCCASION_OPTIONS = [
 
 function LogoMark() {
   return (
-    <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg">
-      <span className="text-lg">H</span>
+    <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] border border-[#efc4b2] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg">
+      <span className="text-lg">🎁</span>
     </div>
   );
 }
