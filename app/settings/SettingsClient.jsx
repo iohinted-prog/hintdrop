@@ -157,11 +157,11 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-[920px]">
         <div className="mb-6">
           <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800"
+            href="/feed"
+            className="inline-flex h-11 items-center gap-2 rounded-full border border-[#ead8ce] bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-[#faf6f3]"
           >
-            <span>←</span>
-            <span>Back</span>
+            <span aria-hidden="true">←</span>
+            <span>Back to feed</span>
           </Link>
         </div>
 
