@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
+import { useCurrencyFormatter } from "../lib/useCurrencyFormatter";
 
 const HINTED_SERVICE_FEE_RATE = 0.02;
 const SELF_SELECTOR_ID = "__self__";
@@ -132,20 +133,6 @@ function formatDateLabel(dateString) {
 
 function getCurrencyMeta(code) {
   return currencyOptions.find((currency) => currency.code === code) || currencyOptions[0];
-}
-
-function formatMoney(amount, currency = "GBP") {
-  const safeAmount = Number(amount) || 0;
-  try {
-    return new Intl.NumberFormat("en-GB", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: safeAmount % 1 === 0 ? 0 : 2,
-    }).format(safeAmount);
-  } catch {
-    const fallback = getCurrencyMeta(currency);
-    return `${fallback.symbol}${safeAmount}`;
-  }
 }
 
 function parseAmount(value) {
@@ -535,7 +522,7 @@ function ContactCard({ contact, onDeleteClick }) {
   );
 }
 
-function MemberPill({ member, currency = "GBP" }) {
+function MemberPill({ member, currency = "GBP", formatCurrency }) {
   const isAccepted = getAvatarState(member.status) === "accepted";
 
   const statusStyles = isAccepted
@@ -560,7 +547,7 @@ function MemberPill({ member, currency = "GBP" }) {
               {statusLabel}
             </span>
             <span className="text-[11px] text-slate-400">
-              {member.contributed ? formatMoney(member.amount, currency) : "—"}
+              {member.contributed ? formatCurrency(member.amount, currency) : "—"}
             </span>
           </div>
         </div>
@@ -704,14 +691,14 @@ function PotTypeGuide() {
   );
 }
 
-function CircleCard({ circle, onDeleteCircleClick, deletingCircleId }) {
+function CircleCard({ circle, onDeleteCircleClick, deletingCircleId, formatCurrency }) {
   const safeMembers = Array.isArray(circle?.members) ? circle.members : [];
   const joinedCount = safeMembers.filter(
     (member) => getAvatarState(member.status) === "accepted"
   ).length;
   const invitedCount = safeMembers.length;
-  const moneyLabel = formatMoney(circle?.pot?.target, circle?.pot?.currency);
-  const raisedLabel = formatMoney(circle?.pot?.raised, circle?.pot?.currency);
+  const moneyLabel = formatCurrency(circle?.pot?.target, circle?.pot?.currency || "GBP");
+  const raisedLabel = formatCurrency(circle?.pot?.raised, circle?.pot?.currency || "GBP");
   const showItemPreview =
     circle?.pot?.active &&
     circle?.pot?.goalType === "item" &&
@@ -763,6 +750,7 @@ function CircleCard({ circle, onDeleteCircleClick, deletingCircleId }) {
                   key={`${circle?.id}-${member.name}`}
                   member={member}
                   currency={circle?.pot?.currency}
+                  formatCurrency={formatCurrency}
                 />
               ))}
             </div>
@@ -942,6 +930,7 @@ function CreateCircleModal({
   isSubmitting,
   ownHints,
   selfProfile,
+  formatCurrency,
 }) {
   if (!open) return null;
 
@@ -954,13 +943,38 @@ function CreateCircleModal({
   const amountMode = form.goalType === "amount";
   const selectedHint = visibleHints.find((hint) => hint.id === form.selectedHintId) || null;
 
-  const liveBaseAmount =
-    form.goalType === "item"
-      ? form.itemSource === "hint"
-        ? extractHintAmount(selectedHint)
-        : extractPreviewAmount(linkPreview)
-      : parseAmount(form.goalValue);
+  useEffect(() => {
+    if (form.goalType !== "item") return;
 
+    if (form.itemSource === "hint" && selectedHint) {
+      const extracted = extractHintAmount(selectedHint);
+      if (extracted > 0 && !parseAmount(form.goalValue)) {
+        setForm((prev) => ({
+          ...prev,
+          goalValue: String(extracted),
+        }));
+      }
+    }
+
+    if (form.itemSource === "url" && linkPreview) {
+      const extracted = extractPreviewAmount(linkPreview);
+      if (extracted > 0 && !parseAmount(form.goalValue)) {
+        setForm((prev) => ({
+          ...prev,
+          goalValue: String(extracted),
+        }));
+      }
+    }
+  }, [
+    form.goalType,
+    form.itemSource,
+    selectedHint,
+    linkPreview,
+    form.goalValue,
+    setForm,
+  ]);
+
+  const liveBaseAmount = parseAmount(form.goalValue);
   const liveTotals = calculateCircleTotals(liveBaseAmount);
 
   return (
@@ -1128,14 +1142,13 @@ function CreateCircleModal({
                 </select>
               </label>
 
-              {form.goalType === "amount" ? (
-                <CurrencyAmountInput
-                  currency={form.currency}
-                  amount={form.goalValue}
-                  onCurrencyChange={(value) => setForm((prev) => ({ ...prev, currency: value }))}
-                  onAmountChange={(value) => setForm((prev) => ({ ...prev, goalValue: value }))}
-                />
-              ) : null}
+              <CurrencyAmountInput
+                currency={form.currency}
+                amount={form.goalValue}
+                onCurrencyChange={(value) => setForm((prev) => ({ ...prev, currency: value }))}
+                onAmountChange={(value) => setForm((prev) => ({ ...prev, goalValue: value }))}
+                label={form.goalType === "item" ? "Item amount" : "Target amount"}
+              />
             </div>
           </div>
 
@@ -1349,7 +1362,7 @@ function CreateCircleModal({
                 Total
               </p>
               <p className="mt-2 text-lg font-semibold text-slate-900">
-                {formatMoney(liveTotals.totalAmount, form.currency)}
+                {formatCurrency(liveTotals.totalAmount, form.currency || "GBP")}
               </p>
               <p className="mt-2 text-[12px] leading-5 text-slate-500">
                 *includes our 2% service fee so you can avoid the awkward reminders
@@ -1943,6 +1956,7 @@ function DeleteCircleModal({
 
 export default function CirclesClient() {
   const supabase = createClient();
+  const { formatCurrency } = useCurrencyFormatter();
 
   const safeCalendarEvents = Array.isArray(calendarEvents) ? calendarEvents : [];
   const safeDefaultEvent = safeCalendarEvents[0] || {
@@ -2453,6 +2467,15 @@ export default function CirclesClient() {
     let selectedHintId = null;
     let sourceType = "external_link";
 
+    const manualAmount = parseAmount(form.goalValue);
+
+    if (manualAmount <= 0) {
+      setCircleError("Target amount must be greater than 0.");
+      return;
+    }
+
+    const totals = calculateCircleTotals(manualAmount);
+
     if (form.goalType === "item") {
       if (form.itemSource === "hint") {
         if (selectedHintOwnerId !== SELF_SELECTOR_ID) {
@@ -2466,17 +2489,6 @@ export default function CirclesClient() {
           setCircleError("Choose one of your hints or switch to pasted link.");
           return;
         }
-
-        const baseAmount = extractHintAmount(selectedHint);
-
-        if (baseAmount <= 0) {
-          setCircleError(
-            "We couldn’t find a valid price for that hint. Use a hint title/link that includes a price, or switch to pasted link."
-          );
-          return;
-        }
-
-        const totals = calculateCircleTotals(baseAmount);
 
         itemTitle = buildStoredItemTitle(selectedHint.title || "Shared item");
         itemUrl = selectedHint.url || null;
@@ -2493,17 +2505,6 @@ export default function CirclesClient() {
           return;
         }
 
-        const baseAmount = extractPreviewAmount(linkPreview);
-
-        if (baseAmount <= 0) {
-          setCircleError(
-            "We couldn’t detect a price from that link preview yet. Add pricing to the preview response or use a hint with a valid amount."
-          );
-          return;
-        }
-
-        const totals = calculateCircleTotals(baseAmount);
-
         itemTitle = buildStoredItemTitle(linkPreview?.title || "Shared item");
         itemUrl = linkPreview?.url || form.itemUrl.trim();
         itemImageUrl = linkPreview?.image || null;
@@ -2514,17 +2515,10 @@ export default function CirclesClient() {
         sourceType = "external_link";
       }
     } else {
-      const manualAmount = parseAmount(form.goalValue);
-
-      if (manualAmount <= 0) {
-        setCircleError("Target amount must be greater than 0.");
-        return;
-      }
-
       itemTitle = "Shared contribution pot";
-      itemTargetAmount = roundCurrency(manualAmount);
-      organisingFeeAmount = calculateHintedFee(itemTargetAmount);
-      totalTargetAmount = roundCurrency(itemTargetAmount + organisingFeeAmount);
+      itemTargetAmount = totals.itemAmount;
+      organisingFeeAmount = totals.feeAmount;
+      totalTargetAmount = totals.totalAmount;
       sourceType = "external_link";
     }
 
@@ -2771,6 +2765,7 @@ export default function CirclesClient() {
                         circle={circle}
                         onDeleteCircleClick={openDeleteCircleModal}
                         deletingCircleId={isDeletingCircle ? selectedCircleToDelete?.id : null}
+                        formatCurrency={formatCurrency}
                       />
                     ))
                   )}
@@ -2807,6 +2802,7 @@ export default function CirclesClient() {
         isSubmitting={isCreatingCircle}
         ownHints={ownHints}
         selfProfile={profile}
+        formatCurrency={formatCurrency}
       />
 
       <AddContactModal
