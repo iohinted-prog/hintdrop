@@ -5,7 +5,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
-import { useCurrencyFormatter } from "../lib/useCurrencyFormatter";
+import { useCurrencyFormatter } from "../../lib/supabase/client";
 
 const INTEREST_OPTIONS = [
   "Home",
