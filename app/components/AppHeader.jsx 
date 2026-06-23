@@ -1,1 +1,52 @@
+"use client";
 
+import Link from "next/link";
+import AvatarMenu from "./AvatarMenu";
+
+function LogoMark() {
+  return (
+    <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] border border-[#efc4b2] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg">
+      <span className="text-lg">H</span>
+    </div>
+  );
+}
+
+function navClass(isActive) {
+  return isActive
+    ? "inline-flex h-11 items-center justify-center rounded-full border border-[#3c4d39] bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5"
+    : "inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5";
+}
+
+export default function AppHeader({ active }) {
+  return (
+    <header className="border-b border-[#efe0d7] bg-[#fffaf7f5] backdrop-blur">
+      <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
+        <Link href="/feed" className="flex items-center gap-3.5">
+          <LogoMark />
+          <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
+            Hinted<span className="text-[#f36f64]">.io</span>
+          </div>
+        </Link>
+
+        <div className="flex items-center gap-3 sm:gap-4">
+          <nav className="flex items-center gap-2 sm:gap-3">
+            <Link href="/feed" className={navClass(active === "feed")}>
+              Feed
+            </Link>
+            <Link href="/hints" className={navClass(active === "hints")}>
+              Hints
+            </Link>
+            <Link href="/circles" className={navClass(active === "circles")}>
+              Circles
+            </Link>
+            <Link href="/shop" className={navClass(active === "shop")}>
+              Shop
+            </Link>
+          </nav>
+
+          <AvatarMenu />
+        </div>
+      </div>
+    </header>
+  );
+}
