@@ -21,6 +21,7 @@ const interestOptions = [
   "Books",
   "Fashion",
   "Experiences",
+  "Music",
   "Gaming",
   "Other",
 ];
@@ -254,10 +255,7 @@ export default function OnboardingPage() {
         nextErrors.interests = "Pick at least 2 interests.";
       }
 
-      if (
-        selectedInterests.includes("Other") &&
-        !form.otherInterest.trim()
-      ) {
+      if (selectedInterests.includes("Other") && !form.otherInterest.trim()) {
         nextErrors.otherInterest = "Tell us your other interest.";
       }
     }
@@ -674,7 +672,7 @@ export default function OnboardingPage() {
                       type="text"
                       value={form.otherInterest}
                       onChange={(e) => updateField("otherInterest", e.target.value)}
-                      placeholder="Music, crafts, collectibles..."
+                      placeholder="Crafts, collecting, pets..."
                       className={`mt-2 h-[56px] w-full rounded-[18px] border bg-white px-4 text-sm text-slate-900 outline-none transition focus:ring-4 ${
                         errors.otherInterest
                           ? "border-red-300 focus:border-red-300 focus:ring-red-100"
