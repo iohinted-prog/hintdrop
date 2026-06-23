@@ -16,6 +16,7 @@ const ALLOWED_INTERESTS = [
   "Experiences",
   "Music",
   "Gaming",
+  "Other",
 ];
 
 function parseBoolean(value, fallback = false) {
@@ -36,7 +37,6 @@ export async function saveSettings(formData) {
   }
 
   const rawInterests = Array.isArray(formData.interests) ? formData.interests : [];
-
   const interests = rawInterests.filter((item) => ALLOWED_INTERESTS.includes(item));
 
   if (interests.length < 2) {
@@ -55,6 +55,7 @@ export async function saveSettings(formData) {
     default_reminder_days: Number(formData.default_reminder_days) || 7,
     currency,
     interests,
+    other_interest: formData.other_interest?.trim() || null,
   };
 
   const { error } = await supabase
