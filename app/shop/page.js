@@ -5,8 +5,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
-import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
-import AppHeader from "../components/AppHeader";
+import useCurrencyFormatter from "../../lib/useCurrencyFormatter";
 
 const INTEREST_OPTIONS = [
   "Home",
@@ -39,7 +38,7 @@ const OCCASION_OPTIONS = [
 function LogoMark() {
   return (
     <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] border border-[#efc4b2] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg">
-      <span className="text-lg">🎁</span>
+      <span className="text-lg font-black">H</span>
     </div>
   );
 }
@@ -49,31 +48,33 @@ function errorToMessage(value) {
   if (typeof value === "string") return value;
   if (value instanceof Error) return value.message || "Something went wrong.";
   if (typeof value === "object") {
-    if (typeof value.message === "string" && value.message.trim()) return value.message;
-    if (typeof value.error === "string" && value.error.trim()) return value.error;
+    if (typeof value.message === "string" && value.message.trim()) {
+      return value.message;
+    }
+    if (typeof value.error === "string" && value.error.trim()) {
+      return value.error;
+    }
   }
   return String(value);
 }
 
 function getTagArray(value) {
   if (Array.isArray(value)) return value.filter(Boolean);
-
   if (typeof value === "string" && value.trim()) {
     return value
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean);
   }
-
   return [];
 }
 
 function getProfileInterestTags(profile) {
   const candidates = [
     profile?.interests,
-    profile?.interest_tags,
-    profile?.onboarding_interests,
-    profile?.gift_interests,
+    profile?.interesttags,
+    profile?.onboardinginterests,
+    profile?.giftinterests,
   ];
 
   for (const candidate of candidates) {
@@ -97,8 +98,7 @@ function extractNumericPrice(value) {
   if (!value) return null;
 
   const cleaned = String(value).replace(/,/g, "");
-  const match = cleaned.match(/(\d+(\.\d{1,2})?)/);
-
+  const match = cleaned.match(/(\d+(?:\.\d{1,2})?)/);
   if (!match) return null;
 
   const parsed = Number(match[1]);
@@ -106,28 +106,28 @@ function extractNumericPrice(value) {
 }
 
 function getOutboundUrl(product) {
-  const affiliate = String(product?.affiliate_url || "").trim();
-  const productUrl = String(product?.product_url || "").trim();
-  return affiliate || productUrl || "";
+  const affiliateUrl = String(product?.affiliateurl || "").trim();
+  const productUrl = String(product?.producturl || "").trim();
+  return affiliateUrl || productUrl;
 }
 
 function buildHintInsertPayload(product, userId) {
   const outboundUrl = getOutboundUrl(product);
   const parsedNumericPrice =
-    typeof product?.numeric_price === "number"
-      ? product.numeric_price
-      : extractNumericPrice(product?.price_text);
+    typeof product?.numericprice === "number"
+      ? product.numericprice
+      : extractNumericPrice(product?.pricetext);
 
   return {
-    user_id: userId,
+    userid: userId,
     title: product?.title?.trim() || "Saved from shop",
     url: outboundUrl,
-    image_url: product?.image_url || "",
+    imageurl: product?.imageurl || "",
     source: "shop",
-    is_private: false,
+    isprivate: false,
     retailer: product?.retailer || normaliseRetailer(outboundUrl),
-    price_text: product?.price_text || "",
-    numeric_price: parsedNumericPrice,
+    pricetext: product?.pricetext || "",
+    numericprice: parsedNumericPrice,
     starred: false,
     position: 0,
   };
@@ -164,20 +164,20 @@ function getCardAspectRatio(product, imageRatios) {
     return 0.9;
   }
 
-  return product?.image_url ? 0.9 : 1;
+  return product?.imageurl ? 0.9 : 1;
 }
 
 function getDisplayPrice(product, formatCurrency) {
   const numericPrice =
-    typeof product?.numeric_price === "number"
-      ? Number(product.numeric_price)
-      : extractNumericPrice(product?.price_text);
+    typeof product?.numericprice === "number"
+      ? Number(product.numericprice)
+      : extractNumericPrice(product?.pricetext);
 
   if (typeof numericPrice === "number" && Number.isFinite(numericPrice)) {
     return formatCurrency(numericPrice, product?.currency || "GBP");
   }
 
-  return product?.price_text || "Price unavailable";
+  return product?.pricetext || "Price unavailable";
 }
 
 function ShopCard({
@@ -190,8 +190,8 @@ function ShopCard({
   formatCurrency,
 }) {
   const ratio = getCardAspectRatio(product, imageRatios);
-  const interestTags = getTagArray(product.interest_tags);
-  const occasionTags = getTagArray(product.occasion_tags);
+  const interestTags = getTagArray(product.interesttags);
+  const occasionTags = getTagArray(product.occasiontags);
   const displayTags = [...interestTags.slice(0, 1), ...occasionTags.slice(0, 1)].slice(0, 2);
   const displayPrice = getDisplayPrice(product, formatCurrency);
 
@@ -206,9 +206,9 @@ function ShopCard({
       }}
     >
       <div className="absolute inset-0">
-        {product.image_url ? (
+        {product.imageurl ? (
           <img
-            src={product.image_url}
+            src={product.imageurl}
             alt={product.title || "Gift idea"}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             loading="lazy"
@@ -258,7 +258,7 @@ function ShopCard({
             {product.retailer || normaliseRetailer(getOutboundUrl(product))}
           </p>
 
-          {product.short_note ? (
+          {product.shortnote ? (
             <p
               className="mt-3 overflow-hidden text-[13px] leading-6 text-white/84"
               style={{
@@ -268,15 +268,15 @@ function ShopCard({
                 lineClamp: 3,
               }}
             >
-              {product.short_note}
+              {product.shortnote}
             </p>
           ) : null}
 
-          {(product.primary_category || product.subcategory) && (
+          {product.primarycategory || product.subcategory ? (
             <p className="mt-3 text-[12px] text-white/72">
-              {[product.primary_category, product.subcategory].filter(Boolean).join(" · ")}
+              {[product.primarycategory, product.subcategory].filter(Boolean).join(" · ")}
             </p>
-          )}
+          ) : null}
         </div>
 
         <div className="pointer-events-auto mt-4 flex flex-wrap items-center gap-2">
@@ -310,7 +310,10 @@ function ShopSkeleton() {
         <div key={item} className="mb-6 break-inside-avoid">
           <div
             className="w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[#f9f8f5]"
-            style={{ aspectRatio: item % 2 ? 0.82 : 1.02, maxHeight: "min(540px, 68vh)" }}
+            style={{
+              aspectRatio: item % 2 ? 0.82 : 1.02,
+              maxHeight: "min(540px, 68vh)",
+            }}
           >
             <div className="h-full w-full animate-pulse bg-[#f2ebe5]" />
           </div>
@@ -332,7 +335,8 @@ function EmptyState({ selectedOccasion, selectedInterests, onClear }) {
       </h3>
 
       <p className="mx-auto mt-3 max-w-[40ch] text-[14px] leading-7 text-slate-500">
-        We could not find anything for {selectedOccasion || "this occasion"}
+        We could not find anything for {selectedOccasion ? `${selectedOccasion.toLowerCase()}` : "this"}{" "}
+        occasion
         {selectedInterests.length ? ` with ${selectedInterests.join(", ")}` : ""}. Try clearing one
         of the filters and the gift picks will widen again.
       </p>
@@ -350,7 +354,7 @@ function EmptyState({ selectedOccasion, selectedInterests, onClear }) {
 
 export default function ShopPage() {
   const supabase = createClient();
-  const { formatCurrency } = useCurrencyFormatter();
+  const formatCurrency = useCurrencyFormatter();
 
   const [currentUser, setCurrentUser] = useState(null);
   const [products, setProducts] = useState([]);
@@ -428,14 +432,14 @@ export default function ShopPage() {
 
     async function measureRatios() {
       const itemsWithImages = products.filter(
-        (product) => product.image_url && !imageRatios[product.id]
+        (product) => product?.imageurl && !imageRatios[product.id]
       );
 
       if (!itemsWithImages.length) return;
 
       const nextEntries = await Promise.all(
         itemsWithImages.map(async (product) => {
-          const ratio = await loadImageAspectRatio(product.image_url);
+          const ratio = await loadImageAspectRatio(product.imageurl);
           return [product.id, ratio];
         })
       );
@@ -446,7 +450,9 @@ export default function ShopPage() {
         const next = { ...current };
 
         for (const [id, ratio] of nextEntries) {
-          if (ratio && Number.isFinite(ratio)) next[id] = ratio;
+          if (ratio && Number.isFinite(ratio)) {
+            next[id] = ratio;
+          }
         }
 
         return next;
@@ -465,20 +471,21 @@ export default function ShopPage() {
 
     return [...products]
       .filter((product) => {
-        const interestTags = getTagArray(product.interest_tags);
-        const occasionTags = getTagArray(product.occasion_tags);
+        const interestTags = getTagArray(product.interesttags);
+        const occasionTags = getTagArray(product.occasiontags);
 
         const matchesInterest =
           selectedInterests.length === 0 ||
           selectedInterests.some((interest) => interestTags.includes(interest));
 
-        const matchesOccasion = !selectedOccasion || occasionTags.includes(selectedOccasion);
+        const matchesOccasion =
+          !selectedOccasion || occasionTags.includes(selectedOccasion);
 
         const searchable = [
           product.title,
           product.retailer,
-          product.short_note,
-          product.primary_category,
+          product.shortnote,
+          product.primarycategory,
           product.subcategory,
           ...interestTags,
           ...occasionTags,
@@ -493,24 +500,27 @@ export default function ShopPage() {
       })
       .sort((a, b) => {
         const priceA =
-          typeof a.numeric_price === "number"
-            ? a.numeric_price
-            : extractNumericPrice(a.price_text) || 0;
+          typeof a.numericprice === "number"
+            ? a.numericprice
+            : extractNumericPrice(a.pricetext) || 0;
 
         const priceB =
-          typeof b.numeric_price === "number"
-            ? b.numeric_price
-            : extractNumericPrice(b.price_text) || 0;
+          typeof b.numericprice === "number"
+            ? b.numericprice
+            : extractNumericPrice(b.pricetext) || 0;
 
-        const interestCountA = getTagArray(a.interest_tags).filter((tag) =>
+        const interestCountA = getTagArray(a.interesttags).filter((tag) =>
           selectedInterests.includes(tag)
         ).length;
 
-        const interestCountB = getTagArray(b.interest_tags).filter((tag) =>
+        const interestCountB = getTagArray(b.interesttags).filter((tag) =>
           selectedInterests.includes(tag)
         ).length;
 
-        if (interestCountA !== interestCountB) return interestCountB - interestCountA;
+        if (interestCountA !== interestCountB) {
+          return interestCountB - interestCountA;
+        }
+
         return priceA - priceB;
       });
   }, [products, searchQuery, selectedInterests, selectedOccasion]);
@@ -520,7 +530,6 @@ export default function ShopPage() {
       if (current.includes(interest)) {
         return current.filter((item) => item !== interest);
       }
-
       return [...current, interest].slice(0, 5);
     });
   }
@@ -556,8 +565,8 @@ export default function ShopPage() {
   }
 
   async function handleViewItem(product) {
-    const existingAffiliateUrl = String(product?.affiliate_url || "").trim();
-    const destinationUrl = String(product?.product_url || "").trim();
+    const existingAffiliateUrl = String(product?.affiliateurl || "").trim();
+    const destinationUrl = String(product?.producturl || "").trim();
 
     if (existingAffiliateUrl) {
       window.open(existingAffiliateUrl, "_blank", "noopener,noreferrer");
@@ -581,12 +590,8 @@ export default function ShopPage() {
         body: JSON.stringify({
           destinationUrl,
           network: product?.network || "manual",
-          campaignId: product?.campaign_id || null,
-          product: {
-            id: product?.id,
-            network: product?.network,
-            campaign_id: product?.campaign_id,
-          },
+          campaignId: product?.campaignid || null,
+          productId: product?.id,
         }),
       });
 
@@ -613,7 +618,47 @@ export default function ShopPage() {
         src="https://s.skimresources.com/js/305122X1793314.skimlinks.js"
       />
 
-      <AppHeader active="shop" /> 
+      <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur">
+        <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
+          <Link href="/feed" className="flex items-center gap-3.5">
+            <LogoMark />
+            <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
+              Hinted<span className="text-[#f36f64]">.io</span>
+            </div>
+          </Link>
+
+          <div className="flex items-center gap-3 sm:gap-4">
+            <nav className="flex items-center gap-2 sm:gap-3">
+              <Link
+                href="/feed"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Feed
+              </Link>
+              <Link
+                href="/hints"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Hints
+              </Link>
+              <Link
+                href="/circles"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
+              >
+                Circles
+              </Link>
+              <Link
+                href="/shop"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[#3c4d39] bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5"
+              >
+                Shop
+              </Link>
+            </nav>
+
+            <AvatarMenu />
+          </div>
+        </div>
+      </header>
 
       <div className="mx-auto max-w-[1380px] px-5 py-8 md:px-8">
         {pageError ? (
@@ -705,7 +750,8 @@ export default function ShopPage() {
                       1. Browse
                     </span>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Gifts are filtered by the interests you choose and the occasion you are shopping for.
+                      Gifts are filtered by the interests you choose and the occasion you are
+                      shopping for.
                     </p>
                   </div>
 
@@ -714,7 +760,8 @@ export default function ShopPage() {
                       2. Save
                     </span>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Add good finds into hints so they can be used later across personal planning and circle gifting flows.
+                      Add good finds into hints so they can be used later across personal planning
+                      and circle gifting flows.
                     </p>
                   </div>
 
@@ -723,7 +770,8 @@ export default function ShopPage() {
                       3. View item
                     </span>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      View item opens the retailer in a new tab using the affiliate link when one is available.
+                      View item opens the retailer in a new tab using the affiliate link when one is
+                      available.
                     </p>
                   </div>
                 </div>
@@ -731,7 +779,8 @@ export default function ShopPage() {
                 <div className="mt-5 rounded-[20px] bg-[#fffaf7] p-4">
                   <p className="text-sm font-semibold text-slate-900">Built to stay aligned</p>
                   <p className="mt-2 text-[13px] leading-6 text-slate-500">
-                    Shop keeps the same gifting language as the rest of the app, so saved items can move naturally into hints and later into a shared pot flow.
+                    Shop keeps the same gifting language as the rest of the app, so saved items can
+                    move naturally into hints and later into a shared pot flow.
                   </p>
                 </div>
               </aside>
@@ -745,7 +794,7 @@ export default function ShopPage() {
               className="pointer-events-none absolute inset-0 rounded-[36px] opacity-70"
               style={{
                 backgroundImage:
-                  "linear-gradient(to right, rgba(214, 195, 184, 0.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(214, 195, 184, 0.28) 1px, transparent 1px)",
+                  "linear-gradient(to right, rgba(214,195,184,0.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(214,195,184,0.28) 1px, transparent 1px)",
                 backgroundSize: "76px 76px",
                 backgroundPosition: "center center",
               }}
