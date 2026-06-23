@@ -312,4 +312,110 @@ export default function SettingsClient() {
                 </div>
               ) : null}
 
-              <p className="mt-4 text-xs 
+              <p className="mt-4 text-xs leading-5 text-slate-500">
+                Pick at least 2 interests.
+              </p>
+            </section>
+
+            <section className="rounded-[28px] border border-[#eddacf] bg-white p-6 shadow-sm">
+              <h2 className="text-[20px] font-semibold text-slate-900">Privacy and visibility</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Hinted is not an open public network. Your profile is only visible to people
+                you add and accept, or who add and are accepted by you.
+              </p>
+
+              <div className="mt-6 space-y-4">
+                <div className="rounded-[20px] border border-[#f1e4dc] bg-[#fffdfa] px-4 py-4">
+                  <p className="text-sm font-medium text-slate-900">Your profile is contact-based</p>
+                  <p className="mt-1 text-xs leading-6 text-slate-500">
+                    People do not browse all Hinted users. Visibility starts only when a contact
+                    connection has been added and accepted.
+                  </p>
+                </div>
+
+                <div className="rounded-[20px] border border-[#f1e4dc] bg-[#fffdfa] px-4 py-4">
+                  <p className="text-sm font-medium text-slate-900">Hints stay thoughtful</p>
+                  <p className="mt-1 text-xs leading-6 text-slate-500">
+                    Shared gift planning is designed around trusted circles, while private gift flows
+                    help protect surprise moments when needed.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[28px] border border-[#eddacf] bg-white p-6 shadow-sm">
+              <h2 className="text-[20px] font-semibold text-slate-900">Currency</h2>
+              <p className="mt-2 text-sm text-slate-500">
+                Choose the currency you prefer to see across pots, contributions, and shop pricing.
+              </p>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-slate-900" htmlFor="currency">
+                  Preferred currency
+                </label>
+                <select
+                  id="currency"
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="mt-2 h-[54px] w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
+                >
+                  <option value="GBP">GBP — British Pound</option>
+                  <option value="EUR">EUR — Euro</option>
+                  <option value="USD">USD — US Dollar</option>
+                  <option value="AUD">AUD — Australian Dollar</option>
+                  <option value="CAD">CAD — Canadian Dollar</option>
+                </select>
+              </div>
+            </section>
+
+            <section className="rounded-[28px] border border-[#eddacf] bg-white p-6 shadow-sm">
+              <h2 className="text-[20px] font-semibold text-slate-900">Security</h2>
+              <p className="mt-2 text-sm text-slate-500">
+                Manage password and session-related actions.
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  className="inline-flex h-[48px] items-center justify-center rounded-full border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 hover:bg-[#faf6f3]"
+                >
+                  Change password
+                </button>
+
+                <button
+                  type="button"
+                  className="inline-flex h-[48px] items-center justify-center rounded-full border border-slate-300 bg-white px-5 text-sm font-medium text-slate-700 hover:bg-[#faf6f3]"
+                >
+                  Sign out of all devices
+                </button>
+              </div>
+            </section>
+
+            {error && (
+              <div className="rounded-[22px] bg-[#fde8e8] p-4 text-sm text-[#c12020]">
+                {error}
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-3 pt-2">
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex h-[52px] items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-6 text-sm font-semibold text-white shadow-lg disabled:opacity-70"
+              >
+                {saving ? "Saving..." : "Save settings"}
+              </button>
+
+              <Link
+                href="/"
+                className="inline-flex h-[52px] items-center justify-center rounded-full border border-slate-300 bg-white px-6 text-sm font-medium text-slate-700 hover:bg-[#faf6f3]"
+              >
+                Cancel
+              </Link>
+            </div>
+          </form>
+        )}
+      </div>
+    </main>
+  );
+}
