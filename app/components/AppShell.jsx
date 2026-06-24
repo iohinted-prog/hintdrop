@@ -6,7 +6,7 @@ import AvatarMenu from "./AvatarMenu";
 
 function LogoMark() {
   return (
-    <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg">
+    <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] border border-[#efc4b2] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg">
       <span className="text-lg">🎁</span>
     </div>
   );
@@ -63,15 +63,68 @@ function SiteHeader() {
 function SiteFooter() {
   return (
     <footer className="border-t border-[#efe0d7] bg-[#fffaf7]">
-      <div className="mx-auto flex max-w-[1380px] flex-col items-center justify-between gap-3 px-5 py-6 text-sm text-slate-500 md:flex-row md:px-8">
-        <p>© 2026 Hinted.io</p>
-        <div className="flex items-center gap-4">
-          <Link href="/privacy" className="hover:text-slate-700">
-            Privacy
-          </Link>
-          <Link href="/terms" className="hover:text-slate-700">
-            Terms
-          </Link>
+      <div className="mx-auto max-w-[1380px] px-5 py-6 md:px-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-medium text-slate-700">Hinted.io</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Thoughtful gifting, reminders, circles, and curated shopping.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs leading-5 text-slate-500">
+            <a
+              href="mailto:iohinted@gmail.com"
+              className="font-medium text-slate-700 underline underline-offset-2"
+            >
+              Contact
+            </a>
+
+            <Link
+              href="/for-brands"
+              className="font-medium text-slate-700 underline underline-offset-2"
+            >
+              For brands
+            </Link>
+
+            <Link
+              href="/privacy"
+              className="font-medium text-slate-700 underline underline-offset-2"
+            >
+              Privacy Policy
+            </Link>
+
+            <Link
+              href="/terms"
+              className="font-medium text-slate-700 underline underline-offset-2"
+            >
+              Terms
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-4 border-t border-[#efe0d7] pt-4">
+          <p className="text-xs leading-5 text-slate-500">
+            By continuing, you agree to Hinted’s{" "}
+            <Link
+              href="/terms"
+              className="font-medium text-slate-700 underline underline-offset-2"
+            >
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link
+              href="/privacy"
+              className="font-medium text-slate-700 underline underline-offset-2"
+            >
+              Privacy Policy
+            </Link>
+            .
+          </p>
+
+          <p className="mt-2 text-xs leading-5 text-slate-400">
+            © 2026 Hinted.io. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>
