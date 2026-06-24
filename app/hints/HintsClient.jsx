@@ -11,6 +11,7 @@ import {
   MeasuringStrategy,
   useSensor,
   useSensors,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -68,7 +69,7 @@ const demoHints = [
     url: "https://www.airbnb.co.uk/",
     position: 0,
     needsReview: false,
-    demoRatio: 0.76,
+    demoRatio: 0.74,
   },
   {
     id: "demo-2",
@@ -84,7 +85,7 @@ const demoHints = [
     url: "https://www.amazon.co.uk/",
     position: 1,
     needsReview: false,
-    demoRatio: 1.18,
+    demoRatio: 1.2,
   },
   {
     id: "demo-3",
@@ -100,7 +101,7 @@ const demoHints = [
     url: "https://www.johnlewis.com/",
     position: 2,
     needsReview: false,
-    demoRatio: 0.88,
+    demoRatio: 0.9,
   },
   {
     id: "demo-4",
@@ -116,7 +117,7 @@ const demoHints = [
     url: "https://www.booking.com/",
     position: 3,
     needsReview: false,
-    demoRatio: 0.7,
+    demoRatio: 0.68,
   },
   {
     id: "demo-5",
@@ -132,7 +133,7 @@ const demoHints = [
     url: "https://www.sageappliances.com/",
     position: 4,
     needsReview: false,
-    demoRatio: 1.22,
+    demoRatio: 1.26,
   },
   {
     id: "demo-6",
@@ -164,7 +165,7 @@ const demoHints = [
     url: "https://www.thewhitecompany.com/",
     position: 6,
     needsReview: false,
-    demoRatio: 0.93,
+    demoRatio: 0.94,
   },
   {
     id: "demo-8",
@@ -196,9 +197,11 @@ const demoHints = [
     url: "https://www.missoma.com/",
     position: 8,
     needsReview: false,
-    demoRatio: 1.12,
+    demoRatio: 1.1,
   },
 ];
+
+const COLUMN_IDS = ["column-0", "column-1", "column-2"];
 
 function LogoMark() {
   return (
@@ -384,6 +387,36 @@ function splitIntoColumns(items, columnCount = 3) {
     columns[index % columnCount].push(item);
   });
   return columns;
+}
+
+function flattenColumns(columns) {
+  return columns.flat().map((hint, index) => ({ ...hint, position: index }));
+}
+
+function buildColumnMap(items) {
+  const split = splitIntoColumns(items, 3);
+  return {
+    "column-0": split[0],
+    "column-1": split[1],
+    "column-2": split[2],
+  };
+}
+
+function flattenColumnMap(columnMap) {
+  return flattenColumns(COLUMN_IDS.map((id) => columnMap[id] || []));
+}
+
+function findContainerForId(columnMap, id) {
+  if (!id) return null;
+  if (COLUMN_IDS.includes(id)) return id;
+
+  for (const columnId of COLUMN_IDS) {
+    if ((columnMap[columnId] || []).some((item) => item.id === id)) {
+      return columnId;
+    }
+  }
+
+  return null;
 }
 
 function fileToDataUrl(file) {
@@ -1004,6 +1037,23 @@ function SortableHintCard({
   );
 }
 
+function HintColumn({ id, items, children }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-h-[240px] rounded-[28px] transition-colors ${
+        isOver ? "bg-[rgba(255,241,233,0.45)]" : "bg-transparent"
+      }`}
+    >
+      <SortableContext items={items.map((hint) => hint.id)} strategy={verticalListSortingStrategy}>
+        {children}
+      </SortableContext>
+    </div>
+  );
+}
+
 export default function HintsClient() {
   const { formatCurrency } = useCurrencyFormatter();
 
@@ -1025,7 +1075,9 @@ export default function HintsClient() {
   const [newHintForm, setNewHintForm] = useState(EMPTY_NEW_HINT_FORM);
   const [addModalNotice, setAddModalNotice] = useState("");
   const [busyState, setBusyState] = useState({ open: false, title: "", message: "" });
+  const [columnMap, setColumnMap] = useState(buildColumnMap([]));
   const busyLongTimerRef = useRef(null);
+  const lastOverId = useRef(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -1109,6 +1161,7 @@ export default function HintsClient() {
   useEffect(() => {
     if (!currentUser) {
       setHints([]);
+      setColumnMap(buildColumnMap([]));
       setIsLoading(false);
       return;
     }
@@ -1128,44 +1181,40 @@ export default function HintsClient() {
       if (error) {
         setError(errorToMessage(error));
         setHints([]);
+        setColumnMap(buildColumnMap([]));
         setIsLoading(false);
         return;
       }
 
-      setHints(
-        (data || []).map((row, index) => ({
-          id: row.id,
-          title: row.title || "Saved hint",
-          retailer: row.retailer || normaliseRetailer(row.url || ""),
-          numericPrice: row.numeric_price,
-          rawPrice: row.price_text || "",
-          currency: row.currency || detectCurrency(row.price_text) || BASE_CURRENCY,
-          image: row.image_url || "",
-          fallbackGradient: buildFallbackGradient(index),
-          starred: Boolean(row.starred),
-          private: Boolean(row.is_private),
-          url: row.url || "",
-          position: row.position ?? index,
-          needsReview: false,
-        }))
-      );
+      const loadedHints = (data || []).map((row, index) => ({
+        id: row.id,
+        title: row.title || "Saved hint",
+        retailer: row.retailer || normaliseRetailer(row.url || ""),
+        numericPrice: row.numeric_price,
+        rawPrice: row.price_text || "",
+        currency: row.currency || detectCurrency(row.price_text) || BASE_CURRENCY,
+        image: row.image_url || "",
+        fallbackGradient: buildFallbackGradient(index),
+        starred: Boolean(row.starred),
+        private: Boolean(row.is_private),
+        url: row.url || "",
+        position: row.position ?? index,
+        needsReview: false,
+      }));
 
+      setHints(loadedHints);
+      setColumnMap(buildColumnMap(loadedHints));
       setIsLoading(false);
     }
 
     loadHints();
   }, [currentUser]);
 
-  const visibleHints = hints;
-  const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
-  const columns = useMemo(() => splitIntoColumns(visibleHints, 3), [visibleHints]);
-  const demoColumns = useMemo(() => splitIntoColumns(demoHints, 3), []);
-
   useEffect(() => {
     let cancelled = false;
 
     async function measureRatios() {
-      const combinedVisible = [...visibleHints, ...demoHints];
+      const combinedVisible = [...hints, ...demoHints];
       const itemsWithImages = combinedVisible.filter((hint) => hint.image && !imageRatios[hint.id]);
       if (!itemsWithImages.length) return;
 
@@ -1192,7 +1241,7 @@ export default function HintsClient() {
     return () => {
       cancelled = true;
     };
-  }, [visibleHints, imageRatios]);
+  }, [hints, imageRatios]);
 
   async function persistOrder(nextHints) {
     if (!currentUser) return;
@@ -1203,8 +1252,11 @@ export default function HintsClient() {
     );
   }
 
-  function rebuildFromColumns(nextColumns) {
-    return nextColumns.flat().map((hint, index) => ({ ...hint, position: index }));
+  function syncHintsFromColumns(nextColumnMap) {
+    const flat = flattenColumnMap(nextColumnMap);
+    setColumnMap(nextColumnMap);
+    setHints(flat);
+    return flat;
   }
 
   function openEditModal(hint) {
@@ -1277,23 +1329,31 @@ export default function HintsClient() {
         }
       }
 
-      setHints((current) =>
-        current.map((hint) =>
-          hint.id === editingHintId
-            ? {
-                ...hint,
-                title: trimmedTitle,
-                url: trimmedUrl || hint.url,
-                retailer: trimmedRetailer,
-                image: finalImage,
-                rawPrice: editForm.priceInput || "",
-                numericPrice: priceMeta.numericPrice,
-                currency: priceMeta.originalCurrency || BASE_CURRENCY,
-                needsReview: false,
-              }
-            : hint
-        )
-      );
+      setColumnMap((currentMap) => {
+        const nextMap = Object.fromEntries(
+          COLUMN_IDS.map((columnId) => [
+            columnId,
+            (currentMap[columnId] || []).map((hint) =>
+              hint.id === editingHintId
+                ? {
+                    ...hint,
+                    title: trimmedTitle,
+                    url: trimmedUrl || hint.url,
+                    retailer: trimmedRetailer,
+                    image: finalImage,
+                    rawPrice: editForm.priceInput || "",
+                    numericPrice: priceMeta.numericPrice,
+                    currency: priceMeta.originalCurrency || BASE_CURRENCY,
+                    needsReview: false,
+                  }
+                : hint
+            ),
+          ])
+        );
+
+        setHints(flattenColumnMap(nextMap));
+        return nextMap;
+      });
 
       setIsSavingEdit(false);
       closeBusy();
@@ -1315,7 +1375,17 @@ export default function HintsClient() {
       return;
     }
 
-    setHints((current) => current.filter((hint) => hint.id !== editingHintId));
+    setColumnMap((currentMap) => {
+      const nextMap = Object.fromEntries(
+        COLUMN_IDS.map((columnId) => [
+          columnId,
+          (currentMap[columnId] || []).filter((hint) => hint.id !== editingHintId),
+        ])
+      );
+      setHints(flattenColumnMap(nextMap));
+      return nextMap;
+    });
+
     closeEditModal();
   }
 
@@ -1324,12 +1394,30 @@ export default function HintsClient() {
     const supabase = createClient();
     const newStarred = !hint.starred;
 
-    setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, starred: newStarred } : h)));
+    setColumnMap((currentMap) => {
+      const nextMap = Object.fromEntries(
+        COLUMN_IDS.map((columnId) => [
+          columnId,
+          (currentMap[columnId] || []).map((h) => (h.id === hint.id ? { ...h, starred: newStarred } : h)),
+        ])
+      );
+      setHints(flattenColumnMap(nextMap));
+      return nextMap;
+    });
 
     const { error } = await supabase.from("hints").update({ starred: newStarred }).eq("id", hint.id);
 
     if (error) {
-      setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, starred: hint.starred } : h)));
+      setColumnMap((currentMap) => {
+        const nextMap = Object.fromEntries(
+          COLUMN_IDS.map((columnId) => [
+            columnId,
+            (currentMap[columnId] || []).map((h) => (h.id === hint.id ? { ...h, starred: hint.starred } : h)),
+          ])
+        );
+        setHints(flattenColumnMap(nextMap));
+        return nextMap;
+      });
       setError(errorToMessage(error));
     }
   }
@@ -1339,12 +1427,30 @@ export default function HintsClient() {
     const supabase = createClient();
     const newPrivate = !hint.private;
 
-    setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, private: newPrivate } : h)));
+    setColumnMap((currentMap) => {
+      const nextMap = Object.fromEntries(
+        COLUMN_IDS.map((columnId) => [
+          columnId,
+          (currentMap[columnId] || []).map((h) => (h.id === hint.id ? { ...h, private: newPrivate } : h)),
+        ])
+      );
+      setHints(flattenColumnMap(nextMap));
+      return nextMap;
+    });
 
     const { error } = await supabase.from("hints").update({ is_private: newPrivate }).eq("id", hint.id);
 
     if (error) {
-      setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, private: hint.private } : h)));
+      setColumnMap((currentMap) => {
+        const nextMap = Object.fromEntries(
+          COLUMN_IDS.map((columnId) => [
+            columnId,
+            (currentMap[columnId] || []).map((h) => (h.id === hint.id ? { ...h, private: hint.private } : h)),
+          ])
+        );
+        setHints(flattenColumnMap(nextMap));
+        return nextMap;
+      });
       setError(errorToMessage(error));
     }
   }
@@ -1374,23 +1480,30 @@ export default function HintsClient() {
         }
       }
 
-      setHints((current) =>
-        current.map((hint) =>
-          hint.id === editingHintId
-            ? {
-                ...hint,
-                title: draft.title,
-                retailer: draft.retailer,
-                numericPrice: draft.numericPrice,
-                rawPrice: draft.rawPrice,
-                currency: draft.currency || BASE_CURRENCY,
-                image: draft.image || hint.image,
-                url: draft.url,
-                needsReview: draft.needsReview,
-              }
-            : hint
-        )
-      );
+      setColumnMap((currentMap) => {
+        const nextMap = Object.fromEntries(
+          COLUMN_IDS.map((columnId) => [
+            columnId,
+            (currentMap[columnId] || []).map((hint) =>
+              hint.id === editingHintId
+                ? {
+                    ...hint,
+                    title: draft.title,
+                    retailer: draft.retailer,
+                    numericPrice: draft.numericPrice,
+                    rawPrice: draft.rawPrice,
+                    currency: draft.currency || BASE_CURRENCY,
+                    image: draft.image || hint.image,
+                    url: draft.url,
+                    needsReview: draft.needsReview,
+                  }
+                : hint
+            ),
+          ])
+        );
+        setHints(flattenColumnMap(nextMap));
+        return nextMap;
+      });
 
       setEditForm((current) => ({
         ...current,
@@ -1517,7 +1630,18 @@ export default function HintsClient() {
         }
       }
 
-      setHints((current) => [newHint, ...current].map((item, index) => ({ ...item, position: index })));
+      setColumnMap((currentMap) => {
+        const firstColumn = currentMap["column-0"] || [];
+        const nextMap = {
+          ...currentMap,
+          "column-0": [newHint, ...firstColumn],
+        };
+        const flat = flattenColumnMap(nextMap);
+        const rebuilt = buildColumnMap(flat);
+        setHints(flattenColumnMap(rebuilt));
+        return rebuilt;
+      });
+
       closeAddModal();
     } catch (err) {
       setError(errorToMessage(err));
@@ -1532,46 +1656,105 @@ export default function HintsClient() {
 
   function handleDragStart(event) {
     setActiveId(event.active.id);
+    lastOverId.current = event.active.id;
+  }
+
+  function handleDragOver(event) {
+    const { active, over } = event;
+    const overId = over?.id;
+
+    if (!overId) return;
+
+    lastOverId.current = overId;
+
+    setColumnMap((currentMap) => {
+      const activeContainer = findContainerForId(currentMap, active.id);
+      const overContainer = findContainerForId(currentMap, overId);
+
+      if (!activeContainer || !overContainer) return currentMap;
+      if (activeContainer === overContainer) return currentMap;
+
+      const activeItems = [...currentMap[activeContainer]];
+      const overItems = [...currentMap[overContainer]];
+      const activeIndex = activeItems.findIndex((item) => item.id === active.id);
+
+      if (activeIndex === -1) return currentMap;
+
+      const [movedItem] = activeItems.splice(activeIndex, 1);
+
+      const overIndex = overItems.findIndex((item) => item.id === overId);
+      const isOverColumn = COLUMN_IDS.includes(overId);
+      const insertAt = isOverColumn || overIndex === -1 ? overItems.length : overIndex;
+
+      overItems.splice(insertAt, 0, movedItem);
+
+      const nextMap = {
+        ...currentMap,
+        [activeContainer]: activeItems,
+        [overContainer]: overItems,
+      };
+
+      setHints(flattenColumnMap(nextMap));
+      return nextMap;
+    });
   }
 
   async function handleDragEnd(event) {
     const { active, over } = event;
     setActiveId(null);
 
-    if (!over || active.id === over.id || hints.length === 0) return;
+    const overId = over?.id || lastOverId.current;
+    if (!overId) return;
 
-    const nextColumns = splitIntoColumns(hints, 3);
-    const fromColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === active.id));
-    const toColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === over.id));
+    let nextFlat = null;
 
-    if (fromColumnIndex === -1 || toColumnIndex === -1) return;
+    setColumnMap((currentMap) => {
+      const activeContainer = findContainerForId(currentMap, active.id);
+      const overContainer = findContainerForId(currentMap, overId);
 
-    const fromItems = [...nextColumns[fromColumnIndex]];
-    const toItems = fromColumnIndex === toColumnIndex ? fromItems : [...nextColumns[toColumnIndex]];
-    const oldIndex = fromItems.findIndex((item) => item.id === active.id);
-    const newIndex = toItems.findIndex((item) => item.id === over.id);
+      if (!activeContainer || !overContainer) return currentMap;
 
-    if (oldIndex === -1 || newIndex === -1) return;
+      const activeItems = [...currentMap[activeContainer]];
+      const overItems = [...currentMap[overContainer]];
+      const oldIndex = activeItems.findIndex((item) => item.id === active.id);
 
-    if (fromColumnIndex === toColumnIndex) {
-      nextColumns[fromColumnIndex] = arrayMove(fromItems, oldIndex, newIndex);
-    } else {
-      const [moved] = fromItems.splice(oldIndex, 1);
-      toItems.splice(newIndex, 0, moved);
-      nextColumns[fromColumnIndex] = fromItems;
-      nextColumns[toColumnIndex] = toItems;
+      if (oldIndex === -1) return currentMap;
+
+      let nextMap = currentMap;
+
+      if (activeContainer === overContainer) {
+        const overIndex =
+          COLUMN_IDS.includes(overId)
+            ? activeItems.length - 1
+            : activeItems.findIndex((item) => item.id === overId);
+
+        if (overIndex !== -1 && oldIndex !== overIndex) {
+          nextMap = {
+            ...currentMap,
+            [activeContainer]: arrayMove(activeItems, oldIndex, overIndex),
+          };
+        }
+      } else {
+        nextMap = currentMap;
+      }
+
+      nextFlat = flattenColumnMap(nextMap);
+      setHints(nextFlat);
+      return nextMap;
+    });
+
+    if (nextFlat) {
+      await persistOrder(nextFlat);
     }
-
-    const nextHints = rebuildFromColumns(nextColumns);
-    setHints(nextHints);
-    await persistOrder(nextHints);
   }
 
   function handleDragCancel() {
     setActiveId(null);
   }
 
-  const editingHint = visibleHints.find((hint) => hint.id === editingHintId) || null;
+  const activeHint = hints.find((hint) => hint.id === activeId) || null;
+  const editingHint = hints.find((hint) => hint.id === editingHintId) || null;
+  const demoColumns = useMemo(() => splitIntoColumns(demoHints, 3), []);
 
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
@@ -1641,7 +1824,7 @@ export default function HintsClient() {
                       className="w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[#f9f8f5]"
                       style={{
                         aspectRatio:
-                          i === 1 ? "0.76" : i === 2 ? "1.18" : i === 3 ? "0.88" : i === 4 ? "0.7" : i === 5 ? "1.22" : "0.82",
+                          i === 1 ? "0.74" : i === 2 ? "1.2" : i === 3 ? "0.9" : i === 4 ? "0.68" : i === 5 ? "1.26" : "0.82",
                         maxHeight: CARD_MAX_HEIGHT,
                       }}
                     >
@@ -1656,31 +1839,31 @@ export default function HintsClient() {
                 collisionDetection={closestCenter}
                 measuring={measuring}
                 onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
                 onDragCancel={handleDragCancel}
               >
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                  {columns.map((columnHints, columnIndex) => (
-                    <SortableContext
-                      key={`column-${columnIndex}`}
-                      items={columnHints.map((hint) => hint.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div className="space-y-0">
-                        {columnHints.map((hint) => (
-                          <SortableHintCard
-                            key={hint.id}
-                            hint={hint}
-                            imageRatios={imageRatios}
-                            onEdit={openEditModal}
-                            onToggleStarred={toggleStarred}
-                            onTogglePrivate={togglePrivate}
-                            formatCurrency={formatCurrency}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
-                  ))}
+                  {COLUMN_IDS.map((columnId) => {
+                    const items = columnMap[columnId] || [];
+                    return (
+                      <HintColumn key={columnId} id={columnId} items={items}>
+                        <div className="space-y-0">
+                          {items.map((hint) => (
+                            <SortableHintCard
+                              key={hint.id}
+                              hint={hint}
+                              imageRatios={imageRatios}
+                              onEdit={openEditModal}
+                              onToggleStarred={toggleStarred}
+                              onTogglePrivate={togglePrivate}
+                              formatCurrency={formatCurrency}
+                            />
+                          ))}
+                        </div>
+                      </HintColumn>
+                    );
+                  })}
                 </div>
 
                 <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.25, 1, 0.5, 1)" }}>
@@ -1693,6 +1876,8 @@ export default function HintsClient() {
                         onToggleStarred={() => {}}
                         onTogglePrivate={() => {}}
                         isDragging
+                        dragHandleAttributes={{}}
+                        dragHandleListeners={{}}
                         formatCurrency={formatCurrency}
                       />
                     </div>
