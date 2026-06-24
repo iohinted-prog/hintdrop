@@ -1,9 +1,115 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Script from "next/script";
-import { createClient } from "../../lib/supabase/client";
-import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import GoogleAuthButtons from "../components/GoogleAuthButtons";
+
+const PRODUCTS = [
+  {
+    id: "1",
+    title: "Le Creuset Signature casserole",
+    retailer: "johnlewis.com",
+    price: "£245",
+    image:
+      "https://images.unsplash.com/photo-1514986888952-8cd320577b68?auto=format&fit=crop&w=1200&q=80",
+    shortNote:
+      "A lasting kitchen gift for weddings, anniversaries, and serious home cooks.",
+    interestTags: ["Home", "Food"],
+    occasionTags: ["Wedding", "Anniversary"],
+    category: "Home · Cooking",
+  },
+  {
+    id: "2",
+    title: "Weekend treehouse stay",
+    retailer: "airbnb.co.uk",
+    price: "From £180",
+    image:
+      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
+    shortNote:
+      "An experience-led gift that feels generous without becoming generic.",
+    interestTags: ["Travel", "Experiences"],
+    occasionTags: ["Anniversary", "Just because"],
+    category: "Experiences · Travel",
+  },
+  {
+    id: "3",
+    title: "Silk pillowcase gift set",
+    retailer: "etsy.com",
+    price: "£42",
+    image:
+      "https://images.unsplash.com/photo-1616628182509-6f0c7ab0d15f?auto=format&fit=crop&w=1200&q=80",
+    shortNote:
+      "Easy to post, easy to love, and still personal enough to feel considered.",
+    interestTags: ["Beauty", "Home"],
+    occasionTags: ["Birthday", "Thank you"],
+    category: "Beauty · Home",
+  },
+  {
+    id: "4",
+    title: "Noise-cancelling headphones",
+    retailer: "amazon.co.uk",
+    price: "£119",
+    image:
+      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
+    shortNote:
+      "A dependable higher-value gift for commuters, students, and work-from-home setups.",
+    interestTags: ["Tech", "Music"],
+    occasionTags: ["Graduation", "Birthday"],
+    category: "Tech · Everyday",
+  },
+  {
+    id: "5",
+    title: "Ceramics workshop for two",
+    retailer: "classbento.co.uk",
+    price: "£95",
+    image:
+      "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=1200&q=80",
+    shortNote:
+      "A thoughtful pick for people who prefer memories and time together over objects.",
+    interestTags: ["Experiences", "Hobbies"],
+    occasionTags: ["Just because", "Birthday"],
+    category: "Experiences · Creative",
+  },
+  {
+    id: "6",
+    title: "Coffee brewing set",
+    retailer: "hasbean.co.uk",
+    price: "£58",
+    image:
+      "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80",
+    shortNote:
+      "A strong option for everyday rituals, first homes, and low-risk gifting.",
+    interestTags: ["Food", "Home"],
+    occasionTags: ["Housewarming", "Thank you"],
+    category: "Home · Coffee",
+  },
+  {
+    id: "7",
+    title: "Luxury bath and unwind box",
+    retailer: "notonthehighstreet.com",
+    price: "£36",
+    image:
+      "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=1200&q=80",
+    shortNote:
+      "Soft, easy gifting for thank-yous, birthdays, and people who never buy this sort of thing for themselves.",
+    interestTags: ["Wellness", "Beauty"],
+    occasionTags: ["Thank you", "Birthday"],
+    category: "Wellness · Beauty",
+  },
+  {
+    id: "8",
+    title: "Hardback collector’s edition",
+    retailer: "waterstones.com",
+    price: "£28",
+    image:
+      "https://images.unsplash.com/photo-1524578271613-d550eacf6090?auto=format&fit=crop&w=1200&q=80",
+    shortNote:
+      "A safe but still thoughtful pick for readers, graduates, and quiet celebrators.",
+    interestTags: ["Books"],
+    occasionTags: ["Graduation", "Birthday"],
+    category: "Books · Keepsake",
+  },
+];
 
 const INTEREST_OPTIONS = [
   "Home",
@@ -19,7 +125,6 @@ const INTEREST_OPTIONS = [
   "Gaming",
   "Kids",
   "Hobbies",
-  "Other",
 ];
 
 const OCCASION_OPTIONS = [
@@ -33,183 +138,47 @@ const OCCASION_OPTIONS = [
   "Just because",
 ];
 
-function errorToMessage(value) {
-  if (!value) return "Something went wrong.";
-  if (typeof value === "string") return value;
-  if (value instanceof Error) return value.message || "Something went wrong.";
-  if (typeof value === "object") {
-    if (typeof value.message === "string" && value.message.trim()) return value.message;
-    if (typeof value.error === "string" && value.error.trim()) return value.error;
-  }
-  return String(value);
+function LandingLogo() {
+  return (
+    <div className="flex items-center gap-3.5">
+      <div className="relative flex h-[52px] w-[52px] items-center justify-center rounded-[18px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-2xl text-white shadow-lg">
+        🎁
+      </div>
+      <div className="text-[22px] font-extrabold tracking-[-0.04em] text-slate-900">
+        Hinted<span className="text-[#f36f64]">.io</span>
+      </div>
+    </div>
+  );
 }
 
-function getTagArray(value) {
-  if (Array.isArray(value)) return value.filter(Boolean);
-  if (typeof value === "string" && value.trim()) {
-    return value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-  return [];
-}
-
-function getProfileInterestTags(profile) {
-  const candidates = [
-    profile?.interests,
-    profile?.interest_tags,
-    profile?.onboarding_interests,
-    profile?.gift_interests,
-  ];
-
-  for (const candidate of candidates) {
-    const parsed = getTagArray(candidate);
-    if (parsed.length) return parsed;
-  }
-
-  return [];
-}
-
-function normaliseRetailer(url) {
-  try {
-    return new URL(url).hostname.replace("www.", "");
-  } catch {
-    return "Saved link";
-  }
-}
-
-function extractNumericPrice(value) {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (!value) return null;
-
-  const cleaned = String(value).replace(/,/g, "");
-  const match = cleaned.match(/(\d+(\.\d{1,2})?)/);
-  if (!match) return null;
-
-  const parsed = Number(match[1]);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function getOutboundUrl(product) {
-  const affiliate = String(product?.affiliate_url || "").trim();
-  const productUrl = String(product?.product_url || "").trim();
-  return affiliate || productUrl;
-}
-
-function buildHintInsertPayload(product, userId) {
-  const outboundUrl = getOutboundUrl(product);
-  const parsedNumericPrice =
-    typeof product?.numeric_price === "number"
-      ? product.numeric_price
-      : extractNumericPrice(product?.price_text);
-
-  return {
-    user_id: userId,
-    title: product?.title?.trim() || "Saved from shop",
-    url: outboundUrl,
-    image_url: product?.image_url || "",
-    source: "shop",
-    is_private: false,
-    retailer: product?.retailer || normaliseRetailer(outboundUrl),
-    price_text: product?.price_text || "",
-    numeric_price: parsedNumericPrice,
-    starred: false,
-    position: 0,
-  };
-}
-
-function loadImageAspectRatio(src) {
-  return new Promise((resolve) => {
-    if (!src) {
-      resolve(null);
-      return;
-    }
-
-    const img = new Image();
-
-    img.onload = () => {
-      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-        resolve(img.naturalWidth / img.naturalHeight);
-      } else {
-        resolve(null);
-      }
-    };
-
-    img.onerror = () => resolve(null);
-    img.src = src;
-  });
-}
-
-function getCardAspectRatio(product, imageRatios) {
-  const ratio = imageRatios[product.id];
-  if (ratio && Number.isFinite(ratio)) {
-    if (ratio > 1.35) return 1.12;
-    if (ratio < 0.78) return 0.78;
-    return 0.9;
-  }
-
-  return product?.image_url ? 0.9 : 1;
-}
-
-function getDisplayPrice(product, formatCurrency) {
-  const numericPrice =
-    typeof product?.numeric_price === "number"
-      ? Number(product.numeric_price)
-      : extractNumericPrice(product?.price_text);
-
-  if (typeof numericPrice === "number" && Number.isFinite(numericPrice)) {
-    return formatCurrency(numericPrice, product?.currency || "GBP");
-  }
-
-  return product?.price_text || "Price unavailable";
-}
-
-function ShopCard({
-  product,
-  imageRatios,
-  onAddToHints,
-  onViewItem,
-  isSavingHint,
-  isOpeningLink,
-  formatCurrency,
-}) {
-  const ratio = getCardAspectRatio(product, imageRatios);
-  const interestTags = getTagArray(product.interest_tags);
-  const occasionTags = getTagArray(product.occasion_tags);
-  const displayTags = [...interestTags.slice(0, 1), ...occasionTags.slice(0, 1)].slice(0, 2);
-  const displayPrice = getDisplayPrice(product, formatCurrency);
+function ShopCard({ product }) {
+  const tags = [...product.interestTags.slice(0, 1), ...product.occasionTags.slice(0, 1)];
 
   return (
     <article
       className="group relative w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.60)] transition-all duration-300 hover:-translate-y-1"
       style={{
-        aspectRatio: ratio,
+        aspectRatio: 0.9,
         maxHeight: "min(540px, 68vh)",
         boxShadow:
           "0 10px 30px rgba(176,118,86,0.10), inset 0 1px 0 rgba(255,255,255,0.24)",
       }}
     >
       <div className="absolute inset-0">
-        {product.image_url ? (
-          <img
-            src={product.image_url}
-            alt={product.title || "Gift idea"}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]" />
-        )}
-
+        <img
+          src={product.image}
+          alt={product.title}
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.84)_0%,rgba(16,12,10,0.40)_30%,rgba(16,12,10,0.10)_55%,rgba(255,255,255,0)_100%)]" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.72)] via-[rgba(22,18,16,0.18)] to-transparent" />
       </div>
 
       <div className="absolute left-4 right-4 top-4 z-30 flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          {displayTags.map((tag) => (
+          {tags.map((tag) => (
             <span
               key={`${product.id}-${tag}`}
               className="rounded-full border border-white/45 bg-white/76 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-md"
@@ -220,7 +189,7 @@ function ShopCard({
         </div>
 
         <div className="rounded-full border border-[#ffd8c9] bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
-          {displayPrice}
+          {product.price}
         </div>
       </div>
 
@@ -236,81 +205,47 @@ function ShopCard({
               textShadow: "0 1px 2px rgba(0,0,0,0.24)",
             }}
           >
-            {product.title || "Gift idea"}
+            {product.title}
           </h3>
 
-          <p className="mt-1 truncate text-[13px] text-white/80">
-            {product.retailer || normaliseRetailer(getOutboundUrl(product))}
+          <p className="mt-1 truncate text-[13px] text-white/80">{product.retailer}</p>
+
+          <p
+            className="mt-3 overflow-hidden text-[13px] leading-6 text-white/84"
+            style={{
+              display: "-webkit-box",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: 3,
+              lineClamp: 3,
+            }}
+          >
+            {product.shortNote}
           </p>
 
-          {product.short_note ? (
-            <p
-              className="mt-3 overflow-hidden text-[13px] leading-6 text-white/84"
-              style={{
-                display: "-webkit-box",
-                WebkitBoxOrient: "vertical",
-                WebkitLineClamp: 3,
-                lineClamp: 3,
-              }}
-            >
-              {product.short_note}
-            </p>
-          ) : null}
-
-          {product.primary_category || product.subcategory ? (
-            <p className="mt-3 text-[12px] text-white/72">
-              {[product.primary_category, product.subcategory].filter(Boolean).join(" · ")}
-            </p>
-          ) : null}
+          <p className="mt-3 text-[12px] text-white/72">{product.category}</p>
         </div>
 
         <div className="pointer-events-auto mt-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onAddToHints(product)}
-            disabled={isSavingHint}
-            className="rounded-full border border-[#ffb38f] bg-[#ff875d] px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur-md hover:bg-[#f47145] disabled:cursor-not-allowed disabled:opacity-70"
+          <Link
+            href="/#signup"
+            className="rounded-full border border-[#ffb38f] bg-[#ff875d] px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur-md hover:bg-[#f47145]"
           >
-            {isSavingHint ? "Saving..." : "Save"}
-          </button>
+            Sign in to save
+          </Link>
 
-          <button
-            type="button"
-            onClick={() => onViewItem(product)}
-            disabled={isOpeningLink}
-            className="rounded-full border border-white/45 bg-white/76 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-md hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
+          <Link
+            href="/#signup"
+            className="rounded-full border border-white/45 bg-white/76 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-md hover:bg-white"
           >
-            {isOpeningLink ? "Opening..." : "Open"}
-          </button>
+            Sign in to see more
+          </Link>
         </div>
       </div>
     </article>
   );
 }
 
-function ShopSkeleton() {
-  return (
-    <div className="columns-1 gap-6 md:columns-2 xl:columns-3">
-      {[1, 2, 3, 4, 5, 6].map((item) => (
-        <div key={item} className="mb-6 break-inside-avoid">
-          <div
-            className="w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[#f9f8f5]"
-            style={{
-              aspectRatio: item % 2 ? 1.02 : 0.82,
-              maxHeight: "min(540px, 68vh)",
-            }}
-          >
-            <div className="h-full w-full animate-pulse bg-[#f2ebe5]" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function EmptyState({ selectedOccasion, selectedInterests, onClear }) {
-  const occasionLabel = selectedOccasion || "all occasions";
-
+function EmptyState({ onClear }) {
   return (
     <div className="rounded-[30px] border border-dashed border-[#e6d7cd] bg-white px-6 py-12 text-center">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#fff1e9] text-xl text-[#df7c59]">
@@ -320,14 +255,12 @@ function EmptyState({ selectedOccasion, selectedInterests, onClear }) {
         Nothing matched just yet
       </h3>
       <p className="mx-auto mt-3 max-w-[40ch] text-[14px] leading-7 text-slate-500">
-        We could not find anything for {occasionLabel}
-        {selectedInterests.length ? ` with ${selectedInterests.join(", ")}` : ""}. Try clearing a
-        filter to see more ideas.
+        Try clearing a filter or broadening your search to see more public picks.
       </p>
       <button
         type="button"
         onClick={onClear}
-        className="mt-5 inline-flex h-11 items-center justify-center rounded-full border border-[#d7e6e1] bg-white px-5 text-sm font-semibold text-[#2f5d50] hover:bg-[#f4faf8]"
+        className="mt-5 inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
       >
         Clear filters
       </button>
@@ -335,281 +268,73 @@ function EmptyState({ selectedOccasion, selectedInterests, onClear }) {
   );
 }
 
-export default function ShopPage() {
-  const supabase = createClient();
-  const formatCurrency = useCurrencyFormatter();
-
-  const [currentUser, setCurrentUser] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [pageError, setPageError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-  const [savingHintId, setSavingHintId] = useState("");
-  const [openingLinkId, setOpeningLinkId] = useState("");
+export default function GiftShopPage() {
   const [selectedOccasion, setSelectedOccasion] = useState("");
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [imageRatios, setImageRatios] = useState({});
 
-  useEffect(() => {
-    let active = true;
+  function toggleInterest(interest) {
+    setSelectedInterests((current) =>
+      current.includes(interest)
+        ? current.filter((item) => item !== interest)
+        : [...current, interest].slice(0, 5)
+    );
+  }
 
-    async function bootstrap() {
-      try {
-        setIsLoading(true);
-        setPageError("");
-
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
-
-        if (userError) throw userError;
-        if (!active) return;
-
-        setCurrentUser(user || null);
-
-        if (user) {
-          const { data: profileData } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .maybeSingle();
-
-          if (!active) return;
-
-          const profileInterests = getProfileInterestTags(profileData);
-          if (profileInterests.length) {
-            setSelectedInterests(profileInterests.slice(0, 4));
-          }
-        }
-
-        const response = await fetch("/api/products", { cache: "no-store" });
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data?.error || "Failed to load shop products.");
-        }
-
-        if (!active) return;
-
-        setProducts(Array.isArray(data?.products) ? data.products : []);
-        setIsLoading(false);
-      } catch (error) {
-        if (!active) return;
-        setPageError(errorToMessage(error));
-        setProducts([]);
-        setIsLoading(false);
-      }
-    }
-
-    bootstrap();
-    return () => {
-      active = false;
-    };
-  }, [supabase]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function measureRatios() {
-      const itemsWithImages = products.filter(
-        (product) => product.image_url && !imageRatios[product.id]
-      );
-
-      if (!itemsWithImages.length) return;
-
-      const nextEntries = await Promise.all(
-        itemsWithImages.map(async (product) => {
-          const ratio = await loadImageAspectRatio(product.image_url);
-          return [product.id, ratio];
-        })
-      );
-
-      if (cancelled) return;
-
-      setImageRatios((current) => {
-        const next = { ...current };
-
-        for (const [id, ratio] of nextEntries) {
-          if (ratio && Number.isFinite(ratio)) next[id] = ratio;
-        }
-
-        return next;
-      });
-    }
-
-    measureRatios();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [products, imageRatios]);
+  function clearFilters() {
+    setSelectedOccasion("");
+    setSelectedInterests([]);
+    setSearchQuery("");
+  }
 
   const filteredProducts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
-    return [...products]
-      .filter((product) => {
-        const interestTags = getTagArray(product.interest_tags);
-        const occasionTags = getTagArray(product.occasion_tags);
+    return PRODUCTS.filter((product) => {
+      const matchesOccasion =
+        !selectedOccasion || product.occasionTags.includes(selectedOccasion);
 
-        const matchesInterest =
-          selectedInterests.length === 0 ||
-          selectedInterests.some((interest) => interestTags.includes(interest));
+      const matchesInterest =
+        selectedInterests.length === 0 ||
+        selectedInterests.some((interest) => product.interestTags.includes(interest));
 
-        const matchesOccasion =
-          !selectedOccasion || occasionTags.includes(selectedOccasion);
+      const searchable = [
+        product.title,
+        product.retailer,
+        product.shortNote,
+        product.category,
+        ...product.interestTags,
+        ...product.occasionTags,
+      ]
+        .join(" ")
+        .toLowerCase();
 
-        const searchable = [
-          product.title,
-          product.retailer,
-          product.short_note,
-          product.primary_category,
-          product.subcategory,
-          ...interestTags,
-          ...occasionTags,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
+      const matchesQuery = !query || searchable.includes(query);
 
-        const matchesQuery = !query || searchable.includes(query);
-
-        return matchesInterest && matchesOccasion && matchesQuery;
-      })
-      .sort((a, b) => {
-        const priceA =
-          typeof a.numeric_price === "number"
-            ? a.numeric_price
-            : extractNumericPrice(a.price_text) || 0;
-
-        const priceB =
-          typeof b.numeric_price === "number"
-            ? b.numeric_price
-            : extractNumericPrice(b.price_text) || 0;
-
-        const interestCountA = getTagArray(a.interest_tags).filter((tag) =>
-          selectedInterests.includes(tag)
-        ).length;
-
-        const interestCountB = getTagArray(b.interest_tags).filter((tag) =>
-          selectedInterests.includes(tag)
-        ).length;
-
-        if (interestCountA !== interestCountB) return interestCountB - interestCountA;
-        return priceA - priceB;
-      });
-  }, [products, searchQuery, selectedInterests, selectedOccasion]);
-
-  function toggleInterest(interest) {
-    setSelectedInterests((current) => {
-      if (current.includes(interest)) {
-        return current.filter((item) => item !== interest);
-      }
-      return [...current, interest].slice(0, 5);
+      return matchesOccasion && matchesInterest && matchesQuery;
     });
-  }
+  }, [searchQuery, selectedInterests, selectedOccasion]);
 
-  function clearFilters() {
-    setSelectedInterests([]);
-    setSelectedOccasion("");
-    setSearchQuery("");
-  }
-
-  async function handleAddToHints(product) {
-    if (!currentUser?.id) {
-      setPageError("Sign in to save items to your hints.");
-      return;
-    }
-
-    setSavingHintId(product.id);
-    setPageError("");
-    setSuccessMessage("");
-
-    try {
-      const payload = buildHintInsertPayload(product, currentUser.id);
-      const { error } = await supabase.from("hints").insert(payload);
-
-      if (error) throw error;
-      setSuccessMessage("Saved to your hints.");
-    } catch (error) {
-      setPageError(errorToMessage(error));
-    } finally {
-      setSavingHintId("");
-    }
-  }
-
-  async function handleViewItem(product) {
-    const existingAffiliateUrl = String(product?.affiliate_url || "").trim();
-    const destinationUrl = String(product?.product_url || "").trim();
-
-    if (existingAffiliateUrl) {
-      window.open(existingAffiliateUrl, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    if (!destinationUrl) {
-      setPageError("This item does not have a link yet.");
-      return;
-    }
-
-    setOpeningLinkId(product.id);
-    setPageError("");
-
-    try {
-      const response = await fetch("/api/affiliate-link", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          destinationUrl,
-          network: product?.network || "manual",
-          campaignId: product?.campaign_id || null,
-          product: {
-            id: product?.id,
-            network: product?.network,
-            campaign_id: product?.campaign_id,
-          },
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || "Failed to open retailer link.");
-      }
-
-      const finalUrl = data?.url || destinationUrl;
-      window.open(finalUrl, "_blank", "noopener,noreferrer");
-    } catch (error) {
-      setPageError(errorToMessage(error));
-    } finally {
-      setOpeningLinkId("");
-    }
-  }
+  const visibleProducts = filteredProducts.slice(0, 6);
+  const hiddenCount = Math.max(filteredProducts.length - visibleProducts.length, 0);
 
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
-      <Script
-        id="skimlinks-loader"
-        strategy="afterInteractive"
-        src="https://s.skimresources.com/js/305122X1793314.skimlinks.js"
-      />
+      <div className="mx-auto max-w-[1380px] px-5 pb-16 pt-6 md:px-8">
+        <header className="grid items-center gap-5 pb-8 lg:grid-cols-[auto_1fr_auto] lg:gap-8">
+          <LandingLogo />
 
-      <div className="mx-auto max-w-[1320px] px-5 py-8 md:px-8">
-        {pageError ? (
-          <div className="mb-5 rounded-[22px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">
-            {pageError}
-          </div>
-        ) : null}
+          <nav className="hidden items-center justify-center gap-9 text-[15px] text-slate-600 lg:flex">
+            <Link href="/" className="transition hover:text-slate-900">
+              Home
+            </Link>
+          </nav>
 
-        {successMessage ? (
-          <div className="mb-5 rounded-[22px] border border-[#d8e8e1] bg-[#f1faf7] px-4 py-3 text-sm text-[#2f5d50]">
-            {successMessage}
+          <div className="flex items-center justify-start gap-4 whitespace-nowrap sm:justify-end">
+            <GoogleAuthButtons variant="header-login" />
+            <GoogleAuthButtons variant="header-get-started" />
           </div>
-        ) : null}
+        </header>
 
         <section className="rounded-[34px] border border-[#eeddd3] bg-[#fff7f2] p-4 shadow-[0_18px_60px_rgba(173,101,72,0.10)] sm:p-5">
           <div className="rounded-[28px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
@@ -620,12 +345,13 @@ export default function ShopPage() {
                 </div>
 
                 <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.06em] text-slate-900 sm:text-[40px]">
-                  Shop thoughtful gift ideas, then save the good ones to hints.
+                  Browse thoughtful gift ideas before you sign in.
                 </h1>
 
                 <p className="mt-3 max-w-[760px] text-[15px] leading-7 text-slate-600">
-                  Browse gift ideas by interest or occasion, open the retailer when something
-                  feels right, or save it to your hints for later.
+                  Explore a public preview of Shop, filter by occasion or interests,
+                  and then sign in to unlock more products, saving, and your full
+                  personalised gifting flow.
                 </p>
 
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -634,13 +360,13 @@ export default function ShopPage() {
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder="Search gifts, retailers, interests, or occasions"
-                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#2f5d50] focus:ring-2 focus:ring-[#dcebe6]"
+                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
                   />
 
                   <select
                     value={selectedOccasion}
                     onChange={(event) => setSelectedOccasion(event.target.value)}
-                    className="h-12 min-w-[190px] rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#2f5d50] focus:ring-2 focus:ring-[#dcebe6]"
+                    className="h-12 min-w-[190px] rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
                   >
                     <option value="">All occasions</option>
                     {OCCASION_OPTIONS.map((occasion) => (
@@ -662,8 +388,8 @@ export default function ShopPage() {
                         onClick={() => toggleInterest(interest)}
                         className={`inline-flex h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition ${
                           selected
-                            ? "border-[#2f5d50] bg-[#2f5d50] text-white"
-                            : "border-[#ead8ce] bg-white text-slate-700 hover:bg-[#f4faf8] hover:text-[#2f5d50]"
+                            ? "border-[#3c4d39] bg-[#2f3b2d] text-white"
+                            : "border-[#ead8ce] bg-white text-slate-700 hover:bg-[#fff5f0]"
                         }`}
                       >
                         {interest}
@@ -671,54 +397,72 @@ export default function ShopPage() {
                     );
                   })}
                 </div>
+
+                {(selectedOccasion || selectedInterests.length > 0 || searchQuery) && (
+                  <div className="mt-4 flex items-center gap-3">
+                    <p className="text-sm text-slate-500">
+                      Showing {filteredProducts.length} matching public picks.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={clearFilters}
+                      className="text-sm font-semibold text-[#cf6f4d] hover:text-[#b85d3d]"
+                    >
+                      Clear filters
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <aside className="rounded-[26px] border border-[#e2ebe7] bg-[#fbfefd] p-5 shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6c8d82]">
-                  How it works
+              <aside className="rounded-[26px] border border-[#f0dfd6] bg-[#fffdfa] p-5 shadow-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Public preview
                 </p>
+
                 <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
-                  Pick what fits, then act when you are ready
+                  Sign in to see more
                 </h2>
 
                 <div className="mt-4 space-y-3">
-                  <div className="rounded-[20px] bg-[#f4faf8] p-4">
-                    <span className="inline-flex rounded-full bg-[#e8f3ef] px-2.5 py-1 text-[11px] font-semibold text-[#2f5d50]">
-                      Open
-                    </span>
-                    <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      The light button opens the retailer or affiliate destination directly
-                      in a new tab.
-                    </p>
-                  </div>
-
-                  <div className="rounded-[20px] bg-[#fff7f2] p-4">
-                    <span className="inline-flex rounded-full bg-[#fff0e8] px-2.5 py-1 text-[11px] font-semibold text-[#df7b59]">
-                      Save
-                    </span>
-                    <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Use the orange button to sign in when you want to save good finds
-                      into hints.
-                    </p>
-                  </div>
-
-                  <div className="rounded-[20px] bg-[#f4faf8] p-4">
-                    <span className="inline-flex rounded-full bg-[#e8f3ef] px-2.5 py-1 text-[11px] font-semibold text-[#2f5d50]">
+                  <div className="rounded-[20px] bg-[#faf7f4] p-4">
+                    <span className="inline-flex rounded-full bg-[#fff4ee] px-2.5 py-1 text-[11px] font-semibold text-[#df7b59]">
                       Browse
                     </span>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Filter by interest or occasion to narrow the list and spot more
-                      relevant gift ideas faster.
+                      Filter the public collection by interest, occasion, and search terms.
+                    </p>
+                  </div>
+
+                  <div className="rounded-[20px] bg-[#faf7f4] p-4">
+                    <span className="inline-flex rounded-full bg-[#eef4ff] px-2.5 py-1 text-[11px] font-semibold text-[#5676b3]">
+                      Sign in
+                    </span>
+                    <p className="mt-3 text-[13px] leading-6 text-slate-600">
+                      Unlock more gift ideas, saving to hints, and personalised recommendations.
+                    </p>
+                  </div>
+
+                  <div className="rounded-[20px] bg-[#faf7f4] p-4">
+                    <span className="inline-flex rounded-full bg-[#edf6eb] px-2.5 py-1 text-[11px] font-semibold text-[#4a7a3a]">
+                      Save
+                    </span>
+                    <p className="mt-3 text-[13px] leading-6 text-slate-600">
+                      Signed-in users can save good finds and carry them into reminders and circles.
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-5 rounded-[20px] bg-[#f6faf8] p-4">
-                  <p className="text-sm font-semibold text-slate-900">Made for thoughtful gifting</p>
-                  <p className="mt-2 text-[13px] leading-6 text-slate-500">
-                    Save ideas as you go, come back when you are ready, and keep everything
-                    useful in one place.
+                <div className="mt-5 rounded-[20px] bg-[#fffaf7] p-4">
+                  <p className="text-sm font-semibold text-slate-900">
+                    This page is intentionally limited
                   </p>
+                  <p className="mt-2 text-[13px] leading-6 text-slate-500">
+                    Sign in to see more products, use the full shop experience, and save ideas to your account.
+                  </p>
+
+                  <div className="mt-4">
+                    <GoogleAuthButtons variant="hero-primary" />
+                  </div>
                 </div>
               </aside>
             </div>
@@ -726,6 +470,24 @@ export default function ShopPage() {
         </section>
 
         <section className="mt-12">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[28px] font-semibold tracking-[-0.04em] text-slate-900">
+                Public gift preview
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Showing up to 6 items before sign-in.
+              </p>
+            </div>
+
+            <Link
+              href="/#signup"
+              className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f5d50] px-5 text-sm font-semibold text-white"
+            >
+              Sign in to see more
+            </Link>
+          </div>
+
           <div className="relative rounded-[36px] border border-[#efe0d7] bg-[#fffdfb] p-3 shadow-[0_12px_32px_rgba(176,118,86,0.08)] sm:p-5">
             <div
               className="pointer-events-none absolute inset-0 rounded-[36px] opacity-70"
@@ -738,34 +500,67 @@ export default function ShopPage() {
             />
 
             <div className="relative">
-              {isLoading ? (
-                <ShopSkeleton />
-              ) : filteredProducts.length ? (
-                <div className="columns-1 gap-6 md:columns-2 xl:columns-3">
-                  {filteredProducts.map((product) => (
-                    <div key={product.id} className="mb-6 break-inside-avoid">
-                      <ShopCard
-                        product={product}
-                        imageRatios={imageRatios}
-                        onAddToHints={handleAddToHints}
-                        onViewItem={handleViewItem}
-                        isSavingHint={savingHintId === product.id}
-                        isOpeningLink={openingLinkId === product.id}
-                        formatCurrency={formatCurrency}
-                      />
-                    </div>
-                  ))}
-                </div>
+              {visibleProducts.length ? (
+                <>
+                  <div className="columns-1 gap-6 md:columns-2 xl:columns-3">
+                    {visibleProducts.map((product) => (
+                      <div key={product.id} className="mb-6 break-inside-avoid">
+                        <ShopCard product={product} />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 rounded-[24px] border border-[#eaded6] bg-[#fff8f4] px-5 py-4 text-center">
+                    <p className="text-sm text-slate-600">
+                      {hiddenCount > 0
+                        ? `Sign in to see ${hiddenCount} more matching item${hiddenCount === 1 ? "" : "s"} and unlock saving.`
+                        : "Sign in to unlock saving, personalised results, and the full shop experience."}
+                    </p>
+                    <Link
+                      href="/#signup"
+                      className="mt-3 inline-flex h-11 items-center justify-center rounded-full bg-[#ff875d] px-5 text-sm font-semibold text-white"
+                    >
+                      Sign in to see more
+                    </Link>
+                  </div>
+                </>
               ) : (
-                <EmptyState
-                  selectedOccasion={selectedOccasion}
-                  selectedInterests={selectedInterests}
-                  onClear={clearFilters}
-                />
+                <EmptyState onClear={clearFilters} />
               )}
             </div>
           </div>
         </section>
+
+        <footer className="mt-16 border-t border-[#eaded6] bg-[#fffaf7]">
+          <div className="flex flex-col gap-4 px-0 py-6 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between">
+            <p className="max-w-[720px] text-xs leading-5 text-slate-500 lg:text-sm">
+              By continuing, you agree to{" "}
+              <Link
+                href="/terms"
+                className="font-medium text-slate-700 underline underline-offset-2 transition hover:text-slate-900"
+              >
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link
+                href="/privacy"
+                className="font-medium text-slate-700 underline underline-offset-2 transition hover:text-slate-900"
+              >
+                Privacy Policy
+              </Link>
+              .
+            </p>
+
+            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+              <Link href="/for-brands" className="transition hover:text-slate-900">
+                For Brands
+              </Link>
+              <Link href="/contact" className="transition hover:text-slate-900">
+                Contact
+              </Link>
+            </div>
+          </div>
+        </footer>
       </div>
     </main>
   );
