@@ -251,12 +251,27 @@ function buildStoredItemTitle(value) {
 }
 
 function extractHintAmount(hint) {
-  const candidates = [hint?.amount, hint?.price, hint?.targetAmount, hint?.priceAmount];
+  const directCandidates = [
+    hint?.numeric_price,
+    hint?.amount,
+    hint?.price,
+    hint?.targetAmount,
+    hint?.priceAmount,
+  ];
 
-  for (const candidate of candidates) {
+  for (const candidate of directCandidates) {
     const cleaned = String(candidate ?? "").replace(/[^\d.]/g, "");
     const amount = Number(cleaned);
     if (Number.isFinite(amount) && amount > 0) return roundCurrency(amount);
+  }
+
+  const textCandidates = [hint?.price_text, hint?.priceText];
+  for (const text of textCandidates) {
+    const match = String(text || "").match(/(\d+(?:\.\d{1,2})?)/);
+    if (match?.[1]) {
+      const amount = Number(match[1]);
+      if (Number.isFinite(amount) && amount > 0) return roundCurrency(amount);
+    }
   }
 
   return 0;
@@ -300,6 +315,8 @@ function buildContactRecordFromRow(row) {
     id: row.id,
     type: "contact",
     profileConnectionId: row.id,
+    matchedProfileId: row?.matched_profile_id || null,
+    hasHintedAccount: Boolean(row?.matched_profile_id),
     name: safeName,
     role: relationship || "Friend",
     note: getStatusLabel(row?.status),
@@ -1333,6 +1350,7 @@ function CreateCircleModal({
   errorMessage,
   isSubmitting,
   ownHints,
+  publicHintsByContact,
   selfProfile,
   formatCurrency,
 }) {
@@ -1342,7 +1360,13 @@ function CreateCircleModal({
   const ownerOptions = [buildSelfRecord(selfProfile), ...contacts];
   const selectedOwner =
     ownerOptions.find((option) => String(option.id) === String(selectedHintOwnerId)) || null;
-  const visibleHints = String(selectedHintOwnerId) === SELF_SELECTOR_ID ? ownHints : [];
+
+  const selectedOwnerPublicHints =
+    selectedOwner && selectedOwner.type !== "self"
+      ? publicHintsByContact?.[selectedOwner.id] || []
+      : [];
+
+  const visibleHints = String(selectedHintOwnerId) === SELF_SELECTOR_ID ? ownHints : selectedOwnerPublicHints;
   const amountMode = form.goalType === "amount";
 
   const liveBaseAmount = parseAmount(form.goalValue);
@@ -1356,12 +1380,12 @@ function CreateCircleModal({
       ...prev,
       selectedHintId: hint.id,
       goalValue: nextAmount,
-      currency: prev.currency,
+      currency: hint?.currency || prev.currency,
     }));
 
     setLinkPreview({
       title: hint?.title || "Shared item",
-      description: "",
+      description: hint?.retailer || "",
       image: hint?.image_url || "",
       url: hint?.url || "",
     });
@@ -1668,49 +1692,61 @@ function CreateCircleModal({
                             <p className="text-[13px] text-slate-500">
                               {selectedOwner.type === "self"
                                 ? "Private and public hints from your own account."
-                                : "This contact is not linked to a hinted account yet, so their public hints cannot be loaded."}
+                                : selectedOwner.hasHintedAccount
+                                  ? "Public hints from this hinted account."
+                                  : "This contact is not linked to a hinted account yet, so their public hints cannot be loaded."}
                             </p>
                           </div>
                         </div>
 
                         <div className="mt-4 max-h-[320px] space-y-3 overflow-y-auto pr-1">
-                          {selectedOwner.type === "self" ? (
-                            visibleHints.length ? (
-                              visibleHints.map((hint) => (
-                                <label
-                                  key={hint.id}
-                                  className={`flex cursor-pointer items-start justify-between rounded-[20px] border p-4 ${
-                                    form.selectedHintId === hint.id
-                                      ? "border-[#f0a384] bg-[#fff4ee]"
-                                      : "border-[#efe1d9] bg-white"
-                                  }`}
-                                >
-                                  <div className="min-w-0 pr-4">
-                                    <p className="text-sm font-semibold text-slate-900">
-                                      {hint.title}
-                                    </p>
-                                    <p className="mt-1 text-[13px] text-slate-500">
-                                      {hint.is_private ? "Private" : "Public"}
-                                    </p>
-                                    <p className="mt-2 text-[12px] leading-5 text-slate-500">
-                                      {hint.url || "No link saved"}
-                                    </p>
-                                  </div>
+                          {visibleHints.length ? (
+                            visibleHints.map((hint) => (
+                              <label
+                                key={hint.id}
+                                className={`flex cursor-pointer items-start justify-between rounded-[20px] border p-4 ${
+                                  form.selectedHintId === hint.id
+                                    ? "border-[#f0a384] bg-[#fff4ee]"
+                                    : "border-[#efe1d9] bg-white"
+                                }`}
+                              >
+                                <div className="min-w-0 pr-4">
+                                  <p className="text-sm font-semibold text-slate-900">
+                                    {hint.title}
+                                  </p>
+                                  <p className="mt-1 text-[13px] text-slate-500">
+                                    {selectedOwner.type === "self"
+                                      ? hint.is_private
+                                        ? "Private"
+                                        : "Public"
+                                      : "Public"}
+                                    {hint.retailer ? ` · ${hint.retailer}` : ""}
+                                    {extractHintAmount(hint) > 0
+                                      ? ` · ${formatCurrency(extractHintAmount(hint), hint.currency || form.currency || "GBP")}`
+                                      : ""}
+                                  </p>
+                                  <p className="mt-2 text-[12px] leading-5 text-slate-500">
+                                    {hint.url || "No link saved"}
+                                  </p>
+                                </div>
 
-                                  <input
-                                    type="radio"
-                                    name="selectedHint"
-                                    className="mt-1 h-4 w-4 accent-[#f36f64]"
-                                    checked={form.selectedHintId === hint.id}
-                                    onChange={() => handleSelectHint(hint)}
-                                  />
-                                </label>
-                              ))
-                            ) : (
-                              <div className="rounded-[18px] bg-white p-4 text-sm text-slate-500">
-                                No hints available yet.
-                              </div>
-                            )
+                                <input
+                                  type="radio"
+                                  name="selectedHint"
+                                  className="mt-1 h-4 w-4 accent-[#f36f64]"
+                                  checked={form.selectedHintId === hint.id}
+                                  onChange={() => handleSelectHint(hint)}
+                                />
+                              </label>
+                            ))
+                          ) : selectedOwner.type === "self" ? (
+                            <div className="rounded-[18px] bg-white p-4 text-sm text-slate-500">
+                              No hints available yet.
+                            </div>
+                          ) : selectedOwner.hasHintedAccount ? (
+                            <div className="rounded-[18px] border border-dashed border-[#e5d8cf] bg-white p-5 text-sm leading-6 text-slate-500">
+                              No public hints yet for this contact.
+                            </div>
                           ) : (
                             <div className="rounded-[18px] border border-dashed border-[#e5d8cf] bg-white p-5 text-sm leading-6 text-slate-500">
                               This contact is not linked to a hinted user account yet.
@@ -1923,6 +1959,7 @@ export default function CirclesClient() {
 
   const [contacts, setContacts] = useState([]);
   const [ownHints, setOwnHints] = useState([]);
+  const [publicHintsByContact, setPublicHintsByContact] = useState({});
   const [realCircles, setRealCircles] = useState([]);
   const [calendarEvents, setCalendarEvents] = useState([]);
 
@@ -2053,7 +2090,40 @@ export default function CirclesClient() {
 
       if (error) throw new Error(normalizeSupabaseError(error, "Failed to load contacts."));
 
-      const mapped = Array.isArray(data) ? data.map(buildContactRecordFromRow) : [];
+      const rawRows = Array.isArray(data) ? data : [];
+      const emails = rawRows
+        .map((row) => String(row?.email || "").trim().toLowerCase())
+        .filter(Boolean);
+
+      let profileMatches = [];
+      if (emails.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, invite_email")
+          .in("invite_email", emails);
+
+        if (profilesError) {
+          throw new Error(normalizeSupabaseError(profilesError, "Failed to match contacts to profiles."));
+        }
+
+        profileMatches = Array.isArray(profilesData) ? profilesData : [];
+      }
+
+      const profileIdByEmail = profileMatches.reduce((acc, row) => {
+        const key = String(row?.invite_email || "").trim().toLowerCase();
+        if (key) acc[key] = row.id;
+        return acc;
+      }, {});
+
+      const enrichedRows = rawRows.map((row) => {
+        const emailKey = String(row?.email || "").trim().toLowerCase();
+        return {
+          ...row,
+          matched_profile_id: emailKey ? profileIdByEmail[emailKey] || null : null,
+        };
+      });
+
+      const mapped = enrichedRows.map(buildContactRecordFromRow);
       setContacts(mapped);
       return mapped;
     } catch (error) {
@@ -2088,7 +2158,7 @@ export default function CirclesClient() {
     try {
       const { data, error } = await supabase
         .from("hints")
-        .select("id, user_id, title, url, image_url, created_at, is_private, amount, price")
+        .select("id, user_id, title, url, image_url, created_at, is_private, retailer, price_text, numeric_price, currency")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
@@ -2096,9 +2166,52 @@ export default function CirclesClient() {
 
       setOwnHints(data || []);
       return data || [];
-    } catch (error) {
+    } catch {
       setOwnHints([]);
       return [];
+    }
+  }, [supabase]);
+
+  const loadPublicHintsForContacts = useCallback(async (contactRows) => {
+    const safeContacts = Array.isArray(contactRows) ? contactRows : [];
+    const matchedContacts = safeContacts.filter((contact) => contact?.matchedProfileId);
+
+    if (!matchedContacts.length) {
+      setPublicHintsByContact({});
+      return {};
+    }
+
+    try {
+      const matchedProfileIds = matchedContacts.map((contact) => contact.matchedProfileId);
+
+      const { data, error } = await supabase
+        .from("hints")
+        .select("id, user_id, title, url, image_url, created_at, is_private, retailer, price_text, numeric_price, currency")
+        .in("user_id", matchedProfileIds)
+        .eq("is_private", false)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        throw new Error(normalizeSupabaseError(error, "Failed to load public hints."));
+      }
+
+      const hintsByProfileId = (Array.isArray(data) ? data : []).reduce((acc, hint) => {
+        const key = String(hint.user_id);
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(hint);
+        return acc;
+      }, {});
+
+      const nextMap = matchedContacts.reduce((acc, contact) => {
+        acc[contact.id] = hintsByProfileId[String(contact.matchedProfileId)] || [];
+        return acc;
+      }, {});
+
+      setPublicHintsByContact(nextMap);
+      return nextMap;
+    } catch {
+      setPublicHintsByContact({});
+      return {};
     }
   }, [supabase]);
 
@@ -2187,11 +2300,13 @@ export default function CirclesClient() {
           if (active) setProfile(null);
         }
 
-        const [, loadedEvents] = await Promise.all([
+        const [loadedContacts, loadedEvents] = await Promise.all([
           loadContacts(user.id),
           loadCalendarEvents(user.id),
           loadOwnHints(user.id),
         ]);
+
+        await loadPublicHintsForContacts(loadedContacts);
 
         if (!active) return;
 
@@ -2213,7 +2328,16 @@ export default function CirclesClient() {
     return () => {
       active = false;
     };
-  }, [supabase, loadProfile, loadContacts, loadCalendarEvents, loadOwnHints, loadCircles, initialiseCircleForm]);
+  }, [
+    supabase,
+    loadProfile,
+    loadContacts,
+    loadCalendarEvents,
+    loadOwnHints,
+    loadPublicHintsForContacts,
+    loadCircles,
+    initialiseCircleForm,
+  ]);
 
   function openAddContactModal() {
     setAddContactModalKey((prev) => prev + 1);
@@ -2307,7 +2431,8 @@ export default function CirclesClient() {
     const { error } = await supabase.from("contacts").insert(insertPayload);
     if (error) throw new Error(normalizeSupabaseError(error, "Failed to save contact."));
 
-    await loadContacts(sessionUser.id);
+    const reloadedContacts = await loadContacts(sessionUser.id);
+    await loadPublicHintsForContacts(reloadedContacts);
   }
 
   function openDeleteContactModal(contact) {
@@ -2331,7 +2456,15 @@ export default function CirclesClient() {
       if (error) throw new Error(normalizeSupabaseError(error, "Failed to delete contact."));
 
       setContacts((prev) => prev.filter((item) => item.id !== contact.id));
+      setPublicHintsByContact((prev) => {
+        const next = { ...prev };
+        delete next[contact.id];
+        return next;
+      });
       setSelectedPeople((prev) => prev.filter((item) => item.id !== contact.id));
+      if (String(selectedHintOwnerId) === String(contact.id)) {
+        setSelectedHintOwnerId(SELF_SELECTOR_ID);
+      }
       setSelectedContactToDelete(null);
       setIsDeleteContactOpen(false);
     } catch (error) {
@@ -2435,9 +2568,16 @@ export default function CirclesClient() {
       return;
     }
 
-    const selectedHint = ownHints.find((hint) => hint.id === form.selectedHintId) || null;
+    const selectedOwnerIsSelf = String(selectedHintOwnerId) === SELF_SELECTOR_ID;
+    const selectedHintSourceList = selectedOwnerIsSelf
+      ? ownHints
+      : publicHintsByContact?.[selectedHintOwnerId] || [];
+
+    const selectedHint =
+      selectedHintSourceList.find((hint) => String(hint.id) === String(form.selectedHintId)) || null;
+
     const selectedRecipientContact =
-      selectedHintOwnerId !== SELF_SELECTOR_ID
+      !selectedOwnerIsSelf
         ? contacts.find((contact) => String(contact.id) === String(selectedHintOwnerId)) || null
         : null;
 
@@ -2452,22 +2592,26 @@ export default function CirclesClient() {
 
     if (form.goalType === "item") {
       if (form.itemSource === "hint") {
-        if (selectedHintOwnerId !== SELF_SELECTOR_ID) {
-          setCircleError("This contact is not linked to hinted yet.");
+        if (!selectedHint) {
+          setCircleError("Choose a hint or switch to pasted link.");
           return;
         }
 
-        if (!selectedHint) {
-          setCircleError("Choose one of your hints or switch to pasted link.");
+        if (!selectedOwnerIsSelf && !selectedRecipientContact?.matchedProfileId) {
+          setCircleError("This contact is not linked to hinted yet.");
           return;
         }
 
         itemTitle = buildStoredItemTitle(selectedHint.title || "Shared item");
         itemUrl = selectedHint.url || null;
         itemImageUrl = selectedHint.image_url || null;
-        itemDescription = null;
+        itemDescription = selectedHint.retailer || null;
         selectedHintId = selectedHint.id;
-        sourceType = selectedHint.is_private ? "organiser_private_hint" : "recipient_public_hint";
+        sourceType = selectedOwnerIsSelf
+          ? selectedHint.is_private
+            ? "organiser_private_hint"
+            : "recipient_public_hint"
+          : "recipient_public_hint";
       } else {
         if (!form.itemUrl.trim()) {
           setCircleError("Paste a product or experience link.");
@@ -2766,6 +2910,7 @@ export default function CirclesClient() {
         errorMessage={circleError}
         isSubmitting={isCreatingCircle}
         ownHints={ownHints}
+        publicHintsByContact={publicHintsByContact}
         selfProfile={profile}
         formatCurrency={formatCurrency}
       />
