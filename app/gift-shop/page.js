@@ -271,7 +271,7 @@ function ShopCard({
             disabled={isSavingHint}
             className="rounded-full border border-[#ffb38f] bg-[#ff875d] px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur-md hover:bg-[#f47145] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSavingHint ? "Adding..." : "Add to hints"}
+            {isSavingHint ? "Saving..." : "Save"}
           </button>
 
           <button
@@ -280,7 +280,7 @@ function ShopCard({
             disabled={isOpeningLink}
             className="rounded-full border border-white/45 bg-white/76 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-md hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isOpeningLink ? "Opening..." : "View item"}
+            {isOpeningLink ? "Opening..." : "Open"}
           </button>
         </div>
       </div>
@@ -321,13 +321,13 @@ function EmptyState({ selectedOccasion, selectedInterests, onClear }) {
       </h3>
       <p className="mx-auto mt-3 max-w-[40ch] text-[14px] leading-7 text-slate-500">
         We could not find anything for {occasionLabel}
-        {selectedInterests.length ? ` with ${selectedInterests.join(", ")}` : ""}. Try clearing one
-        of the filters and the gift picks will widen again.
+        {selectedInterests.length ? ` with ${selectedInterests.join(", ")}` : ""}. Try clearing a
+        filter to see more ideas.
       </p>
       <button
         type="button"
         onClick={onClear}
-        className="mt-5 inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
+        className="mt-5 inline-flex h-11 items-center justify-center rounded-full border border-[#d7e6e1] bg-white px-5 text-sm font-semibold text-[#2f5d50] hover:bg-[#f4faf8]"
       >
         Clear filters
       </button>
@@ -519,7 +519,7 @@ export default function ShopPage() {
 
   async function handleAddToHints(product) {
     if (!currentUser?.id) {
-      setPageError("You must be signed in to save something from Shop.");
+      setPageError("Sign in to save items to your hints.");
       return;
     }
 
@@ -532,7 +532,7 @@ export default function ShopPage() {
       const { error } = await supabase.from("hints").insert(payload);
 
       if (error) throw error;
-      setSuccessMessage("Added to hints.");
+      setSuccessMessage("Saved to your hints.");
     } catch (error) {
       setPageError(errorToMessage(error));
     } finally {
@@ -550,7 +550,7 @@ export default function ShopPage() {
     }
 
     if (!destinationUrl) {
-      setPageError("No product URL is available for this item.");
+      setPageError("This item does not have a link yet.");
       return;
     }
 
@@ -578,7 +578,7 @@ export default function ShopPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || "Failed to create affiliate link.");
+        throw new Error(data?.error || "Failed to open retailer link.");
       }
 
       const finalUrl = data?.url || destinationUrl;
@@ -606,7 +606,7 @@ export default function ShopPage() {
         ) : null}
 
         {successMessage ? (
-          <div className="mb-5 rounded-[22px] border border-[#d8e8d3] bg-[#f3fbf1] px-4 py-3 text-sm text-[#4a7a3a]">
+          <div className="mb-5 rounded-[22px] border border-[#d8e8e1] bg-[#f1faf7] px-4 py-3 text-sm text-[#2f5d50]">
             {successMessage}
           </div>
         ) : null}
@@ -624,10 +624,8 @@ export default function ShopPage() {
                 </h1>
 
                 <p className="mt-3 max-w-[760px] text-[15px] leading-7 text-slate-600">
-                  This shop is curated around onboarding interests and common occasions,
-                  so it feels more like gift planning than a marketplace. When you find
-                  something right, send it off-site to the retailer or add it straight
-                  into your hints for later.
+                  Browse gift ideas by interest or occasion, open the retailer when something
+                  feels right, or save it to your hints for later.
                 </p>
 
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -636,13 +634,13 @@ export default function ShopPage() {
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder="Search gifts, retailers, interests, or occasions"
-                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#2f5d50] focus:ring-2 focus:ring-[#dcebe6]"
                   />
 
                   <select
                     value={selectedOccasion}
                     onChange={(event) => setSelectedOccasion(event.target.value)}
-                    className="h-12 min-w-[190px] rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                    className="h-12 min-w-[190px] rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#2f5d50] focus:ring-2 focus:ring-[#dcebe6]"
                   >
                     <option value="">All occasions</option>
                     {OCCASION_OPTIONS.map((occasion) => (
@@ -664,8 +662,8 @@ export default function ShopPage() {
                         onClick={() => toggleInterest(interest)}
                         className={`inline-flex h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition ${
                           selected
-                            ? "border-[#3c4d39] bg-[#2f3b2d] text-white"
-                            : "border-[#ead8ce] bg-white text-slate-700 hover:bg-[#fff5f0]"
+                            ? "border-[#2f5d50] bg-[#2f5d50] text-white"
+                            : "border-[#ead8ce] bg-white text-slate-700 hover:bg-[#f4faf8] hover:text-[#2f5d50]"
                         }`}
                       >
                         {interest}
@@ -675,52 +673,51 @@ export default function ShopPage() {
                 </div>
               </div>
 
-              <aside className="rounded-[26px] border border-[#f0dfd6] bg-[#fffdfa] p-5 shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  How Shop works
+              <aside className="rounded-[26px] border border-[#e2ebe7] bg-[#fbfefd] p-5 shadow-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6c8d82]">
+                  How it works
                 </p>
                 <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
-                  Curated first, off-site second
+                  Pick what fits, then act when you are ready
                 </h2>
 
                 <div className="mt-4 space-y-3">
-                  <div className="rounded-[20px] bg-[#faf7f4] p-4">
-                    <span className="inline-flex rounded-full bg-[#fff4ee] px-2.5 py-1 text-[11px] font-semibold text-[#df7b59]">
-                      1. Browse
+                  <div className="rounded-[20px] bg-[#f4faf8] p-4">
+                    <span className="inline-flex rounded-full bg-[#e8f3ef] px-2.5 py-1 text-[11px] font-semibold text-[#2f5d50]">
+                      Open
                     </span>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Gifts are filtered by the interests you choose and the occasion
-                      you are shopping for.
+                      The light button opens the retailer or affiliate destination directly
+                      in a new tab.
                     </p>
                   </div>
 
-                  <div className="rounded-[20px] bg-[#faf7f4] p-4">
-                    <span className="inline-flex rounded-full bg-[#eef4ff] px-2.5 py-1 text-[11px] font-semibold text-[#5676b3]">
-                      2. Save
+                  <div className="rounded-[20px] bg-[#fff7f2] p-4">
+                    <span className="inline-flex rounded-full bg-[#fff0e8] px-2.5 py-1 text-[11px] font-semibold text-[#df7b59]">
+                      Save
                     </span>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Add good finds into hints so they can be used later across
-                      personal planning and circle gifting flows.
+                      Use the orange button to sign in when you want to save good finds
+                      into hints.
                     </p>
                   </div>
 
-                  <div className="rounded-[20px] bg-[#faf7f4] p-4">
-                    <span className="inline-flex rounded-full bg-[#edf6eb] px-2.5 py-1 text-[11px] font-semibold text-[#4a7a3a]">
-                      3. View item
+                  <div className="rounded-[20px] bg-[#f4faf8] p-4">
+                    <span className="inline-flex rounded-full bg-[#e8f3ef] px-2.5 py-1 text-[11px] font-semibold text-[#2f5d50]">
+                      Browse
                     </span>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      View item opens the retailer in a new tab using the affiliate
-                      link when one is available.
+                      Filter by interest or occasion to narrow the list and spot more
+                      relevant gift ideas faster.
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-5 rounded-[20px] bg-[#fffaf7] p-4">
-                  <p className="text-sm font-semibold text-slate-900">Built to stay aligned</p>
+                <div className="mt-5 rounded-[20px] bg-[#f6faf8] p-4">
+                  <p className="text-sm font-semibold text-slate-900">Made for thoughtful gifting</p>
                   <p className="mt-2 text-[13px] leading-6 text-slate-500">
-                    Shop keeps the same gifting language as the rest of the app, so
-                    saved items can move naturally into hints and later into a shared
-                    pot flow.
+                    Save ideas as you go, come back when you are ready, and keep everything
+                    useful in one place.
                   </p>
                 </div>
               </aside>
