@@ -123,6 +123,55 @@ function getProviderLabel(user) {
   return "your account";
 }
 
+function getInitials(name = "", email = "") {
+  const trimmedName = name.trim();
+
+  if (trimmedName) {
+    const parts = trimmedName.split(/\s+/).filter(Boolean);
+
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+
+    return `${parts[0][0] || ""}${parts[parts.length - 1][0] || ""}`.toUpperCase();
+  }
+
+  const emailName = email.split("@")[0]?.trim() || "";
+
+  if (emailName) {
+    return emailName.slice(0, 2).toUpperCase();
+  }
+
+  return "U";
+}
+
+function AvatarFallback({ name = "", email = "", src = "", alt = "Profile" }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const initials = getInitials(name, email);
+  const showImage = Boolean(src) && !imageFailed;
+
+  if (showImage) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        className="h-14 w-14 rounded-full object-cover"
+        onError={() => setImageFailed(true)}
+      />
+    );
+  }
+
+  return (
+    <div
+      role="img"
+      aria-label={alt}
+      className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2f3b2d] text-sm font-semibold text-white"
+    >
+      {initials}
+    </div>
+  );
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -195,7 +244,7 @@ export default function OnboardingPage() {
       const existingName = existingProfile?.full_name || "";
       const existingAvatar = existingProfile?.avatar_url || "";
       const resolvedName = existingName || googleName || "";
-      const resolvedAvatar = googleAvatar || existingAvatar || "";
+      const resolvedAvatar = existingAvatar || googleAvatar || "";
 
       const filteredExistingInterests = Array.isArray(existingProfile?.interests)
         ? existingProfile.interests.filter((interest) => interestOptions.includes(interest))
@@ -222,7 +271,7 @@ export default function OnboardingPage() {
         {
           id: user.id,
           full_name: resolvedName || null,
-          avatar_url: googleAvatar || existingAvatar || null,
+          avatar_url: existingAvatar || googleAvatar || null,
         },
         { onConflict: "id" }
       );
@@ -254,7 +303,6 @@ export default function OnboardingPage() {
       const isSelected = prev.includes(interest);
 
       if (isSelected) {
-        if (prev.length <= 2) return prev;
         return prev.filter((item) => item !== interest);
       }
 
@@ -608,12 +656,13 @@ export default function OnboardingPage() {
                   We’ve pulled in what we can from Google, but you can change your name anytime here.
                 </p>
 
-                {avatarUrl ? (
+                {(avatarUrl || form.fullName) ? (
                   <div className="mt-6 flex items-center gap-4 rounded-[22px] border border-[#f1e4dc] bg-[#fffaf7] p-4">
-                    <img
+                    <AvatarFallback
                       src={avatarUrl}
+                      name={form.fullName}
+                      email=""
                       alt={form.fullName ? `${form.fullName}'s profile` : "Profile"}
-                      className="h-14 w-14 rounded-full object-cover"
                     />
                     <div>
                       <p className="text-sm font-medium text-slate-900">
