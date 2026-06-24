@@ -4,14 +4,25 @@ import { useMemo, useState } from "react";
 import { createClient } from "../../lib/supabase/client";
 
 function getBaseUrl() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const envSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
 
-  if (siteUrl) {
-    return siteUrl.endsWith("/") ? siteUrl.slice(0, -1) : siteUrl;
+  if (typeof window !== "undefined") {
+    const origin = window.location?.origin || "";
+    const hostname = window.location?.hostname || "";
+
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return origin || "http://localhost:3000";
+    }
+
+    if (envSiteUrl) {
+      return envSiteUrl.endsWith("/") ? envSiteUrl.slice(0, -1) : envSiteUrl;
+    }
+
+    return origin || "http://localhost:3000";
   }
 
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return window.location.origin;
+  if (envSiteUrl) {
+    return envSiteUrl.endsWith("/") ? envSiteUrl.slice(0, -1) : envSiteUrl;
   }
 
   return "http://localhost:3000";
@@ -41,8 +52,10 @@ export default function GoogleAuthButtons({ variant = "hero-primary" }) {
       setLoadingProvider(provider);
       rememberProvider(provider);
 
+      const redirectTo = buildRedirectTo("/onboarding");
+
       const options = {
-        redirectTo: buildRedirectTo("/onboarding"),
+        redirectTo,
       };
 
       if (provider === "azure") {
