@@ -32,7 +32,14 @@ export async function POST() {
 
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    }
   );
 
   const { data: profile, error: profileError } = await admin
@@ -56,7 +63,8 @@ export async function POST() {
         source: "account_delete",
         marketing_opt_in: true,
         deleted_account_at: new Date().toISOString(),
-        consent_text: "User opted in to receive marketing emails before account deletion."
+        consent_text:
+          "User opted in to receive marketing emails before account deletion.",
       },
       { onConflict: "email" }
     );
