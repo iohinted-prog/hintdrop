@@ -28,11 +28,11 @@ export default async function Page() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, onboarding_complete")
+    .select("id, onboarding_completed")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!profile || !profile.onboarding_complete) {
+  if (!profile || !profile.onboarding_completed) {
     redirect("/onboarding");
   }
 
