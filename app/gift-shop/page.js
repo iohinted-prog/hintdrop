@@ -12,6 +12,7 @@ const PRODUCTS = [
     price: "£245",
     image:
       "https://images.unsplash.com/photo-1514986888952-8cd320577b68?auto=format&fit=crop&w=1200&q=80",
+    url: "https://www.johnlewis.com/",
     shortNote:
       "A lasting kitchen gift for weddings, anniversaries, and serious home cooks.",
     interestTags: ["Home", "Food"],
@@ -25,6 +26,7 @@ const PRODUCTS = [
     price: "From £180",
     image:
       "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
+    url: "https://www.airbnb.co.uk/",
     shortNote:
       "An experience-led gift that feels generous without becoming generic.",
     interestTags: ["Travel", "Experiences"],
@@ -38,6 +40,7 @@ const PRODUCTS = [
     price: "£42",
     image:
       "https://images.unsplash.com/photo-1616628182509-6f0c7ab0d15f?auto=format&fit=crop&w=1200&q=80",
+    url: "https://www.etsy.com/uk/",
     shortNote:
       "Easy to post, easy to love, and still personal enough to feel considered.",
     interestTags: ["Beauty", "Home"],
@@ -51,6 +54,7 @@ const PRODUCTS = [
     price: "£119",
     image:
       "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
+    url: "https://www.amazon.co.uk/",
     shortNote:
       "A dependable higher-value gift for commuters, students, and work-from-home setups.",
     interestTags: ["Tech", "Music"],
@@ -64,6 +68,7 @@ const PRODUCTS = [
     price: "£95",
     image:
       "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=1200&q=80",
+    url: "https://classbento.co.uk/",
     shortNote:
       "A thoughtful pick for people who prefer memories and time together over objects.",
     interestTags: ["Experiences", "Hobbies"],
@@ -77,6 +82,7 @@ const PRODUCTS = [
     price: "£58",
     image:
       "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80",
+    url: "https://www.hasbean.co.uk/",
     shortNote:
       "A strong option for everyday rituals, first homes, and low-risk gifting.",
     interestTags: ["Food", "Home"],
@@ -90,6 +96,7 @@ const PRODUCTS = [
     price: "£36",
     image:
       "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=1200&q=80",
+    url: "https://www.notonthehighstreet.com/",
     shortNote:
       "Soft, easy gifting for thank-yous, birthdays, and people who never buy this sort of thing for themselves.",
     interestTags: ["Wellness", "Beauty"],
@@ -103,6 +110,7 @@ const PRODUCTS = [
     price: "£28",
     image:
       "https://images.unsplash.com/photo-1524578271613-d550eacf6090?auto=format&fit=crop&w=1200&q=80",
+    url: "https://www.waterstones.com/",
     shortNote:
       "A safe but still thoughtful pick for readers, graduates, and quiet celebrators.",
     interestTags: ["Books"],
@@ -233,12 +241,14 @@ function ShopCard({ product }) {
             Sign in to save
           </Link>
 
-          <Link
-            href="/#signup"
+          <a
+            href={product.url}
+            target="_blank"
+            rel="noopener noreferrer"
             className="rounded-full border border-white/45 bg-white/76 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-md hover:bg-white"
           >
-            Sign in to see more
-          </Link>
+            Open
+          </a>
         </div>
       </div>
     </article>
@@ -350,8 +360,7 @@ export default function GiftShopPage() {
 
                 <p className="mt-3 max-w-[760px] text-[15px] leading-7 text-slate-600">
                   Explore a public preview of Shop, filter by occasion or interests,
-                  and then sign in to unlock more products, saving, and your full
-                  personalised gifting flow.
+                  and then sign in to save ideas and unlock the fuller personalised flow.
                 </p>
 
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -388,7 +397,7 @@ export default function GiftShopPage() {
                         onClick={() => toggleInterest(interest)}
                         className={`inline-flex h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition ${
                           selected
-                            ? "border-[#3c4d39] bg-[#2f3b2d] text-white"
+                            ? "border-[#cf6f4d] bg-[#ffefe8] text-[#c95f3d]"
                             : "border-[#ead8ce] bg-white text-slate-700 hover:bg-[#fff5f0]"
                         }`}
                       >
@@ -420,7 +429,7 @@ export default function GiftShopPage() {
                 </p>
 
                 <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
-                  Sign in to see more
+                  Browse now, save after sign-in
                 </h2>
 
                 <div className="mt-4 space-y-3">
@@ -434,35 +443,31 @@ export default function GiftShopPage() {
                   </div>
 
                   <div className="rounded-[20px] bg-[#faf7f4] p-4">
-                    <span className="inline-flex rounded-full bg-[#eef4ff] px-2.5 py-1 text-[11px] font-semibold text-[#5676b3]">
-                      Sign in
+                    <span className="inline-flex rounded-full bg-[#fff1ec] px-2.5 py-1 text-[11px] font-semibold text-[#db6b57]">
+                      Open
                     </span>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Unlock more gift ideas, saving to hints, and personalised recommendations.
+                      The light button opens the retailer or affiliate destination directly in a new tab.
                     </p>
                   </div>
 
                   <div className="rounded-[20px] bg-[#faf7f4] p-4">
-                    <span className="inline-flex rounded-full bg-[#edf6eb] px-2.5 py-1 text-[11px] font-semibold text-[#4a7a3a]">
+                    <span className="inline-flex rounded-full bg-[#ffe9e8] px-2.5 py-1 text-[11px] font-semibold text-[#cf5a68]">
                       Save
                     </span>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Signed-in users can save good finds and carry them into reminders and circles.
+                      Use the orange button to sign in when you want to save good finds into hints.
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-5 rounded-[20px] bg-[#fffaf7] p-4">
                   <p className="text-sm font-semibold text-slate-900">
-                    This page is intentionally limited
+                    Warm palette only
                   </p>
                   <p className="mt-2 text-[13px] leading-6 text-slate-500">
-                    Sign in to see more products, use the full shop experience, and save ideas to your account.
+                    This preview keeps the accents in peach, orange, and soft pink so it stays visually aligned with the homepage.
                   </p>
-
-                  <div className="mt-4">
-                    <GoogleAuthButtons variant="hero-primary" />
-                  </div>
                 </div>
               </aside>
             </div>
@@ -479,13 +484,6 @@ export default function GiftShopPage() {
                 Showing up to 6 items before sign-in.
               </p>
             </div>
-
-            <Link
-              href="/#signup"
-              className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f5d50] px-5 text-sm font-semibold text-white"
-            >
-              Sign in to see more
-            </Link>
           </div>
 
           <div className="relative rounded-[36px] border border-[#efe0d7] bg-[#fffdfb] p-3 shadow-[0_12px_32px_rgba(176,118,86,0.08)] sm:p-5">
@@ -514,13 +512,13 @@ export default function GiftShopPage() {
                     <p className="text-sm text-slate-600">
                       {hiddenCount > 0
                         ? `Sign in to see ${hiddenCount} more matching item${hiddenCount === 1 ? "" : "s"} and unlock saving.`
-                        : "Sign in to unlock saving, personalised results, and the full shop experience."}
+                        : "Sign in to unlock saving and the full shop experience."}
                     </p>
                     <Link
                       href="/#signup"
                       className="mt-3 inline-flex h-11 items-center justify-center rounded-full bg-[#ff875d] px-5 text-sm font-semibold text-white"
                     >
-                      Sign in to see more
+                      Sign in to save
                     </Link>
                   </div>
                 </>
