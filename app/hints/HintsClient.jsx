@@ -1498,47 +1498,6 @@ export default function HintsClient() {
 
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
-      <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
-          <Link href="/feed" className="flex items-center gap-3.5">
-            <LogoMark />
-            <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
-              Hinted<span className="text-[#f36f64]">.io</span>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-3 sm:gap-4">
-            <nav className="flex items-center gap-2 sm:gap-3">
-              <Link
-                href="/feed"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
-              >
-                Feed
-              </Link>
-              <Link
-                href="/hints"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#3c4d39] bg-[#2f3b2d] px-4 text-[14px] font-semibold text-white sm:px-5"
-              >
-                Hints
-              </Link>
-              <Link
-                href="/circles"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
-              >
-                Circles
-              </Link>
-              <Link
-                href="/shop"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-[#efe0d7] bg-white px-4 text-[14px] font-semibold text-slate-700 hover:bg-[#fff5f0] sm:px-5"
-              >
-                Shop
-              </Link>
-            </nav>
-            <AvatarMenu />
-          </div>
-        </div>
-      </header>
-
       <div className="mx-auto max-w-[1380px] px-5 py-10 md:px-8">
         <section className="text-center">
           <h1 className="text-[32px] font-extrabold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
