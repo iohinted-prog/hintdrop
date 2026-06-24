@@ -874,23 +874,33 @@ export default function HomePage() {
 
         <DemoVideoSection />
 
-        <footer className="mt-16 border-t border-[#eaded6] pt-8">
-          <div className="flex flex-col gap-4 pb-6 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-            <p>© 2026 Hinted.io. All rights reserved.</p>
-
-            <div className="flex flex-wrap items-center gap-4">
-              <Link href="/privacy" className="transition hover:text-slate-900">
-                Privacy
-              </Link>
-              <Link href="/terms" className="transition hover:text-slate-900">
-                Terms
-              </Link>
-              <a
-                href="mailto:iohinted@gmail.com"
-                className="transition hover:text-slate-900"
+        <footer className="mt-16 border-t border-[#eaded6] bg-[#fffaf7]">
+          <div className="flex flex-col gap-4 px-0 py-6 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between">
+            <p className="max-w-[720px] text-xs leading-5 text-slate-500 lg:text-sm">
+              By continuing, you agree to{" "}
+              <Link
+                href="/terms"
+                className="font-medium text-slate-700 underline underline-offset-2 transition hover:text-slate-900"
               >
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link
+                href="/privacy"
+                className="font-medium text-slate-700 underline underline-offset-2 transition hover:text-slate-900"
+              >
+                Privacy Policy
+              </Link>
+              .
+            </p>
+
+            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+              <Link href="/for-brands" className="transition hover:text-slate-900">
+                For Brands
+              </Link>
+              <Link href="/contact" className="transition hover:text-slate-900">
                 Contact
-              </a>
+              </Link>
             </div>
           </div>
         </footer>
