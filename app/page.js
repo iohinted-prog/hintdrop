@@ -431,7 +431,7 @@ function CircleTeaserCard() {
   );
 }
 
-function ShopTeaserCard() {
+function ShopTeaserCard({ shopHref }) {
   return (
     <article className="rounded-[30px] border border-[#efdcd2] bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
@@ -479,7 +479,7 @@ function ShopTeaserCard() {
       </div>
 
       <Link
-        href="/shop"
+        href={shopHref}
         className="mt-5 inline-flex rounded-full border border-[#e8d9cf] bg-white px-5 py-3 text-sm font-semibold text-slate-700"
       >
         Preview shop
@@ -569,6 +569,8 @@ export default async function HomePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const shopHref = user ? "/shop" : "/gift-shop";
+
   if (user) {
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
@@ -591,7 +593,7 @@ export default async function HomePage() {
 
           <div className="flex items-center justify-start gap-4 whitespace-nowrap sm:justify-end">
             <Link
-              href="/shop"
+              href={shopHref}
               className="inline-flex h-12 shrink-0 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-6 text-[15px] font-semibold text-slate-700 transition hover:bg-[#fff5f0]"
             >
               Gift Shop
@@ -908,7 +910,7 @@ export default async function HomePage() {
 
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             <CircleTeaserCard />
-            <ShopTeaserCard />
+            <ShopTeaserCard shopHref={shopHref} />
           </div>
         </section>
 
