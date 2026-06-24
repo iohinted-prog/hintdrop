@@ -16,6 +16,14 @@ function buildRedirectTo(nextPath = "/onboarding") {
   return `${baseUrl}/auth/callback?next=${encodeURIComponent(nextPath)}`;
 }
 
+function rememberProvider(provider) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.setItem("hinted_auth_provider", provider);
+  } catch (_) {}
+}
+
 export default function GoogleAuthButtons({ variant = "hero-primary" }) {
   const supabase = useMemo(() => createClient(), []);
   const [loadingProvider, setLoadingProvider] = useState(null);
@@ -25,6 +33,7 @@ export default function GoogleAuthButtons({ variant = "hero-primary" }) {
     try {
       setPageError("");
       setLoadingProvider("google");
+      rememberProvider("google");
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -44,6 +53,7 @@ export default function GoogleAuthButtons({ variant = "hero-primary" }) {
     try {
       setPageError("");
       setLoadingProvider("azure");
+      rememberProvider("azure");
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "azure",
