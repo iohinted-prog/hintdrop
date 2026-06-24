@@ -1,10 +1,10 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import Script from "next/script";
 import GoogleAuthButtons from "../components/GoogleAuthButtons";
 
-const FEATURED_PRODUCTS = [
+const PRODUCTS = [
   {
     id: "1",
     title: "Le Creuset Signature casserole",
@@ -14,8 +14,8 @@ const FEATURED_PRODUCTS = [
       "https://images.unsplash.com/photo-1514986888952-8cd320577b68?auto=format&fit=crop&w=1200&q=80",
     shortNote:
       "A lasting kitchen gift for weddings, anniversaries, and serious home cooks.",
-    interestTags: ["Home"],
-    occasionTags: ["Wedding"],
+    interestTags: ["Home", "Food"],
+    occasionTags: ["Wedding", "Anniversary"],
     category: "Home · Cooking",
   },
   {
@@ -27,8 +27,8 @@ const FEATURED_PRODUCTS = [
       "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
     shortNote:
       "An experience-led gift that feels generous without becoming generic.",
-    interestTags: ["Travel"],
-    occasionTags: ["Anniversary"],
+    interestTags: ["Travel", "Experiences"],
+    occasionTags: ["Anniversary", "Just because"],
     category: "Experiences · Travel",
   },
   {
@@ -40,8 +40,8 @@ const FEATURED_PRODUCTS = [
       "https://images.unsplash.com/photo-1616628182509-6f0c7ab0d15f?auto=format&fit=crop&w=1200&q=80",
     shortNote:
       "Easy to post, easy to love, and still personal enough to feel considered.",
-    interestTags: ["Beauty"],
-    occasionTags: ["Birthday"],
+    interestTags: ["Beauty", "Home"],
+    occasionTags: ["Birthday", "Thank you"],
     category: "Beauty · Home",
   },
   {
@@ -53,8 +53,8 @@ const FEATURED_PRODUCTS = [
       "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
     shortNote:
       "A dependable higher-value gift for commuters, students, and work-from-home setups.",
-    interestTags: ["Tech"],
-    occasionTags: ["Graduation"],
+    interestTags: ["Tech", "Music"],
+    occasionTags: ["Graduation", "Birthday"],
     category: "Tech · Everyday",
   },
   {
@@ -66,8 +66,8 @@ const FEATURED_PRODUCTS = [
       "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=1200&q=80",
     shortNote:
       "A thoughtful pick for people who prefer memories and time together over objects.",
-    interestTags: ["Experiences"],
-    occasionTags: ["Just because"],
+    interestTags: ["Experiences", "Hobbies"],
+    occasionTags: ["Just because", "Birthday"],
     category: "Experiences · Creative",
   },
   {
@@ -79,9 +79,35 @@ const FEATURED_PRODUCTS = [
       "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80",
     shortNote:
       "A strong option for everyday rituals, first homes, and low-risk gifting.",
-    interestTags: ["Food"],
-    occasionTags: ["Housewarming"],
+    interestTags: ["Food", "Home"],
+    occasionTags: ["Housewarming", "Thank you"],
     category: "Home · Coffee",
+  },
+  {
+    id: "7",
+    title: "Luxury bath and unwind box",
+    retailer: "notonthehighstreet.com",
+    price: "£36",
+    image:
+      "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=1200&q=80",
+    shortNote:
+      "Soft, easy gifting for thank-yous, birthdays, and people who never buy this sort of thing for themselves.",
+    interestTags: ["Wellness", "Beauty"],
+    occasionTags: ["Thank you", "Birthday"],
+    category: "Wellness · Beauty",
+  },
+  {
+    id: "8",
+    title: "Hardback collector’s edition",
+    retailer: "waterstones.com",
+    price: "£28",
+    image:
+      "https://images.unsplash.com/photo-1524578271613-d550eacf6090?auto=format&fit=crop&w=1200&q=80",
+    shortNote:
+      "A safe but still thoughtful pick for readers, graduates, and quiet celebrators.",
+    interestTags: ["Books"],
+    occasionTags: ["Graduation", "Birthday"],
+    category: "Books · Keepsake",
   },
 ];
 
@@ -126,6 +152,8 @@ function LandingLogo() {
 }
 
 function ShopCard({ product }) {
+  const tags = [...product.interestTags.slice(0, 1), ...product.occasionTags.slice(0, 1)];
+
   return (
     <article
       className="group relative w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.60)] transition-all duration-300 hover:-translate-y-1"
@@ -144,22 +172,13 @@ function ShopCard({ product }) {
           loading="lazy"
           referrerPolicy="no-referrer"
         />
-
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.84)_0%,rgba(16,12,10,0.40)_30%,rgba(16,12,10,0.10)_55%,rgba(255,255,255,0)_100%)]" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.72)] via-[rgba(22,18,16,0.18)] to-transparent" />
       </div>
 
       <div className="absolute left-4 right-4 top-4 z-30 flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          {product.interestTags.slice(0, 1).map((tag) => (
-            <span
-              key={`${product.id}-${tag}`}
-              className="rounded-full border border-white/45 bg-white/76 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-md"
-            >
-              {tag}
-            </span>
-          ))}
-          {product.occasionTags.slice(0, 1).map((tag) => (
+          {tags.map((tag) => (
             <span
               key={`${product.id}-${tag}`}
               className="rounded-full border border-white/45 bg-white/76 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-md"
@@ -189,9 +208,7 @@ function ShopCard({ product }) {
             {product.title}
           </h3>
 
-          <p className="mt-1 truncate text-[13px] text-white/80">
-            {product.retailer}
-          </p>
+          <p className="mt-1 truncate text-[13px] text-white/80">{product.retailer}</p>
 
           <p
             className="mt-3 overflow-hidden text-[13px] leading-6 text-white/84"
@@ -213,30 +230,96 @@ function ShopCard({ product }) {
             href="/#signup"
             className="rounded-full border border-[#ffb38f] bg-[#ff875d] px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur-md hover:bg-[#f47145]"
           >
-            Add to hints
+            Sign in to save
           </Link>
 
-          <a
-            href="#signup"
+          <Link
+            href="/#signup"
             className="rounded-full border border-white/45 bg-white/76 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-md hover:bg-white"
           >
-            View item
-          </a>
+            Sign in to see more
+          </Link>
         </div>
       </div>
     </article>
   );
 }
 
+function EmptyState({ onClear }) {
+  return (
+    <div className="rounded-[30px] border border-dashed border-[#e6d7cd] bg-white px-6 py-12 text-center">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#fff1e9] text-xl text-[#df7c59]">
+        ✦
+      </div>
+      <h3 className="mt-4 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
+        Nothing matched just yet
+      </h3>
+      <p className="mx-auto mt-3 max-w-[40ch] text-[14px] leading-7 text-slate-500">
+        Try clearing a filter or broadening your search to see more public picks.
+      </p>
+      <button
+        type="button"
+        onClick={onClear}
+        className="mt-5 inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
+      >
+        Clear filters
+      </button>
+    </div>
+  );
+}
+
 export default function GiftShopPage() {
+  const [selectedOccasion, setSelectedOccasion] = useState("");
+  const [selectedInterests, setSelectedInterests] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  function toggleInterest(interest) {
+    setSelectedInterests((current) =>
+      current.includes(interest)
+        ? current.filter((item) => item !== interest)
+        : [...current, interest].slice(0, 5)
+    );
+  }
+
+  function clearFilters() {
+    setSelectedOccasion("");
+    setSelectedInterests([]);
+    setSearchQuery("");
+  }
+
+  const filteredProducts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return PRODUCTS.filter((product) => {
+      const matchesOccasion =
+        !selectedOccasion || product.occasionTags.includes(selectedOccasion);
+
+      const matchesInterest =
+        selectedInterests.length === 0 ||
+        selectedInterests.some((interest) => product.interestTags.includes(interest));
+
+      const searchable = [
+        product.title,
+        product.retailer,
+        product.shortNote,
+        product.category,
+        ...product.interestTags,
+        ...product.occasionTags,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      const matchesQuery = !query || searchable.includes(query);
+
+      return matchesOccasion && matchesInterest && matchesQuery;
+    });
+  }, [searchQuery, selectedInterests, selectedOccasion]);
+
+  const visibleProducts = filteredProducts.slice(0, 6);
+  const hiddenCount = Math.max(filteredProducts.length - visibleProducts.length, 0);
+
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
-      <Script
-        id="skimlinks-loader"
-        strategy="afterInteractive"
-        src="https://s.skimresources.com/js/305122X1793314.skimlinks.js"
-      />
-
       <div className="mx-auto max-w-[1380px] px-5 pb-16 pt-6 md:px-8">
         <header className="grid items-center gap-5 pb-8 lg:grid-cols-[auto_1fr_auto] lg:gap-8">
           <LandingLogo />
@@ -266,24 +349,24 @@ export default function GiftShopPage() {
                 </h1>
 
                 <p className="mt-3 max-w-[760px] text-[15px] leading-7 text-slate-600">
-                  This is the public version of Shop. You can explore the kinds of
-                  gifts Hinted curates, then sign in with Google when you want to
-                  save ideas to hints, build circles, and unlock the full planning
-                  flow.
+                  Explore a public preview of Shop, filter by occasion or interests,
+                  and then sign in to unlock more products, saving, and your full
+                  personalised gifting flow.
                 </p>
 
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                   <input
                     type="text"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder="Search gifts, retailers, interests, or occasions"
-                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none"
-                    disabled
+                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
                   />
 
                   <select
-                    className="h-12 min-w-[190px] rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none"
-                    disabled
-                    defaultValue=""
+                    value={selectedOccasion}
+                    onChange={(event) => setSelectedOccasion(event.target.value)}
+                    className="h-12 min-w-[190px] rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
                   >
                     <option value="">All occasions</option>
                     {OCCASION_OPTIONS.map((occasion) => (
@@ -295,65 +378,86 @@ export default function GiftShopPage() {
                 </div>
 
                 <div className="mt-5 flex flex-wrap gap-2">
-                  {INTEREST_OPTIONS.map((interest) => (
-                    <span
-                      key={interest}
-                      className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-4 text-sm font-semibold text-slate-700"
-                    >
-                      {interest}
-                    </span>
-                  ))}
+                  {INTEREST_OPTIONS.map((interest) => {
+                    const selected = selectedInterests.includes(interest);
+
+                    return (
+                      <button
+                        key={interest}
+                        type="button"
+                        onClick={() => toggleInterest(interest)}
+                        className={`inline-flex h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition ${
+                          selected
+                            ? "border-[#3c4d39] bg-[#2f3b2d] text-white"
+                            : "border-[#ead8ce] bg-white text-slate-700 hover:bg-[#fff5f0]"
+                        }`}
+                      >
+                        {interest}
+                      </button>
+                    );
+                  })}
                 </div>
+
+                {(selectedOccasion || selectedInterests.length > 0 || searchQuery) && (
+                  <div className="mt-4 flex items-center gap-3">
+                    <p className="text-sm text-slate-500">
+                      Showing {filteredProducts.length} matching public picks.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={clearFilters}
+                      className="text-sm font-semibold text-[#cf6f4d] hover:text-[#b85d3d]"
+                    >
+                      Clear filters
+                    </button>
+                  </div>
+                )}
               </div>
 
               <aside className="rounded-[26px] border border-[#f0dfd6] bg-[#fffdfa] p-5 shadow-sm">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  How Shop works
+                  Public preview
                 </p>
 
                 <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
-                  Curated first, off-site second
+                  Sign in to see more
                 </h2>
 
                 <div className="mt-4 space-y-3">
                   <div className="rounded-[20px] bg-[#faf7f4] p-4">
                     <span className="inline-flex rounded-full bg-[#fff4ee] px-2.5 py-1 text-[11px] font-semibold text-[#df7b59]">
-                      1. Browse
+                      Browse
                     </span>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Explore a thoughtful edit of gifts grouped around interests,
-                      occasions, and real-life gifting moments.
+                      Filter the public collection by interest, occasion, and search terms.
                     </p>
                   </div>
 
                   <div className="rounded-[20px] bg-[#faf7f4] p-4">
                     <span className="inline-flex rounded-full bg-[#eef4ff] px-2.5 py-1 text-[11px] font-semibold text-[#5676b3]">
-                      2. Save
+                      Sign in
                     </span>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Once signed in, you can save the good finds into hints for
-                      later or use them inside circle gifting flows.
+                      Unlock more gift ideas, saving to hints, and personalised recommendations.
                     </p>
                   </div>
 
                   <div className="rounded-[20px] bg-[#faf7f4] p-4">
                     <span className="inline-flex rounded-full bg-[#edf6eb] px-2.5 py-1 text-[11px] font-semibold text-[#4a7a3a]">
-                      3. View item
+                      Save
                     </span>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      When available, the retailer link can open through your
-                      affiliate flow in a new tab.
+                      Signed-in users can save good finds and carry them into reminders and circles.
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-5 rounded-[20px] bg-[#fffaf7] p-4">
                   <p className="text-sm font-semibold text-slate-900">
-                    Sign in to unlock saves
+                    This page is intentionally limited
                   </p>
                   <p className="mt-2 text-[13px] leading-6 text-slate-500">
-                    The public page is for browsing. Your personalised hints,
-                    circles, and saved gift planning stay behind Google sign-in.
+                    Sign in to see more products, use the full shop experience, and save ideas to your account.
                   </p>
 
                   <div className="mt-4">
@@ -366,6 +470,24 @@ export default function GiftShopPage() {
         </section>
 
         <section className="mt-12">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[28px] font-semibold tracking-[-0.04em] text-slate-900">
+                Public gift preview
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Showing up to 6 items before sign-in.
+              </p>
+            </div>
+
+            <Link
+              href="/#signup"
+              className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f5d50] px-5 text-sm font-semibold text-white"
+            >
+              Sign in to see more
+            </Link>
+          </div>
+
           <div className="relative rounded-[36px] border border-[#efe0d7] bg-[#fffdfb] p-3 shadow-[0_12px_32px_rgba(176,118,86,0.08)] sm:p-5">
             <div
               className="pointer-events-none absolute inset-0 rounded-[36px] opacity-70"
@@ -377,12 +499,34 @@ export default function GiftShopPage() {
               }}
             />
 
-            <div className="relative columns-1 gap-6 md:columns-2 xl:columns-3">
-              {FEATURED_PRODUCTS.map((product) => (
-                <div key={product.id} className="mb-6 break-inside-avoid">
-                  <ShopCard product={product} />
-                </div>
-              ))}
+            <div className="relative">
+              {visibleProducts.length ? (
+                <>
+                  <div className="columns-1 gap-6 md:columns-2 xl:columns-3">
+                    {visibleProducts.map((product) => (
+                      <div key={product.id} className="mb-6 break-inside-avoid">
+                        <ShopCard product={product} />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 rounded-[24px] border border-[#eaded6] bg-[#fff8f4] px-5 py-4 text-center">
+                    <p className="text-sm text-slate-600">
+                      {hiddenCount > 0
+                        ? `Sign in to see ${hiddenCount} more matching item${hiddenCount === 1 ? "" : "s"} and unlock saving.`
+                        : "Sign in to unlock saving, personalised results, and the full shop experience."}
+                    </p>
+                    <Link
+                      href="/#signup"
+                      className="mt-3 inline-flex h-11 items-center justify-center rounded-full bg-[#ff875d] px-5 text-sm font-semibold text-white"
+                    >
+                      Sign in to see more
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <EmptyState onClear={clearFilters} />
+              )}
             </div>
           </div>
         </section>
