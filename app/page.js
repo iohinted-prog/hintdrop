@@ -1,5 +1,5 @@
 import Link from "next/link";
-import AuthButtons from "./components/AuthButtons";
+import GoogleAuthButtons from "./components/GoogleAuthButtons";
 
 export const metadata = {
   title: "Hinted.io | Never forget. Always thoughtful.",
@@ -561,8 +561,8 @@ export default function HomePage() {
           </nav>
 
           <div className="flex items-center justify-start gap-4 whitespace-nowrap sm:justify-end">
-            <AuthButtons variant="header-login" />
-            <AuthButtons variant="header-get-started" />
+            <GoogleAuthButtons variant="header-login" />
+            <GoogleAuthButtons variant="header-get-started" />
           </div>
         </header>
 
@@ -607,7 +607,7 @@ export default function HomePage() {
               </div>
 
               <div className="space-y-4">
-                <AuthButtons variant="hero-primary" />
+                <GoogleAuthButtons variant="hero-primary" />
 
                 <div className="rounded-[22px] border border-[#f3e4db] bg-[#fff8f4] p-4">
                   <p className="text-sm leading-6 text-slate-600">
@@ -783,6 +783,7 @@ export default function HomePage() {
                     type="button"
                   >
                     →
+
                   </button>
                 </div>
               </div>
