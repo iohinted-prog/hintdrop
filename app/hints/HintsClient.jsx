@@ -2,32 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  KeyboardSensor,
-  closestCenter,
-  MeasuringStrategy,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  verticalListSortingStrategy,
-  sortableKeyboardCoordinates,
-  useSortable,
-  defaultAnimateLayoutChanges,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "../../lib/supabase/client";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 import AvatarMenu from "../components/AvatarMenu";
 
 const BASE_CURRENCY = "GBP";
 const PREVIEW_TIMEOUT_MS = 18000;
-const CARD_MAX_HEIGHT = "min(540px, 68vh)";
+const CARD_MAX_HEIGHT = "min(680px, 78vh)";
 const TIMEOUT_MODAL_MESSAGE =
   "We tried to get the title, image, and price, but this shop asked you to add them instead.";
 
@@ -112,6 +93,66 @@ const demoHints = [
     private: false,
     url: "https://www.booking.com/",
     position: 3,
+    needsReview: false,
+  },
+  {
+    id: "demo-5",
+    title: "Cashmere throw",
+    retailer: "thewhitecompany.com",
+    numericPrice: 110,
+    currency: "GBP",
+    image:
+      "https://images.unsplash.com/photo-1517705008128-361805f42e86?auto=format&fit=crop&w=1200&q=80",
+    fallbackGradient: "from-[#eadce8] via-[#d8bfd1] to-[#bb9ab6]",
+    starred: false,
+    private: false,
+    url: "https://www.thewhitecompany.com/",
+    position: 4,
+    needsReview: false,
+  },
+  {
+    id: "demo-6",
+    title: "Espresso machine",
+    retailer: "sageappliances.com",
+    numericPrice: 399,
+    currency: "GBP",
+    image:
+      "https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?auto=format&fit=crop&w=1200&q=80",
+    fallbackGradient: "from-[#d6e7eb] via-[#b5ced7] to-[#8fb3c5]",
+    starred: false,
+    private: false,
+    url: "https://www.sageappliances.com/",
+    position: 5,
+    needsReview: false,
+  },
+  {
+    id: "demo-7",
+    title: "Spa day",
+    retailer: "spabreaks.com",
+    numericPrice: 180,
+    currency: "GBP",
+    image:
+      "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=1200&q=80",
+    fallbackGradient: "from-[#f3d5cc] via-[#e9b39f] to-[#d98c76]",
+    starred: true,
+    private: false,
+    url: "https://www.spabreaks.com/",
+    position: 6,
+    needsReview: false,
+  },
+  {
+    id: "demo-8",
+    title: "City break",
+    retailer: "eurostar.com",
+    numericPrice: 210,
+    currency: "GBP",
+    image:
+      "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80",
+    fallbackGradient: "from-[#d5dbee] via-[#b3c0df] to-[#8f9fc9]",
+    starred: false,
+    private: false,
+    url: "https://www.eurostar.com/",
+    position: 7,
     needsReview: false,
   },
 ];
@@ -292,14 +333,6 @@ function shortenTitle(title = "", retailer = "") {
   if (!words.length) return "Saved hint";
   const result = words.slice(0, 2).join(" ").trim();
   return result.charAt(0).toUpperCase() + result.slice(1);
-}
-
-function splitIntoColumns(items, columnCount = 3) {
-  const columns = Array.from({ length: columnCount }, () => []);
-  items.forEach((item, index) => {
-    columns[index % columnCount].push(item);
-  });
-  return columns;
 }
 
 function fileToDataUrl(file) {
@@ -722,8 +755,6 @@ function HintCard({
   onToggleStarred,
   onTogglePrivate,
   isDragging,
-  dragHandleListeners,
-  dragHandleAttributes,
   formatCurrency,
 }) {
   const ratio = getCardAspectRatio(hint, imageRatios);
@@ -735,7 +766,7 @@ function HintCard({
 
   return (
     <article
-      className={`group relative w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.60)] transition-all duration-300 ${
+      className={`group relative inline-block w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.60)] transition-all duration-300 ${
         isDragging ? "scale-[1.02]" : "hover:-translate-y-1"
       }`}
       style={{
@@ -774,14 +805,9 @@ function HintCard({
 
       <div className="absolute left-4 right-4 top-4 z-30 flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className="pointer-events-auto flex min-h-[40px] cursor-grab items-center gap-1 rounded-full border border-white/45 bg-white/72 px-3 py-2 text-[11px] font-semibold text-slate-700 backdrop-blur-md active:cursor-grabbing"
-            {...dragHandleAttributes}
-            {...dragHandleListeners}
-          >
-            ⋮⋮ Drag
-          </button>
+          <div className="pointer-events-none flex min-h-[40px] items-center gap-1 rounded-full border border-white/45 bg-white/72 px-3 py-2 text-[11px] font-semibold text-slate-700 backdrop-blur-md">
+            ✦ Hint
+          </div>
 
           {hint.starred && (
             <div className="rounded-full border border-[#ffd8c9] bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
@@ -873,48 +899,10 @@ function HintCard({
   );
 }
 
-function SortableHintCard({
-  hint,
-  imageRatios,
-  onEdit,
-  onToggleStarred,
-  onTogglePrivate,
-  formatCurrency,
-}) {
-  const animateLayoutChanges = (args) => {
-    if (args.isSorting || args.wasDragging) return defaultAnimateLayoutChanges(args);
-    return true;
-  };
-
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: hint.id,
-    animateLayoutChanges,
-    transition: {
-      duration: 240,
-      easing: "cubic-bezier(0.25, 1, 0.5, 1)",
-    },
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 20 : 1,
-    position: "relative",
-  };
-
+function MasonryCard({ children }) {
   return (
-    <div ref={setNodeRef} style={style} className="mb-6 break-inside-avoid">
-      <HintCard
-        hint={hint}
-        imageRatios={imageRatios}
-        onEdit={onEdit}
-        onToggleStarred={onToggleStarred}
-        onTogglePrivate={onTogglePrivate}
-        isDragging={isDragging}
-        dragHandleAttributes={attributes}
-        dragHandleListeners={listeners}
-        formatCurrency={formatCurrency}
-      />
+    <div className="mb-5 break-inside-avoid [display:inline-block] w-full align-top sm:mb-6">
+      {children}
     </div>
   );
 }
@@ -932,7 +920,6 @@ export default function HintsClient() {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeId, setActiveId] = useState(null);
   const [imageRatios, setImageRatios] = useState({});
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSubmittingNewHint, setIsSubmittingNewHint] = useState(false);
@@ -941,15 +928,6 @@ export default function HintsClient() {
   const [addModalNotice, setAddModalNotice] = useState("");
   const [busyState, setBusyState] = useState({ open: false, title: "", message: "" });
   const busyLongTimerRef = useRef(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const measuring = {
-    droppable: { strategy: MeasuringStrategy.Always },
-  };
 
   function clearBusyTimers() {
     if (busyLongTimerRef.current) {
@@ -1071,9 +1049,10 @@ export default function HintsClient() {
     loadHints();
   }, [currentUser]);
 
-  const visibleHints = hints;
-  const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
-  const columns = useMemo(() => splitIntoColumns(visibleHints, 3), [visibleHints]);
+  const visibleHints = useMemo(
+    () => [...hints].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
+    [hints]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -1106,19 +1085,6 @@ export default function HintsClient() {
       cancelled = true;
     };
   }, [visibleHints, imageRatios]);
-
-  async function persistOrder(nextHints) {
-    if (!currentUser) return;
-    const supabase = createClient();
-
-    await Promise.all(
-      nextHints.map((hint, index) => supabase.from("hints").update({ position: index }).eq("id", hint.id))
-    );
-  }
-
-  function rebuildFromColumns(nextColumns) {
-    return nextColumns.flat().map((hint, index) => ({ ...hint, position: index }));
-  }
 
   function openEditModal(hint) {
     setEditingHintId(hint.id);
@@ -1360,23 +1326,12 @@ export default function HintsClient() {
       setIsAddModalOpen(true);
       setLink("");
     } catch (err) {
-      if (err?.code === "PREVIEW_TIMEOUT" || err?.message === "PREVIEW_TIMEOUT") {
-        const manualDraft = buildManualDraft(trimmed);
-
-        setPendingHint(manualDraft);
-        setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...manualDraft });
-        setAddModalNotice(TIMEOUT_MODAL_MESSAGE);
-        setIsAddModalOpen(true);
-        setLink("");
-      } else {
-        const manualDraft = buildManualDraft(trimmed);
-
-        setPendingHint(manualDraft);
-        setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...manualDraft });
-        setAddModalNotice(TIMEOUT_MODAL_MESSAGE);
-        setIsAddModalOpen(true);
-        setLink("");
-      }
+      const manualDraft = buildManualDraft(trimmed);
+      setPendingHint(manualDraft);
+      setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...manualDraft });
+      setAddModalNotice(TIMEOUT_MODAL_MESSAGE);
+      setIsAddModalOpen(true);
+      setLink("");
     } finally {
       setIsAdding(false);
       closeBusy();
@@ -1453,47 +1408,6 @@ export default function HintsClient() {
     closeBusy();
   }
 
-  function handleDragStart(event) {
-    setActiveId(event.active.id);
-  }
-
-  async function handleDragEnd(event) {
-    const { active, over } = event;
-    setActiveId(null);
-
-    if (!over || active.id === over.id || hints.length === 0) return;
-
-    const nextColumns = splitIntoColumns(hints, 3);
-    const fromColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === active.id));
-    const toColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === over.id));
-
-    if (fromColumnIndex === -1 || toColumnIndex === -1) return;
-
-    const fromItems = [...nextColumns[fromColumnIndex]];
-    const toItems = fromColumnIndex === toColumnIndex ? fromItems : [...nextColumns[toColumnIndex]];
-    const oldIndex = fromItems.findIndex((item) => item.id === active.id);
-    const newIndex = toItems.findIndex((item) => item.id === over.id);
-
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    if (fromColumnIndex === toColumnIndex) {
-      nextColumns[fromColumnIndex] = arrayMove(fromItems, oldIndex, newIndex);
-    } else {
-      const [moved] = fromItems.splice(oldIndex, 1);
-      toItems.splice(newIndex, 0, moved);
-      nextColumns[fromColumnIndex] = fromItems;
-      nextColumns[toColumnIndex] = toItems;
-    }
-
-    const nextHints = rebuildFromColumns(nextColumns);
-    setHints(nextHints);
-    await persistOrder(nextHints);
-  }
-
-  function handleDragCancel() {
-    setActiveId(null);
-  }
-
   const editingHint = visibleHints.find((hint) => hint.id === editingHintId) || null;
 
   return (
@@ -1557,71 +1471,42 @@ export default function HintsClient() {
             />
 
             {isLoading ? (
-              <div className="columns-1 gap-6 md:columns-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="mb-6 break-inside-avoid">
+              <div className="columns-1 gap-5 sm:columns-2 lg:columns-3 xl:columns-4 sm:gap-6">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <MasonryCard key={i}>
                     <div
                       className="w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[#f9f8f5]"
-                      style={{ aspectRatio: i === 1 ? "0.78" : "1", maxHeight: CARD_MAX_HEIGHT }}
+                      style={{
+                        aspectRatio:
+                          i === 1 ? "0.76" : i === 2 ? "1.18" : i === 3 ? "0.9" : i === 4 ? "1.35" : "0.82",
+                        maxHeight: CARD_MAX_HEIGHT,
+                      }}
                     >
                       <div className="skeleton h-full w-full" />
                     </div>
-                  </div>
+                  </MasonryCard>
                 ))}
               </div>
-            ) : hints.length > 0 ? (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                measuring={measuring}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                onDragCancel={handleDragCancel}
-              >
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                  {columns.map((columnHints, columnIndex) => (
-                    <SortableContext
-                      key={`column-${columnIndex}`}
-                      items={columnHints.map((hint) => hint.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div className="space-y-0">
-                        {columnHints.map((hint) => (
-                          <SortableHintCard
-                            key={hint.id}
-                            hint={hint}
-                            imageRatios={imageRatios}
-                            onEdit={openEditModal}
-                            onToggleStarred={toggleStarred}
-                            onTogglePrivate={togglePrivate}
-                            formatCurrency={formatCurrency}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
-                  ))}
-                </div>
-
-                <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.25, 1, 0.5, 1)" }}>
-                  {activeHint ? (
-                    <div className="w-full max-w-[420px]">
-                      <HintCard
-                        hint={activeHint}
-                        imageRatios={imageRatios}
-                        onEdit={() => {}}
-                        onToggleStarred={() => {}}
-                        onTogglePrivate={() => {}}
-                        isDragging
-                        formatCurrency={formatCurrency}
-                      />
-                    </div>
-                  ) : null}
-                </DragOverlay>
-              </DndContext>
+            ) : visibleHints.length > 0 ? (
+              <div className="columns-1 gap-5 sm:columns-2 lg:columns-3 xl:columns-4 sm:gap-6">
+                {visibleHints.map((hint) => (
+                  <MasonryCard key={hint.id}>
+                    <HintCard
+                      hint={hint}
+                      imageRatios={imageRatios}
+                      onEdit={openEditModal}
+                      onToggleStarred={toggleStarred}
+                      onTogglePrivate={togglePrivate}
+                      isDragging={false}
+                      formatCurrency={formatCurrency}
+                    />
+                  </MasonryCard>
+                ))}
+              </div>
             ) : (
-              <div className="columns-1 gap-6 md:columns-3">
+              <div className="columns-1 gap-5 sm:columns-2 lg:columns-3 xl:columns-4 sm:gap-6">
                 {demoHints.map((hint) => (
-                  <div key={hint.id} className="mb-6 break-inside-avoid">
+                  <MasonryCard key={hint.id}>
                     <HintCard
                       hint={hint}
                       imageRatios={imageRatios}
@@ -1631,7 +1516,7 @@ export default function HintsClient() {
                       isDragging={false}
                       formatCurrency={formatCurrency}
                     />
-                  </div>
+                  </MasonryCard>
                 ))}
               </div>
             )}
