@@ -7,6 +7,20 @@ export const dynamic = "force-dynamic";
 
 let stripeInstance = null;
 
+function json(data, status = 200) {
+  return NextResponse.json(data, { status });
+}
+
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function parseAmount(value) {
+  const parsed = Number(String(value ?? "").replace(/[^\d.]/g, ""));
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.round((parsed + Number.EPSILON) * 100) / 100;
+}
+
 function getStripe() {
   if (stripeInstance) return stripeInstance;
 
@@ -25,20 +39,17 @@ function getStripe() {
 
 async function getAuthedUser() {
   const supabase = await createClient();
+
   const {
     data: { user },
-    error: userError,
+    error,
   } = await supabase.auth.getUser();
 
-  if (userError) {
-    throw new Error(userError.message || "Failed to load user.");
+  if (error) {
+    throw new Error(error.message || "Failed to load user.");
   }
 
-  if (!user) {
-    return { supabase, user: null };
-  }
-
-  return { supabase, user };
+  return { supabase, user: user || null };
 }
 
 async function getStripeCustomerId(supabase, stripe, user) {
@@ -53,7 +64,10 @@ async function getStripeCustomerId(supabase, stripe, user) {
   }
 
   if (profile?.stripe_customer_id) {
-    return { customerId: profile.stripe_customer_id, profile };
+    return {
+      customerId: profile.stripe_customer_id,
+      profile,
+    };
   }
 
   const customer = await stripe.customers.create({
@@ -73,10 +87,13 @@ async function getStripeCustomerId(supabase, stripe, user) {
     throw new Error(updateError.message || "Failed to save Stripe customer.");
   }
 
-  return { customerId: customer.id, profile };
+  return {
+    customerId: customer.id,
+    profile,
+  };
 }
 
-async function canAccessCircle(supabase, circleId, userId) {
+async function canAccessCircle(supabase, circleId, userId, userEmail) {
   const { data: circle, error: circleError } = await supabase
     .from("circles")
     .select("id, user_id, title, currency, total_target_amount")
@@ -91,18 +108,26 @@ async function canAccessCircle(supabase, circleId, userId) {
     return { allowed: false, reason: "Circle not found." };
   }
 
-  const isOwner = circle.user_id === userId;
-
-  if (isOwner) {
-    return { allowed: true, circle };
+  if (circle.user_id === userId) {
+    return { allowed: true, circle, invite: null, accessType: "owner" };
   }
 
-  const { data: invite, error: inviteError } = await supabase
+  const email = normalizeEmail(userEmail);
+
+  let inviteQuery = supabase
     .from("circle_invites")
     .select("id, invited_user_id, user_id, circle_id, invite_email, status")
-    .eq("circle_id", circleId)
-    .or(`invited_user_id.eq.${userId},user_id.eq.${userId}`)
-    .maybeSingle();
+    .eq("circle_id", circleId);
+
+  if (email) {
+    inviteQuery = inviteQuery.or(
+      `invited_user_id.eq.${userId},invite_email.eq.${email}`
+    );
+  } else {
+    inviteQuery = inviteQuery.eq("invited_user_id", userId);
+  }
+
+  const { data: invite, error: inviteError } = await inviteQuery.maybeSingle();
 
   if (inviteError) {
     throw new Error(inviteError.message || "Failed to load invite.");
@@ -112,13 +137,27 @@ async function canAccessCircle(supabase, circleId, userId) {
     return { allowed: false, reason: "You are not invited to this circle." };
   }
 
-  const validInvite = invite.invited_user_id === userId || invite.user_id === userId;
+  const invitedUserMatch = invite.invited_user_id === userId;
+  const invitedEmailMatch = normalizeEmail(invite.invite_email) === email;
 
-  if (!validInvite) {
+  if (!invitedUserMatch && !invitedEmailMatch) {
     return { allowed: false, reason: "You are not allowed to contribute to this circle." };
   }
 
-  return { allowed: true, circle, invite };
+  return {
+    allowed: true,
+    circle,
+    invite,
+    accessType: "invitee",
+  };
+}
+
+export async function GET() {
+  return json({
+    ok: true,
+    route: "payment-intent",
+    message: "Use POST to create a payment intent.",
+  });
 }
 
 export async function POST(request) {
@@ -127,27 +166,34 @@ export async function POST(request) {
     const { supabase, user } = await getAuthedUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return json({ error: "Unauthorized", where: "auth" }, 401);
     }
 
     const body = await request.json().catch(() => ({}));
     const circleId = String(body.circleId || body.circle_id || "").trim();
-    const amountInput = Number(String(body.amount ?? "").replace(/[^\d.]/g, ""));
+    const amount = parseAmount(body.amount);
     const currency = String(body.currency || "GBP").trim().toUpperCase();
 
     if (!circleId) {
-      return NextResponse.json({ error: "Missing circleId." }, { status: 400 });
+      return json({ error: "Missing circleId.", where: "validation-circleId" }, 400);
     }
 
-    if (!Number.isFinite(amountInput) || amountInput <= 0) {
-      return NextResponse.json({ error: "Amount must be greater than 0." }, { status: 400 });
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return json({ error: "Amount must be greater than 0.", where: "validation-amount" }, 400);
     }
 
-    const amount = Math.round((amountInput + Number.EPSILON) * 100) / 100;
+    const access = await canAccessCircle(
+      supabase,
+      circleId,
+      user.id,
+      user.email || ""
+    );
 
-    const access = await canAccessCircle(supabase, circleId, user.id);
     if (!access.allowed) {
-      return NextResponse.json({ error: access.reason || "Not allowed." }, { status: 403 });
+      return json(
+        { error: access.reason || "Not allowed.", where: "circle-access" },
+        403
+      );
     }
 
     const { customerId } = await getStripeCustomerId(supabase, stripe, user);
@@ -156,7 +202,11 @@ export async function POST(request) {
       circle_id: circleId,
       invite_id: access.invite?.id || null,
       user_id: user.id,
-      contributor_name: body.contributorName || user.user_metadata?.full_name || user.email || null,
+      contributor_name:
+        body.contributorName ||
+        user.user_metadata?.full_name ||
+        user.email ||
+        null,
       contributor_email: body.contributorEmail || user.email || null,
       amount,
       currency,
@@ -170,9 +220,12 @@ export async function POST(request) {
       .single();
 
     if (contributionError) {
-      return NextResponse.json(
-        { error: contributionError.message || "Failed to create contribution." },
-        { status: 500 }
+      return json(
+        {
+          error: contributionError.message || "Failed to create contribution.",
+          where: "insert-contribution",
+        },
+        500
       );
     }
 
@@ -188,6 +241,7 @@ export async function POST(request) {
         circle_id: circleId,
         contribution_id: contribution.id,
         invite_id: access.invite?.id || "",
+        access_type: access.accessType || "",
       },
       receipt_email: body.contributorEmail || user.email || undefined,
       description: body.description || `Contribution to circle ${circleId}`,
@@ -202,21 +256,31 @@ export async function POST(request) {
       .eq("id", contribution.id);
 
     if (updateError) {
-      return NextResponse.json(
-        { error: updateError.message || "Failed to save payment intent." },
-        { status: 500 }
+      return json(
+        {
+          error: updateError.message || "Failed to save payment intent.",
+          where: "update-contribution",
+        },
+        500
       );
     }
 
-    return NextResponse.json({
+    return json({
       clientSecret: paymentIntent.client_secret,
       contributionId: contribution.id,
       paymentIntentId: paymentIntent.id,
+      where: "success",
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to create payment intent." },
-      { status: 500 }
+    return json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to create payment intent.",
+        where: "catch",
+      },
+      500
     );
   }
 }
