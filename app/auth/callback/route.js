@@ -11,7 +11,6 @@ export async function GET(request) {
     );
   }
 
-  // Collect cookies to set, write them onto the final response at the end
   const cookiesToWrite = [];
 
   const supabase = createServerClient(
@@ -38,9 +37,7 @@ export async function GET(request) {
     );
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   let destination = "/";
 
@@ -55,14 +52,12 @@ export async function GET(request) {
       !profile || !profile.onboarding_completed ? "/onboarding" : "/feed";
   }
 
-  // Build the final response only once, after all logic is done
   const response = NextResponse.redirect(
     new URL(destination, requestUrl.origin)
   );
 
   response.headers.set("Cache-Control", "private, no-store");
 
-  // Write all cookies onto the final response
   cookiesToWrite.forEach(({ name, value, options }) => {
     response.cookies.set(name, value, options);
   });
