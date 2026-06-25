@@ -6,14 +6,10 @@ export async function proxy(request) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.next({
-      request,
-    });
+    return NextResponse.next({ request });
   }
 
-  let response = NextResponse.next({
-    request,
-  });
+  let response = NextResponse.next({ request });
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -24,11 +20,7 @@ export async function proxy(request) {
         cookiesToSet.forEach(({ name, value }) => {
           request.cookies.set(name, value);
         });
-
-        response = NextResponse.next({
-          request,
-        });
-
+        response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
@@ -38,7 +30,6 @@ export async function proxy(request) {
 
   await supabase.auth.getUser();
   response.headers.set("Cache-Control", "private, no-store");
-
   return response;
 }
 
