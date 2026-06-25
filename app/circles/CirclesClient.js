@@ -560,7 +560,7 @@ function MemberPill({ member, currency = "GBP", formatCurrency }) {
               {statusLabel}
             </span>
             <span className="text-[11px] text-slate-400">
-              {member.contributed ? formatCurrency(member.amount, currency) : "—"}
+              {member.contributed ? formatCurrency(member.amount, currency || "GBP") : "—"}
             </span>
           </div>
         </div>
@@ -707,8 +707,9 @@ function CircleCard({ circle, onDeleteCircleClick, deletingCircleId, formatCurre
     (member) => getAvatarState(member.status) === "accepted"
   ).length;
   const invitedCount = safeMembers.length;
-  const moneyLabel = formatCurrency(circle?.pot?.target, circle?.pot?.currency || "GBP");
-  const raisedLabel = formatCurrency(circle?.pot?.raised, circle?.pot?.currency || "GBP");
+  const potCurrency = circle?.pot?.currency || "GBP";
+  const moneyLabel = formatCurrency(circle?.pot?.target, potCurrency);
+  const raisedLabel = formatCurrency(circle?.pot?.raised, potCurrency);
   const showItemPreview =
     circle?.pot?.active &&
     circle?.pot?.goalType === "item" &&
@@ -759,7 +760,7 @@ function CircleCard({ circle, onDeleteCircleClick, deletingCircleId, formatCurre
                 <MemberPill
                   key={`${circle?.id}-${member.name}`}
                   member={member}
-                  currency={circle?.pot?.currency}
+                  currency={potCurrency}
                   formatCurrency={formatCurrency}
                 />
               ))}
@@ -813,7 +814,7 @@ function CircleCard({ circle, onDeleteCircleClick, deletingCircleId, formatCurre
                     Deadline {formatDateLabel(circle?.pot?.deadline)}
                   </span>
                   <span className="rounded-full bg-[#edf3ff] px-3 py-1 text-[11px] font-semibold text-slate-600">
-                    {circle?.pot?.currency || "GBP"}
+                    {potCurrency}
                   </span>
                 </div>
 
@@ -1722,7 +1723,10 @@ function CreateCircleModal({
                                       : "Public"}
                                     {hint.retailer ? ` · ${hint.retailer}` : ""}
                                     {extractHintAmount(hint) > 0
-                                      ? ` · ${formatCurrency(extractHintAmount(hint), hint.currency || form.currency || "GBP")}`
+                                      ? ` · ${formatCurrency(
+                                          extractHintAmount(hint),
+                                          hint.currency || form.currency || "GBP"
+                                        )}`
                                       : ""}
                                   </p>
                                   <p className="mt-2 text-[12px] leading-5 text-slate-500">
@@ -2387,6 +2391,7 @@ export default function CirclesClient() {
       setForm((prev) => ({
         ...prev,
         goalValue: previewAmount > 0 ? String(previewAmount) : "",
+        currency: data?.currency || prev.currency,
       }));
     } catch {
       setLinkPreview({
