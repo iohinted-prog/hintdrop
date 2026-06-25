@@ -280,6 +280,23 @@ function isSocialFeedItem(item) {
   return getFeedBucket(item) !== "reminder";
 }
 
+function possessiveName(name) {
+  const trimmed = String(name || "").trim();
+  if (!trimmed) return "Their";
+  return trimmed.endsWith("s") ? `${trimmed}'` : `${trimmed}'s`;
+}
+
+function buildReminderHeadline({ title, type, eventDate }) {
+  const diffDays = diffInDaysFromToday(eventDate);
+  if (diffDays == null) return `${title || "Event"} is coming up`;
+
+  const distance = formatReminderDistance(diffDays).toLowerCase();
+  const normalizedType = String(type || "").toLowerCase();
+  const typeLabel = eventTypeStyles[normalizedType]?.label?.toLowerCase() || "event";
+
+  return `${possessiveName(title)} ${typeLabel} is ${distance}`;
+}
+
 function ContactAvatar({ contact }) {
   if (contact.isDemo) {
     return (
@@ -1466,11 +1483,13 @@ export default function FeedClient() {
     setCommentsByFeedId(grouped);
   }, []);
 
-  const loadInvites = useCallback(async () => {
+  const loadInvites = useCallback(async (user) => {
     setInvitesLoading(true);
     setInvitesError("");
 
-    const { data, error } = await supabase
+    const normalizedEmail = user?.email?.trim().toLowerCase();
+
+    let query = supabase
       .from("circle_invites")
       .select(`
         id,
@@ -1488,6 +1507,12 @@ export default function FeedClient() {
       `)
       .in("status", ["pending", "viewed"])
       .order("created_at", { ascending: false });
+
+    query = normalizedEmail
+      ? query.or(`invited_user_id.eq.${user.id},invite_email.eq.${normalizedEmail}`)
+      : query.eq("invited_user_id", user.id);
+
+    const { data, error } = await query;
 
     if (error) {
       setPendingInvites([]);
@@ -1532,7 +1557,7 @@ export default function FeedClient() {
         await Promise.all([
           loadContacts(user.id),
           loadFeedItems(),
-          loadInvites(),
+          loadInvites(user),
           loadCalendarEvents(user.id),
         ]);
       } catch (error) {
@@ -1696,7 +1721,7 @@ export default function FeedClient() {
 
       if (error) throw new Error(normalizeSupabaseError(error, "Could not update invite."));
 
-      await loadInvites();
+      await loadInvites(sessionUser);
       setActiveInvite(null);
     } catch (error) {
       setInvitesError(error?.message || "Could not update invite.");
@@ -1741,15 +1766,6 @@ export default function FeedClient() {
         const diffDays = diffInDaysFromToday(event.event_date);
         if (diffDays === null || diffDays < 0 || diffDays > 7) return null;
 
-        const headline =
-          diffDays === 0
-            ? `${event.title} is today`
-            : diffDays === 1
-              ? `${event.title} is tomorrow`
-              : diffDays === 7
-                ? `${event.title} is in 1 week`
-                : `${event.title} is in ${diffDays} days`;
-
         return {
           id: `reminder-${event.id}-${diffDays}`,
           owner_user_id: sessionUser?.id || "me",
@@ -1761,7 +1777,11 @@ export default function FeedClient() {
           circle_id: null,
           activity_session_id: null,
           source_event_id: event.id,
-          headline,
+          headline: buildReminderHeadline({
+            title: event.title,
+            type: event.type,
+            eventDate: event.event_date,
+          }),
           body: "A reminder so you have time to sort the gift.",
           cta_label: "Shop",
           cta_href: "/shop",
