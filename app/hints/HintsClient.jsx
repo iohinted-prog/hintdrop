@@ -422,7 +422,7 @@ function loadImageAspectRatio(src) {
 }
 
 function fallbackCardRatio(hint) {
-  const demoRatios = {
+  const ratioMap = {
     "demo-1": 0.74,
     "demo-2": 1.18,
     "demo-3": 0.9,
@@ -435,7 +435,7 @@ function fallbackCardRatio(hint) {
     "demo-10": 1.22,
   };
 
-  if (hint?.id && demoRatios[hint.id]) return demoRatios[hint.id];
+  if (ratioMap[hint?.id]) return ratioMap[hint.id];
   if (hint?.image) return 0.82;
   return 1;
 }
