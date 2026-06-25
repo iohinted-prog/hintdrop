@@ -204,36 +204,6 @@ const demoHints = [
     position: 9,
     needsReview: false,
   },
-  {
-    id: "demo-11",
-    title: "Ceramic dinner set",
-    retailer: "sohohome.com",
-    numericPrice: 145,
-    currency: "GBP",
-    image:
-      "https://images.unsplash.com/photo-1496412705862-e0088f16f791?auto=format&fit=crop&w=1200&q=80",
-    fallbackGradient: "from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]",
-    starred: false,
-    private: false,
-    url: "https://www.sohohome.com/",
-    position: 10,
-    needsReview: false,
-  },
-  {
-    id: "demo-12",
-    title: "Boutique stay",
-    retailer: "mrandmrssmith.com",
-    numericPrice: 540,
-    currency: "GBP",
-    image:
-      "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&w=1200&q=80",
-    fallbackGradient: "from-[#d9dfcf] via-[#b9c7aa] to-[#90a27e]",
-    starred: true,
-    private: false,
-    url: "https://www.mrandmrssmith.com/",
-    position: 11,
-    needsReview: false,
-  },
 ];
 
 function LogoMark() {
@@ -452,22 +422,20 @@ function loadImageAspectRatio(src) {
 }
 
 function fallbackCardRatio(hint) {
-  const ratioMap = {
+  const demoRatioMap = {
     "demo-1": 0.74,
-    "demo-2": 1.16,
-    "demo-3": 0.92,
-    "demo-4": 1.3,
+    "demo-2": 1.18,
+    "demo-3": 0.9,
+    "demo-4": 1.28,
     "demo-5": 0.82,
     "demo-6": 0.7,
-    "demo-7": 1.08,
+    "demo-7": 1.1,
     "demo-8": 0.86,
     "demo-9": 0.76,
-    "demo-10": 1.2,
-    "demo-11": 1.12,
-    "demo-12": 0.72,
+    "demo-10": 1.22,
   };
 
-  if (ratioMap[hint?.id]) return ratioMap[hint.id];
+  if (demoRatioMap[hint?.id]) return demoRatioMap[hint.id];
   if (hint?.image) return 0.82;
   return 1;
 }
@@ -1496,13 +1464,23 @@ export default function HintsClient() {
       setIsAddModalOpen(true);
       setLink("");
     } catch (err) {
-      const manualDraft = buildManualDraft(trimmed);
+      if (err?.code === "PREVIEW_TIMEOUT" || err?.message === "PREVIEW_TIMEOUT") {
+        const manualDraft = buildManualDraft(trimmed);
 
-      setPendingHint(manualDraft);
-      setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...manualDraft });
-      setAddModalNotice(TIMEOUT_MODAL_MESSAGE);
-      setIsAddModalOpen(true);
-      setLink("");
+        setPendingHint(manualDraft);
+        setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...manualDraft });
+        setAddModalNotice(TIMEOUT_MODAL_MESSAGE);
+        setIsAddModalOpen(true);
+        setLink("");
+      } else {
+        const manualDraft = buildManualDraft(trimmed);
+
+        setPendingHint(manualDraft);
+        setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...manualDraft });
+        setAddModalNotice(TIMEOUT_MODAL_MESSAGE);
+        setIsAddModalOpen(true);
+        setLink("");
+      }
     } finally {
       setIsAdding(false);
       closeBusy();
@@ -1660,7 +1638,9 @@ export default function HintsClient() {
               <p className="mt-3 text-sm font-medium text-[#c45c42]">{error}</p>
             ) : (
               <div className="mt-3 space-y-1 text-sm text-slate-500">
-                <p>We’ll try our best to pull the title, image, and price before you review it.</p>
+                <p>
+                  We’ll try our best to pull the title, image, and price before you review it.
+                </p>
               </div>
             )}
           </div>
