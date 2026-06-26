@@ -3206,15 +3206,21 @@ export default function CirclesClient() {
         throw new Error("Circle was inserted, but the new row could not be returned.");
       }
 
-      const inviteRows = selectedPeople.map((person) => ({
-        circle_id: insertedCircle.id,
-        user_id: sessionUser.id,
-        contact_id: person.id || null,
-        invite_name: person.name || null,
-        invite_email: String(person.email || "").trim().toLowerCase(),
-        status: "pending",
-        reminder_count: 0,
-      }));
+      const inviteRows = selectedPeople.map((person) => {
+  const rawEmail = String(person.email || "").trim();
+  const normalizedEmail = rawEmail.toLowerCase();
+
+  return {
+    circle_id: insertedCircle.id,
+    user_id: sessionUser.id,
+    contact_id: person.id || null,
+    invite_name: person.name || null,
+    invite_email: rawEmail,
+    invite_email_normalized: normalizedEmail,
+    status: "pending",
+    reminder_count: 0,
+  };
+});
 
       let insertedInvites = [];
       if (inviteRows.length > 0) {
