@@ -1839,7 +1839,8 @@ function CreateCircleModal({
       ? publicHintsByContact?.[selectedOwner.id] || []
       : [];
 
-  const visibleHints = String(selectedHintOwnerId) === SELF_SELECTOR_ID ? ownHints : selectedOwnerPublicHints;
+  const visibleHints =
+    String(selectedHintOwnerId) === SELF_SELECTOR_ID ? ownHints : selectedOwnerPublicHints;
   const amountMode = form.goalType === "amount";
 
   const liveBaseAmount = parseAmount(form.goalValue);
@@ -1872,7 +1873,12 @@ function CreateCircleModal({
   }
 
   return (
-    <ModalShell open={open} onClose={onClose} eyebrow="New circle" title="Create a circle around an event">
+    <ModalShell
+      open={open}
+      onClose={onClose}
+      eyebrow="New circle"
+      title="Create a circle around an event"
+    >
       <div className="grid gap-0 lg:grid-cols-[1.06fr_0.94fr]">
         <div className="min-h-0 space-y-6 p-6 lg:border-r lg:border-[#efe0d7]">
           <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
@@ -1920,6 +1926,7 @@ function CreateCircleModal({
                         {event.type} · {event.event_date}
                       </p>
                     </div>
+
                     <input
                       type="radio"
                       name="calendarEvent"
@@ -1929,10 +1936,11 @@ function CreateCircleModal({
                         setSelectedEventId(String(event.id));
                         setForm((prev) => ({
                           ...prev,
+                          eventTitle: event.title,
                           eventDate: event.event_date,
-                          deadline: prev.deadline || event.event_date,
-                          occasionType: event.type || prev.occasionType,
-                          title: prev.title?.trim() ? prev.title : event.title,
+                          deadline: event.event_date,
+                          occasionType: event.type || "Event",
+                          title: event.title,
                         }));
                       }}
                     />
@@ -1950,7 +1958,7 @@ function CreateCircleModal({
                       setForm((prev) => ({
                         ...prev,
                         eventTitle: e.target.value,
-                        title: prev.title?.trim() ? prev.title : e.target.value,
+                        title: e.target.value,
                       }))
                     }
                     className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
@@ -1991,6 +1999,15 @@ function CreateCircleModal({
                   placeholder="Jules birthday circle"
                 />
               </label>
+
+              {eventMode === "calendar" ? (
+                <div className="space-y-2 sm:col-span-2">
+                  <span className="text-sm font-medium text-slate-700">Event date</span>
+                  <div className="flex h-12 w-full items-center rounded-[18px] border border-[#efe1d9] bg-[#faf7f5] px-4 text-sm text-slate-600">
+                    {form.eventDate || "No date selected"}
+                  </div>
+                </div>
+              ) : null}
 
               <label className="space-y-2">
                 <span className="text-sm font-medium text-slate-700">Contribution deadline</span>
