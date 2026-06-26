@@ -1,0 +1,2 @@
+[functions.send-circle-invite]
+verify_jwt = false
