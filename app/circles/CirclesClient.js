@@ -26,7 +26,6 @@ const currencyOptions = [
   { code: "EUR", symbol: "€", label: "Euro" },
   { code: "AUD", symbol: "A$", label: "Australian Dollar" },
   { code: "NZD", symbol: "NZ$", label: "New Zealand Dollar" },
-  { code: "ZAR", symbol: "R", label: "South African Rand" },
   { code: "CAD", symbol: "C$", label: "Canadian Dollar" },
 ];
 
