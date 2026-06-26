@@ -27,11 +27,14 @@ Deno.serve(async (req) => {
     const jwt = authHeader.replace('Bearer ', '')
     const { data: { user }, error: userError } = await supabase.auth.getUser(jwt)
     if (userError || !user) {
+      console.log('Auth error:', userError)
       return new Response(JSON.stringify({ ok: false, error: 'Invalid user' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+
+    console.log('User authenticated:', user.id)
 
     const { circle_id, email, name } = await req.json()
     if (!circle_id || !email) {
@@ -41,13 +44,14 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Confirm the circle exists and belongs to this user
     const { data: circle, error: circleError } = await supabase
       .from('circles')
       .select('id, title')
       .eq('id', circle_id)
       .eq('user_id', user.id)
       .maybeSingle()
+
+    console.log('Circle found:', circle, 'Circle error:', circleError)
 
     if (circleError || !circle) {
       return new Response(JSON.stringify({ ok: false, error: 'Circle not found or not yours' }), {
@@ -57,8 +61,8 @@ Deno.serve(async (req) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim()
+    console.log('Inviting:', normalizedEmail)
 
-    // Check if invitee is already a Hinted user
     const { data: existingProfile } = await supabase
       .from('profiles')
       .select('id')
@@ -84,11 +88,14 @@ Deno.serve(async (req) => {
       .single()
 
     if (insertError) {
+      console.log('Circle insert error:', insertError)
       return new Response(JSON.stringify({ ok: false, error: insertError.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+
+    console.log('Invite created:', invite.id)
 
     const acceptUrl = `https://www.hinted.io/invite/circle?token=${inviteToken}`
 
@@ -99,9 +106,9 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Hinted <hello@hinted.io>',
+        from: 'Hinted <onboarding@resend.dev>',
         to: normalizedEmail,
-        subject: `You've been invited to join a pot on Hinted`,
+        subject: "You've been invited to join a pot on Hinted",
         html: `
           <p>Hi${name ? ` ${name}` : ''},</p>
           <p>You have been invited to join a group pot: <strong>${circle.title}</strong>.</p>
@@ -113,11 +120,14 @@ Deno.serve(async (req) => {
 
     if (!resendRes.ok) {
       const resendError = await resendRes.json()
+      console.log('Resend error:', resendError)
       return new Response(JSON.stringify({ ok: false, error: 'Email failed', detail: resendError }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+
+    console.log('Email sent successfully')
 
     return new Response(JSON.stringify({ ok: true, invite_id: invite.id }), {
       status: 200,
@@ -125,6 +135,7 @@ Deno.serve(async (req) => {
     })
 
   } catch (error) {
+    console.log('Caught error:', error)
     return new Response(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : 'Unknown error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
