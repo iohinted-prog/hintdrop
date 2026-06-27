@@ -55,7 +55,6 @@ Deno.serve(async (req) => {
     const tokenHash = await hashToken(token)
     console.log('Looking up token hash:', tokenHash)
 
-    // Look up the invite
     const { data: invite, error: inviteError } = await supabase
       .from('contact_invites')
       .select('*')
@@ -71,7 +70,6 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Check invite hasn't expired
     if (new Date(invite.expires_at) < new Date()) {
       return new Response(JSON.stringify({ ok: false, error: 'Invite has expired' }), {
         status: 410,
@@ -81,7 +79,6 @@ Deno.serve(async (req) => {
 
     console.log('Invite found:', invite.id)
 
-    // Get the acceptor's profile
     const { data: acceptorProfile } = await supabase
       .from('profiles')
       .select('id, birthday')
@@ -90,7 +87,6 @@ Deno.serve(async (req) => {
 
     console.log('Acceptor profile:', acceptorProfile)
 
-    // Create contact record for the inviter linking to the acceptor
     const { error: contactError } = await supabase
       .from('contacts')
       .insert({
@@ -112,7 +108,6 @@ Deno.serve(async (req) => {
 
     console.log('Contact created')
 
-    // Mark invite as accepted
     const { error: updateError } = await supabase
       .from('contact_invites')
       .update({
