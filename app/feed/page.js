@@ -34,5 +34,15 @@ export default async function FeedPage() {
     redirect("/");
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, onboarding_completed")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile || !profile.onboarding_completed) {
+    redirect("/onboarding");
+  }
+
   return <FeedClient />;
 }

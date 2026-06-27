@@ -895,6 +895,9 @@ export default function HomePageClient() {
             </p>
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+              <Link href="/about" className="transition hover:text-slate-900">
+                About
+              </Link>
               <Link href="/for-brands" className="transition hover:text-slate-900">
                 For Brands
               </Link>

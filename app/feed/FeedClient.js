@@ -108,14 +108,52 @@ const eventTypeStyles = {
     label: "Birthday",
   },
   anniversary: {
-    dot: "bg-[#d69aae]",
-    pill: "bg-[#fff2f6] text-[#b85c79]",
+    dot: "bg-[#9ec5fe]",
+    pill: "bg-[#eef6ff] text-[#4d7fc6]",
     label: "Anniversary",
   },
   celebration: {
-    dot: "bg-[#e6aa54]",
-    pill: "bg-[#fff7e8] text-[#af7b14]",
+    dot: "bg-[#9acb8f]",
+    pill: "bg-[#eef8ea] text-[#4f8750]",
     label: "Celebration",
+  },
+};
+
+const specialEventStyles = {
+  valentines: {
+    dot: "bg-[#f49ab6]",
+    pill: "bg-[#fff1f6] text-[#c85a86]",
+    label: "Valentine’s",
+  },
+  christmas: {
+    dot: "bg-[#d95c5c]",
+    pill: "bg-[#fff1f1] text-[#b24545]",
+    label: "Christmas",
+  },
+  halloween: {
+    dot: "bg-[#f0a14a]",
+    pill: "bg-[#fff5e8] text-[#be741d]",
+    label: "Halloween",
+  },
+  mothersDay: {
+    dot: "bg-[#caa6ff]",
+    pill: "bg-[#f6f0ff] text-[#8660c7]",
+    label: "Mother’s Day",
+  },
+  fathersDay: {
+    dot: "bg-[#7bb6d9]",
+    pill: "bg-[#edf7fd] text-[#4f87a8]",
+    label: "Father’s Day",
+  },
+  easter: {
+    dot: "bg-[#f0c86a]",
+    pill: "bg-[#fff8e7] text-[#b28718]",
+    label: "Easter",
+  },
+  newYears: {
+    dot: "bg-[#8a8fa8]",
+    pill: "bg-[#f2f4f8] text-[#5f667f]",
+    label: "New Year",
   },
 };
 
@@ -256,7 +294,9 @@ function relationshipToRoleLabel(relationshipTypes, fallbackRole) {
 }
 
 function mapContactState(status) {
-  return status === "accepted" ? "user" : "invitee";
+  if (status === "user") return "user";
+  if (status === "invited") return "invitee";
+  return "contact";
 }
 
 function getFeedBucket(item) {
@@ -280,6 +320,37 @@ function isSocialFeedItem(item) {
   return getFeedBucket(item) !== "reminder";
 }
 
+function possessiveName(name) {
+  const trimmed = String(name || "").trim();
+  if (!trimmed) return "Their";
+  return trimmed.endsWith("s") ? `${trimmed}'` : `${trimmed}'s`;
+}
+
+function buildReminderHeadline({ title, type, eventDate }) {
+  const diffDays = diffInDaysFromToday(eventDate);
+  if (diffDays == null) return `${title || "Event"} is coming up`;
+
+  const distance = formatReminderDistance(diffDays).toLowerCase();
+  const normalizedType = String(type || "").toLowerCase();
+  const typeLabel = eventTypeStyles[normalizedType]?.label?.toLowerCase() || "event";
+
+  return `${possessiveName(title)} ${typeLabel} is ${distance}`;
+}
+
+function resolveEventStyle(event) {
+  const title = String(event?.title || "").trim().toLowerCase();
+
+  if (title.includes("valentine")) return specialEventStyles.valentines;
+  if (title.includes("christmas") || title.includes("xmas")) return specialEventStyles.christmas;
+  if (title.includes("halloween")) return specialEventStyles.halloween;
+  if (title.includes("mother")) return specialEventStyles.mothersDay;
+  if (title.includes("father")) return specialEventStyles.fathersDay;
+  if (title.includes("easter")) return specialEventStyles.easter;
+  if (title.includes("new year")) return specialEventStyles.newYears;
+
+  return eventTypeStyles[event?.type] || eventTypeStyles.celebration;
+}
+
 function ContactAvatar({ contact }) {
   if (contact.isDemo) {
     return (
@@ -292,25 +363,34 @@ function ContactAvatar({ contact }) {
   }
 
   const isUser = contact.contactState === "user";
+  const isInvitee = contact.contactState === "invitee";
+  const isPlainContact = contact.contactState === "contact";
 
   return (
     <div
       className={`relative flex h-11 w-11 items-center justify-center rounded-full text-[12px] font-bold ${
         isUser
           ? "bg-gradient-to-b from-[#8aa587] to-[#4e684d] text-white"
-          : "border-2 border-dashed border-[#dfb39d] bg-[#fff5ef] text-[#c87150]"
+          : isInvitee
+            ? "border-2 border-dashed border-[#dfb39d] bg-[#fff5ef] text-[#c87150]"
+            : "border border-[#e8ddd6] bg-[#faf7f4] text-slate-600"
       }`}
     >
       {contact.initials}
-      <span
-        className={`absolute -bottom-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-[9px] font-bold ${
-          isUser
-            ? "bg-[#2f3b2d] text-white"
-            : "border border-[#e6c5b6] bg-[#fff0e8] text-[#c87150]"
-        }`}
-      >
-        {isUser ? "C" : "I"}
-      </span>
+
+      {isUser ? (
+        <span className="absolute -bottom-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#2f3b2d] px-1 text-[9px] font-bold text-white">
+          C
+        </span>
+      ) : isInvitee ? (
+        <span className="absolute -bottom-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full border border-[#e6c5b6] bg-[#fff0e8] px-1 text-[9px] font-bold text-[#c87150]">
+          I
+        </span>
+      ) : isPlainContact ? (
+        <span className="absolute -bottom-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full border border-[#e8ddd6] bg-white px-1 text-[9px] font-bold text-slate-500">
+          P
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -993,7 +1073,7 @@ function CalendarPopover({
       <div className="mt-4 space-y-3">
         {events.length > 0 ? (
           events.map((event) => {
-            const style = eventTypeStyles[event.type] || eventTypeStyles.celebration;
+            const style = resolveEventStyle(event);
             const canDelete = event.source === "user";
 
             return (
@@ -1222,8 +1302,8 @@ function MiniCalendar({
           const selected = key === selectedKey;
           const isToday = key === todayKey;
           const dayEvents = eventsByDate[key] || [];
-          const leadType = dayEvents[0]?.type;
-          const dotClass = leadType ? (eventTypeStyles[leadType] || eventTypeStyles.celebration).dot : null;
+          const leadEvent = dayEvents[0];
+          const dotClass = leadEvent ? resolveEventStyle(leadEvent).dot : null;
 
           return (
             <button
@@ -1384,10 +1464,10 @@ export default function FeedClient() {
     setContactError("");
 
     const { data, error } = await supabase
-      .from("contacts")
+      .from("contact_public_state")
       .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
+      .eq("owner_user_id", userId)
+      .order("name", { ascending: true });
 
     if (error) {
       setContacts([]);
@@ -1396,19 +1476,23 @@ export default function FeedClient() {
     }
 
     const mapped = (data || []).map((row) => {
-      const contactState = mapContactState(row.status);
-      const relationshipTypes = Array.isArray(row.relationship_types) ? row.relationship_types : [];
+      const contactState = mapContactState(row.public_state);
 
       return {
-        id: row.id,
+        id: row.contact_id,
         name: row.name || row.email || "Unnamed contact",
-        role: relationshipToRoleLabel(relationshipTypes, row.role),
-        note: contactState === "user" ? "Hinted user" : "Invitee",
+        role: "Contact",
+        note:
+          contactState === "user"
+            ? "Hinted user"
+            : contactState === "invitee"
+              ? "Invitee"
+              : "Contact",
         initials: getInitials(row.name || row.email || "C"),
         email: row.email || "",
-        relationshipTypes,
         contactState,
-        status: row.status,
+        profileId: row.profile_id,
+        publicState: row.public_state,
         isDemo: false,
         raw: row,
       };
@@ -1466,11 +1550,13 @@ export default function FeedClient() {
     setCommentsByFeedId(grouped);
   }, []);
 
-  const loadInvites = useCallback(async () => {
+  const loadInvites = useCallback(async (user) => {
     setInvitesLoading(true);
     setInvitesError("");
 
-    const { data, error } = await supabase
+    const normalizedEmail = user?.email?.trim().toLowerCase();
+
+    let query = supabase
       .from("circle_invites")
       .select(`
         id,
@@ -1486,8 +1572,14 @@ export default function FeedClient() {
         updated_at,
         invited_user_id
       `)
-      .in("status", ["pending", "viewed"])
+      .eq("status", "pending")
       .order("created_at", { ascending: false });
+
+    query = normalizedEmail
+      ? query.or(`invited_user_id.eq.${user.id},invite_email.eq.${normalizedEmail}`)
+      : query.eq("invited_user_id", user.id);
+
+    const { data, error } = await query;
 
     if (error) {
       setPendingInvites([]);
@@ -1532,7 +1624,7 @@ export default function FeedClient() {
         await Promise.all([
           loadContacts(user.id),
           loadFeedItems(),
-          loadInvites(),
+          loadInvites(user),
           loadCalendarEvents(user.id),
         ]);
       } catch (error) {
@@ -1585,7 +1677,6 @@ export default function FeedClient() {
         Array.isArray(payload.relationshipTypes) && payload.relationshipTypes.length
           ? payload.relationshipTypes[0]
           : "Friend",
-      status: "invitee",
     };
 
     const { error } = await supabase.from("contacts").insert(insertPayload);
@@ -1696,7 +1787,7 @@ export default function FeedClient() {
 
       if (error) throw new Error(normalizeSupabaseError(error, "Could not update invite."));
 
-      await loadInvites();
+      await loadInvites(sessionUser);
       setActiveInvite(null);
     } catch (error) {
       setInvitesError(error?.message || "Could not update invite.");
@@ -1741,15 +1832,6 @@ export default function FeedClient() {
         const diffDays = diffInDaysFromToday(event.event_date);
         if (diffDays === null || diffDays < 0 || diffDays > 7) return null;
 
-        const headline =
-          diffDays === 0
-            ? `${event.title} is today`
-            : diffDays === 1
-              ? `${event.title} is tomorrow`
-              : diffDays === 7
-                ? `${event.title} is in 1 week`
-                : `${event.title} is in ${diffDays} days`;
-
         return {
           id: `reminder-${event.id}-${diffDays}`,
           owner_user_id: sessionUser?.id || "me",
@@ -1761,7 +1843,11 @@ export default function FeedClient() {
           circle_id: null,
           activity_session_id: null,
           source_event_id: event.id,
-          headline,
+          headline: buildReminderHeadline({
+            title: event.title,
+            type: event.type,
+            eventDate: event.event_date,
+          }),
           body: "A reminder so you have time to sort the gift.",
           cta_label: "Shop",
           cta_href: "/shop",
@@ -1913,15 +1999,6 @@ export default function FeedClient() {
                           className="inline-flex items-center justify-center rounded-full border border-[#ee8d69] bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-60"
                         >
                           {inviteActionId === invite.id ? "Working..." : "View invite"}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleInviteDecision(invite, "viewed")}
-                          disabled={inviteActionId === invite.id}
-                          className="inline-flex items-center justify-center rounded-full border border-[#dbe8d4] bg-[#eef8e9] px-4 py-2 text-sm font-semibold text-[#4b7a39] disabled:opacity-60"
-                        >
-                          {inviteActionId === invite.id ? "Working..." : "Mark viewed"}
                         </button>
 
                         <button

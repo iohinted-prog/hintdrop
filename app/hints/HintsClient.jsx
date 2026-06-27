@@ -422,7 +422,7 @@ function loadImageAspectRatio(src) {
 }
 
 function fallbackCardRatio(hint) {
-  const demoRatios = {
+  const ratioMap = {
     "demo-1": 0.74,
     "demo-2": 1.18,
     "demo-3": 0.9,
@@ -435,7 +435,7 @@ function fallbackCardRatio(hint) {
     "demo-10": 1.22,
   };
 
-  if (hint?.id && demoRatios[hint.id]) return demoRatios[hint.id];
+  if (ratioMap[hint?.id]) return ratioMap[hint.id];
   if (hint?.image) return 0.82;
   return 1;
 }
@@ -1023,6 +1023,34 @@ function SortableHintCard({
   );
 }
 
+function LoadingHintCard({ ratio = "0.92" }) {
+  return (
+    <div
+      className="w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[#f9f8f5]"
+      style={{
+        aspectRatio: ratio,
+        maxHeight: CARD_MAX_HEIGHT,
+        boxShadow: "0 10px 30px rgba(176,118,86,0.08), inset 0 1px 0 rgba(255,255,255,0.24)",
+      }}
+    >
+      <div className="relative h-full w-full overflow-hidden">
+        <div className="skeleton absolute inset-0" />
+        <div className="absolute left-4 right-4 top-4 flex items-center justify-between">
+          <div className="h-10 w-[78px] rounded-full bg-white/70" />
+          <div className="h-10 w-10 rounded-full bg-white/70" />
+        </div>
+        <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
+          <div className="space-y-3">
+            <div className="h-6 w-2/3 rounded-full bg-white/70" />
+            <div className="h-3 w-1/3 rounded-full bg-white/50" />
+            <div className="h-6 w-[88px] rounded-full bg-[#fff1e9]/80" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HintsClient() {
   const { formatCurrency } = useCurrencyFormatter();
 
@@ -1126,6 +1154,11 @@ export default function HintsClient() {
   }, []);
 
   useEffect(() => {
+    if (currentUser === null) {
+      setIsLoading(true);
+      return;
+    }
+
     if (!currentUser) {
       setHints([]);
       setIsLoading(false);
@@ -1600,6 +1633,12 @@ export default function HintsClient() {
 
   const editingHint = visibleHints.find((hint) => hint.id === editingHintId) || null;
 
+  const loadingColumns = [
+    ["0.76", "1.14", "0.88"],
+    ["1.22", "0.72", "1.02"],
+    ["0.84", "1.18", "0.78"],
+  ];
+
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
       <div className="mx-auto max-w-[1380px] px-5 py-10 md:px-8">
@@ -1661,15 +1700,12 @@ export default function HintsClient() {
             />
 
             {isLoading ? (
-              <div className="columns-1 gap-6 md:columns-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="mb-6 break-inside-avoid">
-                    <div
-                      className="w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[#f9f8f5]"
-                      style={{ aspectRatio: i === 1 ? "0.78" : "1", maxHeight: CARD_MAX_HEIGHT }}
-                    >
-                      <div className="skeleton h-full w-full" />
-                    </div>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                {loadingColumns.map((column, columnIndex) => (
+                  <div key={`loading-column-${columnIndex}`} className="space-y-6">
+                    {column.map((ratio, index) => (
+                      <LoadingHintCard key={`${columnIndex}-${index}`} ratio={ratio} />
+                    ))}
                   </div>
                 ))}
               </div>
