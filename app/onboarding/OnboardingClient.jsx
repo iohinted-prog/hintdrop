@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
 
 const steps = [
@@ -55,7 +55,6 @@ function StepPill({ active, complete, number, label }) {
       >
         {complete ? "✓" : number}
       </div>
-
       <p
         className={`truncate text-sm font-medium ${
           active || complete ? "text-slate-900" : "text-slate-400"
@@ -88,10 +87,8 @@ function getPrimaryContactField(person, field) {
 
 function getStoredProviderLabel() {
   if (typeof window === "undefined") return "";
-
   try {
     const provider = window.sessionStorage.getItem("hinted_auth_provider") || "";
-
     if (provider === "google") return "Google";
     if (provider === "azure" || provider === "azuread") return "Microsoft";
     return "";
@@ -104,20 +101,9 @@ function getProviderLabel(user) {
   const providers = Array.isArray(user?.app_metadata?.providers)
     ? user.app_metadata.providers
     : [];
-
-  if (providers.includes("azure") || providers.includes("azuread")) {
-    return "Microsoft";
-  }
-
-  if (providers.includes("google")) {
-    return "Google";
-  }
-
-  const provider =
-    user?.identities?.[0]?.provider ||
-    user?.app_metadata?.provider ||
-    "";
-
+  if (providers.includes("azure") || providers.includes("azuread")) return "Microsoft";
+  if (providers.includes("google")) return "Google";
+  const provider = user?.identities?.[0]?.provider || user?.app_metadata?.provider || "";
   if (provider === "azure" || provider === "azuread") return "Microsoft";
   if (provider === "google") return "Google";
   return "your account";
@@ -125,23 +111,13 @@ function getProviderLabel(user) {
 
 function getInitials(name = "", email = "") {
   const trimmedName = name.trim();
-
   if (trimmedName) {
     const parts = trimmedName.split(/\s+/).filter(Boolean);
-
-    if (parts.length === 1) {
-      return parts[0].slice(0, 2).toUpperCase();
-    }
-
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return `${parts[0][0] || ""}${parts[parts.length - 1][0] || ""}`.toUpperCase();
   }
-
   const emailName = email.split("@")[0]?.trim() || "";
-
-  if (emailName) {
-    return emailName.slice(0, 2).toUpperCase();
-  }
-
+  if (emailName) return emailName.slice(0, 2).toUpperCase();
   return "U";
 }
 
@@ -174,8 +150,10 @@ function AvatarFallback({ name = "", email = "", src = "", alt = "Profile" }) {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const hasRedirectedRef = useRef(false);
+  const hasAcceptedInviteRef = useRef(false);
 
   const [step, setStep] = useState(1);
   const [selectedInterests, setSelectedInterests] = useState(["Travel", "Food"]);
@@ -202,6 +180,29 @@ export default function OnboardingPage() {
   useEffect(() => {
     let isActive = true;
 
+    async function acceptPendingInvite(supabaseClient) {
+      if (hasAcceptedInviteRef.current) return;
+      const inviteToken = searchParams.get("invite_token");
+      const inviteType = searchParams.get("invite_type");
+      if (!inviteToken || !inviteType) return;
+
+      hasAcceptedInviteRef.current = true;
+      const functionName = inviteType === "circle" ? "accept-circle-invite" : "accept-contact-invite";
+
+      try {
+        const { data, error } = await supabaseClient.functions.invoke(functionName, {
+          body: { token: inviteToken },
+        })
+        if (error || !data?.ok) {
+          console.warn("Invite accept failed:", error?.message ?? data?.error)
+        } else {
+          console.log("Invite accepted during onboarding")
+        }
+      } catch (err) {
+        console.warn("Invite accept error:", err)
+      }
+    }
+
     async function loadUserProfile() {
       const {
         data: { user },
@@ -214,6 +215,9 @@ export default function OnboardingPage() {
         return;
       }
 
+      // Accept any pending invite silently
+      await acceptPendingInvite(supabase);
+
       const metadata = user.user_metadata || {};
       const googleName = getGoogleName(metadata);
       const googleAvatar = getGoogleAvatar(metadata);
@@ -225,9 +229,7 @@ export default function OnboardingPage() {
 
       const { data: existingProfile, error: profileError } = await supabase
         .from("profiles")
-        .select(
-          "full_name, avatar_url, birthday, interests, other_interest, onboarding_completed"
-        )
+        .select("full_name, avatar_url, birthday, interests, other_interest, onboarding_completed")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -251,9 +253,7 @@ export default function OnboardingPage() {
         : [];
 
       const initialInterests =
-        filteredExistingInterests.length >= 2
-          ? filteredExistingInterests
-          : ["Travel", "Food"];
+        filteredExistingInterests.length >= 2 ? filteredExistingInterests : ["Travel", "Food"];
 
       if (!isActive) return;
 
@@ -288,7 +288,7 @@ export default function OnboardingPage() {
     return () => {
       isActive = false;
     };
-  }, [router, supabase]);
+  }, [router, supabase, searchParams]);
 
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -296,28 +296,14 @@ export default function OnboardingPage() {
   }
 
   function toggleInterest(interest) {
-    const isRemovingOther =
-      interest === "Other" && selectedInterests.includes("Other");
-
+    const isRemovingOther = interest === "Other" && selectedInterests.includes("Other");
     setSelectedInterests((prev) => {
       const isSelected = prev.includes(interest);
-
-      if (isSelected) {
-        return prev.filter((item) => item !== interest);
-      }
-
+      if (isSelected) return prev.filter((item) => item !== interest);
       return [...prev, interest];
     });
-
-    if (isRemovingOther) {
-      setForm((prev) => ({ ...prev, otherInterest: "" }));
-    }
-
-    setErrors((prev) => ({
-      ...prev,
-      interests: "",
-      otherInterest: "",
-    }));
+    if (isRemovingOther) setForm((prev) => ({ ...prev, otherInterest: "" }));
+    setErrors((prev) => ({ ...prev, interests: "", otherInterest: "" }));
   }
 
   function toggleRelationship(relationship) {
@@ -326,7 +312,6 @@ export default function OnboardingPage() {
         ? prev.filter((item) => item !== relationship)
         : [...prev, relationship]
     );
-
     setErrors((prev) => ({ ...prev, relationships: "" }));
   }
 
@@ -334,34 +319,20 @@ export default function OnboardingPage() {
     const nextErrors = {};
 
     if (step === 1) {
-      if (!form.fullName.trim()) {
-        nextErrors.fullName = "Please tell us what to call you.";
-      }
-
-      if (!form.birthday.trim()) {
-        nextErrors.birthday = "Please add your birthday.";
-      }
+      if (!form.fullName.trim()) nextErrors.fullName = "Please tell us what to call you.";
+      if (!form.birthday.trim()) nextErrors.birthday = "Please add your birthday.";
     }
 
     if (step === 2) {
-      if (selectedInterests.length < 2) {
-        nextErrors.interests = "Pick at least 2 interests.";
-      }
-
+      if (selectedInterests.length < 2) nextErrors.interests = "Pick at least 2 interests.";
       if (selectedInterests.includes("Other") && !form.otherInterest.trim()) {
         nextErrors.otherInterest = "Tell us your other interest.";
       }
     }
 
     if (step === 3) {
-      if (form.inviteEmail && !form.inviteName.trim()) {
-        nextErrors.inviteName = "Add a name to match the email.";
-      }
-
-      if (form.inviteName && !form.inviteEmail.trim()) {
-        nextErrors.inviteEmail = "Add an email to match the name.";
-      }
-
+      if (form.inviteEmail && !form.inviteName.trim()) nextErrors.inviteName = "Add a name to match the email.";
+      if (form.inviteName && !form.inviteEmail.trim()) nextErrors.inviteEmail = "Add an email to match the name.";
       if ((form.inviteName.trim() || form.inviteEmail.trim()) && selectedRelationships.length === 0) {
         nextErrors.relationships = "Choose at least one relationship type.";
       }
@@ -372,11 +343,7 @@ export default function OnboardingPage() {
   }
 
   async function saveProfile(values = {}) {
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       console.error("Could not find logged-in user.");
       return { ok: false, user: null };
@@ -388,16 +355,11 @@ export default function OnboardingPage() {
       avatar_url: avatarUrl || null,
       birthday: form.birthday || null,
       interests: selectedInterests,
-      other_interest: selectedInterests.includes("Other")
-        ? form.otherInterest.trim() || null
-        : null,
+      other_interest: selectedInterests.includes("Other") ? form.otherInterest.trim() || null : null,
       ...values,
     };
 
-    const { error } = await supabase
-      .from("profiles")
-      .upsert(payload, { onConflict: "id" });
-
+    const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
     if (error) {
       console.error("Error saving profile:", error.message);
       return { ok: false, user };
@@ -409,7 +371,6 @@ export default function OnboardingPage() {
   async function saveConnection(profileId) {
     const hasInviteName = form.inviteName.trim().length > 0;
     const hasInviteEmail = form.inviteEmail.trim().length > 0;
-
     if (!hasInviteName && !hasInviteEmail) return true;
 
     const payload = {
@@ -422,7 +383,6 @@ export default function OnboardingPage() {
     };
 
     const { error } = await supabase.from("profile_connections").insert(payload);
-
     if (error) {
       console.error("Error saving connection:", error.message);
       return false;
@@ -433,12 +393,10 @@ export default function OnboardingPage() {
 
   async function nextStep() {
     if (!validateStep()) return;
-
     if (step === 1 || step === 2) {
       const result = await saveProfile();
       if (!result.ok) return;
     }
-
     setStep((prev) => Math.min(prev + 1, steps.length));
   }
 
@@ -458,10 +416,7 @@ export default function OnboardingPage() {
     setSaving(true);
 
     try {
-      const result = await saveProfile({
-        onboarding_completed: true,
-      });
-
+      const result = await saveProfile({ onboarding_completed: true });
       if (!result.ok || !result.user) {
         setSaving(false);
         return;
@@ -494,10 +449,7 @@ export default function OnboardingPage() {
     setSearchingContacts(true);
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
+      const { data: { session } } = await supabase.auth.getSession();
       const providerToken = session?.provider_token;
 
       if (!providerToken) {
@@ -508,16 +460,12 @@ export default function OnboardingPage() {
 
       const warmupResponse = await fetch(
         "https://people.googleapis.com/v1/people:searchContacts?query=&pageSize=1&readMask=names,emailAddresses",
-        {
-          headers: {
-            Authorization: `Bearer ${providerToken}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${providerToken}` } }
       );
 
       if (!warmupResponse.ok) {
         setContactResults([]);
-        setContactsMessage("We couldn’t access Google contacts right now.");
+        setContactsMessage("We couldn't access Google contacts right now.");
         return;
       }
 
@@ -527,17 +475,14 @@ export default function OnboardingPage() {
       url.searchParams.set("readMask", "names,emailAddresses");
 
       const response = await fetch(url.toString(), {
-        headers: {
-          Authorization: `Bearer ${providerToken}`,
-        },
+        headers: { Authorization: `Bearer ${providerToken}` },
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        console.error("Google contact search failed:", result);
         setContactResults([]);
-        setContactsMessage("We couldn’t search Google contacts right now.");
+        setContactsMessage("We couldn't search Google contacts right now.");
         return;
       }
 
@@ -560,7 +505,7 @@ export default function OnboardingPage() {
     } catch (error) {
       console.error("Contact search error:", error);
       setContactResults([]);
-      setContactsMessage("We couldn’t search Google contacts right now.");
+      setContactsMessage("We couldn't search Google contacts right now.");
     } finally {
       setSearchingContacts(false);
     }
@@ -575,11 +520,7 @@ export default function OnboardingPage() {
     setContactSearch(contact.name || contact.email || "");
     setContactResults([]);
     setContactsMessage("");
-    setErrors((prev) => ({
-      ...prev,
-      inviteName: "",
-      inviteEmail: "",
-    }));
+    setErrors((prev) => ({ ...prev, inviteName: "", inviteEmail: "" }));
   }
 
   if (!profileLoaded) {
@@ -590,15 +531,12 @@ export default function OnboardingPage() {
             <div className="mx-auto h-14 w-14 rounded-full bg-[#fff1ea] p-3">
               <div className="h-full w-full animate-spin rounded-full border-2 border-[#f6d8ca] border-t-[#f36f64]" />
             </div>
-
             <h1 className="mt-6 text-[28px] font-semibold tracking-[-0.04em] text-slate-900">
-              We’re getting your profile ready
+              We're getting your profile ready
             </h1>
-
             <p className="mt-3 text-[15px] leading-7 text-slate-600">
               Pulling everything together so your space feels personal from the start.
             </p>
-
             <div className="mt-6 rounded-full bg-[#f5eee9] p-1">
               <div className="h-2 w-2/3 animate-pulse rounded-full bg-gradient-to-r from-[#ff946d] to-[#f36f64]" />
             </div>
@@ -613,10 +551,7 @@ export default function OnboardingPage() {
       <main className="min-h-screen bg-[#fffaf7] text-slate-800">
         <div className="mx-auto max-w-[860px] px-5 py-8 md:px-8 md:py-12">
           <div className="mb-6">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800"
-            >
+            <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800">
               <span>←</span>
               <span>Back</span>
             </Link>
@@ -647,13 +582,11 @@ export default function OnboardingPage() {
                 <div className="inline-flex rounded-full bg-[#fff1ea] px-3 py-1 text-xs font-semibold text-[#ea7451]">
                   Step 1 of 3
                 </div>
-
                 <h1 className="mt-4 text-[34px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[42px]">
                   Tell us a bit about you.
                 </h1>
-
                 <p className="mt-3 text-[15px] leading-7 text-slate-600">
-                  We’ve pulled in what we can from Google, but you can change your name anytime here.
+                  We've pulled in what we can from Google, but you can change your name anytime here.
                 </p>
 
                 {(avatarUrl || form.fullName) ? (
@@ -665,12 +598,8 @@ export default function OnboardingPage() {
                       alt={form.fullName ? `${form.fullName}'s profile` : "Profile"}
                     />
                     <div>
-                      <p className="text-sm font-medium text-slate-900">
-                        Signed in with {providerLabel}
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        We’ll use this profile photo on your account when available.
-                      </p>
+                      <p className="text-sm font-medium text-slate-900">Signed in with {providerLabel}</p>
+                      <p className="text-sm text-slate-500">We'll use this profile photo on your account when available.</p>
                     </div>
                   </div>
                 ) : null}
@@ -691,9 +620,7 @@ export default function OnboardingPage() {
                         : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
                     }`}
                   />
-                  {errors.fullName ? (
-                    <p className="mt-2 text-xs text-red-500">{errors.fullName}</p>
-                  ) : null}
+                  {errors.fullName ? <p className="mt-2 text-xs text-red-500">{errors.fullName}</p> : null}
                 </div>
 
                 <div className="mt-7">
@@ -711,9 +638,7 @@ export default function OnboardingPage() {
                         : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
                     }`}
                   />
-                  {errors.birthday ? (
-                    <p className="mt-2 text-xs text-red-500">{errors.birthday}</p>
-                  ) : null}
+                  {errors.birthday ? <p className="mt-2 text-xs text-red-500">{errors.birthday}</p> : null}
                 </div>
               </div>
             )}
@@ -723,11 +648,9 @@ export default function OnboardingPage() {
                 <div className="inline-flex rounded-full bg-[#fff1ea] px-3 py-1 text-xs font-semibold text-[#ea7451]">
                   Step 2 of 3
                 </div>
-
                 <h1 className="mt-4 text-[34px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[42px]">
                   What kinds of things are you into?
                 </h1>
-
                 <p className="mt-3 text-[15px] leading-7 text-slate-600">
                   Pick at least 2 interests so we can improve your experience.
                 </p>
@@ -735,7 +658,6 @@ export default function OnboardingPage() {
                 <div className="mt-7 flex flex-wrap gap-2.5">
                   {interestOptions.map((interest) => {
                     const selected = selectedInterests.includes(interest);
-
                     return (
                       <button
                         key={interest}
@@ -755,10 +677,7 @@ export default function OnboardingPage() {
 
                 {selectedInterests.includes("Other") ? (
                   <div className="mt-6 max-w-[420px]">
-                    <label
-                      htmlFor="otherInterest"
-                      className="block text-sm font-medium text-slate-900"
-                    >
+                    <label htmlFor="otherInterest" className="block text-sm font-medium text-slate-900">
                       Tell us another interest
                     </label>
                     <input
@@ -773,18 +692,14 @@ export default function OnboardingPage() {
                           : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
                       }`}
                     />
-                    {errors.otherInterest ? (
-                      <p className="mt-2 text-xs text-red-500">{errors.otherInterest}</p>
-                    ) : null}
+                    {errors.otherInterest ? <p className="mt-2 text-xs text-red-500">{errors.otherInterest}</p> : null}
                   </div>
                 ) : null}
 
                 {errors.interests ? (
                   <p className="mt-4 text-xs text-red-500">{errors.interests}</p>
                 ) : (
-                  <p className="mt-4 text-xs leading-5 text-slate-500">
-                    Choose at least 2 to continue.
-                  </p>
+                  <p className="mt-4 text-xs leading-5 text-slate-500">Choose at least 2 to continue.</p>
                 )}
               </div>
             )}
@@ -794,11 +709,9 @@ export default function OnboardingPage() {
                 <div className="inline-flex rounded-full bg-[#fff1ea] px-3 py-1 text-xs font-semibold text-[#ea7451]">
                   Step 3 of 3
                 </div>
-
                 <h1 className="mt-4 text-[34px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[42px]">
-                  Who’s in your circle?
+                  Who's in your circle?
                 </h1>
-
                 <p className="mt-3 text-[15px] leading-7 text-slate-600">
                   Add someone important, then choose the relationship tags that fit best.
                 </p>
@@ -816,9 +729,7 @@ export default function OnboardingPage() {
                     className="mt-2 h-[56px] w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
                   />
 
-                  {searchingContacts ? (
-                    <p className="mt-2 text-xs text-slate-500">Searching contacts...</p>
-                  ) : null}
+                  {searchingContacts ? <p className="mt-2 text-xs text-slate-500">Searching contacts...</p> : null}
 
                   {contactResults.length > 0 ? (
                     <div className="mt-3 overflow-hidden rounded-[18px] border border-slate-200 bg-white">
@@ -830,12 +741,8 @@ export default function OnboardingPage() {
                           className="flex w-full items-center justify-between border-b border-slate-100 px-4 py-3 text-left last:border-b-0 hover:bg-slate-50"
                         >
                           <div>
-                            <p className="text-sm font-medium text-slate-900">
-                              {contact.name || "No name"}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {contact.email || "No email"}
-                            </p>
+                            <p className="text-sm font-medium text-slate-900">{contact.name || "No name"}</p>
+                            <p className="text-xs text-slate-500">{contact.email || "No email"}</p>
                           </div>
                           <span className="text-xs font-semibold text-[#ea7451]">Use</span>
                         </button>
@@ -843,16 +750,12 @@ export default function OnboardingPage() {
                     </div>
                   ) : null}
 
-                  {contactsMessage ? (
-                    <p className="mt-2 text-xs text-slate-500">{contactsMessage}</p>
-                  ) : null}
+                  {contactsMessage ? <p className="mt-2 text-xs text-slate-500">{contactsMessage}</p> : null}
                 </div>
 
                 <div className="mt-7 grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label htmlFor="inviteName" className="block text-sm font-medium text-slate-900">
-                      Name
-                    </label>
+                    <label htmlFor="inviteName" className="block text-sm font-medium text-slate-900">Name</label>
                     <input
                       id="inviteName"
                       type="text"
@@ -865,15 +768,11 @@ export default function OnboardingPage() {
                           : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
                       }`}
                     />
-                    {errors.inviteName ? (
-                      <p className="mt-2 text-xs text-red-500">{errors.inviteName}</p>
-                    ) : null}
+                    {errors.inviteName ? <p className="mt-2 text-xs text-red-500">{errors.inviteName}</p> : null}
                   </div>
 
                   <div>
-                    <label htmlFor="inviteEmail" className="block text-sm font-medium text-slate-900">
-                      Email address
-                    </label>
+                    <label htmlFor="inviteEmail" className="block text-sm font-medium text-slate-900">Email address</label>
                     <input
                       id="inviteEmail"
                       type="email"
@@ -886,21 +785,15 @@ export default function OnboardingPage() {
                           : "border-slate-300 focus:border-[#f36f64]/50 focus:ring-[#f36f64]/10"
                       }`}
                     />
-                    {errors.inviteEmail ? (
-                      <p className="mt-2 text-xs text-red-500">{errors.inviteEmail}</p>
-                    ) : null}
+                    {errors.inviteEmail ? <p className="mt-2 text-xs text-red-500">{errors.inviteEmail}</p> : null}
                   </div>
                 </div>
 
                 <div className="mt-7">
-                  <label className="block text-sm font-medium text-slate-900">
-                    Relationship
-                  </label>
-
+                  <label className="block text-sm font-medium text-slate-900">Relationship</label>
                   <div className="mt-3 flex flex-wrap gap-2.5">
                     {relationshipOptions.map((relationship) => {
                       const selected = selectedRelationships.includes(relationship);
-
                       return (
                         <button
                           key={relationship}
@@ -917,10 +810,7 @@ export default function OnboardingPage() {
                       );
                     })}
                   </div>
-
-                  {errors.relationships ? (
-                    <p className="mt-2 text-xs text-red-500">{errors.relationships}</p>
-                  ) : null}
+                  {errors.relationships ? <p className="mt-2 text-xs text-red-500">{errors.relationships}</p> : null}
                 </div>
               </div>
             )}
@@ -974,9 +864,7 @@ export default function OnboardingPage() {
                     onClick={() => finishOnboarding(false)}
                     disabled={saving}
                     className={`inline-flex h-[50px] min-w-[170px] items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-lg ${
-                      saving
-                        ? "cursor-not-allowed bg-[#5d695b]"
-                        : "bg-[#2f3b2d]"
+                      saving ? "cursor-not-allowed bg-[#5d695b]" : "bg-[#2f3b2d]"
                     }`}
                   >
                     {saving ? "Building your profile..." : "Finish setup"}
@@ -994,15 +882,12 @@ export default function OnboardingPage() {
             <div className="mx-auto h-14 w-14 rounded-full bg-[#fff1ea] p-3">
               <div className="h-full w-full animate-spin rounded-full border-2 border-[#f6d8ca] border-t-[#f36f64]" />
             </div>
-
             <h2 className="mt-6 text-[28px] font-semibold tracking-[-0.04em] text-slate-900">
-              We’re building your profile
+              We're building your profile
             </h2>
-
             <p className="mt-3 text-[15px] leading-7 text-slate-600">
               Pulling everything together so your space feels personal from the start.
             </p>
-
             <div className="mt-6 rounded-full bg-[#f5eee9] p-1">
               <div className="h-2 w-2/3 animate-pulse rounded-full bg-gradient-to-r from-[#ff946d] to-[#f36f64]" />
             </div>
