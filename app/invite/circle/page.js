@@ -67,14 +67,14 @@ function AcceptCircleInvite() {
         <h1 style={styles.heading}>You have been invited to join a pot on Hinted</h1>
         <p style={styles.body}>Create an account to view and join the pot.</p>
         <button
-          onClick={() => router.push(`/?invite_token=${token}&invite_type=circle`)}
+          onClick={() => router.push(`/join?invite_token=${token}&invite_type=circle`)}
           style={styles.button}
         >
           Accept and create account
         </button>
         <p style={styles.muted}>
           Already have an account?{' '}
-          <a href={`/?invite_token=${token}&invite_type=circle`} style={styles.link}>
+          <a href={`/join?invite_token=${token}&invite_type=circle`} style={styles.link}>
             Sign in
           </a>
         </p>
