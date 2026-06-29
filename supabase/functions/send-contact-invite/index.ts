@@ -10,7 +10,7 @@ async function hashToken(token: string): Promise<string> {
   const data = encoder.encode(token)
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 Deno.serve(async (req) => {
@@ -20,11 +20,15 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization')
+
     if (!authHeader) {
-      return new Response(JSON.stringify({ ok: false, error: 'Missing auth header' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Missing auth header' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
     const supabase = createClient(
@@ -33,33 +37,89 @@ Deno.serve(async (req) => {
     )
 
     const jwt = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: userError } = await supabase.auth.getUser(jwt)
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(jwt)
+
     if (userError || !user) {
       console.log('Auth error:', userError)
-      return new Response(JSON.stringify({ ok: false, error: 'Invalid user' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Invalid user' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
     console.log('User authenticated:', user.id)
 
     const { email, name } = await req.json()
+
     if (!email) {
-      return new Response(JSON.stringify({ ok: false, error: 'Email is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Email is required' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
-    const normalizedEmail = email.toLowerCase().trim()
+    const normalizedEmail = String(email).toLowerCase().trim()
     console.log('Inviting:', normalizedEmail)
 
-    const { data: existingProfile } = await supabase
+    const { data: existingProfile, error: existingProfileError } = await supabase
       .from('profiles')
       .select('id')
       .eq('email_normalized', normalizedEmail)
       .maybeSingle()
+
+    if (existingProfileError) {
+      console.log('Existing profile lookup error:', existingProfileError)
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Failed to check existing profile' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    const { data: existingPendingInvite, error: existingInviteError } = await supabase
+      .from('contact_invites')
+      .select('id')
+      .eq('inviter_user_id', user.id)
+      .eq('invite_email', normalizedEmail)
+      .eq('status', 'pending')
+      .maybeSingle()
+
+    if (existingInviteError) {
+      console.log('Existing invite lookup error:', existingInviteError)
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Failed to check existing invite' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    if (existingPendingInvite) {
+      console.log('Pending invite already exists:', existingPendingInvite.id)
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: 'A pending invite already exists for this email address.',
+          invite_id: existingPendingInvite.id,
+        }),
+        {
+          status: 409,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
 
     const token = crypto.randomUUID()
     const tokenHash = await hashToken(token)
@@ -80,20 +140,24 @@ Deno.serve(async (req) => {
 
     if (insertError) {
       console.log('Insert error:', insertError)
-      return new Response(JSON.stringify({ ok: false, error: insertError.message }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ ok: false, error: insertError.message }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
     console.log('Invite created:', invite.id)
 
     const acceptUrl = `https://www.hinted.io/invite/contact?token=${token}`
+    console.log('Sending with from address: Hinted <hello@hinted.io>')
 
     const resendRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
+        Authorization: `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -112,24 +176,47 @@ Deno.serve(async (req) => {
     if (!resendRes.ok) {
       const resendError = await resendRes.json()
       console.log('Resend error:', resendError)
-      return new Response(JSON.stringify({ ok: false, error: 'Email failed', detail: resendError }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: 'Email failed',
+          detail: resendError,
+          from: 'Hinted <hello@hinted.io>',
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
-    console.log('Email sent successfully')
+    const resendData = await resendRes.json()
+    console.log('Email sent successfully:', resendData)
 
-    return new Response(JSON.stringify({ ok: true, invite_id: invite.id }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        invite_id: invite.id,
+        email_id: resendData?.id ?? null,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   } catch (error) {
     console.log('Caught error:', error)
-    return new Response(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : 'Unknown error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   }
 })
