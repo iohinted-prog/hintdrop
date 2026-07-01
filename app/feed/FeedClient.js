@@ -351,6 +351,37 @@ function resolveEventStyle(event) {
   return eventTypeStyles[event?.type] || eventTypeStyles.celebration;
 }
 
+function getContactVisualState(contact) {
+  if (contact.contactState === "user") {
+    return {
+      avatarClass: "bg-gradient-to-b from-[#8aa587] to-[#4e684d] text-white",
+      badgeClass: "bg-[#2f3b2d] text-white",
+      badgeLabel: "C",
+      cardClass: "border-[#dce8d8] bg-[#f7fbf5]",
+      roleLabel: contact.role || "Contact",
+      noteLabel: "Hinted user",
+    };
+  }
+  if (contact.contactState === "invitee") {
+    return {
+      avatarClass: "bg-gradient-to-b from-[#8aa587] to-[#4e684d] text-white",
+      badgeClass: "border border-[#d7e4d2] bg-white text-[#4e684d]",
+      badgeLabel: "I",
+      cardClass: "border-[#e6ddd7] bg-white",
+      roleLabel: contact.role || "Invitee",
+      noteLabel: "Invitee",
+    };
+  }
+  return {
+    avatarClass: "border border-[#e8ddd6] bg-[#faf7f4] text-slate-600",
+    badgeClass: "border border-[#e8ddd6] bg-white text-slate-500",
+    badgeLabel: "P",
+    cardClass: "border-[#f0dfd6] bg-white",
+    roleLabel: contact.role || "Contact",
+    noteLabel: contact.note || "Contact",
+  };
+}
+
 function ContactAvatar({ contact }) {
   if (contact.isDemo) {
     return (
