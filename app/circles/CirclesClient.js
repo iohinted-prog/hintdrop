@@ -2845,6 +2845,8 @@ export default function CirclesClient() {
         .flat()
         .map((i) => (i.invite_email_normalized || i.invite_email || "").toLowerCase())
         .filter(Boolean);
+      console.log("allInviteEmails", allInviteEmails);
+      console.log("inviteMap keys", Object.keys(inviteMap));
 
       const { data: selfProfile } = await supabase
         .from("profiles")
