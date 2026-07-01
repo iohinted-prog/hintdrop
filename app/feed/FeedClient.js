@@ -403,7 +403,7 @@ function ContactAvatar({ contact }) {
         />
       ) : (
         <div
-          className={`flex h-11 w-11 items-center justify-center rounded-full text-[12px] font-bold ${visual.avatarClass}`}
+          className={`flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b text-[12px] font-bold text-white ${contact.colors || 'from-[#efcdbf] to-[#bb8168]'}`}
         >
           {contact.initials}
         </div>
