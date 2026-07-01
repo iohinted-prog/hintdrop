@@ -2840,6 +2840,7 @@ export default function CirclesClient() {
         );
       });
 
+      console.log("AVATAR LOOKUP REACHED", Object.keys(inviteMap));
       // Fetch profile avatars for all members including self
       const allInviteEmails = Object.values(inviteMap)
         .flat()
