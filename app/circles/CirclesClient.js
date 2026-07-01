@@ -2576,9 +2576,17 @@ export default function CirclesClient() {
     );
   }, [calendarEvents]);
 
-  const displayedCircles = useMemo(() => {
-    return realCircles.length > 0 ? realCircles : [exampleCircle];
+  const activeCircles = useMemo(() => {
+    return realCircles.filter((c) => c.raw?.status !== "expired" && c.raw?.status !== "cancelled");
   }, [realCircles]);
+
+  const archivedCircles = useMemo(() => {
+    return realCircles.filter((c) => c.raw?.status === "expired" || c.raw?.status === "cancelled");
+  }, [realCircles]);
+
+  const displayedCircles = useMemo(() => {
+    return activeCircles.length > 0 ? activeCircles : [exampleCircle];
+  }, [activeCircles]);
 
   const initialiseCircleForm = useCallback((profileValue, eventsValue) => {
     const safeEvents = Array.isArray(eventsValue) ? eventsValue : [];
@@ -2734,6 +2742,15 @@ export default function CirclesClient() {
         .eq("user_id", userId);
 
       const memberCircleIds = (memberCircleRows || []).map((r) => r.circle_id);
+
+      // Auto-expire circles past their deadline on load
+      const now = new Date().toISOString();
+      await supabase
+        .from("circles")
+        .update({ status: "expired" })
+        .in("status", ["draft", "active"])
+        .lt("deadline_at", now)
+        .or(`user_id.eq.${userId}${memberCircleIds.length ? `,id.in.(${memberCircleIds.join(",")})` : ""}`);
 
       const { data: circlesData, error: circlesError } = await supabase
         .from("circles")
@@ -3407,6 +3424,26 @@ if (inviteRows.length > 0) {
                       />
                     ))
                   )}
+                  {archivedCircles.length > 0 ? (
+                    <div className="mt-8">
+                      <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Archived circles
+                      </p>
+                      <div className="space-y-5 opacity-60">
+                        {archivedCircles.map((circle) => (
+                          <CircleCard
+                            key={circle.id}
+                            circle={circle}
+                            onDeleteCircleClick={openDeleteCircleModal}
+                            deletingCircleId={isDeletingCircle ? selectedCircleToDelete?.id : null}
+                            formatCurrency={formatCurrency}
+                            onContributeClick={openContributeModal}
+                            sessionUser={sessionUser}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </section>
             </div>
