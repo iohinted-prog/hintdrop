@@ -875,8 +875,13 @@ function CircleCard({
   formatCurrency,
   onContributeClick,
   sessionUser,
+  contacts = [],
 }) {
-  const safeMembers = Array.isArray(circle?.members) ? circle.members : [];
+  const safeMembers = (Array.isArray(circle?.members) ? circle.members : []).map((member) => {
+    if (member.avatarUrl) return member;
+    const matched = contacts.find((c) => c.email && member.email && c.email.toLowerCase() === member.email.toLowerCase());
+    return matched?.avatarUrl ? { ...member, avatarUrl: matched.avatarUrl } : member;
+  });
   const joinedCount = safeMembers.filter(
     (member) => getAvatarState(member.status) === "accepted"
   ).length;
@@ -3486,6 +3491,7 @@ if (inviteRows.length > 0) {
                         formatCurrency={formatCurrency}
                         onContributeClick={openContributeModal}
                         sessionUser={sessionUser}
+                        contacts={contacts}
                       />
                     ))
                   )}
