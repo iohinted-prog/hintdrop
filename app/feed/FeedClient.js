@@ -1669,7 +1669,7 @@ export default function FeedClient() {
             updated_at,
             token_hash,
             invited_user_id,
-            inviter:profiles!inviter_user_id(full_name, invite_name)
+            inviter:profiles!contact_invites_inviter_user_id_fkey(full_name, invite_name)
           `)
           .eq("status", "pending")
           .order("created_at", { ascending: false });
