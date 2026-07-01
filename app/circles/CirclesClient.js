@@ -685,6 +685,7 @@ function MemberPill({ member, currency = "GBP", formatCurrency }) {
   const avatarState = getAvatarState(member.status);
   const isAccepted = avatarState === "accepted";
   const isInvitee = avatarState === "invitee";
+  const avatarUrl = member.avatarUrl || null;
 
   const statusStyles = isAccepted
     ? member.contributed
@@ -699,9 +700,13 @@ function MemberPill({ member, currency = "GBP", formatCurrency }) {
   return (
     <div className="rounded-[20px] border border-[#eee1d9] bg-[#fffdfa] p-3">
       <div className="flex items-center gap-3">
-        <div className={getAvatarClasses(member.colors, member.status)}>
-          {member.initials}
-        </div>
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={member.name} className="h-10 w-10 rounded-full object-cover" />
+        ) : (
+          <div className={getAvatarClasses(member.colors, member.status)}>
+            {member.initials}
+          </div>
+        )}
 
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900">{member.name}</p>
@@ -2810,6 +2815,33 @@ export default function CirclesClient() {
           currentUserName
         );
       });
+
+      // Fetch profile avatars for all invited users
+      const allInviteEmails = Object.values(inviteMap)
+        .flat()
+        .map((i) => i.invite_email_normalized || i.invite_email)
+        .filter(Boolean);
+
+      if (allInviteEmails.length) {
+        const { data: profileRows } = await supabase
+          .from("profiles")
+          .select("id, email_normalized, avatar_url")
+          .in("email_normalized", allInviteEmails);
+
+        const avatarByEmail = {};
+        (profileRows || []).forEach((p) => {
+          if (p.email_normalized) avatarByEmail[p.email_normalized] = p.avatar_url;
+        });
+
+        mapped.forEach((circle) => {
+          circle.members = circle.members.map((member) => {
+            const email = member.email || "";
+            return avatarByEmail[email]
+              ? { ...member, avatarUrl: avatarByEmail[email] }
+              : member;
+          });
+        });
+      }
 
       setRealCircles(mapped);
       return mapped;
