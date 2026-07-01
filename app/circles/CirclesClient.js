@@ -878,6 +878,7 @@ function CircleCard({
   sessionUser,
   contacts = [],
 }) {
+  console.log("CircleCard members[0]", circle?.members?.[0]?.name, circle?.members?.[0]?.avatarUrl);
   const safeMembers = (Array.isArray(circle?.members) ? circle.members : []).map((member) => {
     if (member.avatarUrl) return member;
     const matched = contacts.find((c) => c.email && member.email && c.email.toLowerCase() === member.email.toLowerCase());
