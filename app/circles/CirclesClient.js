@@ -399,7 +399,7 @@ function buildSelfRecord(profile) {
   };
 }
 
-function buildCircleViewModel(circleRow, inviteRows = [], currentUserName = "You") {
+function buildCircleViewModel(circleRow, inviteRows = [], currentUserName = "You", ownerAvatar = null) {
   const members = [
     {
       name: currentUserName || "You",
@@ -409,6 +409,7 @@ function buildCircleViewModel(circleRow, inviteRows = [], currentUserName = "You
       colors: "from-[#4e596d] to-[#212a3c]",
       status: "accepted",
       email: "__self__",
+      avatarUrl: ownerAvatar,
     },
     ...inviteRows.map((invite) => ({
       name: invite.invite_name || invite.invite_email || "Invited person",
@@ -2836,8 +2837,25 @@ export default function CirclesClient() {
         currentProfile?.invite_name ||
         "You";
 
+      // Fetch owner profiles for circles not owned by current user
+      const ownerIds = [...new Set((circlesData || []).map(c => c.user_id).filter(id => id !== userId))];
+      const ownerNameMap = {};
+      const ownerAvatarMap = {};
+      if (ownerIds.length) {
+        const { data: ownerProfiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', ownerIds);
+        (ownerProfiles || []).forEach(p => {
+          ownerNameMap[p.id] = p.full_name || 'Organiser';
+          ownerAvatarMap[p.id] = p.avatar_url || null;
+        });
+      }
+
       const mapped = (circlesData || []).map((circle) => {
-        const baseVm = buildCircleViewModel(circle, inviteMap[circle.id] || [], currentUserName);
+        const ownerName = circle.user_id === userId ? currentUserName : (ownerNameMap[circle.user_id] || 'Organiser');
+        const ownerAvatar = circle.user_id === userId ? null : (ownerAvatarMap[circle.user_id] || null);
+        const baseVm = buildCircleViewModel(circle, inviteMap[circle.id] || [], ownerName, ownerAvatar);
         return applyContributionDataToCircle(
           baseVm,
           contributionMap[circle.id],
