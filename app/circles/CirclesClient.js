@@ -372,6 +372,7 @@ function buildContactRecordFromRow(row) {
     email: row?.email || "",
     phone: row?.phone || "",
     birthday: row?.birthday || "",
+    avatarUrl: row?.avatar_url || null,
     status: avatarState,
     raw: row,
   };
@@ -641,8 +642,18 @@ function ContactCard({ contact, onDeleteClick }) {
   return (
     <article className="rounded-[22px] border border-[#f0dfd6] bg-white p-4 shadow-sm">
       <div className="flex items-center gap-3">
-        <div className={getAvatarClasses(contact.colors, contact.status, "lg")}>
-          {contact.initials}
+        <div className="relative h-11 w-11 shrink-0">
+          {contact.avatarUrl ? (
+            <img
+              src={contact.avatarUrl}
+              alt={contact.name || "Contact"}
+              className="h-11 w-11 rounded-full object-cover"
+            />
+          ) : (
+            <div className={getAvatarClasses(contact.colors, contact.status, "lg")}>
+              {contact.initials}
+            </div>
+          )}
         </div>
 
         <div className="min-w-0 flex-1">
