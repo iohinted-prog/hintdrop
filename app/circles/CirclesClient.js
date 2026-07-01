@@ -414,7 +414,7 @@ function buildCircleViewModel(circleRow, inviteRows = [], currentUserName = "You
       initials: getInitials(invite.invite_name || invite.invite_email || "Invited person"),
       contributed: false,
       amount: 0,
-      colors: "from-[#efcdbf] to-[#bb8168]",
+      colors: getRelationshipGradient(invite.invite_name || "Friend"),
       status: getAvatarState(invite.status),
     })),
   ];
