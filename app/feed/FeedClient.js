@@ -1831,6 +1831,15 @@ export default function FeedClient() {
           .eq("status", "pending");
       }
 
+      if (contact.profileId) {
+        await supabase
+          .from("calendar_events")
+          .delete()
+          .eq("user_id", sessionUser.id)
+          .eq("source", "contact_sync")
+          .eq("profile_id", contact.profileId);
+      }
+
       await loadContacts(sessionUser.id);
       await loadInvites(sessionUser);
       setIsDeleteContactOpen(false);
