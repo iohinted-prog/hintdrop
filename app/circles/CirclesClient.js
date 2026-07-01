@@ -878,7 +878,6 @@ function CircleCard({
   sessionUser,
   contacts = [],
 }) {
-  console.log("CircleCard members[0]", circle?.members?.[0]?.name, circle?.members?.[0]?.avatarUrl);
   const safeMembers = (Array.isArray(circle?.members) ? circle.members : []).map((member) => {
     if (member.avatarUrl) return member;
     const matched = contacts.find((c) => c.email && member.email && c.email.toLowerCase() === member.email.toLowerCase());
@@ -2850,7 +2849,6 @@ export default function CirclesClient() {
           .from('profiles')
           .select('id, full_name, avatar_url')
           .in('id', ownerIds);
-        console.log("ownerProfiles", ownerProfiles, "ownerIds", ownerIds);
       (ownerProfiles || []).forEach(p => {
           ownerNameMap[p.id] = p.full_name || 'Organiser';
           ownerAvatarMap[p.id] = p.avatar_url || null;
@@ -2860,7 +2858,6 @@ export default function CirclesClient() {
       const mapped = (circlesData || []).map((circle) => {
         const ownerName = circle.user_id === userId ? currentUserName : (ownerNameMap[circle.user_id] || 'Organiser');
         const ownerAvatar = circle.user_id === userId ? null : (ownerAvatarMap[circle.user_id] || null);
-        console.log("ownerAvatar for circle", circle.id, ownerAvatar);
         const baseVm = buildCircleViewModel(circle, inviteMap[circle.id] || [], ownerName, ownerAvatar);
         return applyContributionDataToCircle(
           baseVm,
@@ -2875,8 +2872,6 @@ export default function CirclesClient() {
         .flat()
         .map((i) => (i.invite_email_normalized || i.invite_email || "").toLowerCase())
         .filter(Boolean);
-      console.log("allInviteEmails", allInviteEmails);
-      console.log("inviteMap keys", Object.keys(inviteMap));
 
       const { data: selfProfile } = await supabase
         .from("profiles")
@@ -2899,7 +2894,6 @@ export default function CirclesClient() {
       }
 
       const mappedWithAvatars = mapped.map((circle) => ({ ...circle, members: circle.members.map((member) => {
-          console.log("mappedWithAvatars member", member.email, member.avatarUrl);
           if (member.avatarUrl) return member;
           const emailKey = member.email === "__self__" ? "__self__" : (member.email || "").toLowerCase();
           return avatarByEmail[emailKey]
