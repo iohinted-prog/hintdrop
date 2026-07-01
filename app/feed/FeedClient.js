@@ -2003,13 +2003,13 @@ export default function FeedClient() {
       if (invite.source === "contact") {
         const { error } = await supabase
           .from("contact_invites")
-          .update({ status: nextStatus })
+          .update({ status: "revoked" })
           .eq("id", invite.id);
         if (error) throw new Error(normalizeSupabaseError(error, "Could not update invite."));
       } else {
         const { error } = await supabase
           .from("circle_invites")
-          .update({ status: nextStatus })
+          .update({ status: "declined" })
           .eq("id", invite.id);
         if (error) throw new Error(normalizeSupabaseError(error, "Could not update invite."));
       }
