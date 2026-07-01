@@ -1688,8 +1688,7 @@ export default function FeedClient() {
             created_at,
             updated_at,
             token_hash,
-            invited_user_id,
-            inviter:inviter_user_id(full_name, invite_name)
+            invited_user_id
           `)
           .eq("status", "pending")
           .order("created_at", { ascending: false });
@@ -1712,16 +1711,35 @@ export default function FeedClient() {
       throw new Error(normalizeSupabaseError(contactResult.error, "Failed to load invites."));
     }
 
+    const contactInvites = (contactResult.data || []).map((invite) => ({
+      ...invite,
+      source: "contact",
+      circle_id: null,
+      user_id: invite.inviter_user_id,
+      viewed_at: null,
+      paid_at: null,
+      invite_token: null,
+    }));
+
+    // Fetch inviter names separately since PostgREST join is ambiguous
+    // due to two foreign keys from contact_invites to profiles.
+    const inviterIds = [...new Set(contactInvites.map((i) => i.inviter_user_id).filter(Boolean))];
+    let inviterMap = {};
+    if (inviterIds.length) {
+      const { data: inviterProfiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, invite_name")
+        .in("id", inviterIds);
+      (inviterProfiles || []).forEach((p) => {
+        inviterMap[p.id] = p;
+      });
+    }
+
     const merged = [
       ...(circleResult.data || []).map((invite) => ({ ...invite, source: "circle" })),
-      ...(contactResult.data || []).map((invite) => ({
+      ...contactInvites.map((invite) => ({
         ...invite,
-        source: "contact",
-        circle_id: null,
-        user_id: invite.inviter_user_id,
-        viewed_at: null,
-        paid_at: null,
-        invite_token: null,
+        inviter: inviterMap[invite.inviter_user_id] || null,
       })),
     ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
