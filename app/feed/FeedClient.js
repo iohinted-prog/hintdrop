@@ -1080,7 +1080,7 @@ function CalendarPopover({
         {events.length > 0 ? (
           events.map((event) => {
             const style = resolveEventStyle(event);
-            const canDelete = event.source === "user" || event.source === "contact_sync";
+            const canDelete = true;
 
             return (
               <div key={event.id} className="rounded-[18px] border border-[#eee1da] bg-white p-4">
@@ -1137,15 +1137,25 @@ function CalendarPopover({
             <option value="celebration">Celebration</option>
           </select>
 
-          <label className="flex items-center gap-3 cursor-pointer">
-            <div
-              onClick={() => setDraft((prev) => ({ ...prev, recurring: !prev.recurring }))}
-              className={`relative h-6 w-11 rounded-full transition-colors ${draft.recurring ? "bg-[#2f3b2d]" : "bg-slate-200"}`}
-            >
-              <span className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${draft.recurring ? "translate-x-5" : ""}`} />
+          <div>
+            <p className="text-sm font-medium text-slate-700 mb-2">Repeat</p>
+            <div className="flex gap-2">
+              {["none", "monthly", "yearly"].map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setDraft((prev) => ({ ...prev, recurring: option }))}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                    (draft.recurring || "none") === option
+                      ? "border-[#2f3b2d] bg-[#2f3b2d] text-white"
+                      : "border-[#eaded6] bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {option === "none" ? "No repeat" : option === "monthly" ? "Monthly" : "Yearly"}
+                </button>
+              ))}
             </div>
-            <span className="text-sm text-slate-600">Repeat yearly</span>
-          </label>
+          </div>
           <button
             type="button"
             onClick={onAddEvent}
@@ -1171,7 +1181,7 @@ function MiniCalendar({
   const [currentMonth, setCurrentMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(today);
   const [openPopover, setOpenPopover] = useState(true);
-  const [draft, setDraft] = useState({ title: "", type: "birthday", recurring: false });
+  const [draft, setDraft] = useState({ title: "", type: "birthday", recurring: "none" });
   const [calendarSaving, setCalendarSaving] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null);
   const [isDeletingEvent, setIsDeletingEvent] = useState(false);
@@ -1220,7 +1230,7 @@ function MiniCalendar({
         title: draft.title.trim(),
         type: draft.type,
         eventDate: selectedKey,
-        recurring: draft.recurring,
+        recurring: draft.recurring !== "none" ? draft.recurring : null,
       });
       setDraft({ title: "", type: "birthday" });
     } catch (error) {
@@ -1978,7 +1988,7 @@ export default function FeedClient() {
       event_date: payload.eventDate,
       type: payload.type,
       source: "user",
-      recurring: payload.recurring || false,
+      recurring: payload.recurring || null,
     };
 
     const { data, error } = await supabase
@@ -2061,12 +2071,21 @@ export default function FeedClient() {
     return (calendarEvents || []).reduce((acc, row) => {
       if (!row.event_date) return acc;
       const keysToIndex = [row.event_date];
-      if (row.recurring) {
+      if (row.recurring === "yearly") {
         const [, month, day] = row.event_date.split("-");
         const thisYearKey = `${currentYear}-${month}-${day}`;
         const nextYearKey = `${nextYear}-${month}-${day}`;
         if (!keysToIndex.includes(thisYearKey)) keysToIndex.push(thisYearKey);
         if (!keysToIndex.includes(nextYearKey)) keysToIndex.push(nextYearKey);
+      } else if (row.recurring === "monthly") {
+        const [, , day] = row.event_date.split("-");
+        for (let m = 1; m <= 12; m++) {
+          const monthStr = String(m).padStart(2, "0");
+          const key = `${currentYear}-${monthStr}-${day}`;
+          if (!keysToIndex.includes(key)) keysToIndex.push(key);
+          const keyNext = `${nextYear}-${monthStr}-${day}`;
+          if (!keysToIndex.includes(keyNext)) keysToIndex.push(keyNext);
+        }
       }
       keysToIndex.forEach((key) => {
         if (!acc[key]) acc[key] = [];
