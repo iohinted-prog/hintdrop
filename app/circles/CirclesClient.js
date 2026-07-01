@@ -867,6 +867,7 @@ function CircleCard({
   deletingCircleId,
   formatCurrency,
   onContributeClick,
+  sessionUser,
 }) {
   const safeMembers = Array.isArray(circle?.members) ? circle.members : [];
   const joinedCount = safeMembers.filter(
@@ -3402,6 +3403,7 @@ if (inviteRows.length > 0) {
                         deletingCircleId={isDeletingCircle ? selectedCircleToDelete?.id : null}
                         formatCurrency={formatCurrency}
                         onContributeClick={openContributeModal}
+                        sessionUser={sessionUser}
                       />
                     ))
                   )}
