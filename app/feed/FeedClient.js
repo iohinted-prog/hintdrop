@@ -1496,11 +1496,10 @@ function InviteCard({ invite, inviteActionId, onAccept, onDelete }) {
             <div className="min-w-0">
               <p className="text-sm font-semibold text-slate-900">
                 {isContactInvite
-                  ? invite.inviter?.full_name || invite.inviter?.invite_name || invite.invite_name || "Someone"
-                  : invite.invite_name || invite.invite_email || "Invite"}
+                  ? invite.inviter?.full_name || invite.inviter?.invite_name || invite.invite_name || "Someone"}
               </p>
               <p className="mt-1 text-sm text-slate-500">
-                {isContactInvite ? "wants to connect with you" : invite.invite_email || "No email attached"}
+                {isContactInvite ? "wants to connect with you" : "invited you to a circle"}
               </p>
             </div>
             <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${
