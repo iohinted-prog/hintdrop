@@ -2731,10 +2731,17 @@ export default function CirclesClient() {
     setCircleError("");
 
     try {
+      const { data: memberCircleRows } = await supabase
+        .from("circle_members")
+        .select("circle_id")
+        .eq("user_id", userId);
+
+      const memberCircleIds = (memberCircleRows || []).map((r) => r.circle_id);
+
       const { data: circlesData, error: circlesError } = await supabase
         .from("circles")
         .select("*")
-        .eq("user_id", userId)
+        .or(`user_id.eq.${userId}${memberCircleIds.length ? `,id.in.(${memberCircleIds.join(",")})` : ""}`)
         .order("created_at", { ascending: false });
 
       if (circlesError) {
