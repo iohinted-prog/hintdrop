@@ -1920,10 +1920,10 @@ export default function FeedClient() {
       .slice(0, 50);
     if (error) {
       setFeedItems([]);
+      setFeedItems([]);
       setFeedLoading(false);
       throw new Error(normalizeSupabaseError(error, "Failed to load feed."));
     }
-
     const rows = data || [];
     const actorIds = [...new Set(
       rows.map(r => r.actor_user_id).filter(id => id && id !== "hinted-demo")
