@@ -454,7 +454,7 @@ export default function OnboardingPage() {
 
       if (!providerToken) {
         setContactResults([]);
-        setContactsMessage("Google contacts access is not available for this session.");
+        setContactsMessage("Contact search is not available for this session.");
         return;
       }
 
@@ -465,7 +465,7 @@ export default function OnboardingPage() {
 
       if (!warmupResponse.ok) {
         setContactResults([]);
-        setContactsMessage("We couldn't access Google contacts right now.");
+        setContactsMessage("We couldn't access your contacts right now.");
         return;
       }
 
@@ -482,7 +482,7 @@ export default function OnboardingPage() {
 
       if (!response.ok) {
         setContactResults([]);
-        setContactsMessage("We couldn't search Google contacts right now.");
+        setContactsMessage("We couldn't search your contacts right now.");
         return;
       }
 
@@ -500,12 +500,12 @@ export default function OnboardingPage() {
       setContactResults(mapped);
 
       if (mapped.length === 0) {
-        setContactsMessage("No matching Google contacts found. You can still add someone manually.");
+        setContactsMessage("No matching contacts found. You can still add someone manually.");
       }
     } catch (error) {
       console.error("Contact search error:", error);
       setContactResults([]);
-      setContactsMessage("We couldn't search Google contacts right now.");
+      setContactsMessage("We couldn't search your contacts right now.");
     } finally {
       setSearchingContacts(false);
     }
