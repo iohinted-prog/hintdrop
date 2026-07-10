@@ -1140,9 +1140,6 @@ function FeedItem({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${bucketStyle}`}>
-                  {bucketLabel}
-                </span>
                 {metadata.actor_name ? (
                   actorUserId ? (
                     <button
@@ -1159,6 +1156,9 @@ function FeedItem({
                   )
                 ) : null}
                 {item.isDemo ? (
+                <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${bucketStyle}`}>
+                  {bucketLabel}
+                </span>
                   <span className="rounded-full border border-[#eadfd7] bg-[#fffaf7] px-2.5 py-1 text-[11px] font-medium text-slate-500">
                     Demo
                   </span>
