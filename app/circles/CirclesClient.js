@@ -2252,7 +2252,7 @@ function CreateCircleModal({
 }
 
 
-function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentUserId }) {
+function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentUserId, isContact, onAddContact }) {
   const [hints, setHints] = useState([]);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -2342,6 +2342,34 @@ function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentU
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           {loading ? (
             <div className="py-8 text-center text-sm text-slate-400">Loading hints...</div>
+          ) : !isContact && currentUserId && currentUserId !== userId ? (
+            <div className="relative">
+              <div className="columns-2 gap-3 blur-sm pointer-events-none select-none">
+                {hints.slice(0, 4).map((hint) => (
+                  <div key={hint.id} className="mb-3 break-inside-avoid">
+                    <div className="overflow-hidden rounded-[20px] border border-[#f0dfd6] bg-[#fffaf7]">
+                      {hint.image_url ? (
+                        <img src={hint.image_url} alt={hint.title} className="w-full object-cover" style={{ aspectRatio: "1/1" }} />
+                      ) : (
+                        <div className="flex items-center justify-center bg-gradient-to-br from-[#f3d5cc] to-[#d98c76]" style={{ aspectRatio: "1/1" }}>
+                          <span className="text-2xl">🎁</span>
+                        </div>
+                      )}
+                      <div className="p-3">
+                        <p className="text-[13px] font-semibold text-slate-900 line-clamp-2">{hint.title}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                <p className="text-sm font-semibold text-slate-700">Add as a contact to see their hints</p>
+                <button type="button" onClick={onAddContact}
+                  className="inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-6 text-sm font-semibold text-white shadow-lg">
+                  Add contact
+                </button>
+              </div>
+            </div>
           ) : hints.length === 0 ? (
             <div className="py-8 text-center text-sm text-slate-400">No public hints yet.</div>
           ) : (
@@ -3523,6 +3551,14 @@ if (inviteRows.length > 0) {
           initials={profileModal.initials}
           onClose={() => setProfileModal(null)}
           currentUserId={sessionUser?.id}
+          isContact={contacts.some(c => c.profileId === profileModal.userId)}
+          onAddContact={async () => {
+            await supabase.functions.invoke('send-contact-invite', {
+              body: { target_user_id: profileModal.userId, name: profileModal.name, role: 'Friend' },
+            });
+            setProfileModal(null);
+            if (sessionUser?.id) await loadContacts(sessionUser.id);
+          }}
         />
       )}
     </main>
