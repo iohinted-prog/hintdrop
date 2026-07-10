@@ -643,7 +643,7 @@ function ModalShell({
   );
 }
 
-function ContactCard({ contact, onDeleteClick }) {
+function ContactCard({ contact, onDeleteClick, onOpenProfile }) {
   return (
     <article className="rounded-[22px] border border-[#f0dfd6] bg-white p-4 shadow-sm">
       <div className="flex items-center gap-3">
@@ -665,8 +665,8 @@ function ContactCard({ contact, onDeleteClick }) {
           {contact.matchedProfileId ? (
             <button
               type="button"
-              onClick={() => setProfileModal({ userId: contact.matchedProfileId, name: contact.name, avatarUrl: contact.avatarUrl, initials: contact.initials })}
-              className="text-sm font-semibold text-slate-900 hover:text-[#d96d4f]"
+              onClick={() => onOpenProfile && onOpenProfile({ userId: contact.matchedProfileId, name: contact.name, avatarUrl: contact.avatarUrl, initials: contact.initials })}
+              className="text-sm font-semibold text-slate-900 hover:text-[#d96d4f] transition-colors"
             >
               {contact.name}
             </button>
@@ -3577,6 +3577,7 @@ if (inviteRows.length > 0) {
                           key={contact.id}
                           contact={contact}
                           onDeleteClick={openDeleteContactModal}
+                          onOpenProfile={setProfileModal}
                         />
                       ))
                     ) : (
