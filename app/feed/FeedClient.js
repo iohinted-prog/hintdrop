@@ -954,10 +954,8 @@ function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentU
     } else {
       const tempId = crypto.randomUUID();
       setClaims(prev => [...prev, { id: tempId, hint_id: hint.id, claimed_by: currentUserId, claim_type: "solo" }]);
-      console.log("claiming hint", hint.id, "as user", currentUserId);
       const { error } = await supabase.from("hint_claims")
         .insert({ hint_id: hint.id, claimed_by: currentUserId, claim_type: "solo" });
-      console.log("claim result", error);
       const data = error ? null : { id: tempId, hint_id: hint.id, claimed_by: currentUserId, claim_type: "solo" };
       if (error) {
         setClaims(prev => prev.filter(c => c.id !== tempId));
