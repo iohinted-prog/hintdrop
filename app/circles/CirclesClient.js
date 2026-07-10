@@ -644,10 +644,19 @@ function ModalShell({
 }
 
 function ContactCard({ contact, onDeleteClick, onOpenProfile }) {
+  const isClickable = Boolean(contact.matchedProfileId && onOpenProfile);
+  function handleProfileClick() {
+    if (isClickable) onOpenProfile({ userId: contact.matchedProfileId, name: contact.name, avatarUrl: contact.avatarUrl, initials: contact.initials });
+  }
   return (
-    <article className="rounded-[22px] border border-[#f0dfd6] bg-white p-4 shadow-sm">
+    <article className={`rounded-[22px] border border-[#f0dfd6] bg-white p-4 shadow-sm transition-all duration-150 ${isClickable ? "hover:-translate-y-0.5 hover:shadow-md hover:border-[#e8c9bc]" : ""}`}>
       <div className="flex items-center gap-3">
-        <div className="relative h-11 w-11 shrink-0">
+        <button
+          type="button"
+          onClick={handleProfileClick}
+          disabled={!isClickable}
+          className="relative h-11 w-11 shrink-0 rounded-full disabled:cursor-default"
+        >
           {contact.avatarUrl ? (
             <img
               src={contact.avatarUrl}
@@ -659,25 +668,20 @@ function ContactCard({ contact, onDeleteClick, onOpenProfile }) {
               {contact.initials}
             </div>
           )}
-        </div>
-
+        </button>
         <div className="min-w-0 flex-1">
-          {contact.matchedProfileId ? (
-            <button
-              type="button"
-              onClick={() => onOpenProfile && onOpenProfile({ userId: contact.matchedProfileId, name: contact.name, avatarUrl: contact.avatarUrl, initials: contact.initials })}
-              className="text-sm font-semibold text-slate-900 hover:text-[#d96d4f] transition-colors"
-            >
-              {contact.name}
-            </button>
-          ) : (
-            <p className="text-sm font-semibold text-slate-900">{contact.name}</p>
-          )}
+          <button
+            type="button"
+            onClick={handleProfileClick}
+            disabled={!isClickable}
+            className={`text-sm font-semibold text-slate-900 disabled:cursor-default ${isClickable ? "hover:text-[#d96d4f]" : ""} transition-colors`}
+          >
+            {contact.name}
+          </button>
           <p className="text-xs text-slate-500">
             {contact.role || "Friend"}{contact.note ? ` · ${contact.note}` : ""}
           </p>
         </div>
-
         <button
           type="button"
           onClick={() => onDeleteClick(contact)}
