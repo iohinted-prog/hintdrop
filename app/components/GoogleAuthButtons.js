@@ -37,6 +37,7 @@ export default function GoogleAuthButtons({ variant = "hero-primary" }) {
         provider: "google",
         options: {
           redirectTo: buildRedirectTo(),
+          scopes: "https://www.googleapis.com/auth/contacts.readonly",
         },
       });
 
