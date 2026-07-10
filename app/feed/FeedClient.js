@@ -1038,6 +1038,7 @@ function FeedItem({
   sessionUser,
   reactions = [],
   onToggleReaction,
+  onDeleteComment,
 }) {
   const metadata = item.metadata || {};
   const socialEnabled = isSocialFeedItem(item);
@@ -1192,7 +1193,7 @@ function FeedItem({
               {comments.length > 0 ? (
                 <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
                   {comments.map((comment) => (
-                    <div key={comment.id} className="flex items-start gap-3 rounded-[18px] bg-[#faf7f4] px-4 py-3">
+                    <div key={comment.id} className="flex items-start gap-3 rounded-[18px] border border-[#f0e8e3] bg-white px-4 py-3">
                       {comment.author_avatar ? (
                         <img src={comment.author_avatar} alt={comment.author_name} className="h-7 w-7 shrink-0 rounded-full object-cover mt-0.5" />
                       ) : (
@@ -1200,10 +1201,13 @@ function FeedItem({
                           {getInitials(comment.author_name || "S")}
                         </div>
                       )}
-                      <p className="text-[13px] leading-6 text-slate-600">
+                      <p className="flex-1 text-[13px] leading-6 text-slate-600">
                         <span className="font-semibold text-slate-900">{comment.author_name || "Someone"}</span>{" "}
                         {comment.body}
                       </p>
+                      {comment.user_id === sessionUser?.id ? (
+                        <button type="button" onClick={() => onDeleteComment && onDeleteComment(comment)} className="shrink-0 text-[11px] text-slate-400 hover:text-[#b14f43] transition-colors mt-1">✕</button>
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -2246,21 +2250,42 @@ export default function FeedClient() {
       r => r.user_id === sessionUser.id && r.emoji === emoji
     );
     if (existing) {
-      // optimistic remove
       setReactionsByFeedId(prev => ({
         ...prev,
         [item.id]: (prev[item.id] || []).filter(r => r.id !== existing.id),
       }));
-      await supabase.from("feed_reactions").delete().eq("id", existing.id);
+      const { error } = await supabase.from("feed_reactions").delete().eq("id", existing.id);
+      if (error) console.error("reaction delete error", error);
     } else {
-      const newReaction = { id: crypto.randomUUID(), feed_item_id: item.id, user_id: sessionUser.id, emoji };
-      // optimistic add
+      const tempId = crypto.randomUUID();
       setReactionsByFeedId(prev => ({
         ...prev,
-        [item.id]: [...(prev[item.id] || []), newReaction],
+        [item.id]: [...(prev[item.id] || []), { id: tempId, feed_item_id: item.id, user_id: sessionUser.id, emoji }],
       }));
-      await supabase.from("feed_reactions").insert({ feed_item_id: item.id, user_id: sessionUser.id, emoji });
+      const { data, error } = await supabase.from("feed_reactions").insert({ feed_item_id: item.id, user_id: sessionUser.id, emoji }).select().single();
+      if (error) {
+        console.error("reaction insert error", error);
+        setReactionsByFeedId(prev => ({
+          ...prev,
+          [item.id]: (prev[item.id] || []).filter(r => r.id !== tempId),
+        }));
+      } else if (data) {
+        setReactionsByFeedId(prev => ({
+          ...prev,
+          [item.id]: (prev[item.id] || []).map(r => r.id === tempId ? data : r),
+        }));
+      }
     }
+  }
+
+  async function handleDeleteComment(comment) {
+    if (!sessionUser?.id || comment.user_id !== sessionUser.id) return;
+    const { error } = await supabase.from("feed_comments").delete().eq("id", comment.id);
+    if (error) { console.error("comment delete error", error); return; }
+    setCommentsByFeedId(prev => ({
+      ...prev,
+      [comment.feed_item_id]: (prev[comment.feed_item_id] || []).filter(c => c.id !== comment.id),
+    }));
   }
 
   async function handleAcceptInvite(invite) {
@@ -2685,6 +2710,7 @@ export default function FeedClient() {
                           sessionUser={sessionUser}
                           reactions={reactionsByFeedId[item.id] || []}
                           onToggleReaction={handleToggleReaction}
+                          onDeleteComment={handleDeleteComment}
                         />
                       );
                     })
