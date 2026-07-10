@@ -458,45 +458,26 @@ export default function OnboardingPage() {
         return;
       }
 
-      const warmupResponse = await fetch(
-        "https://people.googleapis.com/v1/people:searchContacts?query=&pageSize=1&readMask=names,emailAddresses",
-        { headers: { Authorization: `Bearer ${providerToken}` } }
-      );
-
-      if (!warmupResponse.ok) {
-        setContactResults([]);
-        setContactsMessage("We couldn't access your contacts right now.");
-        return;
+      const [savedRes, otherRes] = await Promise.all([
+        fetch(`https://people.googleapis.com/v1/people:searchContacts?query=${encodeURIComponent(query)}&pageSize=5&readMask=names,emailAddresses`, { headers: { Authorization: `Bearer ${providerToken}` } }),
+        fetch(`https://people.googleapis.com/v1/otherContacts:search?query=${encodeURIComponent(query)}&pageSize=5&readMask=names,emailAddresses`, { headers: { Authorization: `Bearer ${providerToken}` } }),
+      ]);
+      const savedData = savedRes.ok ? await savedRes.json() : { results: [] };
+      const otherData = otherRes.ok ? await otherRes.json() : { results: [] };
+      function mapPeople(results) {
+        return (Array.isArray(results) ? results : [])
+          .map(item => item.person).filter(Boolean)
+          .map((person, index) => ({
+            id: person.resourceName || String(index),
+            name: person.names?.[0]?.displayName || "",
+            email: person.emailAddresses?.[0]?.value || "",
+          }))
+          .filter(p => p.name || p.email);
       }
-
-      const url = new URL("https://people.googleapis.com/v1/people:searchContacts");
-      url.searchParams.set("query", query);
-      url.searchParams.set("pageSize", "8");
-      url.searchParams.set("readMask", "names,emailAddresses");
-
-      const response = await fetch(url.toString(), {
-        headers: { Authorization: `Bearer ${providerToken}` },
+      const seen = new Set();
+      const mapped = [...mapPeople(savedData.results), ...mapPeople(otherData.results)].filter(p => {
+        const key = p.email || p.name; if (seen.has(key)) return false; seen.add(key); return true;
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        setContactResults([]);
-        setContactsMessage("We couldn't search your contacts right now.");
-        return;
-      }
-
-      const people = Array.isArray(result.results) ? result.results : [];
-      const mapped = people
-        .map((item) => item.person)
-        .filter(Boolean)
-        .map((person, index) => ({
-          id: person.resourceName || String(index),
-          name: getPrimaryContactField(person, "names"),
-          email: getPrimaryContactField(person, "emailAddresses"),
-        }))
-        .filter((person) => person.name || person.email);
-
       setContactResults(mapped);
 
       if (mapped.length === 0) {
