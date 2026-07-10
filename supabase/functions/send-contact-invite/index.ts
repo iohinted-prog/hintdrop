@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Hinted <hello@hintdrop.app>',
+        from: 'HintDrop <hello@hintdrop.app>',
         to: normalizedEmail,
         subject: "You've been added as a contact on HintDrop",
         html: `
@@ -245,7 +245,7 @@ Deno.serve(async (req) => {
       const resendError = await resendRes.json()
       console.log('Resend error:', resendError)
       return new Response(
-        JSON.stringify({ ok: false, error: 'Email failed', detail: resendError, from: 'Hinted <hello@hintdrop.app>' }),
+        JSON.stringify({ ok: false, error: 'Email failed', detail: resendError, from: 'HintDrop <hello@hintdrop.app>' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
