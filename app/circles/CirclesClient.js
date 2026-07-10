@@ -634,10 +634,10 @@ function ModalShell({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-[rgba(42,26,20,0.38)] px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(42,26,20,0.38)] px-4 py-4 backdrop-blur-sm">
       <div className="flex min-h-full items-center justify-center">
         <div
-          className={`flex max-h-[92vh] w-full flex-col overflow-hidden rounded-[34px] border border-[#eddacf] bg-[#fffaf7] shadow-[0_24px_80px_rgba(88,46,31,0.22)] ${maxWidth}`}
+          className={`flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-[34px] border border-[#eddacf] bg-[#fffaf7] shadow-[0_24px_80px_rgba(88,46,31,0.22)] ${maxWidth}`}
         >
           <div
             className={`flex shrink-0 items-center justify-between px-6 py-5 ${
