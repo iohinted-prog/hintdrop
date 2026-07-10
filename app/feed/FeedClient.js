@@ -2155,8 +2155,8 @@ export default function FeedClient() {
         const user = await loadSession();
         if (!active || !user) return;
 
+        const loadedContacts = await loadContacts(user.id);
         await Promise.all([
-          loadContacts(user.id),
           loadFeedItems(user.id, loadedContacts),
           loadInvites(user),
           loadCalendarEvents(user.id),
