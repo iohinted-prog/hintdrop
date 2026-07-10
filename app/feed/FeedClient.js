@@ -461,7 +461,7 @@ function ContactCard({ contact, onDeleteClick, onOpenProfile, onEditClick }) {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-slate-900 truncate">{contact.name}</p>
           <p className="text-xs text-slate-500 truncate">
-            {contact.role}{contact.note ? ` + contact.note + ` : ""}
+            {contact.role}{contact.note ? " · " + contact.note : ""}
           </p>
         </div>
       </div>
@@ -2600,6 +2600,14 @@ export default function FeedClient() {
         </div>
       </div>
 
+      <ContactsManagerModal
+        open={isContactsManagerOpen}
+        onClose={() => setIsContactsManagerOpen(false)}
+        contacts={contacts}
+        onAdd={() => { setIsContactsManagerOpen(false); setIsAddContactOpen(true); }}
+        onRefresh={() => loadContacts(sessionUser.id)}
+        onDelete={(c) => { setIsContactsManagerOpen(false); openDeleteContactModal(c); }}
+      />
       <AddContactModal
         open={isAddContactOpen}
         onClose={() => setIsAddContactOpen(false)}
