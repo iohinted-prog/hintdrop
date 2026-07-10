@@ -12,6 +12,7 @@ import {
 import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
 import AddContactModal from "../components/AddContactModal";
+import EditContactModal from "../components/EditContactModal";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 
 const TOTAL_PLATFORM_FEE_RATE = 0.0475;
@@ -2444,6 +2445,7 @@ export default function CirclesClient() {
   const [selectedCircleToDelete, setSelectedCircleToDelete] = useState(null);
   const [selectedCircleForContribution, setSelectedCircleForContribution] = useState(null);
   const [isDeletingContact, setIsDeletingContact] = useState(false);
+  const [editingContact, setEditingContact] = useState(null);
   const [isDeletingCircle, setIsDeletingCircle] = useState(false);
   const [deleteContactError, setDeleteContactError] = useState("");
   const [deleteCircleError, setDeleteCircleError] = useState("");
@@ -2979,6 +2981,8 @@ export default function CirclesClient() {
     const reloadedContacts = await loadContacts(sessionUser.id);
     await loadPublicHintsForContacts(reloadedContacts);
   }
+
+  function openEditContactModal(contact) { setEditingContact(contact); }
 
   function openDeleteContactModal(contact) {
     setDeleteContactError("");

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
 import AddContactModal from "../components/AddContactModal";
+import EditContactModal from "../components/EditContactModal";
 
 const supabase = createClient();
 
@@ -457,19 +458,28 @@ function ContactCard({ contact, onDeleteClick, onOpenProfile, onEditClick }) {
       <div className="flex items-center gap-3">
         <ContactAvatar contact={contact} />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-900">{contact.name}</p>
-          <p className="text-xs text-slate-500">
+          <p className="text-sm font-semibold text-slate-900 truncate">{contact.name}</p>
+          <p className="text-xs text-slate-500 truncate">
             {contact.role} · {contact.note}
           </p>
         </div>
         {!contact.isDemo ? (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onDeleteClick(contact); }}
-            className="inline-flex h-9 items-center justify-center rounded-full border border-[#efc0ba] bg-[#fff4f2] px-3 text-[12px] font-semibold text-[#b14f43] hover:bg-[#ffe9e5]"
-          >
-            Delete
-          </button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onEditClick && onEditClick(contact); }}
+              className="inline-flex h-9 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-3 text-[12px] font-semibold text-slate-600 hover:bg-[#f8f5f2]"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDeleteClick(contact); }}
+              className="inline-flex h-9 items-center justify-center rounded-full border border-[#efc0ba] bg-[#fff4f2] px-3 text-[12px] font-semibold text-[#b14f43] hover:bg-[#ffe9e5]"
+            >
+              Delete
+            </button>
+          </div>
         ) : null}
       </div>
     </article>
