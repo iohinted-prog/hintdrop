@@ -1192,7 +1192,14 @@ function FeedItem({
               {comments.length > 0 ? (
                 <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
                   {comments.map((comment) => (
-                    <div key={comment.id} className="rounded-[18px] bg-[#faf7f4] px-4 py-3">
+                    <div key={comment.id} className="flex items-start gap-3 rounded-[18px] bg-[#faf7f4] px-4 py-3">
+                      {comment.author_avatar ? (
+                        <img src={comment.author_avatar} alt={comment.author_name} className="h-7 w-7 shrink-0 rounded-full object-cover mt-0.5" />
+                      ) : (
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[10px] font-bold text-white mt-0.5">
+                          {getInitials(comment.author_name || "S")}
+                        </div>
+                      )}
                       <p className="text-[13px] leading-6 text-slate-600">
                         <span className="font-semibold text-slate-900">{comment.author_name || "Someone"}</span>{" "}
                         {comment.body}
@@ -1867,24 +1874,35 @@ export default function FeedClient() {
       setCommentsByFeedId({});
       return;
     }
-
     const { data, error } = await supabase
       .from("feed_comments")
       .select("id, feed_item_id, user_id, body, created_at")
       .in("feed_item_id", feedIds)
       .order("created_at", { ascending: true });
-
     if (error) throw new Error(normalizeSupabaseError(error, "Failed to load comments."));
-
-    const grouped = (data || []).reduce((acc, row) => {
+    const rows = data || [];
+    const userIds = [...new Set(rows.map(r => r.user_id).filter(Boolean))];
+    let nameByUserId = {};
+    let avatarByUserId = {};
+    if (userIds.length) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", userIds);
+      (profiles || []).forEach(p => {
+        if (p.full_name) nameByUserId[p.id] = p.full_name;
+        if (p.avatar_url) avatarByUserId[p.id] = p.avatar_url;
+      });
+    }
+    const grouped = rows.reduce((acc, row) => {
       if (!acc[row.feed_item_id]) acc[row.feed_item_id] = [];
       acc[row.feed_item_id].push({
         ...row,
-        author_name: "User",
+        author_name: nameByUserId[row.user_id] || "Someone",
+        author_avatar: avatarByUserId[row.user_id] || null,
       });
       return acc;
     }, {});
-
     setCommentsByFeedId(grouped);
   }, []);
 
