@@ -47,9 +47,18 @@ Deno.serve(async (req) => {
     console.log('User authenticated:', user.id)
 
     const body = await req.json()
-    const email = String(body?.email || '').trim()
+    let email = String(body?.email || '').trim()
     const name = typeof body?.name === 'string' ? body.name.trim() : ''
     const role = typeof body?.role === 'string' ? body.role.trim() : 'Friend'
+    const targetUserId = typeof body?.target_user_id === 'string' ? body.target_user_id.trim() : null
+
+    // If target_user_id provided, look up their email from auth.users
+    if (targetUserId && !email) {
+      const { data: targetUser } = await supabase.auth.admin.getUserById(targetUserId)
+      if (targetUser?.user?.email) {
+        email = targetUser.user.email
+      }
+    }
 
     if (!email) {
       return new Response(

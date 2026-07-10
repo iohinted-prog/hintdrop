@@ -2664,7 +2664,14 @@ export default function FeedClient() {
           onClose={() => setProfileModal(null)}
           currentUserId={sessionUser?.id}
           isContact={contacts.some(c => c.profileId === profileModal.userId)}
-          onAddContact={() => { setProfileModal(null); setIsAddContactOpen(true); }}
+          onAddContact={async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            await supabase.functions.invoke('send-contact-invite', {
+              body: { target_user_id: profileModal.userId, name: profileModal.name, role: 'Friend' },
+            });
+            setProfileModal(null);
+            if (sessionUser?.id) await loadContacts(sessionUser.id);
+          }}
         />
       )}
     </main>
