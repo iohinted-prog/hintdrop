@@ -600,7 +600,7 @@ export default function HomePageClient() {
                   </p>
                 </div>
                 <div className="rounded-full bg-[#fff0e8] px-3 py-2 text-[12px] font-bold text-[#ea7451]">
-                  Google or Microsoft
+                  Google
                 </div>
               </div>
 
@@ -609,7 +609,7 @@ export default function HomePageClient() {
 
                 <div className="rounded-[22px] border border-[#f3e4db] bg-[#fff8f4] p-4">
                   <p className="text-sm leading-6 text-slate-600">
-                    New here? Use Google or Microsoft to create your account.
+                    New here? Use Google to create your account.
                     Returning users can log in the exact same way.
                   </p>
                 </div>
