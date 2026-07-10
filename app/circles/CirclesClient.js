@@ -3741,8 +3741,7 @@ if (inviteRows.length > 0) {
         refreshCircles={refreshCircles}
         formatCurrency={formatCurrency}
       />
-    </main>
-    {profileModal && (
+      {profileModal && (
         <UserProfileModal
           userId={profileModal.userId}
           name={profileModal.name}
@@ -3751,5 +3750,6 @@ if (inviteRows.length > 0) {
           onClose={() => setProfileModal(null)}
         />
       )}
+    </main>
   );
 }
