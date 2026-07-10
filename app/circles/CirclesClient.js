@@ -645,7 +645,7 @@ function ModalShell({
   );
 }
 
-function ContactCard({ contact, onDeleteClick, onOpenProfile }) {
+function ContactCard({ contact, onDeleteClick, onOpenProfile, onEditClick }) {
   const isClickable = Boolean(contact.matchedProfileId && onOpenProfile);
   function handleProfileClick() {
     if (isClickable) onOpenProfile({ userId: contact.matchedProfileId, name: contact.name, avatarUrl: contact.avatarUrl, initials: contact.initials });
@@ -676,6 +676,13 @@ function ContactCard({ contact, onDeleteClick, onOpenProfile }) {
         </div>
         <button
           type="button"
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onEditClick && onEditClick(contact); }}
+            className="inline-flex h-9 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-3 text-[12px] font-semibold text-slate-600 hover:bg-[#f8f5f2]"
+          >
+            Edit
+          </button>
           onClick={(e) => { e.stopPropagation(); onDeleteClick(contact); }}
           className="inline-flex h-9 items-center justify-center rounded-full border border-[#efc0ba] bg-[#fff4f2] px-3 text-[12px] font-semibold text-[#b14f43] hover:bg-[#ffe9e5]"
         >
@@ -3339,6 +3346,7 @@ if (inviteRows.length > 0) {
                           contact={contact}
                           onDeleteClick={openDeleteContactModal}
                           onOpenProfile={setProfileModal}
+                          onEditClick={openEditContactModal}
                         />
                       ))
                     ) : (
