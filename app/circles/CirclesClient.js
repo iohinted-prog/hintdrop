@@ -3318,7 +3318,7 @@ if (inviteRows.length > 0) {
                   </p>
                  <div className="flex items-center justify-between mt-1">
                    <h1 className="text-[24px] font-semibold tracking-[-0.04em] text-slate-900">People you can add</h1>
-                   <button type="button" onClick={() => setIsContactsManagerOpen(true)} className="text-[11px] font-semibold text-[#df7b59] hover:underline">View all</button>
+                   <button type="button" onClick={() => setIsContactsManagerOpen(true)} className="inline-flex h-7 items-center justify-center rounded-full border border-[#f0c9b5] bg-[#fff4ee] px-3 text-[11px] font-semibold text-[#df7b59] hover:bg-[#ffe9db]">View contacts</button>
                  </div>
                   <p className="mt-2 text-[14px] leading-7 text-slate-600">
                     Invite people into shared circles, then track who has joined and who is still pending.

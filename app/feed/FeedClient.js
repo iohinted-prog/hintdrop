@@ -2404,7 +2404,7 @@ export default function FeedClient() {
                   <h2 className="text-base font-semibold text-slate-900">Contacts</h2>
                   <p className="mt-1 text-xs text-slate-500">Invitees and contacts live here.</p>
                 </div>
-                <button type="button" onClick={() => setIsContactsManagerOpen(true)} className="text-[11px] font-semibold text-[#df7b59] hover:underline">View all</button>
+                <button type="button" onClick={() => setIsContactsManagerOpen(true)} className="inline-flex h-7 items-center justify-center rounded-full border border-[#f0c9b5] bg-[#fff4ee] px-3 text-[11px] font-semibold text-[#df7b59] hover:bg-[#ffe9db]">View contacts</button>
               </div>
 
               <div className="mt-4 space-y-3">
