@@ -2397,14 +2397,13 @@ export default function FeedClient() {
                 </div>
               </section>
             ) : null}
-
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-base font-semibold text-slate-900">Contacts</h2>
-                  <p className="mt-1 text-xs text-slate-500">Invitees and contacts live here.</p>
-                </div>
-                <button type="button" onClick={() => setIsContactsManagerOpen(true)} className="inline-flex h-7 items-center justify-center rounded-full border border-[#f0c9b5] bg-[#fff4ee] px-3 text-[11px] font-semibold text-[#df7b59] hover:bg-[#ffe9db]">View contacts</button>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Contacts</p>
+                <button type="button" onClick={() => setIsContactsManagerOpen(true)} className="inline-flex h-8 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-[11px] font-semibold text-white shadow-sm">View contacts</button>
+              </div>
+              <h2 className="mt-2 text-base font-semibold text-slate-900">Contacts</h2>
+              <p className="mt-1 text-xs text-slate-500">Invitees and contacts live here.</p>
               </div>
 
               <div className="mt-4 space-y-3">
