@@ -1910,7 +1910,6 @@ export default function FeedClient() {
         .order("occurred_at", { ascending: false })
         .limit(50) : Promise.resolve({ data: [], error: null }),
     ]);
-    console.log("ownResult error", ownResult.error, "contactResult error", contactResult.error);
     const error = ownResult.error || contactResult.error;
     const combined = [...(ownResult.data || []), ...(contactResult.data || [])];
     const seen = new Set();
@@ -1919,7 +1918,6 @@ export default function FeedClient() {
       .sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime())
       .slice(0, 50);
     if (error) {
-      setFeedItems([]);
       setFeedItems([]);
       setFeedLoading(false);
       throw new Error(normalizeSupabaseError(error, "Failed to load feed."));
