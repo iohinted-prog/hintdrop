@@ -444,7 +444,7 @@ function ContactAvatar({ contact }) {
 }
 
 
-function ContactCard({ contact, onDeleteClick, onOpenProfile }) {
+function ContactCard({ contact, onDeleteClick, onOpenProfile, onEditClick }) {
   const isClickable = Boolean(contact.profileId && !contact.isDemo && onOpenProfile);
   function handleProfileClick() {
     if (isClickable) onOpenProfile({ userId: contact.profileId, name: contact.name, avatarUrl: contact.avatarUrl, initials: contact.initials });
@@ -1491,6 +1491,10 @@ export default function FeedClient() {
   const [isDeleteContactOpen, setIsDeleteContactOpen] = useState(false);
   const [selectedContactToDelete, setSelectedContactToDelete] = useState(null);
   const [isDeletingContact, setIsDeletingContact] = useState(false);
+  const [editingContact, setEditingContact] = useState(null);
+  const [editContactForm, setEditContactForm] = useState({ name: "", role: "Friend" });
+  const [isSavingEditContact, setIsSavingEditContact] = useState(false);
+  const [editContactError, setEditContactError] = useState("");
   const [deleteContactError, setDeleteContactError] = useState("");
 
   const [feedItems, setFeedItems] = useState([]);
@@ -1932,6 +1936,31 @@ export default function FeedClient() {
     await loadContacts(sessionUser.id);
     await loadInvites(sessionUser);
     setContactSuccess("Contact saved successfully.");
+  }
+
+  function openEditContactModal(contact) {
+    setEditingContact(contact);
+    setEditContactForm({ name: contact.name || "", role: contact.role || "Friend" });
+    setEditContactError("");
+  }
+
+  async function handleSaveEditContact() {
+    if (!editingContact) return;
+    setIsSavingEditContact(true);
+    setEditContactError("");
+    try {
+      const { error } = await supabase
+        .from("contacts")
+        .update({ name: editContactForm.name.trim(), role: editContactForm.role })
+        .eq("id", editingContact.id);
+      if (error) throw new Error(error.message);
+      await loadContacts(sessionUser.id);
+      setEditingContact(null);
+    } catch (err) {
+      setEditContactError(err.message || "Failed to save.");
+    } finally {
+      setIsSavingEditContact(false);
+    }
   }
 
   function openDeleteContactModal(contact) {
