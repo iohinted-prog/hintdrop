@@ -18,7 +18,7 @@ export default function PrivacyPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#f3cfc2] text-base font-semibold text-slate-900 shadow-sm">
               H
             </div>
-            <span>Hinted</span>
+            <span>HintDrop</span>
           </Link>
 
           <nav className="flex items-center gap-3 text-sm font-medium text-slate-600">
@@ -56,7 +56,7 @@ export default function PrivacyPage() {
 
           <div className="space-y-6 rounded-[28px] border border-[#eadfd4] bg-white/80 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)] sm:p-10">
             <p className="text-[17px] leading-8 text-slate-700">
-              Hinted (&quot;Hinted&quot;, &quot;we&quot;, &quot;our&quot;, or
+              Hinted (&quot;HintDrop&quot;, &quot;we&quot;, &quot;our&quot;, or
               &quot;us&quot;) helps people organise gift ideas, reminders,
               circles, important dates, and related planning. This Privacy
               Policy explains what information we collect, how we use it, when
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 We may collect information you provide directly, information
-                collected automatically when you use Hinted, and information
+                collected automatically when you use HintDrop, and information
                 received from third parties where you choose to connect them to
                 your account.
               </p>
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
                   password, profile details, preferences, and login details.
                 </li>
                 <li>
-                  - Information you add to Hinted, including birthdays,
+                  - Information you add to HintDrop, including birthdays,
                   interests, relationships, reminders, gift ideas, saved links,
                   notes, circles, invite details, and contribution-related
                   information.
@@ -148,7 +148,7 @@ export default function PrivacyPage() {
               </p>
               <p className="text-[17px] leading-8 text-slate-700">
                 We do not sell Google user data. We do not use Google user data
-                for purposes other than providing and improving Hinted, unless
+                for purposes other than providing and improving HintDrop, unless
                 we clearly tell you otherwise and are permitted to do so.
               </p>
             </section>
@@ -162,7 +162,7 @@ export default function PrivacyPage() {
               </p>
               <ul className="space-y-3 text-[17px] leading-8 text-slate-700">
                 <li>
-                  - With service providers who help us run Hinted, such as
+                  - With service providers who help us run HintDrop, such as
                   hosting, analytics, authentication, communications, and
                   customer support providers.
                 </li>
@@ -178,7 +178,7 @@ export default function PrivacyPage() {
                 </li>
                 <li>
                   - To protect the rights, safety, security, and integrity of
-                  Hinted, our users, or the public.
+                  HintDrop, our users, or the public.
                 </li>
                 <li>
                   - In connection with a merger, acquisition, financing,
@@ -196,7 +196,7 @@ export default function PrivacyPage() {
                 5. Visibility and sharing choices
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
-                Hinted is designed to help people coordinate around gifting and
+                HintDrop is designed to help people coordinate around gifting and
                 important moments. Some information may be visible to accepted
                 contacts, members of a shared circle, or participants in a
                 shared contribution flow, depending on how the feature works. We
@@ -212,7 +212,7 @@ export default function PrivacyPage() {
                 We may use cookies and similar technologies to keep you signed
                 in, remember preferences, understand usage, measure performance,
                 and improve the service. You can usually control cookies through
-                your browser settings, although some parts of Hinted may not
+                your browser settings, although some parts of HintDrop may not
                 work properly if they are disabled.
               </p>
             </section>
@@ -223,7 +223,7 @@ export default function PrivacyPage() {
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 We keep personal information for as long as reasonably necessary
-                to provide Hinted, maintain records, resolve disputes, enforce
+                to provide HintDrop, maintain records, resolve disputes, enforce
                 our agreements, and comply with legal obligations. Some
                 information may be retained after account closure where needed
                 for legal, security, fraud prevention, or operational reasons.
@@ -271,7 +271,7 @@ export default function PrivacyPage() {
                 10. Children&apos;s privacy
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
-                Hinted is not intended for children under the age of 13, or any
+                HintDrop is not intended for children under the age of 13, or any
                 higher minimum age required by local law to use the service
                 independently. We do not knowingly collect personal information
                 from children in violation of applicable law.
@@ -283,7 +283,7 @@ export default function PrivacyPage() {
                 11. International users
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
-                Hinted may process and store information in countries other than
+                HintDrop may process and store information in countries other than
                 the one where you live. By using the service, you understand
                 that your information may be transferred to and processed in
                 places where data protection laws may differ from those in your

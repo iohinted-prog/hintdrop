@@ -219,8 +219,8 @@ Deno.serve(async (req) => {
 
     console.log('Invite created:', invite.id)
 
-    const acceptUrl = `https://www.hinted.io/invite/contact?token=${token}`
-    console.log('Sending with from address: Hinted <hello@hinted.io>')
+    const acceptUrl = `https://www.hintdrop.app/invite/contact?token=${token}`
+    console.log('Sending with from address: Hinted <hello@hintdrop.app>')
 
     const resendRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -229,12 +229,12 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Hinted <hello@hinted.io>',
+        from: 'Hinted <hello@hintdrop.app>',
         to: normalizedEmail,
-        subject: "You've been added as a contact on Hinted",
+        subject: "You've been added as a contact on HintDrop",
         html: `
           <p>Hi${name ? ` ${name}` : ''},</p>
-          <p>Someone has added you as a contact on Hinted.</p>
+          <p>Someone has added you as a contact on HintDrop.</p>
           <p><a href="${acceptUrl}">Accept and view their profile</a></p>
           <p>This link expires in 7 days.</p>
         `,
@@ -245,7 +245,7 @@ Deno.serve(async (req) => {
       const resendError = await resendRes.json()
       console.log('Resend error:', resendError)
       return new Response(
-        JSON.stringify({ ok: false, error: 'Email failed', detail: resendError, from: 'Hinted <hello@hinted.io>' }),
+        JSON.stringify({ ok: false, error: 'Email failed', detail: resendError, from: 'Hinted <hello@hintdrop.app>' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

@@ -64,7 +64,7 @@ function AcceptCircleInvite() {
   if (status === 'logged-out') {
     return (
       <main style={styles.container}>
-        <h1 style={styles.heading}>You have been invited to join a pot on Hinted</h1>
+        <h1 style={styles.heading}>You have been invited to join a pot on HintDrop</h1>
         <p style={styles.body}>Create an account to view and join the pot.</p>
         <button
           onClick={() => router.push(`/join?invite_token=${token}&invite_type=circle`)}
@@ -85,7 +85,7 @@ function AcceptCircleInvite() {
   if (status === 'ready') {
     return (
       <main style={styles.container}>
-        <h1 style={styles.heading}>You have been invited to join a pot on Hinted</h1>
+        <h1 style={styles.heading}>You have been invited to join a pot on HintDrop</h1>
         <p style={styles.body}>Accept to join the group pot and contribute.</p>
         <button onClick={acceptInvite} style={styles.button}>
           Accept invite

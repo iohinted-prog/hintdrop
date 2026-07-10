@@ -100,9 +100,9 @@ function AcceptContactInvite() {
   if (status === 'logged-out') {
     return (
       <main style={styles.container}>
-        <h1 style={styles.heading}>You have been invited as a contact on Hinted</h1>
+        <h1 style={styles.heading}>You have been invited as a contact on HintDrop</h1>
         <p style={styles.body}>
-          Accept the invite to share your birthday and connect on Hinted.
+          Accept the invite to share your birthday and connect on HintDrop.
         </p>
 
         <button
@@ -128,7 +128,7 @@ function AcceptContactInvite() {
   if (status === 'ready') {
     return (
       <main style={styles.container}>
-        <h1 style={styles.heading}>You have been invited as a contact on Hinted</h1>
+        <h1 style={styles.heading}>You have been invited as a contact on HintDrop</h1>
         <p style={styles.body}>
           Accept to share your birthday and appear in their contacts.
         </p>

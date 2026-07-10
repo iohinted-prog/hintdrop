@@ -197,7 +197,7 @@ function LandingLogo() {
         🎁
       </div>
       <div className="text-[22px] font-extrabold tracking-[-0.04em] text-slate-900">
-        Hinted<span className="text-[#f36f64]">.io</span>
+        Hint<span className="text-[#f36f64]">Drop</span>
       </div>
     </Link>
   );
@@ -457,7 +457,7 @@ export default function GiftShopPage() {
 
               <aside className="rounded-[26px] border border-[#f0dfd6] bg-[#fffdfa] p-5 shadow-sm">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Why Hinted
+                  Why HintDrop
                 </p>
 
                 <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">

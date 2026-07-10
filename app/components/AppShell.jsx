@@ -161,7 +161,7 @@ export default function AppShell({ children }) {
           <Link href="/feed" className="flex items-center gap-3.5">
             <LogoMark />
             <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
-              Hinted<span className="text-[#ff875d]">.io</span>
+              Hint<span className="text-[#ff875d]">Drop</span>
             </div>
           </Link>
 

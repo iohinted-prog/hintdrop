@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "For Brands | Hinted.io",
+  title: "For Brands | HintDrop",
   description:
-    "Partner with Hinted to place thoughtful products into gifting, reminder, and shared planning moments.",
+    "Partner with HintDrop to place thoughtful products into gifting, reminder, and shared planning moments.",
 };
 
 export default function ForBrandsPage() {
@@ -23,7 +23,7 @@ export default function ForBrandsPage() {
                 </h1>
 
                 <p className="mt-4 max-w-[60ch] text-[15px] leading-7 text-slate-600">
-                  Hinted sits closer to gifting intent than a traditional marketplace.
+                  HintDrop sits closer to gifting intent than a traditional marketplace.
                   People come here to remember milestones, save better ideas, plan shared
                   presents, and browse curated options when the timing is right.
                 </p>
@@ -117,7 +117,7 @@ export default function ForBrandsPage() {
               Match products to moments
             </h2>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              Hinted is built around occasions, interests, reminders, and relationships,
+              HintDrop is built around occasions, interests, reminders, and relationships,
               which creates room for products to appear when they make sense rather than at random.
             </p>
           </article>
@@ -146,7 +146,7 @@ export default function ForBrandsPage() {
                 Best suited to brands people are happy to save
               </h2>
               <p className="mt-4 max-w-[58ch] text-[15px] leading-7 text-slate-600">
-                Hinted is likely to work best for brands with products that feel giftable,
+                HintDrop is likely to work best for brands with products that feel giftable,
                 recommendable, or worth returning to for a milestone.
               </p>
             </div>
@@ -192,7 +192,7 @@ export default function ForBrandsPage() {
                 </div>
 
                 <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[36px]">
-                  Interested in partnering with Hinted?
+                  Interested in partnering with HintDrop?
                 </h2>
 
                 <p className="mt-3 text-[15px] leading-7 text-slate-600">
@@ -206,7 +206,7 @@ export default function ForBrandsPage() {
                   href="/contact"
                   className="inline-flex h-11 items-center justify-center rounded-full bg-[#2f3b2d] px-5 text-sm font-semibold text-white transition hover:bg-[#243022]"
                 >
-                  Contact Hinted
+                  Contact HintDrop
                 </Link>
 
                 <Link

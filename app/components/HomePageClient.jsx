@@ -208,7 +208,7 @@ function LandingLogo() {
         🎁
       </div>
       <div className="text-[22px] font-extrabold tracking-[-0.04em] text-slate-900">
-        Hinted<span className="text-[#f36f64]">.io</span>
+        Hint<span className="text-[#f36f64]">Drop</span>
       </div>
     </div>
   );
@@ -581,7 +581,7 @@ export default function HomePageClient() {
             </h1>
 
             <p className="mt-7 max-w-[560px] text-[16px] leading-8 text-slate-500 sm:text-[18px]">
-              Hinted helps you remember important moments, collect better gift
+              HintDrop helps you remember important moments, collect better gift
               ideas, plan shared presents with friends, and browse curated picks
               when you need them.
             </p>
@@ -593,7 +593,7 @@ export default function HomePageClient() {
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
-                    Join Hinted
+                    Join HintDrop
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
                     Keep your circles, hints, reminders, and shop saves connected
@@ -617,7 +617,7 @@ export default function HomePageClient() {
               </div>
 
               <p className="mt-4 text-xs leading-5 text-slate-500">
-                By continuing, you agree to Hinted’s{" "}
+                By continuing, you agree to HintDrop’s{" "}
                 <Link
                   href="/terms"
                   className="font-medium text-slate-700 underline underline-offset-2"

@@ -1,7 +1,7 @@
 import SettingsClient from "./SettingsClient";
 
 export const metadata = {
-  title: "Settings | Hinted.io",
+  title: "Settings | HintDrop",
   description: "Manage reminder and app preferences.",
 };
 

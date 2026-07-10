@@ -1,27 +1,27 @@
 export default function sitemap() {
   return [
     {
-      url: "https://hinted.io",
+      url: "https://hintdrop.app",
       lastModified: new Date(),
     },
     {
-      url: "https://hinted.io/login",
+      url: "https://hintdrop.app/login",
       lastModified: new Date(),
     },
     {
-      url: "https://hinted.io/onboarding",
+      url: "https://hintdrop.app/onboarding",
       lastModified: new Date(),
     },
     {
-      url: "https://hinted.io/feed",
+      url: "https://hintdrop.app/feed",
       lastModified: new Date(),
     },
     {
-      url: "https://hinted.io/hints",
+      url: "https://hintdrop.app/hints",
       lastModified: new Date(),
     },
     {
-      url: "https://hinted.io/offers",
+      url: "https://hintdrop.app/offers",
       lastModified: new Date(),
     },
   ];

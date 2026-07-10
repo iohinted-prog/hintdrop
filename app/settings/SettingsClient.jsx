@@ -235,7 +235,7 @@ export default function SettingsPage() {
                 <div>
                   <p className="text-sm font-medium text-slate-900">Product updates</p>
                   <p className="text-xs text-slate-500">
-                    Hear about new features and improvements to Hinted.
+                    Hear about new features and improvements to HintDrop.
                   </p>
                 </div>
                 <input

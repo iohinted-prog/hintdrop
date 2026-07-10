@@ -38,7 +38,7 @@ const demoContacts = [
     id: "demo-1",
     name: "Maya",
     role: "Contact",
-    note: "Hinted user",
+    note: "HintDrop user",
     initials: "M",
     colors: "from-[#efc3af] to-[#ae6e57]",
     email: "maya@example.com",
@@ -60,7 +60,7 @@ const demoContacts = [
     id: "demo-3",
     name: "Fiona",
     role: "Contact",
-    note: "Hinted user",
+    note: "HintDrop user",
     initials: "F",
     colors: "from-[#809168] to-[#41512e]",
     email: "fiona@example.com",
@@ -88,7 +88,7 @@ const firstLookCard = {
   created_at: new Date().toISOString(),
   metadata: {
     social_enabled: true,
-    actor_name: "Hinted",
+    actor_name: "HintDrop",
     actor_profile_href: "/hints",
     actor_avatar_initials: "H",
     demo_reactions: [
@@ -395,7 +395,7 @@ function getContactVisualState(contact) {
       badgeLabel: "C",
       cardClass: "border-[#dce8d8] bg-[#f7fbf5]",
       roleLabel: contact.role || "Contact",
-      noteLabel: "Hinted user",
+      noteLabel: "HintDrop user",
     };
   }
   if (contact.contactState === "invitee") {
@@ -1626,7 +1626,7 @@ export default function FeedClient() {
         role: contactState === "invitee" ? "Invitee" : (row.role || "Friend"),
         note:
           contactState === "user"
-            ? "Hinted user"
+            ? "HintDrop user"
             : contactState === "invitee"
               ? "Invitee"
               : "Contact",

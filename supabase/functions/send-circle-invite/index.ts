@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
 
     console.log('Invite created:', invite.id)
 
-    const acceptUrl = `https://www.hinted.io/invite/circle?token=${inviteToken}`
+    const acceptUrl = `https://www.hintdrop.app/invite/circle?token=${inviteToken}`
 
     const resendRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -115,9 +115,9 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Hinted <hello@hinted.io>',
+        from: 'Hinted <hello@hintdrop.app>',
         to: normalizedEmail,
-        subject: "You've been invited to join a pot on Hinted",
+        subject: "You've been invited to join a pot on HintDrop",
         html: `
           <p>Hi${name ? ` ${name}` : ''},</p>
           <p>You have been invited to join a group pot: <strong>${circle.title}</strong>.</p>

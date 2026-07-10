@@ -18,7 +18,7 @@ export default function TermsPage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#f3cfc2] text-base font-semibold text-slate-900 shadow-sm">
               H
             </div>
-            <span>Hinted</span>
+            <span>HintDrop</span>
           </Link>
 
           <nav className="flex items-center gap-3 text-sm font-medium text-slate-600">
@@ -45,7 +45,7 @@ export default function TermsPage() {
               Terms of Service
             </p>
             <h1 className="text-3xl font-semibold tracking-[-0.03em] text-slate-900 sm:text-4xl">
-              The rules for using Hinted
+              The rules for using HintDrop
             </h1>
             <p className="mt-4 text-base leading-8 text-slate-600">
               Effective date: June 17, 2026
@@ -57,9 +57,9 @@ export default function TermsPage() {
           <div className="space-y-6 rounded-[28px] border border-[#eadfd4] bg-white/80 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)] sm:p-10">
             <p className="text-[17px] leading-8 text-slate-700">
               These Terms of Service (&quot;Terms&quot;) govern your access to
-              and use of Hinted, including our website, applications, and
+              and use of HintDrop, including our website, applications, and
               related services (together, the &quot;Service&quot;). By accessing
-              or using Hinted, you agree to be bound by these Terms.
+              or using HintDrop, you agree to be bound by these Terms.
             </p>
 
             <section className="space-y-3">
@@ -84,7 +84,7 @@ export default function TermsPage() {
                 2. Description of the Service
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
-                Hinted helps users organise gift ideas, reminders, important
+                HintDrop helps users organise gift ideas, reminders, important
                 dates, social circles, and related planning tools. We may add,
                 remove, improve, suspend, or change features at any time.
               </p>
@@ -95,7 +95,7 @@ export default function TermsPage() {
                 3. Acceptable use
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
-                You agree not to misuse Hinted. In particular, you agree not to:
+                You agree not to misuse HintDrop. In particular, you agree not to:
               </p>
               <ul className="space-y-3 text-[17px] leading-8 text-slate-700">
                 <li>
@@ -115,7 +115,7 @@ export default function TermsPage() {
                   - Harass, spam, exploit, or harm other users.
                 </li>
                 <li>
-                  - Use Hinted to collect or expose personal information
+                  - Use HintDrop to collect or expose personal information
                   improperly.
                 </li>
               </ul>
@@ -126,13 +126,13 @@ export default function TermsPage() {
                 4. User content
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
-                You retain ownership of the content you submit to Hinted,
+                You retain ownership of the content you submit to HintDrop,
                 including profile information, hints, saved links, notes,
                 messages, circle-related content, and other materials you create
                 or upload.
               </p>
               <p className="text-[17px] leading-8 text-slate-700">
-                By submitting content to Hinted, you grant us a non-exclusive,
+                By submitting content to HintDrop, you grant us a non-exclusive,
                 worldwide, royalty-free license to host, store, reproduce,
                 adapt, and display that content as needed to operate, improve,
                 and provide the Service.
@@ -148,7 +148,7 @@ export default function TermsPage() {
                 5. Privacy
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
-                Your use of Hinted is also governed by our Privacy Policy, which
+                Your use of HintDrop is also governed by our Privacy Policy, which
                 explains how we collect, use, and share personal information.
               </p>
             </section>
@@ -170,7 +170,7 @@ export default function TermsPage() {
                 7. Paid features, billing, and refunds
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
-                Some features of Hinted may be free, while others may require
+                Some features of HintDrop may be free, while others may require
                 payment now or in the future. If you purchase a paid feature,
                 subscription, contribution-related service, or other paid
                 offering, you agree to pay any applicable fees, taxes, and
@@ -189,10 +189,10 @@ export default function TermsPage() {
                 8. Termination and suspension
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
-                You may stop using Hinted at any time. We may suspend or
+                You may stop using HintDrop at any time. We may suspend or
                 terminate your access to the Service at any time, with or
                 without notice, if we reasonably believe you have violated these
-                Terms, created risk for other users, or exposed Hinted to legal
+                Terms, created risk for other users, or exposed HintDrop to legal
                 or security issues.
               </p>
               <p className="text-[17px] leading-8 text-slate-700">
@@ -207,8 +207,8 @@ export default function TermsPage() {
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 The Service, including its software, branding, designs, text,
-                graphics, logos, and other content provided by Hinted, is owned
-                by or licensed to Hinted and is protected by applicable
+                graphics, logos, and other content provided by HintDrop, is owned
+                by or licensed to HintDrop and is protected by applicable
                 intellectual property laws. Except as expressly allowed in these
                 Terms, you may not copy, modify, distribute, sell, or reverse
                 engineer any part of the Service.
@@ -220,7 +220,7 @@ export default function TermsPage() {
                 10. Third-party links and services
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
-                Hinted may contain links to third-party websites, products, or
+                HintDrop may contain links to third-party websites, products, or
                 services. We do not control and are not responsible for those
                 third-party resources. If you use them, you do so at your own
                 risk.
@@ -232,7 +232,7 @@ export default function TermsPage() {
                 11. Disclaimers
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
-                Hinted is provided on an &quot;as is&quot; and &quot;as
+                HintDrop is provided on an &quot;as is&quot; and &quot;as
                 available&quot; basis to the fullest extent permitted by law. We
                 do not guarantee that the Service will always be uninterrupted,
                 error-free, secure, or suitable for every purpose.
@@ -244,7 +244,7 @@ export default function TermsPage() {
                 12. Limitation of liability
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
-                To the fullest extent permitted by law, Hinted and its
+                To the fullest extent permitted by law, HintDrop and its
                 affiliates, officers, employees, and service providers will not
                 be liable for any indirect, incidental, special, consequential,
                 exemplary, or punitive damages, or for any loss of profits,
@@ -252,7 +252,7 @@ export default function TermsPage() {
                 or related to your use of the Service.
               </p>
               <p className="text-[17px] leading-8 text-slate-700">
-                If Hinted is found liable for any claim arising out of or
+                If HintDrop is found liable for any claim arising out of or
                 relating to the Service, our total liability will not exceed the
                 greater of the amount you paid us in the 12 months before the
                 claim arose or £100.
@@ -264,7 +264,7 @@ export default function TermsPage() {
                 13. Indemnity
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
-                You agree to defend, indemnify, and hold harmless Hinted and its
+                You agree to defend, indemnify, and hold harmless HintDrop and its
                 affiliates, officers, employees, and agents from and against
                 claims, liabilities, damages, losses, and expenses arising out
                 of or related to your content, your misuse of the Service, or
@@ -279,7 +279,7 @@ export default function TermsPage() {
               <p className="text-[17px] leading-8 text-slate-700">
                 We may update these Terms from time to time. If we make material
                 changes, we will post the updated Terms here and revise the
-                &quot;Last updated&quot; date above. By continuing to use Hinted
+                &quot;Last updated&quot; date above. By continuing to use HintDrop
                 after those changes become effective, you agree to the updated
                 Terms.
               </p>

@@ -11,7 +11,7 @@ function LandingLogo() {
         🎁
       </div>
       <div className="text-[22px] font-extrabold tracking-[-0.04em] text-slate-900">
-        Hinted<span className="text-[#f36f64]">.io</span>
+        Hint<span className="text-[#f36f64]">Drop</span>
       </div>
     </div>
   );
@@ -26,7 +26,7 @@ export default function JoinClient() {
   const isCircleInvite = inviteType === "circle";
   const hasInvite = Boolean(inviteToken && inviteType);
 
-  const title = hasInvite ? "Accept your invite" : "Join Hinted";
+  const title = hasInvite ? "Accept your invite" : "Join HintDrop";
   const subtitle = hasInvite
     ? "Sign in or create an account to continue. You will then be taken to onboarding or straight to your feed."
     : "Use Google or Microsoft to sign in. New users will go to onboarding and returning users will go straight to the feed.";
@@ -43,7 +43,7 @@ export default function JoinClient() {
             <div className="mb-6 rounded-[22px] border border-[#f1e4dc] bg-[#fff8f4] p-4">
               <p className="text-sm leading-6 text-slate-700">
                 <span className="font-semibold">
-                  You have been invited as a contact on Hinted.
+                  You have been invited as a contact on HintDrop.
                 </span>{" "}
                 Sign in or create an account to accept the invite. New users
                 will continue to onboarding, and existing users will go
@@ -56,7 +56,7 @@ export default function JoinClient() {
             <div className="mb-6 rounded-[22px] border border-[#f1e4dc] bg-[#fff8f4] p-4">
               <p className="text-sm leading-6 text-slate-700">
                 <span className="font-semibold">
-                  You have been invited to join a circle on Hinted.
+                  You have been invited to join a circle on HintDrop.
                 </span>{" "}
                 Sign in or create an account to accept the invite. New users
                 will continue to onboarding, and existing users will go
@@ -68,7 +68,7 @@ export default function JoinClient() {
           {!hasInvite && (
             <div className="mb-6 rounded-[22px] border border-[#f1e4dc] bg-[#fff8f4] p-4">
               <p className="text-sm leading-6 text-slate-700">
-                <span className="font-semibold">Welcome to Hinted.</span>{" "}
+                <span className="font-semibold">Welcome to HintDrop.</span>{" "}
                 Sign in or create an account to continue. We will take new users
                 to onboarding and returning users straight to their feed.
               </p>
@@ -106,7 +106,7 @@ export default function JoinClient() {
             </div>
 
             <p className="mt-4 text-xs leading-5 text-slate-500">
-              By continuing, you agree to Hinted&apos;s{" "}
+              By continuing, you agree to HintDrop&apos;s{" "}
               <Link
                 href="/terms"
                 className="font-medium text-slate-700 underline underline-offset-2"

@@ -4,6 +4,6 @@ export default function robots() {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://hinted.io/sitemap.xml",
+    sitemap: "https://hintdrop.app/sitemap.xml",
   };
 }

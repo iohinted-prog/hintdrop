@@ -4,9 +4,9 @@ import { createServerClient } from "@supabase/ssr";
 import HomePageClient from "./components/HomePageClient";
 
 export const metadata = {
-  title: "Hinted.io | Never forget. Always thoughtful.",
+  title: "HintDrop | Never forget. Always thoughtful.",
   description:
-    "Hinted helps you remember important moments, save better gift ideas, build circles, and explore curated shopping with help from your friends.",
+    "HintDrop helps you remember important moments, save better gift ideas, build circles, and explore curated shopping with help from your friends.",
   other: {
     "impact-site-verification": "e9b128fe-f48f-4547-98f7-037ee4183d82",
   },

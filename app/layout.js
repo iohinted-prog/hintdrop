@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Hinted.io",
+  title: "HintDrop",
   description:
     "Build circles, hints, and reminders to stay close to the people who matter.",
 };
