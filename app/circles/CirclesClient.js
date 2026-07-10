@@ -13,6 +13,7 @@ import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
 import AddContactModal from "../components/AddContactModal";
 import EditContactModal from "../components/EditContactModal";
+import ContactsManagerModal from "../components/ContactsManagerModal";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 
 const TOTAL_PLATFORM_FEE_RATE = 0.0475;
@@ -2440,6 +2441,7 @@ export default function CirclesClient() {
   const [selectedCircleForContribution, setSelectedCircleForContribution] = useState(null);
   const [isDeletingContact, setIsDeletingContact] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
+  const [isContactsManagerOpen, setIsContactsManagerOpen] = useState(false);
   const [isDeletingCircle, setIsDeletingCircle] = useState(false);
   const [deleteContactError, setDeleteContactError] = useState("");
   const [deleteCircleError, setDeleteCircleError] = useState("");
@@ -3314,9 +3316,10 @@ if (inviteRows.length > 0) {
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                     Contacts
                   </p>
-                  <h1 className="mt-1 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">
-                    People you can add
-                  </h1>
+                 <div className="flex items-center justify-between mt-1">
+                   <h1 className="text-[24px] font-semibold tracking-[-0.04em] text-slate-900">People you can add</h1>
+                   <button type="button" onClick={() => setIsContactsManagerOpen(true)} className="text-[11px] font-semibold text-[#df7b59] hover:underline">View all</button>
+                 </div>
                   <p className="mt-2 text-[14px] leading-7 text-slate-600">
                     Invite people into shared circles, then track who has joined and who is still pending.
                   </p>
@@ -3327,7 +3330,7 @@ if (inviteRows.length > 0) {
                         Loading contacts...
                       </div>
                     ) : contacts.length ? (
-                      contacts.map((contact) => (
+                      contacts.slice(0, 5).map((contact) => (
                         <ContactCard
                           key={contact.id}
                           contact={contact}
@@ -3460,6 +3463,14 @@ if (inviteRows.length > 0) {
         formatCurrency={formatCurrency}
       />
 
+      <ContactsManagerModal
+        open={isContactsManagerOpen}
+        onClose={() => setIsContactsManagerOpen(false)}
+        contacts={contacts}
+        onAdd={() => { setIsContactsManagerOpen(false); openAddContactModal(); }}
+        onRefresh={() => loadContacts(sessionUser.id)}
+        onDelete={(c) => { setIsContactsManagerOpen(false); openDeleteContactModal(c); }}
+      />
       <AddContactModal
         key={addContactModalKey}
         modalKey={addContactModalKey}

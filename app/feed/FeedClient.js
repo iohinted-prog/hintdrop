@@ -2399,10 +2399,14 @@ export default function FeedClient() {
             ) : null}
 
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">Contacts</h2>
-                <p className="mt-1 text-xs text-slate-500">Invitees and contacts live here.</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-slate-900">Contacts</h2>
+                  <p className="mt-1 text-xs text-slate-500">Invitees and contacts live here.</p>
+                </div>
+                <button type="button" onClick={() => setIsContactsManagerOpen(true)} className="text-[11px] font-semibold text-[#df7b59] hover:underline">View all</button>
               </div>
+              <button type="button" onClick={() => setIsContactsManagerOpen(true)} className="mt-2 text-[11px] font-semibold text-[#df7b59] hover:underline">View all</button>
 
               <div className="mt-4 space-y-3">
                 {contactsLoading ? (
