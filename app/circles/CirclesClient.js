@@ -1674,7 +1674,7 @@ function CreateCircleModal({
 
             {eventMode === "calendar" ? (
               <div className="mt-4 max-h-[280px] space-y-3 overflow-y-auto pr-1">
-                {safeCalendarEvents.map((event) => (
+                {safeCalendarEvents.filter(event => !event.event_date || new Date(event.event_date) >= new Date(new Date().toDateString())).map((event) => (
                   <label
                     key={event.id}
                     className={`flex cursor-pointer items-center justify-between rounded-[20px] border p-4 ${
