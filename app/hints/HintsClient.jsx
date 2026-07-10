@@ -676,8 +676,8 @@ function HintFormFields({
           </div>
         )}
       </div>
+      <div>
 
-        <label className="mb-2 block text-sm font-medium text-slate-700">Occasions</label>
         <label className="mb-2 block text-sm font-medium text-slate-700">Occasions (optional)</label>
         <div className="flex flex-wrap gap-2.5">
           {["Birthday", "Christmas", "Valentine's Day", "Anniversary", "Wedding", "Graduation", "Just because", "Mother's Day", "Father's Day", "Housewarming"].map(occasion => {
@@ -701,6 +701,7 @@ function HintFormFields({
             );
           })}
         </div>
+      </div>
       </div>
       {showToggles ? (
         <div className="flex flex-wrap items-center gap-4">
