@@ -944,7 +944,7 @@ function CircleCard({
 
             <div className="mt-4 flex flex-wrap gap-2">
               {safeMembers.slice(0, 4).map((member) => (
-                {member.userId ? (
+                member.userId ? (
                   <button
                     key={`${circle?.id}-${member.name}-pill`}
                     type="button"
@@ -974,7 +974,7 @@ function CircleCard({
                     )}
                     <span className="text-sm font-medium text-slate-700">{member.name}</span>
                   </div>
-                )}
+                )
               ))}
               {safeMembers.length > 4 ? (
                 <div className="inline-flex items-center rounded-full border border-[#eee1d9] bg-[#fffdfa] px-3 py-2 text-sm font-medium text-slate-500">
