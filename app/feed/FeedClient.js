@@ -1143,24 +1143,43 @@ function FeedItem({
           {canInteract ? (
             <>
               <div className="mt-4 flex flex-wrap items-center gap-2">
-                {demoReactions.map((reaction) => (
-                  <button
-                    key={reaction.id}
-                    type="button"
-                    onClick={() => item.isDemo && onToggleDemoReaction(item.id, reaction.id)}
-                    className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm font-medium ${
-                      item.isDemo
-                        ? reaction.active
+                {item.isDemo ? (
+                  demoReactions.map((reaction) => (
+                    <button
+                      key={reaction.id}
+                      type="button"
+                      onClick={() => onToggleDemoReaction(item.id, reaction.id)}
+                      className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm font-medium ${
+                        reaction.active
                           ? "border-[#f1a58a] bg-[#fff1ea] text-[#d96d4f]"
                           : "border-[#ebdfd8] bg-white text-slate-600 hover:bg-slate-50"
-                        : "border-[#ebdfd8] bg-white text-slate-600"
-                    }`}
-                  >
-                    <span className="mr-1">{reaction.emoji}</span>
-                    {reaction.count}
-                  </button>
-                ))}
-
+                      }`}
+                    >
+                      <span className="mr-1">{reaction.emoji}</span>
+                      {reaction.count}
+                    </button>
+                  ))
+                ) : (
+                  ["❤️", "👏", "🎁"].map((emoji) => {
+                    const count = reactions.filter(r => r.emoji === emoji).length;
+                    const active = reactions.some(r => r.emoji === emoji && r.user_id === sessionUser?.id);
+                    return (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => onToggleReaction && onToggleReaction(item, emoji)}
+                        className={`inline-flex h-9 items-center justify-center rounded-full border px-3 text-sm font-medium transition ${
+                          active
+                            ? "border-[#f1a58a] bg-[#fff1ea] text-[#d96d4f]"
+                            : "border-[#ebdfd8] bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        <span className="mr-1">{emoji}</span>
+                        {count > 0 ? count : ""}
+                      </button>
+                    );
+                  })
+                )}
                 <button
                   type="button"
                   onClick={() => setActiveComposerId((current) => (current === item.id ? null : item.id))}
