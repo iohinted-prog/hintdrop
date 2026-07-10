@@ -1036,6 +1036,8 @@ function FeedItem({
   onToggleDemoReaction,
   onOpenProfile,
   sessionUser,
+  reactions = [],
+  onToggleReaction,
 }) {
   const metadata = item.metadata || {};
   const socialEnabled = isSocialFeedItem(item);
@@ -1696,6 +1698,7 @@ export default function FeedClient() {
   const [activeFilter, setActiveFilter] = useState("all");
 
   const [commentsByFeedId, setCommentsByFeedId] = useState({});
+  const [reactionsByFeedId, setReactionsByFeedId] = useState({});
   const [activeComposerId, setActiveComposerId] = useState(null);
   const [draftComment, setDraftComment] = useState("");
   const [demoCommentsByFeedId, setDemoCommentsByFeedId] = useState({});
@@ -1823,6 +1826,21 @@ export default function FeedClient() {
     setFeedItems(enriched);
     setFeedLoading(false);
     return enriched;
+  }, []);
+
+  const loadReactions = useCallback(async (feedIds) => {
+    if (!feedIds.length) { setReactionsByFeedId({}); return; }
+    const { data, error } = await supabase
+      .from("feed_reactions")
+      .select("id, feed_item_id, user_id, emoji")
+      .in("feed_item_id", feedIds);
+    if (error) return;
+    const grouped = (data || []).reduce((acc, row) => {
+      if (!acc[row.feed_item_id]) acc[row.feed_item_id] = [];
+      acc[row.feed_item_id].push(row);
+      return acc;
+    }, {});
+    setReactionsByFeedId(grouped);
   }, []);
 
   const loadComments = useCallback(async (feedIds) => {
@@ -2036,10 +2054,12 @@ export default function FeedClient() {
       loadComments(socialFeedIds).catch((error) => {
         setFeedError(error?.message || "Failed to load comments.");
       });
+      loadReactions(socialFeedIds);
     } else {
       setCommentsByFeedId({});
+      setReactionsByFeedId({});
     }
-  }, [feedItems, loadComments]);
+  }, [feedItems, loadComments, loadReactions]);
 
   async function handleSaveContact(payload) {
     setContactError("");
@@ -2181,6 +2201,29 @@ export default function FeedClient() {
         }),
       };
     });
+  }
+
+  async function handleToggleReaction(item, emoji) {
+    if (!sessionUser?.id || item.isDemo) return;
+    const existing = (reactionsByFeedId[item.id] || []).find(
+      r => r.user_id === sessionUser.id && r.emoji === emoji
+    );
+    if (existing) {
+      // optimistic remove
+      setReactionsByFeedId(prev => ({
+        ...prev,
+        [item.id]: (prev[item.id] || []).filter(r => r.id !== existing.id),
+      }));
+      await supabase.from("feed_reactions").delete().eq("id", existing.id);
+    } else {
+      const newReaction = { id: crypto.randomUUID(), feed_item_id: item.id, user_id: sessionUser.id, emoji };
+      // optimistic add
+      setReactionsByFeedId(prev => ({
+        ...prev,
+        [item.id]: [...(prev[item.id] || []), newReaction],
+      }));
+      await supabase.from("feed_reactions").insert({ feed_item_id: item.id, user_id: sessionUser.id, emoji });
+    }
   }
 
   async function handleAcceptInvite(invite) {
@@ -2603,6 +2646,8 @@ export default function FeedClient() {
                           onToggleDemoReaction={handleToggleDemoReaction}
                           onOpenProfile={setProfileModal}
                           sessionUser={sessionUser}
+                          reactions={reactionsByFeedId[item.id] || []}
+                          onToggleReaction={handleToggleReaction}
                         />
                       );
                     })
