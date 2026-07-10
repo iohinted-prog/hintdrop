@@ -204,26 +204,26 @@ const shopTiles = [
 function LandingLogo() {
   return (
     <div className="flex items-center gap-3.5">
-      <svg width="52" height="52" viewBox="0 0 188 188" role="img" aria-label="HintDrop logo mark">
-        <defs>
-          <linearGradient id="hdGrad2" x1="0" y1="0" x2="0.2" y2="1">
-            <stop offset="0%" stopColor="#ffb899"/>
-            <stop offset="100%" stopColor="#ff8f6b"/>
-          </linearGradient>
-        </defs>
-        <rect x="8" y="8" width="160" height="155" rx="36" fill="url(#hdGrad2)"/>
-        <path d="M22 142 Q8 164 3 176 Q34 166 54 150 Z" fill="#ff9a72"/>
-        <rect x="54" y="90" width="86" height="54" rx="5" fill="white" opacity="0.93"/>
-        <rect x="48" y="76" width="98" height="20" rx="5" fill="white" opacity="0.93"/>
-        <rect x="92" y="76" width="10" height="68" rx="3" fill="#ff7a55" opacity="0.85"/>
-        <rect x="48" y="81" width="98" height="10" rx="3" fill="#ff7a55" opacity="0.85"/>
-        <path d="M97 72 Q80 54 70 60 Q64 66 80 73 Z" fill="#ff7a55"/>
-        <path d="M97 72 Q114 54 124 60 Q130 66 114 73 Z" fill="#ff7a55"/>
-        <circle cx="97" cy="72" r="7" fill="#ff5e3a"/>
-        <line x1="158" y1="18" x2="170" y2="6" stroke="#ff7a55" strokeWidth="5" strokeLinecap="round"/>
-        <line x1="174" y1="36" x2="188" y2="30" stroke="#ff7a55" strokeWidth="5" strokeLinecap="round"/>
-        <line x1="169" y1="54" x2="182" y2="57" stroke="#ff7a55" strokeWidth="4" strokeLinecap="round"/>
-      </svg>
+      <svg width="52" height="52" viewBox="0 0 200 190" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HintDrop">
+      <defs>
+        <linearGradient id="hdG2" x1="0" y1="0" x2="0.2" y2="1">
+          <stop offset="0%" stopColor="#ffb899"/>
+          <stop offset="100%" stopColor="#ff8f6b"/>
+        </linearGradient>
+      </defs>
+      <rect x="18" y="12" width="152" height="148" rx="34" fill="url(#hdG2)"/>
+      <path d="M28 140 Q10 165 4 178 Q36 166 56 148 Z" fill="#ff9a72"/>
+      <rect x="55" y="82" width="82" height="52" rx="5" fill="white" opacity="0.93"/>
+      <rect x="49" y="69" width="94" height="19" rx="5" fill="white" opacity="0.93"/>
+      <rect x="93" y="69" width="10" height="65" rx="3" fill="#ff7a55" opacity="0.85"/>
+      <rect x="49" y="74" width="94" height="10" rx="3" fill="#ff7a55" opacity="0.85"/>
+      <path d="M97 65 Q80 47 70 53 Q64 59 80 67 Z" fill="#ff7a55"/>
+      <path d="M97 65 Q114 47 124 53 Q130 59 114 67 Z" fill="#ff7a55"/>
+      <circle cx="97" cy="65" r="6" fill="#ff5e3a"/>
+      <line x1="158" y1="18" x2="168" y2="7" stroke="#ff7a55" strokeWidth="4" strokeLinecap="round"/>
+      <line x1="172" y1="34" x2="185" y2="29" stroke="#ff7a55" strokeWidth="4" strokeLinecap="round"/>
+      <line x1="173" y1="52" x2="186" y2="55" stroke="#ff7a55" strokeWidth="3" strokeLinecap="round"/>
+    </svg>
       <div className="text-[22px] font-extrabold tracking-[-0.04em] text-slate-900">
         Hint<span className="text-[#f36f64]">Drop</span>
       </div>
