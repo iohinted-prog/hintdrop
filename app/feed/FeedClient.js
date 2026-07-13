@@ -1197,6 +1197,7 @@ function MiniCalendar({
   const [eventToDelete, setEventToDelete] = useState(null);
   const [isDeletingEvent, setIsDeletingEvent] = useState(false);
   const [localError, setLocalError] = useState("");
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
   const monthLabel = useMemo(
     () =>
