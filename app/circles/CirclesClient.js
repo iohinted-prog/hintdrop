@@ -1761,6 +1761,7 @@ function CreateCircleModal({
                   <span className="text-sm font-medium text-slate-700">Event date</span>
                   <input
                     type="date"
+                    min={new Date().toISOString().slice(0, 10)}
                     value={form.eventDate}
                     onChange={(e) =>
                       setForm((prev) => ({
@@ -1804,6 +1805,7 @@ function CreateCircleModal({
                 <span className="text-sm font-medium text-slate-700">Contribution deadline</span>
                 <input
                   type="date"
+                  min={new Date().toISOString().slice(0, 10)}
                   value={form.deadline}
                   onChange={(e) => setForm((prev) => ({ ...prev, deadline: e.target.value }))}
                   className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
@@ -3322,6 +3324,24 @@ if (inviteRows.length > 0) {
   }
 
   insertedInvites = inviteData || [];
+
+  // Send invite emails via Edge Function
+  await Promise.all(
+    selectedPeople.map(async (person) => {
+      try {
+        await supabase.functions.invoke('send-circle-invite', {
+          body: {
+            circle_id: insertedCircle.id,
+            email: person.email || null,
+            name: person.name || null,
+            target_user_id: person.matchedProfileId || null,
+          },
+        });
+      } catch (e) {
+        console.error('Circle invite email failed for', person.name, e);
+      }
+    })
+  );
 }
       const currentUserName =
         getGoogleName(profile || {}) ||
