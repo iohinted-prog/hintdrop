@@ -1277,7 +1277,6 @@ function MiniCalendar({
         <div>
           <div className="flex items-center justify-between">
             <button type="button" onClick={() => setIsCalendarModalOpen(true)} className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900 hover:text-[#df7b59] transition">Calendar</button>
-            <button type="button" onClick={() => setIsCalendarModalOpen(true)} className="inline-flex h-10 items-center justify-center rounded-full border border-[#f0a384] bg-white px-4 text-sm font-semibold text-[#df7b59] hover:bg-[#fff4ee]">Open calendar</button>
           </div>
           <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
             {monthLabel}
@@ -1396,6 +1395,10 @@ function MiniCalendar({
 
 
 
+      <button type="button" onClick={() => setIsCalendarModalOpen(true)}
+        className="mt-4 w-full h-11 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-sm font-bold text-white shadow-lg">
+        Open calendar
+      </button>
       {isCalendarModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(42,26,20,0.38)] px-4 py-6 backdrop-blur-sm" onClick={() => setIsCalendarModalOpen(false)}>
           <div className="mx-auto w-full max-w-[900px] rounded-[28px] border border-[#efdcd2] bg-[#fffaf7] p-6 shadow-[0_24px_80px_rgba(88,46,31,0.22)] my-6" onClick={e => e.stopPropagation()}>
