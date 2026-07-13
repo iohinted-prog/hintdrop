@@ -166,7 +166,7 @@ export default function AppShell({ children }) {
     if (!user) return;
     const userEmail = user.email?.toLowerCase() || "";
     const [{ data: circleInvites }, { data: contactInvites }] = await Promise.all([
-      supabase.from("circle_invites").select("id, invite_token, invite_name, user_id, created_at").eq("invited_user_id", user.id).eq("status", "pending"),
+      supabase.from("circle_invites").select("id, invite_token, invite_name, user_id, created_at").or(`invited_user_id.eq.${user.id},invite_email_normalized.eq.${userEmail}`).eq("status", "pending"),
       supabase.from("contact_invites").select("id, invite_name, inviter_user_id, created_at").or(`invited_user_id.eq.${user.id},invite_email.eq.${userEmail}`).eq("status", "pending"),
     ]);
     const all = [
