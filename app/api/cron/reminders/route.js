@@ -66,8 +66,10 @@ function buildReminderEmail({ recipientName, contactName, eventType, eventDate, 
 
 export async function GET(request) {
   const authHeader = request.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const cronSecret = process.env.CRON_SECRET
+  console.log('CRON_SECRET set:', !!cronSecret, 'header:', authHeader?.slice(0, 20))
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Unauthorized', secretSet: !!cronSecret }, { status: 401 })
   }
 
   const supabase = await createClient()
