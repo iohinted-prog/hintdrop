@@ -1271,9 +1271,10 @@ function MiniCalendar({
     <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-            Planner
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Planner</p>
+            <button type="button" onClick={() => setIsCalendarModalOpen(true)} className="text-[11px] font-semibold text-[#df7b59] hover:text-[#b14f43] transition">Open calendar</button>
+          </div>
           <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
             {monthLabel}
           </h2>
@@ -1402,6 +1403,58 @@ function MiniCalendar({
         />
       ) : null}
 
+      {isCalendarModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(42,26,20,0.38)] px-4 py-6 backdrop-blur-sm" onClick={() => setIsCalendarModalOpen(false)}>
+          <div className="mx-auto w-full max-w-[680px] rounded-[28px] border border-[#efdcd2] bg-[#fffaf7] p-6 shadow-[0_24px_80px_rgba(88,46,31,0.22)] my-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Planner</p>
+                <h2 className="mt-1 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">Your calendar</h2>
+              </div>
+              <button type="button" onClick={() => setIsCalendarModalOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-full border border-[#eaded6] bg-white text-slate-500 hover:bg-slate-50">✕</button>
+            </div>
+            <div className="grid gap-6 md:grid-cols-[1fr_300px]">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <button type="button" onClick={() => setCurrentMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))} className="h-9 w-9 flex items-center justify-center rounded-full border border-[#eaded6] bg-white text-slate-500 hover:bg-slate-50">←</button>
+                  <p className="text-base font-semibold text-slate-900">{monthLabel}</p>
+                  <button type="button" onClick={() => setCurrentMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))} className="h-9 w-9 flex items-center justify-center rounded-full border border-[#eaded6] bg-white text-slate-500 hover:bg-slate-50">→</button>
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400 mb-2">
+                  {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d => <div key={d}>{d}</div>)}
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {days.map((item, idx) => {
+                    const dateKey = item.date.toISOString().slice(0, 10);
+                    const dayEvents = eventsByDate[dateKey] || [];
+                    const isToday = item.date.toDateString() === new Date().toDateString();
+                    const selected = item.date.toDateString() === selectedDate.toDateString();
+                    return (
+                      <button key={idx} type="button" onClick={() => { setSelectedDate(item.date); }}
+                        className={`min-h-[48px] rounded-[12px] border p-1.5 text-left transition ${selected ? "border-[#f2b39a] bg-[#fff2ea]" : isToday ? "border-[#f3c8b7] bg-[#fff8f4]" : "border-slate-100 bg-[#fffdfa] hover:border-[#efc8b6]"}`}>
+                        <div className={`text-[12px] font-semibold ${selected ? "text-[#d96d4f]" : isToday ? "text-slate-900" : item.currentMonth ? "text-slate-700" : "text-slate-300"}`}>{item.day}</div>
+                        {dayEvents.length > 0 && <span className="mt-1 block h-1.5 w-1.5 rounded-full bg-[#e8926a]" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <CalendarPopover
+                  selectedDate={selectedDate}
+                  events={eventsByDate[selectedDate.toISOString().slice(0, 10)] || []}
+                  onClose={() => setIsCalendarModalOpen(false)}
+                  onAddEvent={async (payload) => { await onCreateEvent(payload); }}
+                  onRequestDelete={setEventToDelete}
+                  draft={draft}
+                  setDraft={setDraft}
+                  isSaving={calendarSaving}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {eventToDelete ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(42,26,20,0.38)] px-4 py-6 backdrop-blur-sm">
           <div className="w-full max-w-[520px] rounded-[30px] border border-[#eddacf] bg-[#fffaf7] p-6 shadow-[0_24px_80px_rgba(88,46,31,0.22)] max-h-[90dvh] overflow-y-auto">
