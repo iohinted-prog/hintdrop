@@ -463,6 +463,9 @@ function ContactCard({ contact, onDeleteClick, onOpenProfile, onEditClick }) {
           <p className="text-xs text-slate-500 truncate">
             {contact.role}{contact.note ? " · " + contact.note : ""}
           </p>
+          {contact.birthday && (
+            <p className="text-[11px] text-[#df7b59] mt-0.5 truncate">🎂 {new Date(contact.birthday).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</p>
+          )}
         </div>
       </div>
     </article>
@@ -1273,8 +1276,8 @@ function MiniCalendar({
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Planner</p>
-            <button type="button" onClick={() => setIsCalendarModalOpen(true)} className="text-[11px] font-semibold text-[#df7b59] hover:text-[#b14f43] transition">Open calendar</button>
+            <button type="button" onClick={() => setIsCalendarModalOpen(true)} className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900 hover:text-[#df7b59] transition">Calendar</button>
+            <button type="button" onClick={() => setIsCalendarModalOpen(true)} className="inline-flex h-10 items-center justify-center rounded-full border border-[#f0a384] bg-white px-4 text-sm font-semibold text-[#df7b59] hover:bg-[#fff4ee]">Open calendar</button>
           </div>
           <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
             {monthLabel}
@@ -1391,18 +1394,7 @@ function MiniCalendar({
         })}
       </div>
 
-      {openPopover ? (
-        <CalendarPopover
-          selectedDate={selectedDate}
-          events={selectedEvents}
-          onClose={() => setOpenPopover(false)}
-          onAddEvent={handleAddEvent}
-          onRequestDelete={setEventToDelete}
-          draft={draft}
-          setDraft={setDraft}
-          isSaving={calendarSaving}
-        />
-      ) : null}
+
 
       {isCalendarModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(42,26,20,0.38)] px-4 py-6 backdrop-blur-sm" onClick={() => setIsCalendarModalOpen(false)}>
@@ -2316,7 +2308,7 @@ export default function FeedClient() {
     setCalendarEvents((prev) => prev.filter((item) => item.id !== eventToDelete.id));
   }
 
-  const displayContacts = contacts.length > 0 ? contacts : demoContacts;
+  const displayContacts = (contacts.length > 0 ? contacts : demoContacts).slice(0, 10);
 
   const shortReminderFeedItems = useMemo(() => {
     return (calendarEvents || [])
@@ -2467,7 +2459,7 @@ export default function FeedClient() {
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Contacts</p>
-                <button type="button" onClick={() => setIsContactsManagerOpen(true)} className="inline-flex h-8 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-[11px] font-semibold text-white shadow-sm">View contacts</button>
+
               </div>
               <p className="mt-1 text-xs text-slate-500">Invitees and contacts live here.</p>
 
@@ -2492,13 +2484,16 @@ export default function FeedClient() {
                 )}
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsAddContactOpen(true)}
-                className="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-sm font-semibold text-white shadow-lg"
-              >
-                Add contact
-              </button>
+              <div className="mt-4 flex gap-2">
+                <button type="button" onClick={() => setIsAddContactOpen(true)}
+                  className="flex-1 h-10 inline-flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-sm font-semibold text-white shadow-lg">
+                  Add contact
+                </button>
+                <button type="button" onClick={() => setIsContactsManagerOpen(true)}
+                  className="flex-1 h-10 inline-flex items-center justify-center rounded-full border border-[#f0a384] bg-white px-4 text-sm font-semibold text-[#df7b59] hover:bg-[#fff4ee]">
+                  View all
+                </button>
+              </div>
             </section>
 
           </aside>
