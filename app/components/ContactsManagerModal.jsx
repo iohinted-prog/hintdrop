@@ -1,9 +1,27 @@
 "use client";
 import { useState } from "react";
+import { createClient } from "../../lib/supabase/client";
 import EditContactModal from "./EditContactModal";
 
 export default function ContactsManagerModal({ open, onClose, contacts, onAdd, onRefresh, onDelete, onOpenProfile }) {
   const [editingContact, setEditingContact] = useState(null);
+  const [resending, setResending] = useState(null);
+  const [resendDone, setResendDone] = useState({});
+  const supabase = createClient();
+
+  async function handleResend(contact) {
+    setResending(contact.id);
+    try {
+      await supabase.functions.invoke("send-contact-invite", {
+        body: { target_user_id: contact.profileId, email: contact.email, name: contact.name, role: contact.role || "Friend" },
+      });
+      setResendDone(prev => ({ ...prev, [contact.id]: true }));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setResending(null);
+    }
+  }
 
   if (!open) return null;
 
