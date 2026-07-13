@@ -153,6 +153,74 @@ export default function AppShell({ children }) {
     { href: "/shop", label: "Shop" },
   ];
 
+  const supabase = createClient();
+  const [inviteCount, setInviteCount] = useState(0);
+  const [invites, setInvites] = useState([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [inviteActionId, setInviteActionId] = useState(null);
+  const notifRef = useRef(null);
+
+  const loadInviteCount = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const [{ data: circleInvites }, { data: contactInvites }] = await Promise.all([
+      supabase.from("circle_invites").select("id, invite_token, invite_name, user_id, created_at").eq("invited_user_id", user.id).eq("status", "pending"),
+      supabase.from("contact_invites").select("id, invite_name, inviter_user_id, created_at").eq("invited_user_id", user.id).eq("status", "pending"),
+    ]);
+    const all = [
+      ...(circleInvites || []).map(i => ({ ...i, source: "circle" })),
+      ...(contactInvites || []).map(i => ({ ...i, source: "contact" })),
+    ];
+    // Fetch inviter names
+    const ids = [...new Set(all.map(i => i.source === "circle" ? i.user_id : i.inviter_user_id).filter(Boolean))];
+    let profileMap = {};
+    if (ids.length > 0) {
+      const { data: profiles } = await supabase.from("profiles").select("id, full_name, avatar_url").in("id", ids);
+      profileMap = (profiles || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
+    }
+    const merged = all.map(i => ({ ...i, inviter: profileMap[i.source === "circle" ? i.user_id : i.inviter_user_id] || null }));
+    setInvites(merged);
+    setInviteCount(merged.length);
+  }, [supabase]);
+
+  useEffect(() => { loadInviteCount(); }, [loadInviteCount]);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  async function handleAcceptInvite(invite) {
+    setInviteActionId(invite.id);
+    try {
+      if (invite.source === "contact") {
+        await supabase.functions.invoke("accept-contact-invite", { body: { invite_id: invite.id } });
+      } else {
+        await supabase.functions.invoke("accept-circle-invite", { body: { token: invite.invite_token } });
+      }
+      await loadInviteCount();
+    } finally {
+      setInviteActionId(null);
+    }
+  }
+
+  async function handleDeclineInvite(invite) {
+    setInviteActionId(invite.id);
+    try {
+      if (invite.source === "contact") {
+        await supabase.from("contact_invites").update({ status: "revoked" }).eq("id", invite.id);
+      } else {
+        await supabase.from("circle_invites").update({ status: "declined" }).eq("id", invite.id);
+      }
+      await loadInviteCount();
+    } finally {
+      setInviteActionId(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#fffaf7] text-slate-800">
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur">
@@ -186,6 +254,61 @@ export default function AppShell({ children }) {
               })}
             </nav>
 
+            <div className="relative" ref={notifRef}>
+              <button type="button" onClick={() => setNotifOpen(prev => !prev)}
+                className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white shadow-sm transition hover:bg-[#fff5f0]"
+                aria-label="Notifications">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                {inviteCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#f36f64] text-[10px] font-bold text-white">
+                    {inviteCount > 9 ? "9+" : inviteCount}
+                  </span>
+                )}
+              </button>
+              {notifOpen && (
+                <div className="absolute right-0 top-14 z-50 w-80 rounded-[22px] border border-[#efdcd2] bg-[#fffaf7] shadow-[0_20px_60px_rgba(88,46,31,0.15)] overflow-hidden">
+                  <div className="px-5 py-4 border-b border-[#f0e4dd]">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Notifications</p>
+                    <h3 className="mt-0.5 text-[17px] font-semibold text-slate-900">Pending invites</h3>
+                  </div>
+                  <div className="max-h-[400px] overflow-y-auto p-4 space-y-3">
+                    {invites.length === 0 ? (
+                      <p className="text-sm text-slate-400 text-center py-4">No pending invites</p>
+                    ) : invites.map(invite => (
+                      <div key={invite.id} className={`rounded-[18px] border p-4 ${invite.source === "contact" ? "border-[#e6ddd7] bg-white" : "border-[#dce8d8] bg-[#f7fbf5]"}`}>
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#8aa587] to-[#4e684d] text-[11px] font-bold text-white overflow-hidden">
+                            {invite.inviter?.avatar_url
+                              ? <img src={invite.inviter.avatar_url} className="h-full w-full object-cover" alt="" />
+                              : (invite.inviter?.full_name || invite.invite_name || "?").split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-slate-900 truncate">{invite.inviter?.full_name || invite.invite_name || "Someone"}</p>
+                            <p className="text-xs text-slate-500">{invite.source === "contact" ? "wants to connect" : "invited you to a circle"}</p>
+                          </div>
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${invite.source === "contact" ? "bg-[#f0f7ee] text-[#4e684d]" : "bg-[#2f3b2d] text-white"}`}>
+                            {invite.source === "contact" ? "Contact" : "Circle"}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button type="button" disabled={inviteActionId === invite.id} onClick={() => handleAcceptInvite(invite)}
+                            className="flex-1 h-9 rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] text-xs font-semibold text-white disabled:opacity-60">
+                            {inviteActionId === invite.id ? "..." : "Accept"}
+                          </button>
+                          <button type="button" disabled={inviteActionId === invite.id} onClick={() => handleDeclineInvite(invite)}
+                            className="flex-1 h-9 rounded-full border border-[#ead8ce] bg-white text-xs font-semibold text-slate-600 disabled:opacity-60">
+                            Decline
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="relative" ref={menuRef}>
               <button
                 type="button"
