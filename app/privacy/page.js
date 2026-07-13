@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Privacy Policy | Hinted",
+  title: "Privacy Policy | HintDrop",
   description:
     "Read Hinted's Privacy Policy, including what information we collect, how we use it, and your choices.",
 };
@@ -9,34 +9,6 @@ export const metadata = {
 export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-[#f7f4ef] text-slate-800">
-      <header className="border-b border-[#e8dfd4] bg-[#f7f4ef]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link
-            href="/"
-            className="flex items-center gap-3 text-sm font-semibold tracking-[-0.01em] text-slate-800"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#f3cfc2] text-base font-semibold text-slate-900 shadow-sm">
-              H
-            </div>
-            <span>HintDrop</span>
-          </Link>
-
-          <nav className="flex items-center gap-3 text-sm font-medium text-slate-600">
-            <Link
-              href="/terms"
-              className="rounded-full px-4 py-2 transition hover:bg-white/70 hover:text-slate-900"
-            >
-              Terms
-            </Link>
-            <Link
-              href="/feed"
-              className="rounded-full border border-[#e7d8ca] bg-white/80 px-4 py-2 text-slate-900 transition hover:bg-white"
-            >
-              Back to app
-            </Link>
-          </nav>
-        </div>
-      </header>
 
       <section className="px-6 py-12 sm:py-16">
         <div className="mx-auto max-w-3xl">
