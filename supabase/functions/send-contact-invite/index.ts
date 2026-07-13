@@ -13,6 +13,53 @@ async function hashToken(token: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+
+function buildContactInviteEmail(inviterName: string, recipientName: string, acceptUrl: string): string {
+  const hi = recipientName ? ` ${recipientName}` : ''
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5ede8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+<div style="background:#f5ede8;padding:40px 20px;">
+  <div style="max-width:520px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="display:inline-flex;align-items:center;gap:10px;">
+        <div style="width:44px;height:44px;background:linear-gradient(160deg,#ffb899,#ff8f6b);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;">🎁</div>
+        <span style="font-size:22px;font-weight:800;color:#2d2d2d;letter-spacing:-0.5px;">Hint<span style="color:#ff8060;">Drop</span></span>
+      </div>
+    </div>
+    <div style="background:#fffaf7;border-radius:28px;border:1px solid #efdcd2;box-shadow:0 20px 60px rgba(88,46,31,0.12);overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#ff9a7b,#ff7055);padding:36px 40px 32px;">
+        <p style="font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:rgba(255,255,255,0.75);margin:0 0 10px;">You've been invited</p>
+        <h1 style="font-size:26px;font-weight:700;color:white;line-height:1.2;letter-spacing:-0.04em;margin:0;">${inviterName} wants to connect with you on HintDrop</h1>
+      </div>
+      <div style="padding:36px 40px;">
+        <p style="font-size:15px;line-height:1.7;color:#5a4a42;margin:0 0 14px;">Hi${hi},</p>
+        <p style="font-size:15px;line-height:1.7;color:#5a4a42;margin:0 0 28px;"><strong style="color:#2d2d2d;">${inviterName}</strong> has added you as a contact on HintDrop — the thoughtful way to share gift ideas, remember important dates, and plan presents together.</p>
+        <div style="background:#fff4ee;border-radius:18px;border:1px solid #fde0d0;padding:22px 24px;margin-bottom:32px;">
+          <p style="font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#e08a67;margin:0 0 14px;">What you get</p>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:18px;">🎁</span><span style="font-size:14px;color:#5a4a42;">See their hint list and discover what they actually want</span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:18px;">🔔</span><span style="font-size:14px;color:#5a4a42;">Get reminded before their birthday and key dates</span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:18px;">🤝</span><span style="font-size:14px;color:#5a4a42;">Join shared circles and go in on gifts together</span></div>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <a href="${acceptUrl}" style="display:inline-block;background:linear-gradient(160deg,#ff966f,#ff7e54);color:white;font-size:15px;font-weight:700;padding:16px 40px;border-radius:50px;text-decoration:none;">Accept invite</a>
+        </div>
+        <p style="font-size:13px;color:#a08070;text-align:center;margin:18px 0 0;">This invite expires in 7 days.</p>
+      </div>
+      <div style="border-top:1px solid #f2e5de;padding:22px 40px;background:#fffaf7;">
+        <p style="font-size:12px;color:#b09080;text-align:center;line-height:1.6;margin:0;">You received this because ${inviterName} added your email on HintDrop.<br>If you don't know them, you can safely ignore this email.</p>
+      </div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:#c0a090;margin-top:24px;">© 2025 HintDrop · <a href="https://hintdrop.app" style="color:#c0a090;">hintdrop.app</a></p>
+  </div>
+</div>
+</body>
+</html>`
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -45,6 +92,14 @@ Deno.serve(async (req) => {
     }
 
     console.log('User authenticated:', user.id)
+
+    // Fetch inviter name
+    const { data: inviterProfile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .maybeSingle()
+    const inviterName = inviterProfile?.full_name || 'Someone'
 
     const body = await req.json()
     let email = String(body?.email || '').trim()
