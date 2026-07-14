@@ -961,205 +961,184 @@ function CircleCard({
   contacts = [],
   onOpenProfile,
 }) {
+  const [showAllMembers, setShowAllMembers] = useState(false);
+  const MAX_VISIBLE = 5;
+
   const safeMembers = (Array.isArray(circle?.members) ? circle.members : []).map((member) => {
     if (member.avatarUrl) return member;
     const matched = contacts.find((c) => c.email && member.email && c.email.toLowerCase() === member.email.toLowerCase());
     return matched?.avatarUrl ? { ...member, avatarUrl: matched.avatarUrl } : member;
   });
-  const joinedCount = safeMembers.filter(
-    (member) => getAvatarState(member.status) === "accepted"
-  ).length;
+
+  const joinedCount = safeMembers.filter(m => getAvatarState(m.status) === "accepted").length;
   const invitedCount = safeMembers.length;
   const potCurrency = circle?.pot?.currency || "GBP";
   const moneyLabel = formatCurrency(circle?.pot?.target, potCurrency);
   const raisedLabel = formatCurrency(circle?.pot?.raised, potCurrency);
-  const suggestedShare = formatCurrency(
-    roundCurrency((circle?.pot?.target || 0) / 2),
-    potCurrency
-  );
+  const showItemPreview = circle?.pot?.active && circle?.pot?.goalType === "item" && (circle?.pot?.previewImage || circle?.pot?.sourceUrl);
+  const overflowCount = safeMembers.length - MAX_VISIBLE;
 
-  const showItemPreview =
-    circle?.pot?.active &&
-    circle?.pot?.goalType === "item" &&
-    (circle?.pot?.previewImage || circle?.pot?.sourceUrl);
+  const daysLeft = circle?.pot?.deadline
+    ? Math.ceil((new Date(circle.pot.deadline) - new Date()) / (1000 * 60 * 60 * 24))
+    : null;
+  const deadlineUrgent = daysLeft !== null && daysLeft <= 3;
+  const deadlineWarning = daysLeft !== null && daysLeft <= 7;
 
   return (
     <article className="rounded-[30px] border border-[#f0dfd6] bg-white p-5 shadow-sm sm:p-6">
-      <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-        <div>
+      {showAllMembers && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(42,26,20,0.38)] px-4 backdrop-blur-sm" onClick={() => setShowAllMembers(false)}>
+          <div className="w-full max-w-[480px] rounded-[28px] border border-[#efdcd2] bg-[#fffaf7] shadow-[0_24px_80px_rgba(88,46,31,0.22)] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[#efe0d7]">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#df7b59]">Circle</p>
+                <h3 className="mt-1 text-[20px] font-semibold text-slate-900">All members</h3>
+              </div>
+              <button type="button" onClick={() => setShowAllMembers(false)} className="h-9 w-9 flex items-center justify-center rounded-full border border-[#eaded6] text-slate-500 hover:bg-slate-50">✕</button>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto p-4 space-y-2">
+              {safeMembers.map((member, i) => {
+                const isAccepted = getAvatarState(member.status) === "accepted";
+                const isInvitee = getAvatarState(member.status) === "invitee";
+                const clickable = Boolean(member.userId && onOpenProfile);
+                return (
+                  <div key={i}
+                    className={`flex items-center gap-3 rounded-[16px] border border-[#f0e4dd] bg-white px-4 py-3 ${clickable ? "cursor-pointer hover:border-[#e8c9bc] transition-colors" : ""}`}
+                    onClick={clickable ? () => { setShowAllMembers(false); onOpenProfile({ userId: member.userId, name: member.name, avatarUrl: member.avatarUrl, initials: member.initials }); } : undefined}
+                  >
+                    <div className={`h-9 w-9 shrink-0 rounded-full overflow-hidden flex items-center justify-center ${member.avatarUrl ? "" : `bg-gradient-to-b ${member.colors || "from-[#efcdbf] to-[#bb8168]"}`}`}>
+                      {member.avatarUrl ? <img src={member.avatarUrl} className="h-9 w-9 object-cover" alt="" /> : <span className="text-[11px] font-bold text-white">{member.initials}</span>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 truncate">{member.name}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {member.contributed && member.amount > 0 && (
+                        <span className="text-xs font-semibold text-[#4a7a3a]">{formatCurrency(member.amount, potCurrency)}</span>
+                      )}
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${member.contributed ? "bg-[#edf6eb] text-[#4a7a3a]" : isAccepted ? "bg-[#eef4ff] text-[#5676b3]" : isInvitee ? "bg-[#fff3ee] text-[#d57a58]" : "bg-[#f3f4f6] text-slate-500"}`}>
+                        {member.contributed ? "Paid" : isAccepted ? "Joined" : isInvitee ? "Invited" : "Pending"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        {/* LEFT — info, members, chart, deadline */}
+        <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Circle
-              </p>
-              <h2 className="mt-1 text-[26px] font-semibold tracking-[-0.05em] text-slate-900">
-                {circle?.name || "Untitled circle"}
-              </h2>
-              <p className="mt-2 text-sm text-slate-500">{circle?.subtitle || "No subtitle"}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Circle</p>
+              <h2 className="mt-1 text-[26px] font-semibold tracking-[-0.05em] text-slate-900">{circle?.name || "Untitled circle"}</h2>
+              <p className="mt-1 text-sm text-slate-500">{circle?.subtitle || "No subtitle"}</p>
             </div>
-
             <div className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
               {joinedCount} of {invitedCount} accepted
             </div>
           </div>
 
-          {circle?.description ? (
-            <p className="mt-4 max-w-[60ch] text-[14px] leading-7 text-slate-600">
-              {circle.description}
-            </p>
-          ) : null}
-
-          <div className="mt-5 rounded-[24px] border border-dashed border-[#e6d7cd] bg-[#fffaf7] p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">Members</p>
-                <p className="mt-1 text-[13px] text-slate-500">
-                  People can be invited now and only become full members once they accept.
-                </p>
-              </div>
-
-              <div className="rounded-full bg-[#fff1ea] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
-                Circle invite flow
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              {safeMembers.slice(0, 4).map((member) => (
-                member.userId ? (
-                  <button
-                    key={`${circle?.id}-${member.name}-pill`}
-                    type="button"
-                    onClick={() => onOpenProfile && onOpenProfile({ userId: member.userId, name: member.name, avatarUrl: member.avatarUrl, initials: member.initials })}
-                    className="inline-flex items-center gap-2 rounded-full border border-[#eee1d9] bg-[#fffdfa] px-3 py-2 hover:border-[#e8c9bc] hover:-translate-y-0.5 transition-all duration-150"
-                  >
-                    {member.avatarUrl ? (
-                      <img src={member.avatarUrl} alt={member.name} className="h-7 w-7 rounded-full object-cover" />
-                    ) : (
-                      <div className={getAvatarClasses(member.colors, member.status, "sm")}>
-                        {member.initials}
-                      </div>
-                    )}
-                    <span className="text-sm font-medium text-slate-700">{member.name}</span>
-                  </button>
-                ) : (
-                  <div
-                    key={`${circle?.id}-${member.name}-pill`}
-                    className="inline-flex items-center gap-2 rounded-full border border-[#eee1d9] bg-[#fffdfa] px-3 py-2"
-                  >
-                    {member.avatarUrl ? (
-                      <img src={member.avatarUrl} alt={member.name} className="h-7 w-7 rounded-full object-cover" />
-                    ) : (
-                      <div className={getAvatarClasses(member.colors, member.status, "sm")}>
-                        {member.initials}
-                      </div>
-                    )}
-                    <span className="text-sm font-medium text-slate-700">{member.name}</span>
+          {/* Member list */}
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">Members</p>
+            {safeMembers.slice(0, MAX_VISIBLE).map((member, i) => {
+              const isAccepted = getAvatarState(member.status) === "accepted";
+              const isInvitee = getAvatarState(member.status) === "invitee";
+              const clickable = Boolean(member.userId && onOpenProfile);
+              return (
+                <div key={i}
+                  className={`flex items-center gap-3 rounded-[14px] border border-[#f0e4dd] bg-white px-3 py-2.5 ${clickable ? "cursor-pointer hover:border-[#e8c9bc] transition-colors" : ""}`}
+                  onClick={clickable ? () => onOpenProfile({ userId: member.userId, name: member.name, avatarUrl: member.avatarUrl, initials: member.initials }) : undefined}
+                >
+                  <div className={`h-8 w-8 shrink-0 rounded-full overflow-hidden flex items-center justify-center ${member.avatarUrl ? "" : `bg-gradient-to-b ${member.colors || "from-[#efcdbf] to-[#bb8168]"}`}`}>
+                    {member.avatarUrl ? <img src={member.avatarUrl} className="h-8 w-8 object-cover" alt="" /> : <span className="text-[11px] font-bold text-white">{member.initials}</span>}
                   </div>
-                )
-              ))}
-              {safeMembers.length > 4 ? (
-                <div className="inline-flex items-center rounded-full border border-[#eee1d9] bg-[#fffdfa] px-3 py-2 text-sm font-medium text-slate-500">
-                  +{safeMembers.length - 4} more
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 truncate">{member.name}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {member.contributed && member.amount > 0 && (
+                      <span className="text-xs font-semibold text-[#4a7a3a]">{formatCurrency(member.amount, potCurrency)}</span>
+                    )}
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${member.contributed ? "bg-[#edf6eb] text-[#4a7a3a]" : isAccepted ? "bg-[#eef4ff] text-[#5676b3]" : isInvitee ? "bg-[#fff3ee] text-[#d57a58]" : "bg-[#f3f4f6] text-slate-500"}`}>
+                      {member.contributed ? "Paid" : isAccepted ? "Joined" : isInvitee ? "Invited" : "Pending"}
+                    </span>
+                  </div>
                 </div>
-              ) : null}
-            </div>
+              );
+            })}
+            {overflowCount > 0 && (
+              <button type="button" onClick={() => setShowAllMembers(true)}
+                className="w-full rounded-[14px] border border-dashed border-[#e8c9bc] bg-[#fff8f5] py-2 text-[12px] font-semibold text-[#df7b59] hover:bg-[#fff0ea] transition-colors">
+                +{overflowCount} more — view all
+              </button>
+            )}
           </div>
+
+          {/* Contribution chart */}
+          {circle?.pot?.active && (
+            <ContributionChart
+              members={safeMembers}
+              target={circle?.pot?.target || 0}
+              raised={circle?.pot?.raised || 0}
+              currency={potCurrency}
+              formatCurrency={formatCurrency}
+            />
+          )}
+
+          {/* Deadline */}
+          {daysLeft !== null && (
+            <div className={`rounded-[16px] px-4 py-3 flex items-center justify-between ${deadlineUrgent ? "bg-[#fff1f0] border border-[#fcc]" : deadlineWarning ? "bg-[#fff8ee] border border-[#fde8b0]" : "bg-[#f7fbf5] border border-[#dce8d8]"}`}>
+              <div>
+                <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${deadlineUrgent ? "text-[#b14f43]" : deadlineWarning ? "text-[#b07a30]" : "text-[#4e684d]"}`}>Deadline</p>
+                <p className="text-sm font-semibold text-slate-900 mt-0.5">{formatDateLabel(circle.pot.deadline)}</p>
+              </div>
+              <span className={`text-2xl font-bold ${deadlineUrgent ? "text-[#b14f43]" : deadlineWarning ? "text-[#b07a30]" : "text-[#4e684d]"}`}>
+                {daysLeft <= 0 ? "Today!" : `${daysLeft}d`}
+              </span>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          {circle?.id !== "example-circle" && (
+            <div className="flex flex-wrap gap-3">
+              <button type="button" onClick={() => onContributeClick(circle)}
+                className="inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-4 text-sm font-semibold text-white shadow-lg">
+                Contribute
+              </button>
+              {circle?.raw?.user_id === sessionUser?.id && (
+                <button type="button" onClick={() => onDeleteCircleClick(circle)} disabled={deletingCircleId === circle.id}
+                  className={`inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-semibold ${deletingCircleId === circle.id ? "cursor-not-allowed bg-[#f3d6d1] text-[#b14f43]" : "border border-[#efc0ba] bg-[#fff4f2] text-[#b14f43] hover:bg-[#ffe9e5]"}`}>
+                  {deletingCircleId === circle.id ? "Deleting..." : "Delete circle"}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
+        {/* RIGHT — pot image, title, price only */}
         <div className="rounded-[30px] border border-[#eedfd6] bg-[radial-gradient(circle_at_top,_#fff7f2,_#fffdfa_62%)] p-5">
           <div className="flex flex-col items-center text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Shared pot
-            </p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Shared pot</p>
             <h3 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
               {circle?.pot?.active ? circle.pot.item : "No pot created yet"}
             </h3>
             <p className="mt-2 max-w-[28ch] text-[13px] leading-6 text-slate-500">
               {circle?.pot?.active ? circle?.pot?.source : circle?.pot?.note}
             </p>
-
-            {circle?.pot?.active ? (
+            {circle?.pot?.active && (
               <>
-                <div className="mt-5">
-                  <ContributionRing
-                    raised={circle?.pot?.raised || 0}
-                    target={circle?.pot?.target || 0}
-                    ringId={`circle-gradient-${circle?.id}`}
-                  />
+                <p className="mt-4 text-2xl font-bold text-slate-900">{moneyLabel}</p>
+                <p className="text-sm text-slate-500">{raisedLabel} raised</p>
+                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  <span className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">{circle?.pot?.fundingMode}</span>
+                  <span className="rounded-full bg-[#edf3ff] px-3 py-1 text-[11px] font-semibold text-slate-600">{potCurrency}</span>
                 </div>
-
-                <p className="mt-3 text-sm text-slate-500">
-                  {raisedLabel} of {moneyLabel}
-                </p>
-
-                <p className="mt-1 text-[12px] text-slate-400">
-                  Suggested share of the full target: {suggestedShare} each
-                </p>
-
-                <ContributionChart
-                  members={safeMembers}
-                  target={circle?.pot?.target || 0}
-                  raised={circle?.pot?.raised || 0}
-                  currency={potCurrency}
-                  formatCurrency={formatCurrency}
-                />
-                {circle?.pot?.deadline && (() => {
-                  const daysLeft = Math.ceil((new Date(circle.pot.deadline) - new Date()) / (1000 * 60 * 60 * 24));
-                  const urgent = daysLeft <= 3;
-                  const warning = daysLeft <= 7;
-                  return (
-                    <div className={`mt-4 rounded-[16px] px-4 py-3 flex items-center justify-between ${urgent ? "bg-[#fff1f0] border border-[#fcc]" : warning ? "bg-[#fff8ee] border border-[#fde8b0]" : "bg-[#f7fbf5] border border-[#dce8d8]"}`}>
-                      <div>
-                        <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${urgent ? "text-[#b14f43]" : warning ? "text-[#b07a30]" : "text-[#4e684d]"}`}>Deadline</p>
-                        <p className="text-sm font-semibold text-slate-900 mt-0.5">{formatDateLabel(circle.pot.deadline)}</p>
-                      </div>
-                      <span className={`text-2xl font-bold ${urgent ? "text-[#b14f43]" : warning ? "text-[#b07a30]" : "text-[#4e684d]"}`}>
-                        {daysLeft <= 0 ? "Today!" : `${daysLeft}d`}
-                      </span>
-                    </div>
-                  );
-                })()}
-                <div className="mt-4 space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">Members</p>
-                  {safeMembers.map((member, i) => {
-                    const isAccepted = getAvatarState(member.status) === "accepted";
-                    const isInvitee = getAvatarState(member.status) === "invitee";
-                    return (
-                      <div key={i} className="flex items-center gap-3 rounded-[14px] border border-[#f0e4dd] bg-white px-3 py-2.5">
-                        <div className={`h-8 w-8 shrink-0 rounded-full overflow-hidden flex items-center justify-center ${member.avatarUrl ? "" : `bg-gradient-to-b ${member.colors || "from-[#efcdbf] to-[#bb8168]"}`}`}>
-                          {member.avatarUrl
-                            ? <img src={member.avatarUrl} className="h-8 w-8 object-cover" alt="" />
-                            : <span className="text-[11px] font-bold text-white">{member.initials}</span>}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-slate-900 truncate">{member.name}</p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {member.contributed && member.amount > 0 && (
-                            <span className="text-xs font-semibold text-[#4a7a3a]">{formatCurrency(member.amount, potCurrency)}</span>
-                          )}
-                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${member.contributed ? "bg-[#edf6eb] text-[#4a7a3a]" : isAccepted ? "bg-[#eef4ff] text-[#5676b3]" : isInvitee ? "bg-[#fff3ee] text-[#d57a58]" : "bg-[#f3f4f6] text-slate-500"}`}>
-                            {member.contributed ? "Paid" : isAccepted ? "Joined" : isInvitee ? "Invited" : "Pending"}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                  <span className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
-                    {circle?.pot?.fundingMode}
-                  </span>
-                  <span className="rounded-full bg-[#f3f6fb] px-3 py-1 text-[11px] font-semibold text-slate-600">
-                    Deadline {formatDateLabel(circle?.pot?.deadline)}
-                  </span>
-                  <span className="rounded-full bg-[#edf3ff] px-3 py-1 text-[11px] font-semibold text-slate-600">
-                    {potCurrency}
-                  </span>
-                </div>
-
-                {showItemPreview ? (
+                {showItemPreview && (
                   <div className="mt-5 w-full min-w-0 text-left">
                     <PotPreviewCard
                       image={circle?.pot?.previewImage}
@@ -1168,38 +1147,10 @@ function CircleCard({
                       compact
                     />
                   </div>
-                ) : null}
-
-                <p className="mt-4 text-[14px] leading-7 text-slate-600">{circle?.pot?.note}</p>
-
-                {circle?.id !== "example-circle" ? (
-                  <div className="mt-5 flex flex-wrap justify-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => onContributeClick(circle)}
-                      className="inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-4 text-sm font-semibold text-white shadow-lg"
-                    >
-                      Contribute
-                    </button>
-
-                    {circle?.raw?.user_id === sessionUser?.id ? (
-                      <button
-                        type="button"
-                        onClick={() => onDeleteCircleClick(circle)}
-                        disabled={deletingCircleId === circle.id}
-                        className={`inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-semibold ${
-                          deletingCircleId === circle.id
-                            ? "cursor-not-allowed bg-[#f3d6d1] text-[#b14f43]"
-                            : "border border-[#efc0ba] bg-[#fff4f2] text-[#b14f43] hover:bg-[#ffe9e5]"
-                        }`}
-                      >
-                        {deletingCircleId === circle.id ? "Deleting..." : "Delete circle"}
-                      </button>
-                    ) : null}
-                  </div>
-                ) : null}
+                )}
+                <p className="mt-4 text-[13px] leading-6 text-slate-500">{circle?.pot?.note}</p>
               </>
-            ) : null}
+            )}
           </div>
         </div>
       </div>
