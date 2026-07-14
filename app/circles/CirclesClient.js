@@ -1954,14 +1954,20 @@ function CreateCircleModal({
               <div className="flex justify-between text-sm"><span className="text-slate-500">Circle</span><span className="font-semibold text-slate-900">{form.title}</span></div>
               <div className="flex justify-between text-sm"><span className="text-slate-500">Event date</span><span className="font-semibold text-slate-900">{form.eventDate || '—'}</span></div>
               <div className="flex justify-between text-sm"><span className="text-slate-500">Deadline</span><span className="font-semibold text-slate-900">{form.deadline || '—'}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-slate-500">Target</span><span className="font-semibold text-slate-900">{formatCurrency(liveTotals.totalAmount, form.currency || 'GBP')}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-slate-500">Item price</span><span className="font-semibold text-slate-900">{formatCurrency(liveBaseAmount, form.currency || 'GBP')}</span></div>
               <div className="flex justify-between text-sm"><span className="text-slate-500">Funding</span><span className="font-semibold text-slate-900">{fundingModeToLabel(form.fundingMode)}</span></div>
               <div className="flex justify-between text-sm"><span className="text-slate-500">People</span><span className="font-semibold text-slate-900">{selectedPeople.length > 0 ? selectedPeople.map(p => p.name).join(', ') : 'Just you'}</span></div>
-              {liveTotals.totalAmount > 0 && totalPeopleCount > 1 && (
-                <div className="flex justify-between text-sm"><span className="text-slate-500">Suggested per person</span><span className="font-semibold text-[#df7b59]">{formatCurrency(recommendedPerPerson, form.currency || 'GBP')}</span></div>
+              {liveBaseAmount > 0 && (
+                <>
+                  <div className="flex justify-between text-[12px] text-slate-400"><span>HintDrop fee</span><span>{formatCurrency(liveTotals.platformFeeAmount, form.currency || 'GBP')}</span></div>
+                  {totalPeopleCount > 0 && (
+                    <div className="flex justify-between text-sm font-semibold border-t border-[#f0dfd6] pt-2 mt-1">
+                      <span className="text-slate-700">Est. per person</span>
+                      <span className="text-[#df7b59]">{formatCurrency(roundCurrencyUp((liveBaseAmount + liveTotals.platformFeeAmount) / totalPeopleCount), form.currency || 'GBP')} + Stripe fee</span>
+                    </div>
+                  )}
+                </>
               )}
-              <div className="flex justify-between text-[12px] text-slate-400"><span>HintDrop fee</span><span>{formatCurrency(liveTotals.platformFeeAmount, form.currency || 'GBP')}</span></div>
-              <div className="flex justify-between text-[12px] text-slate-400"><span>Stripe processing (est.)</span><span>{formatCurrency(liveTotals.stripeFeeAmount, form.currency || 'GBP')}</span></div>
             </div>
             {errorMessage && <div className="rounded-[18px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">{errorMessage}</div>}
           </div>
