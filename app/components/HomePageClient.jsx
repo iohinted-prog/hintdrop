@@ -479,7 +479,7 @@ function ShopTeaserCard() {
 
 function DemoVideoSection() {
   return (
-    <section className="mt-20 rounded-[36px] border border-[#eeddd3] bg-white px-5 py-8 shadow-[0_18px_60px_rgba(173,101,72,0.08)] md:px-8 md:py-10">
+    <section className="hidden mt-20 rounded-[36px] border border-[#eeddd3] bg-white px-5 py-8 shadow-[0_18px_60px_rgba(173,101,72,0.08)] md:px-8 md:py-10">
       <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
         <div>
           <div className="inline-flex rounded-full bg-[#fff4ec] px-3 py-1 text-xs font-medium text-[#d77958]">
@@ -706,7 +706,7 @@ export default function HomePageClient() {
           </div>
         </section>
 
-        <section className="mt-20 rounded-[36px] border border-[#eeddd3] bg-[#fff7f2] px-5 py-8 shadow-[0_18px_60px_rgba(173,101,72,0.1)] md:px-8 md:py-10">
+        <section className="hidden mt-20 rounded-[36px] border border-[#eeddd3] bg-[#fff7f2] px-5 py-8 shadow-[0_18px_60px_rgba(173,101,72,0.1)] md:px-8 md:py-10">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <div className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
@@ -871,9 +871,9 @@ export default function HomePageClient() {
           </div>
         </section>
 
-        <DemoVideoSection />
+        {/* <DemoVideoSection /> */}
 
-        <footer className="mt-16 border-t border-[#eaded6] bg-[#fffaf7]">
+        <footer className="hidden mt-16 border-t border-[#eaded6] bg-[#fffaf7]">
           <div className="flex flex-col gap-4 px-0 py-6 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between">
             <p className="max-w-[720px] text-xs leading-5 text-slate-500 lg:text-sm">
               By continuing, you agree to{" "}
