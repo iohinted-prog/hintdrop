@@ -22,7 +22,7 @@ export default function TermsPage() {
             <p className="mt-4 text-base leading-8 text-slate-600">
               Effective date: June 17, 2026
               <br />
-              Last updated: June 17, 2026
+              Last updated: July 14, 2026
             </p>
           </div>
 
@@ -139,13 +139,43 @@ export default function TermsPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                7. Paid features, billing, and refunds
+                7. Circles and group gifting
+              </h2>
+              <p className="text-[17px] leading-8 text-slate-700">
+                HintDrop offers a group gifting feature called Circles that allows a group of people to pool contributions toward a shared purchase. By creating or joining a circle, you agree to the following:
+              </p>
+              <ul className="space-y-3 text-[17px] leading-8 text-slate-700">
+                <li>
+                  - <strong>Organiser responsibility.</strong> The person who creates a circle (the organiser) is solely responsible for using the pooled funds to make the intended purchase. HintDrop facilitates the collection and transfer of funds but is not a party to the transaction between organisers and members. HintDrop is not liable if an organiser fails to make the purchase or misuses the funds.
+                </li>
+                <li>
+                  - <strong>Pot types.</strong> Circles operate under one of three funding modes: Flexible (members contribute what they want and funds are released when the target is reached), All-or-nothing (funds are only released if the full target is met by the deadline, otherwise contributions are refunded), or Organiser covers gap (the organiser tops up any shortfall to reach the target). The applicable mode is shown clearly when you join a circle.
+                </li>
+                <li>
+                  - <strong>Platform fee.</strong> The circle target amount already includes any applicable payment processing costs and HintDrop platform fee. The fee breakdown is shown when creating a circle.
+                </li>
+                <li>
+                  - <strong>Payments via Stripe.</strong> All contributions are processed by Stripe, Inc. By contributing to a circle, you agree to{" "}
+                  <a href="https://stripe.com/gb/legal/ssa" className="font-medium text-slate-900 underline decoration-[#d8b3a3] underline-offset-4">Stripe&apos;s terms of service</a>.
+                  HintDrop does not store your full payment card details.
+                </li>
+                <li>
+                  - <strong>Refunds.</strong> For All-or-nothing circles where the target is not met by the deadline, contributions will be refunded to the original payment method. For Flexible and Organiser covers gap circles, contributions are non-refundable once the target is reached and funds have been released to the organiser. Refunds outside of these circumstances are at our discretion and subject to applicable law.
+                </li>
+                <li>
+                  - <strong>Disputes between members.</strong> HintDrop is a platform and is not responsible for disputes between circle members or between members and organisers. We encourage users to only participate in circles with people they trust.
+                </li>
+              </ul>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
+                8. Paid features, billing, and refunds
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 Some features of HintDrop may be free, while others may require
                 payment now or in the future. If you purchase a paid feature,
-                subscription, contribution-related service, or other paid
-                offering, you agree to pay any applicable fees, taxes, and
+                subscription, or other paid offering, you agree to pay any applicable fees, taxes, and
                 charges disclosed at the time of purchase.
               </p>
               <p className="text-[17px] leading-8 text-slate-700">
@@ -158,7 +188,7 @@ export default function TermsPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                8. Termination and suspension
+                9. Termination and suspension
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 You may stop using HintDrop at any time. We may suspend or
@@ -175,7 +205,7 @@ export default function TermsPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                9. Intellectual property
+                10. Intellectual property
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 The Service, including its software, branding, designs, text,
@@ -189,7 +219,7 @@ export default function TermsPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                10. Third-party links and services
+                11. Third-party links and services
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 HintDrop may contain links to third-party websites, products, or
@@ -201,7 +231,7 @@ export default function TermsPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                11. Disclaimers
+                12. Disclaimers
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 HintDrop is provided on an &quot;as is&quot; and &quot;as
@@ -213,7 +243,7 @@ export default function TermsPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                12. Limitation of liability
+                13. Limitation of liability
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 To the fullest extent permitted by law, HintDrop and its
@@ -233,7 +263,7 @@ export default function TermsPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                13. Indemnity
+                14. Indemnity
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 You agree to defend, indemnify, and hold harmless HintDrop and its
@@ -246,7 +276,7 @@ export default function TermsPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                14. Changes to these Terms
+                15. Changes to these Terms
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 We may update these Terms from time to time. If we make material
@@ -259,7 +289,7 @@ export default function TermsPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                15. Governing law
+                16. Governing law
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 These Terms are governed by the laws of England and Wales,
@@ -272,15 +302,15 @@ export default function TermsPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                16. Contact
+                17. Contact
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 If you have questions about these Terms, contact us at{" "}
                 <a
-                  href="mailto:iohinted@gmail.com"
+                  href="mailto:hello@hintdrop.app"
                   className="font-medium text-slate-900 underline decoration-[#d8b3a3] underline-offset-4"
                 >
-                  iohinted@gmail.com
+                  hello@hintdrop.app
                 </a>
                 .
               </p>

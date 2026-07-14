@@ -22,7 +22,7 @@ export default function PrivacyPage() {
             <p className="mt-4 text-base leading-8 text-slate-600">
               Effective date: June 17, 2026
               <br />
-              Last updated: June 17, 2026
+              Last updated: July 14, 2026
             </p>
           </div>
 
@@ -176,7 +176,22 @@ export default function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                5. Visibility and sharing choices
+                5. Circles and payments
+              </h2>
+              <p className="text-[17px] leading-8 text-slate-700">
+                HintDrop offers a group gifting feature called Circles, which allows users to pool contributions toward a shared gift. When you participate in a circle as an organiser or contributor, certain information is shared with other circle members, including your name, profile, and contribution status. Contribution amounts may be visible to the circle organiser.
+              </p>
+              <p className="text-[17px] leading-8 text-slate-700">
+                Payments made through circles are processed by Stripe, Inc., a third-party payment processor. When you make a contribution, your payment information is handled directly by Stripe and is subject to Stripe&apos;s own privacy policy and terms of service. HintDrop does not store your full payment card details.
+              </p>
+              <p className="text-[17px] leading-8 text-slate-700">
+                We retain transaction records, contribution amounts, and related circle data for legal, financial, and operational purposes, including dispute resolution and fraud prevention, for as long as required by applicable law.
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
+                6. Visibility and sharing choices
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 HintDrop is designed to help people coordinate around gifting and
@@ -189,7 +204,7 @@ export default function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                6. Cookies and similar technologies
+                7. Cookies and similar technologies
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 We may use cookies and similar technologies to keep you signed
@@ -202,7 +217,7 @@ export default function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                7. Data retention
+                8. Data retention
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 We keep personal information for as long as reasonably necessary
@@ -215,7 +230,7 @@ export default function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                8. Data security
+                9. Data security
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 We use reasonable technical and organisational measures designed
@@ -228,7 +243,7 @@ export default function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                9. Your rights and choices
+                10. Your rights and choices
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 Depending on where you live, you may have the right to access,
@@ -240,10 +255,10 @@ export default function PrivacyPage() {
               <p className="text-[17px] leading-8 text-slate-700">
                 To make a privacy-related request, contact us at{" "}
                 <a
-                  href="mailto:iohinted@gmail.com"
+                  href="mailto:hello@hintdrop.app"
                   className="font-medium text-slate-900 underline decoration-[#d8b3a3] underline-offset-4"
                 >
-                  iohinted@gmail.com
+                  hello@hintdrop.app
                 </a>
                 .
               </p>
@@ -251,7 +266,7 @@ export default function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                10. Children&apos;s privacy
+                11. Children&apos;s privacy
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 HintDrop is not intended for children under the age of 13, or any
@@ -263,7 +278,7 @@ export default function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                11. International users
+                12. International users
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 HintDrop may process and store information in countries other than
@@ -276,7 +291,7 @@ export default function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                12. Changes to this Privacy Policy
+                13. Changes to this Privacy Policy
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 We may update this Privacy Policy from time to time. If we make
@@ -289,16 +304,16 @@ export default function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                13. Contact us
+                14. Contact us
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 If you have questions about this Privacy Policy or our privacy
                 practices, contact us at{" "}
                 <a
-                  href="mailto:iohinted@gmail.com"
+                  href="mailto:hello@hintdrop.app"
                   className="font-medium text-slate-900 underline decoration-[#d8b3a3] underline-offset-4"
                 >
-                  iohinted@gmail.com
+                  hello@hintdrop.app
                 </a>
                 .
               </p>

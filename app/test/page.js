@@ -7,7 +7,7 @@ export default function TestPage() {
   const supabase = useMemo(() => createClient(), [])
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
-  const [email, setEmail] = useState('iohinted@gmail.com')
+  const [email, setEmail] = useState('hello@hintdrop.app')
 
   const testContactInvite = async () => {
     try {
