@@ -339,6 +339,41 @@ function EmptyState({ selectedOccasion, selectedInterests, onClear }) {
   );
 }
 
+
+function ShopGuide() {
+  const [open, setOpen] = useState(false);
+  const steps = [
+    { label: "1. Browse", color: "bg-[#fff4ee] text-[#df7b59]", text: "Gifts are filtered by the interests you choose and the occasion you are shopping for." },
+    { label: "2. Save", color: "bg-[#eef4ff] text-[#5676b3]", text: "Add good finds into hints so they can be used later across personal planning and circle gifting flows." },
+    { label: "3. View item", color: "bg-[#edf6eb] text-[#4a7a3a]", text: "View item opens the retailer in a new tab using the affiliate link when one is available." },
+  ];
+  return (
+    <div>
+      <button type="button" onClick={() => setOpen(p => !p)}
+        className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#df7b59] hover:text-[#b14f43] transition">
+        <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[#f0a384] text-[11px]">?</span>
+        How Shop works
+        <span className="text-[10px]">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className="mt-3 space-y-3">
+          <p className="text-[12px] font-semibold text-slate-700">Curated first, off-site second</p>
+          {steps.map(s => (
+            <div key={s.label} className="rounded-[18px] bg-[#faf7f4] p-4">
+              <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${s.color}`}>{s.label}</span>
+              <p className="mt-2 text-[13px] leading-6 text-slate-600">{s.text}</p>
+            </div>
+          ))}
+          <div className="rounded-[18px] bg-[#fffaf7] p-4">
+            <p className="text-[12px] font-semibold text-slate-900">Built to stay aligned</p>
+            <p className="mt-1 text-[13px] leading-6 text-slate-500">Shop keeps the same gifting language as the rest of the app, so saved items can move naturally into hints and later into a shared pot flow.</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ShopPage() {
   const supabase = createClient();
   const { formatCurrency } = useCurrencyFormatter();
@@ -681,53 +716,7 @@ export default function ShopPage() {
               </div>
 
               <aside className="rounded-[26px] border border-[#f0dfd6] bg-[#fffdfa] p-5 shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  How Shop works
-                </p>
-
-                <h2 className="mt-1 text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
-                  Curated first, off-site second
-                </h2>
-
-                <div className="mt-4 space-y-3">
-                  <div className="rounded-[20px] bg-[#faf7f4] p-4">
-                    <span className="inline-flex rounded-full bg-[#fff4ee] px-2.5 py-1 text-[11px] font-semibold text-[#df7b59]">
-                      1. Browse
-                    </span>
-                    <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Gifts are filtered by the interests you choose and the occasion you are
-                      shopping for.
-                    </p>
-                  </div>
-
-                  <div className="rounded-[20px] bg-[#faf7f4] p-4">
-                    <span className="inline-flex rounded-full bg-[#eef4ff] px-2.5 py-1 text-[11px] font-semibold text-[#5676b3]">
-                      2. Save
-                    </span>
-                    <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Add good finds into hints so they can be used later across personal planning
-                      and circle gifting flows.
-                    </p>
-                  </div>
-
-                  <div className="rounded-[20px] bg-[#faf7f4] p-4">
-                    <span className="inline-flex rounded-full bg-[#edf6eb] px-2.5 py-1 text-[11px] font-semibold text-[#4a7a3a]">
-                      3. View item
-                    </span>
-                    <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      View item opens the retailer in a new tab using the affiliate link when one is
-                      available.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-5 rounded-[20px] bg-[#fffaf7] p-4">
-                  <p className="text-sm font-semibold text-slate-900">Built to stay aligned</p>
-                  <p className="mt-2 text-[13px] leading-6 text-slate-500">
-                    Shop keeps the same gifting language as the rest of the app, so saved items can
-                    move naturally into hints and later into a shared pot flow.
-                  </p>
-                </div>
+                <ShopGuide />
               </aside>
             </div>
           </div>
