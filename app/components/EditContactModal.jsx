@@ -36,11 +36,11 @@ export default function EditContactModal({ contact, onClose, onSave }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(42,26,20,0.38)] px-4 backdrop-blur-sm" onClick={onClose}>
       <div className="w-full max-w-[480px] rounded-[28px] border border-[#eddacf] bg-[#fffaf7] shadow-[0_24px_80px_rgba(88,46,31,0.22)] flex flex-col max-h-[90dvh] overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-[20px] font-semibold text-slate-900">Edit contact</h2>
-          <button onClick={onClose} className="h-9 w-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff5f0]" type="button">x</button>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[#efe0d7]">
+          <h2 className="text-[22px] font-semibold tracking-[-0.03em] text-slate-900">Edit contact</h2>
+          <button onClick={onClose} className="h-9 w-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff5f0]" type="button">✕</button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-0 space-y-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 space-y-4">
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Name</span>
             <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
@@ -59,7 +59,7 @@ export default function EditContactModal({ contact, onClose, onSave }) {
           </div>
           {error && <p className="text-sm text-[#b14f43]">{error}</p>}
         </div>
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="flex justify-end gap-3 px-6 py-5 border-t border-[#efe0d7]">
           <button type="button" onClick={onClose} className="h-10 px-5 rounded-full border border-[#ead8ce] bg-white text-sm text-slate-600 hover:bg-[#fff5f0]">Cancel</button>
           <button type="button" onClick={handleSave} disabled={saving || !form.name.trim()}
             className={"h-10 px-5 rounded-full text-sm font-semibold text-white " + (saving || !form.name.trim() ? "bg-[#e9a48d] cursor-not-allowed" : "bg-gradient-to-b from-[#ff946d] to-[#f36f64]")}>
