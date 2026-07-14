@@ -2949,7 +2949,7 @@ export default function CirclesClient() {
         <section className="rounded-[34px] border border-[#eeddd3] bg-[#fff7f2] p-4 shadow-[0_18px_60px_rgba(173,101,72,0.1)] sm:p-5">
           <div className="rounded-[28px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
             <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
-              <aside className="space-y-4">
+              <aside className="hidden xl:block space-y-4">
                 <div className="rounded-[26px] border border-[#f0dfd6] bg-[#fffdfa] p-5">
                   <button type="button" onClick={() => setIsContactsManagerOpen(true)} className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900 hover:text-[#df7b59] transition">Contacts</button>
                   <p className="mt-1 text-xs text-slate-500">Invite people into shared circles.</p>
