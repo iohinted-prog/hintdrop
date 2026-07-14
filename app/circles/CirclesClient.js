@@ -979,6 +979,7 @@ function CircleCard({
   sessionUser,
   contacts = [],
   onOpenProfile,
+  onMarkPaid,
 }) {
   const [showAllMembers, setShowAllMembers] = useState(false);
   const MAX_VISIBLE = 4;
@@ -1080,12 +1081,16 @@ function CircleCard({
                     <p className="text-sm font-semibold text-slate-900 truncate">{member.name}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {member.contributed && member.amount > 0 && (
-                      <span className="text-xs font-semibold text-[#4a7a3a]">{formatCurrency(member.amount, potCurrency)}</span>
-                    )}
                     <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${member.contributed ? "bg-[#edf6eb] text-[#4a7a3a]" : isAccepted ? "bg-[#eef4ff] text-[#5676b3]" : isInvitee ? "bg-[#fff3ee] text-[#d57a58]" : "bg-[#f3f4f6] text-slate-500"}`}>
                       {member.contributed ? "Paid" : isAccepted ? "Joined" : isInvitee ? "Invited" : "Pending"}
                     </span>
+                    {circle?.raw?.user_id === sessionUser?.id && isAccepted && !member.contributed && member.userId && (
+                      <button type="button"
+                        onClick={e => { e.stopPropagation(); onMarkPaid && onMarkPaid(circle, member); }}
+                        className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#f7fbf5] border border-[#c5dfc0] text-[#4a7a3a] hover:bg-[#edf6eb] transition">
+                        Mark paid
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -2465,6 +2470,22 @@ export default function CirclesClient() {
     setIsAddContactOpen(false);
   }
 
+  async function handleMarkPaid(circle, member) {
+    if (!sessionUser?.id || !member.userId) return;
+    try {
+      await supabase.from('circle_contributions').upsert({
+        circle_id: circle.id,
+        user_id: member.userId,
+        amount: 0,
+        currency: circle?.pot?.currency || 'GBP',
+        payment_status: 'confirmed',
+      }, { onConflict: 'circle_id,user_id' });
+      await refreshCircles();
+    } catch (e) {
+      console.error('Mark paid failed:', e);
+    }
+  }
+
   function openPledgeModal(circle) {
     setSelectedCircleForPledge(circle);
     setIsPledgeOpen(true);
@@ -2989,6 +3010,7 @@ export default function CirclesClient() {
                         sessionUser={sessionUser}
                         contacts={contacts}
                         onOpenProfile={setProfileModal}
+                        onMarkPaid={handleMarkPaid}
                       />
                     ))
                   )}
