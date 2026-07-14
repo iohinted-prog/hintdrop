@@ -168,7 +168,7 @@ export default function TermsPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                8. Paid features, billing, and refunds
+                8. Paid features and refunds
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 Some features of HintDrop may be free, while others may require
