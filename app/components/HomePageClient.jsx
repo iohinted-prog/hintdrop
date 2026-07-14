@@ -569,7 +569,7 @@ export default function HomePageClient() {
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[14px] font-bold text-[#eb7b58] shadow-sm">
               <span>♡</span>
               <span>
-                Gifting, reminders, circles, and curated shopping in one place
+                Your hints. Your people. Your moments.
               </span>
             </div>
 
@@ -595,8 +595,8 @@ export default function HomePageClient() {
                     Join HintDrop
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    Keep your circles, hints, reminders, and shop saves connected
-                    with a secure sign in.
+                    Save hints, remember dates, plan gifts with friends.
+                    Sign in to get started.
                   </p>
                 </div>
                 <div className="rounded-full bg-[#fff0e8] px-3 py-2 text-[12px] font-bold text-[#ea7451]">

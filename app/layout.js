@@ -2,7 +2,7 @@ import { Geist, Geist_Mono, Nunito } from "next/font/google";
 
 const nunito = Nunito({
   subsets: ["latin"],
-  weight: ["700"],
+  weight: ["400", "600", "700", "800", "900"],
   variable: "--font-nunito",
 });
 import "./globals.css";
