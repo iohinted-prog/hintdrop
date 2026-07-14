@@ -204,9 +204,9 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { circle_id, email, name } = await req.json()
-    if (!circle_id || !email) {
-      return new Response(JSON.stringify({ ok: false, error: 'circle_id and email are required' }), {
+    const { circle_id, email, name, target_user_id } = await req.json()
+    if (!circle_id || (!email && !target_user_id)) {
+      return new Response(JSON.stringify({ ok: false, error: 'circle_id and email or target_user_id are required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -277,6 +277,18 @@ Deno.serve(async (req) => {
     }
 
     const acceptUrl = `https://www.hintdrop.app/invite/circle?token=${inviteToken}`
+    // Resolve email from target_user_id if not provided
+    let resolvedEmail = email
+    if (!resolvedEmail && target_user_id) {
+      const { data: authUser } = await supabase.auth.admin.getUserById(target_user_id)
+      resolvedEmail = authUser?.user?.email || null
+    }
+    if (!resolvedEmail) {
+      return new Response(JSON.stringify({ ok: false, error: 'Could not resolve email' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     const price = formatPrice(circle.item_target_amount, circle.currency)
     const eventDate = formatDate(circle.event_date)
 
