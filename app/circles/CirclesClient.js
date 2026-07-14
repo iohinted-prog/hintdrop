@@ -3387,20 +3387,13 @@ export default function CirclesClient() {
         await Promise.all(
           selectedPeople.map(async (person) => {
             try {
-              const { data: { session } } = await supabase.auth.getSession();
-              await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-circle-invite`, {
-                method: "POST",
-                headers: {
-                  "Authorization": `Bearer ${session?.access_token}`,
-                  "apikey": process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
+              await supabase.functions.invoke("send-circle-invite", {
+                body: {
                   circle_id: insertedCircle.id,
                   email: person.email || null,
                   name: person.name || null,
                   target_user_id: person.matchedProfileId || null,
-                }),
+                },
               });
             } catch (e) {
               console.error("Circle invite email failed for", person.name, e);
