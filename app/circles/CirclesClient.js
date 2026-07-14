@@ -1161,7 +1161,7 @@ function CircleCard({
                     <>
                       <p className="mt-4 text-2xl font-bold text-slate-900">{formatCurrency(perPerson, potCurrency)}</p>
                       <p className="text-sm text-slate-500">per person · {acceptedCount} {acceptedCount === 1 ? "contributor" : "contributors"}</p>
-                      <p className="text-[11px] text-slate-400 mt-1">+Stripe fee at payment · inc. HintDrop fee</p>
+                      <p className="text-[11px] text-slate-400 mt-1">inc. HintDrop fee · payment arranged directly</p>
                     </>
                   );
                 })()}
