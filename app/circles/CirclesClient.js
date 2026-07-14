@@ -1659,699 +1659,314 @@ function ContributeModal({
 }
 
 function CreateCircleModal({
-  open,
-  onClose,
-  onSubmit,
-  contacts,
-  calendarEvents,
-  selectedPeople,
-  setSelectedPeople,
-  eventMode,
-  setEventMode,
-  selectedEventId,
-  setSelectedEventId,
-  form,
-  setForm,
-  linkPreview,
-  setLinkPreview,
-  isFetchingPreview,
-  handleFetchPreview,
-  selectedHintOwnerId,
-  setSelectedHintOwnerId,
-  errorMessage,
-  isSubmitting,
-  ownHints,
-  publicHintsByContact,
-  selfProfile,
-  formatCurrency,
+  open, onClose, onSubmit, contacts, calendarEvents,
+  selectedPeople, setSelectedPeople, eventMode, setEventMode,
+  selectedEventId, setSelectedEventId, form, setForm,
+  linkPreview, setLinkPreview, isFetchingPreview, handleFetchPreview,
+  selectedHintOwnerId, setSelectedHintOwnerId, errorMessage, isSubmitting,
+  ownHints, publicHintsByContact, selfProfile, formatCurrency,
 }) {
+  const [step, setStep] = useState(1);
+  const TOTAL_STEPS = 5;
+
   if (!open) return null;
 
   const safeCalendarEvents = Array.isArray(calendarEvents) ? calendarEvents : [];
   const ownerOptions = [buildSelfRecord(selfProfile), ...contacts];
-  const selectedOwner =
-    ownerOptions.find((option) => String(option.id) === String(selectedHintOwnerId)) || null;
-
-  const selectedOwnerPublicHints =
-    selectedOwner && selectedOwner.type !== "self"
-      ? publicHintsByContact?.[selectedOwner.id] || []
-      : [];
-
-  const visibleHints =
-    String(selectedHintOwnerId) === SELF_SELECTOR_ID ? ownHints : selectedOwnerPublicHints;
-  const amountMode = form.goalType === "amount";
+  const selectedOwner = ownerOptions.find(o => String(o.id) === String(selectedHintOwnerId)) || null;
+  const visibleHints = String(selectedHintOwnerId) === SELF_SELECTOR_ID
+    ? ownHints
+    : publicHintsByContact?.[selectedHintOwnerId] || [];
 
   const liveBaseAmount = parseAmount(form.goalValue);
   const liveTotals = calculateCircleTotals(liveBaseAmount);
   const totalPeopleCount = Math.max((selectedPeople?.length || 0) + 1, 1);
-  const recommendedPerPerson = roundCurrencyUp(
-    liveTotals.totalAmount / totalPeopleCount
-  );
+  const recommendedPerPerson = roundCurrencyUp(liveTotals.totalAmount / totalPeopleCount);
 
   function handleSelectHint(hint) {
     const hintAmount = extractHintAmount(hint);
-    const detectedCurrency =
-      String(hint?.currency || "").trim().toUpperCase() || form.currency || "GBP";
-    const nextAmount = hintAmount > 0 ? String(hintAmount) : "";
-
-    setForm((prev) => ({
-      ...prev,
-      selectedHintId: hint.id,
-      goalValue: nextAmount,
-      currency: detectedCurrency,
-    }));
-
-    setLinkPreview({
-      title: hint?.title || "Shared item",
-      description: hint?.retailer || "",
-      image: hint?.image_url || "",
-      url: hint?.url || "",
-      currency: detectedCurrency,
-    });
+    const detectedCurrency = String(hint?.currency || '').trim().toUpperCase() || form.currency || 'GBP';
+    setForm(prev => ({ ...prev, selectedHintId: hint.id, goalValue: hintAmount > 0 ? String(hintAmount) : '', currency: detectedCurrency }));
+    setLinkPreview({ title: hint?.title || 'Shared item', description: hint?.retailer || '', image: hint?.image_url || '', url: hint?.url || '', currency: detectedCurrency });
   }
 
+  function canNext() {
+    if (step === 1) return eventMode === 'new' ? !!form.eventDate : !!selectedEventId;
+    if (step === 2) return !!form.title?.trim() && !!form.deadline;
+    if (step === 3) return parseAmount(form.goalValue) > 0;
+    if (step === 4) return true;
+    return true;
+  }
+
+  const stepLabels = ['Event', 'Details', 'Gift', 'People', 'Review'];
+
   return (
-    <ModalShell
-      open={open}
-      onClose={onClose}
-      eyebrow="New circle"
-      title="Create a circle around an event"
-    >
-      <div className="grid gap-0 lg:grid-cols-[1.06fr_0.94fr]">
-        <div className="min-h-0 space-y-6 p-6 lg:border-r lg:border-[#efe0d7]">
-          <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">1. Choose the event</p>
-
-            <div className="mt-4 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setEventMode("calendar")}
-                className={`inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold ${
-                  eventMode === "calendar"
-                    ? "bg-[#2f3b2d] text-white"
-                    : "border border-[#ead8ce] bg-white text-slate-700"
-                }`}
-              >
-                From calendar
-              </button>
-              <button
-                type="button"
-                onClick={() => setEventMode("new")}
-                className={`inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold ${
-                  eventMode === "new"
-                    ? "bg-[#2f3b2d] text-white"
-                    : "border border-[#ead8ce] bg-white text-slate-700"
-                }`}
-              >
-                New event
-              </button>
+    <ModalShell open={open} onClose={() => { setStep(1); onClose(); }} eyebrow="New circle" title="Create a circle" maxWidth="max-w-[620px]">
+      {/* Progress */}
+      <div className="px-6 pt-4 pb-2">
+        <div className="flex items-center gap-2">
+          {stepLabels.map((label, i) => (
+            <div key={label} className="flex items-center gap-2 flex-1">
+              <div className="flex flex-col items-center gap-1">
+                <div className={`h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${i + 1 < step ? 'bg-[#2f3b2d] text-white' : i + 1 === step ? 'bg-[#ff875d] text-white' : 'bg-[#f0e4dd] text-slate-400'}`}>
+                  {i + 1 < step ? '✓' : i + 1}
+                </div>
+                <span className={`text-[10px] font-semibold ${i + 1 === step ? 'text-[#ff875d]' : 'text-slate-400'}`}>{label}</span>
+              </div>
+              {i < stepLabels.length - 1 && <div className={`h-px flex-1 mb-4 ${i + 1 < step ? 'bg-[#2f3b2d]' : 'bg-[#f0e4dd]'}`} />}
             </div>
+          ))}
+        </div>
+      </div>
 
-            {eventMode === "calendar" ? (
-              <div className="mt-4 max-h-[280px] space-y-3 overflow-y-auto pr-1">
-                {safeCalendarEvents.filter(event => !event.event_date || new Date(event.event_date) >= new Date(new Date().toDateString())).map((event) => (
-                  <label
-                    key={event.id}
-                    className={`flex cursor-pointer items-center justify-between rounded-[20px] border p-4 ${
-                      String(event.id) === String(selectedEventId)
-                        ? "border-[#f0a384] bg-[#fff4ee]"
-                        : "border-[#efe1d9] bg-[#fffdfa]"
-                    }`}
-                  >
+      <div className="min-h-[360px] px-6 py-4">
+
+        {/* Step 1 — Event */}
+        {step === 1 && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-lg font-semibold text-slate-900">Choose the event</p>
+              <p className="text-sm text-slate-500 mt-1">What occasion is this circle for?</p>
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setEventMode('calendar')} className={`h-10 px-4 rounded-full text-sm font-semibold ${eventMode === 'calendar' ? 'bg-[#2f3b2d] text-white' : 'border border-[#ead8ce] bg-white text-slate-700'}`}>From calendar</button>
+              <button type="button" onClick={() => setEventMode('new')} className={`h-10 px-4 rounded-full text-sm font-semibold ${eventMode === 'new' ? 'bg-[#2f3b2d] text-white' : 'border border-[#ead8ce] bg-white text-slate-700'}`}>New event</button>
+            </div>
+            {eventMode === 'calendar' ? (
+              <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
+                {safeCalendarEvents.filter(e => !e.event_date || new Date(e.event_date) >= new Date(new Date().toDateString())).map(event => (
+                  <label key={event.id} className={`flex cursor-pointer items-center justify-between rounded-[20px] border p-4 ${String(event.id) === String(selectedEventId) ? 'border-[#f0a384] bg-[#fff4ee]' : 'border-[#efe1d9] bg-[#fffdfa]'}`}>
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{event.title}</p>
-                      <p className="mt-1 text-[13px] text-slate-500">
-                        {event.type} · {event.event_date}
-                      </p>
+                      <p className="mt-1 text-[13px] text-slate-500">{event.type} · {event.event_date}</p>
                     </div>
-
-                    <input
-                      type="radio"
-                      name="calendarEvent"
-                      className="h-4 w-4 accent-[#f36f64]"
+                    <input type="radio" name="calendarEvent" className="h-4 w-4 accent-[#f36f64]"
                       checked={String(event.id) === String(selectedEventId)}
-                      onChange={() => {
-                        setSelectedEventId(String(event.id));
-                        setForm((prev) => ({
-                          ...prev,
-                          eventTitle: event.title,
-                          eventDate: event.event_date,
-                          deadline: event.event_date,
-                          occasionType: event.type || "Event",
-                          title: event.title,
-                        }));
-                      }}
-                    />
+                      onChange={() => { setSelectedEventId(String(event.id)); setForm(prev => ({ ...prev, eventTitle: event.title, eventDate: event.event_date, deadline: event.event_date, occasionType: event.type || 'Event', title: event.title })); }} />
                   </label>
                 ))}
               </div>
             ) : (
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <label className="space-y-2 sm:col-span-2">
+              <div className="space-y-3">
+                <label className="block space-y-1.5">
                   <span className="text-sm font-medium text-slate-700">Event title</span>
-                  <input
-                    type="text"
-                    value={form.eventTitle}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        eventTitle: e.target.value,
-                        title: e.target.value,
-                      }))
-                    }
-                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                    placeholder="Summer birthday dinner"
-                  />
+                  <input type="text" value={form.eventTitle} onChange={e => setForm(prev => ({ ...prev, eventTitle: e.target.value, title: e.target.value }))}
+                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]" placeholder="e.g. Dad's 60th birthday" />
                 </label>
-
-                <label className="space-y-2">
+                <label className="block space-y-1.5">
                   <span className="text-sm font-medium text-slate-700">Event date</span>
-                  <input
-                    type="date"
-                    min={new Date().toISOString().slice(0, 10)}
-                    value={form.eventDate}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        eventDate: e.target.value,
-                        deadline: prev.deadline || e.target.value,
-                      }))
-                    }
-                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                  />
+                  <input type="date" min={new Date().toISOString().slice(0,10)} value={form.eventDate}
+                    onChange={e => setForm(prev => ({ ...prev, eventDate: e.target.value, deadline: prev.deadline || e.target.value }))}
+                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]" />
                 </label>
               </div>
             )}
           </div>
+        )}
 
-          <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">2. Circle details</p>
-
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="space-y-2 sm:col-span-2">
-                <span className="text-sm font-medium text-slate-700">Circle name</span>
-                <input
-                  type="text"
-                  value={form.title}
-                  onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                  placeholder="Jules birthday circle"
-                />
-              </label>
-
-              {eventMode === "calendar" ? (
-                <div className="space-y-2 sm:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">Event date</span>
-                  <div className="flex h-12 w-full items-center rounded-[18px] border border-[#efe1d9] bg-[#faf7f5] px-4 text-sm text-slate-600">
-                    {form.eventDate || "No date selected"}
-                  </div>
-                </div>
-              ) : null}
-
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">Contribution deadline</span>
-                <input
-                  type="date"
-                  min={new Date().toISOString().slice(0, 10)}
-                  value={form.deadline}
-                  onChange={(e) => setForm((prev) => ({ ...prev, deadline: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                />
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">If people do not join</span>
-                <select
-                  value={form.fundingMode}
-                  onChange={(e) => setForm((prev) => ({ ...prev, fundingMode: e.target.value }))}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                >
-                  <option value="flexible">Flexible pot</option>
-                  <option value="all_or_nothing">All-or-nothing</option>
-                  <option value="organiser_covers">Organizer covers gap</option>
-                </select>
-              </label>
+        {/* Step 2 — Details */}
+        {step === 2 && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-lg font-semibold text-slate-900">Circle details</p>
+              <p className="text-sm text-slate-500 mt-1">Name the circle and set a contribution deadline.</p>
             </div>
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-slate-700">Circle name</span>
+              <input type="text" value={form.title} onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
+                className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]" placeholder="e.g. Dad's birthday circle" />
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-slate-700">Contribution deadline</span>
+              <input type="date" min={new Date().toISOString().slice(0,10)} value={form.deadline}
+                onChange={e => setForm(prev => ({ ...prev, deadline: e.target.value }))}
+                className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]" />
+            </label>
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-slate-700">If people do not contribute enough</span>
+              <select value={form.fundingMode} onChange={e => setForm(prev => ({ ...prev, fundingMode: e.target.value }))}
+                className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]">
+                <option value="flexible">Flexible pot — release what was raised</option>
+                <option value="all_or_nothing">All-or-nothing — refund everyone</option>
+                <option value="organiser_covers">Organiser covers gap</option>
+              </select>
+            </label>
           </div>
+        )}
 
-          <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">3. Goal type</p>
+        {/* Step 3 — Gift */}
+        {step === 3 && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-lg font-semibold text-slate-900">The gift</p>
+              <p className="text-sm text-slate-500 mt-1">Pick a hint or paste a product link.</p>
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => { setForm(prev => ({ ...prev, goalType: 'item', itemSource: 'hint', itemUrl: '', selectedHintId: '' })); setLinkPreview(null); }}
+                className={`h-10 px-4 rounded-full text-sm font-semibold ${form.itemSource === 'hint' && form.goalType === 'item' ? 'bg-[#2f3b2d] text-white' : 'border border-[#ead8ce] bg-white text-slate-700'}`}>From hints</button>
+              <button type="button" onClick={() => { setForm(prev => ({ ...prev, goalType: 'item', itemSource: 'url', selectedHintId: '' })); }}
+                className={`h-10 px-4 rounded-full text-sm font-semibold ${form.itemSource === 'url' && form.goalType === 'item' ? 'bg-[#2f3b2d] text-white' : 'border border-[#ead8ce] bg-white text-slate-700'}`}>Paste a link</button>
+              <button type="button" onClick={() => { setForm(prev => ({ ...prev, goalType: 'amount', itemSource: '' })); setLinkPreview(null); }}
+                className={`h-10 px-4 rounded-full text-sm font-semibold ${form.goalType === 'amount' ? 'bg-[#2f3b2d] text-white' : 'border border-[#ead8ce] bg-white text-slate-700'}`}>Amount only</button>
+            </div>
 
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-700">What are you aiming for?</span>
-                <select
-                  value={form.goalType}
-                  onChange={(e) => {
-                    const nextValue = e.target.value;
-                    setForm((prev) => ({
-                      ...prev,
-                      goalType: nextValue,
-                      itemSource: nextValue === "amount" ? "" : prev.itemSource || "hint",
-                      selectedHintId: nextValue === "amount" ? "" : prev.selectedHintId,
-                      itemUrl: nextValue === "amount" ? "" : prev.itemUrl,
-                    }));
-                    if (nextValue === "amount") {
-                      setLinkPreview(null);
-                    }
-                  }}
-                  className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                >
-                  <option value="item">Specific item</option>
-                  <option value="amount">Target amount</option>
-                </select>
+            {form.goalType === 'amount' && (
+              <label className="block space-y-1.5">
+                <span className="text-sm font-medium text-slate-700">Target amount</span>
+                <input type="text" inputMode="decimal" value={form.goalValue} onChange={e => setForm(prev => ({ ...prev, goalValue: e.target.value }))}
+                  placeholder="220" className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]" />
               </label>
+            )}
 
-              {form.goalType === "amount" ? (
-                <CurrencyAmountInput
-                  currency={form.currency}
-                  amount={form.goalValue}
-                  onCurrencyChange={(value) => setForm((prev) => ({ ...prev, currency: value }))}
-                  onAmountChange={(value) => setForm((prev) => ({ ...prev, goalValue: value }))}
-                  label="Target amount"
-                />
-              ) : (
-                <div className="space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Amount</span>
-                  <div className="flex h-12 w-full items-center rounded-[18px] border border-[#efe1d9] bg-[#faf7f5] px-4 text-sm text-slate-500">
-                    Clicking different hints will update the amount below.
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {!amountMode ? (
-            <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">4. Choose the item</p>
-                <p className="mt-1 text-[13px] leading-6 text-slate-500">
-                  Pick the person on the left, then choose one hint or paste a link.
-                </p>
-              </div>
-
-              <div className="mt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForm((prev) => ({
-                      ...prev,
-                      itemSource: "hint",
-                      itemUrl: "",
-                      selectedHintId: "",
-                      goalValue: "",
-                    }));
-                    setLinkPreview(null);
-                  }}
-                  className={`inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold ${
-                    form.itemSource === "hint"
-                      ? "bg-[#2f3b2d] text-white"
-                      : "border border-[#ead8ce] bg-white text-slate-700"
-                  }`}
-                >
-                  From hints
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForm((prev) => ({
-                      ...prev,
-                      itemSource: "url",
-                      selectedHintId: "",
-                      goalValue: prev.itemSource === "url" ? prev.goalValue : "",
-                    }));
-                    setLinkPreview((prev) => (prev ? { ...prev, currency: form.currency } : null));
-                  }}
-                  className={`inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold ${
-                    form.itemSource === "url"
-                      ? "bg-[#2f3b2d] text-white"
-                      : "border border-[#ead8ce] bg-white text-slate-700"
-                  }`}
-                >
-                  Paste a link
-                </button>
-              </div>
-
-              {form.itemSource === "hint" ? (
-                <div className="mt-4 grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-                  <div className="rounded-[22px] border border-[#efe1d9] bg-[#fffdfa] p-3">
-                    <p className="px-2 pb-3 text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-                      People
-                    </p>
-
-                    <div className="max-h-[320px] space-y-2 overflow-y-auto pr-1">
-                      {ownerOptions.map((person) => {
-                        const selected = String(person.id) === String(selectedHintOwnerId);
-
-                        return (
-                          <button
-                            key={person.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedHintOwnerId(person.id);
-                              setForm((prev) => ({
-                                ...prev,
-                                selectedHintId: "",
-                                goalValue: "",
-                              }));
-                              setLinkPreview(null);
-                            }}
-                            className={`flex w-full items-center gap-3 rounded-[18px] border px-3 py-3 text-left transition ${
-                              selected
-                                ? "border-[#f0a384] bg-[#fff4ee]"
-                                : "border-[#efe1d9] bg-white hover:bg-[#fff8f4]"
-                            }`}
-                          >
-                            {person.avatarUrl ? (
-                              <img src={person.avatarUrl} alt={person.name} className="h-10 w-10 rounded-full object-cover" />
-                            ) : (
-                              <div className={getAvatarClasses(person.colors, person.status)}>
-                                {person.initials}
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-slate-900">{person.name}</p>
-                              <p className="text-[12px] text-slate-500">{person.role}</p>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="rounded-[22px] border border-[#efe1d9] bg-[#fffdfa] p-4">
-                    {selectedOwner ? (
-                      <>
-                        <div className="flex items-center gap-3">
-                          {selectedOwner.avatarUrl ? (
-                            <img src={selectedOwner.avatarUrl} alt={selectedOwner.name} className="h-11 w-11 rounded-full object-cover shrink-0" />
-                          ) : (
-                            <div className={getAvatarClasses(selectedOwner.colors, selectedOwner.status, "lg")}>
-                              {selectedOwner.initials}
-                            </div>
-                          )}
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">
-                              {selectedOwner.type === "self" ? "Your hints" : `${selectedOwner.name}'s hints`}
-                            </p>
-                            <p className="text-[13px] text-slate-500">
-                              {selectedOwner.type === "self"
-                                ? "Private and public hints from your own account."
-                                : selectedOwner.hasHintedAccount
-                                  ? "Public hints from this hinted account."
-                                  : "This contact is not linked to a hinted account yet, so their public hints cannot be loaded."}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="mt-4 max-h-[320px] space-y-3 overflow-y-auto pr-1">
-                          {visibleHints.length ? (
-                            visibleHints.map((hint) => (
-                              <label
-                                key={hint.id}
-                                className={`flex cursor-pointer items-start justify-between rounded-[20px] border p-4 ${
-                                  form.selectedHintId === hint.id
-                                    ? "border-[#f0a384] bg-[#fff4ee]"
-                                    : "border-[#efe1d9] bg-white"
-                                }`}
-                              >
-                                <div className="min-w-0 pr-4">
-                                  <p className="text-sm font-semibold text-slate-900">
-                                    {hint.title}
-                                  </p>
-                                  <p className="mt-1 text-[13px] text-slate-500">
-                                    {selectedOwner.type === "self"
-                                      ? hint.is_private
-                                        ? "Private"
-                                        : "Public"
-                                      : "Public"}
-                                    {hint.retailer ? ` · ${hint.retailer}` : ""}
-                                    {extractHintAmount(hint) > 0
-                                      ? ` · ${formatCurrency(
-                                          extractHintAmount(hint),
-                                          hint.currency || form.currency || "GBP"
-                                        )}`
-                                      : ""}
-                                  </p>
-                                  <p className="mt-2 text-[12px] leading-5 text-slate-500">
-                                    {hint.url || "No link saved"}
-                                  </p>
-                                </div>
-
-                                <input
-                                  type="radio"
-                                  name="selectedHint"
-                                  className="mt-1 h-4 w-4 accent-[#f36f64]"
-                                  checked={form.selectedHintId === hint.id}
-                                  onChange={() => handleSelectHint(hint)}
-                                />
-                              </label>
-                            ))
-                          ) : selectedOwner.type === "self" ? (
-                            <div className="rounded-[18px] bg-white p-4 text-sm text-slate-500">
-                              No hints available yet.
-                            </div>
-                          ) : selectedOwner.hasHintedAccount ? (
-                            <div className="rounded-[18px] border border-dashed border-[#e5d8cf] bg-white p-5 text-sm leading-6 text-slate-500">
-                              No public hints yet for this contact.
-                            </div>
-                          ) : (
-                            <div className="rounded-[18px] border border-dashed border-[#e5d8cf] bg-white p-5 text-sm leading-6 text-slate-500">
-                              This contact is not linked to a hinted user account yet.
-                            </div>
-                          )}
-                        </div>
-
-                        {form.itemSource === "hint" && linkPreview ? (
-                          <div className="mt-4">
-                            <PotPreviewCard
-                              image={linkPreview.image}
-                              title={linkPreview.title}
-                              url={linkPreview.url}
-                            />
-                          </div>
-                        ) : null}
-                      </>
-                    ) : (
-                      <div className="flex h-full min-h-[220px] items-center justify-center rounded-[18px] bg-white p-6 text-center text-sm text-slate-500">
-                        Select a person to continue.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-4 space-y-3">
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <input
-                      type="url"
-                      value={form.itemUrl}
-                      onChange={(e) =>
-                        setForm((prev) => ({ ...prev, itemUrl: e.target.value }))
-                      }
-                      placeholder="Paste product or experience link"
-                      className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleFetchPreview}
-                      className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg"
-                    >
-                      {isFetchingPreview ? "Fetching..." : "Fetch preview"}
-                    </button>
-                  </div>
-
-                  {linkPreview ? (
-                    <PotPreviewCard
-                      image={linkPreview.image}
-                      title={linkPreview.title}
-                      url={linkPreview.url}
-                    />
-                  ) : null}
-                </div>
-              )}
-            </div>
-          ) : null}
-
-          <div className="rounded-[24px] border border-[#eedfd6] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">Total target</p>
-            <p className="mt-1 text-[13px] leading-6 text-slate-500">
-              This is the final amount shown on the circle, including Stripe processing and our fee.
-            </p>
-
-            <div className="mt-4 space-y-4 rounded-[18px] bg-[#fff4ee] p-4">
-              {form.goalType === "item" ? (
-                <CurrencyAmountInput
-                  currency={form.currency}
-                  amount={form.goalValue}
-                  onCurrencyChange={(value) => setForm((prev) => ({ ...prev, currency: value }))}
-                  onAmountChange={(value) => setForm((prev) => ({ ...prev, goalValue: value }))}
-                  label="Item target"
-                />
-              ) : null}
-
+            {form.itemSource === 'url' && form.goalType === 'item' && (
               <div className="space-y-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#df7b59]">
-                    Total target
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-slate-900">
-                    {formatCurrency(liveTotals.totalAmount, form.currency || "GBP")}
-                  </p>
+                <div className="flex gap-3">
+                  <input type="url" value={form.itemUrl} onChange={e => setForm(prev => ({ ...prev, itemUrl: e.target.value }))}
+                    placeholder="Paste product link" className="h-12 flex-1 rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]" />
+                  <button type="button" onClick={handleFetchPreview} className="h-12 px-4 rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] text-sm font-semibold text-white shadow-lg shrink-0">
+                    {isFetchingPreview ? 'Fetching...' : 'Fetch'}
+                  </button>
                 </div>
-
-                <div className="rounded-[16px] bg-white/70 p-3">
-                  <div className="flex items-center justify-between gap-3 text-[12px] text-slate-600">
-                    <span>Item amount</span>
-                    <span>{formatCurrency(liveTotals.itemAmount, form.currency || "GBP")}</span>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between gap-3 text-[12px] text-slate-600">
-                    <span>Stripe processing</span>
-                    <span>{formatCurrency(liveTotals.stripeFeeAmount, form.currency || "GBP")}</span>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between gap-3 text-[12px] text-slate-600">
-                    <span>Our fee</span>
-                    <span>{formatCurrency(liveTotals.platformFeeAmount, form.currency || "GBP")}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#df7b59]">
-                    Recommended per person
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-slate-900">
-                    {formatCurrency(recommendedPerPerson, form.currency || "GBP")}
-                  </p>
-                  <p className="mt-2 text-[12px] leading-5 text-slate-500">
-                    This is based on the full circle target divided by everyone currently in the pot, including you.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {errorMessage ? (
-            <div className="rounded-[20px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">
-              {errorMessage}
-            </div>
-          ) : null}
-        </div>
-
-        <div className="min-h-0 border-t border-[#efe0d7] bg-[#fff7f2] p-6 lg:border-l lg:border-t-0">
-          <div className="rounded-[24px] border border-dashed border-[#e6d7cd] bg-white p-5">
-            <p className="text-sm font-semibold text-slate-900">5. Add people</p>
-            <p className="mt-1 text-[13px] leading-6 text-slate-500">
-              Invite people now. They only become full members after they accept.
-            </p>
-
-            <div className="mt-4 min-h-[120px] rounded-[20px] bg-[#fffaf7] p-4">
-              {selectedPeople.length ? (
-                <div className="flex flex-wrap gap-3">
-                  {selectedPeople.map((person) => (
-                    <div
-                      key={person.id}
-                      className="inline-flex items-center gap-2 rounded-full border border-[#ead8ce] bg-white px-3 py-2"
-                    >
-                      {person.avatarUrl ? (
-                        <img src={person.avatarUrl} alt={person.name} className="h-8 w-8 rounded-full object-cover" />
-                      ) : (
-                        <div className={getAvatarClasses(person.colors, person.status, "sm")}>
-                          {person.initials}
-                        </div>
-                      )}
-                      <span className="text-sm font-medium text-slate-700">{person.name}</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedPeople((prev) =>
-                            prev.filter((item) => item.id !== person.id)
-                          )
-                        }
-                        className="text-slate-400 hover:text-slate-600"
-                      >
-                        ✕
-                      </button>
+                {linkPreview && (
+                  <div className="rounded-[18px] border border-[#eedfd6] bg-[#fffdfa] p-3 flex gap-3">
+                    {linkPreview.image && <img src={linkPreview.image} className="h-16 w-16 rounded-[12px] object-cover shrink-0" alt="" />}
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 truncate">{linkPreview.title}</p>
+                      {form.goalValue && <p className="text-[13px] font-bold text-[#ff8060] mt-1">{formatCurrency(parseAmount(form.goalValue), form.currency)}</p>}
                     </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {form.itemSource === 'hint' && form.goalType === 'item' && (
+              <div className="grid gap-3 grid-cols-[180px_1fr]">
+                <div className="rounded-[18px] border border-[#efe1d9] bg-[#fffdfa] p-3 max-h-[280px] overflow-y-auto">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 px-1 pb-2">People</p>
+                  {ownerOptions.map(person => (
+                    <button key={person.id} type="button" onClick={() => { setSelectedHintOwnerId(person.id); setForm(prev => ({ ...prev, selectedHintId: '', goalValue: '' })); setLinkPreview(null); }}
+                      className={`flex w-full items-center gap-2 rounded-[14px] border px-2 py-2 text-left mb-1 transition ${String(person.id) === String(selectedHintOwnerId) ? 'border-[#f0a384] bg-[#fff4ee]' : 'border-transparent hover:bg-[#fff8f4]'}`}>
+                      {person.avatarUrl
+                        ? <img src={person.avatarUrl} className="h-8 w-8 rounded-full object-cover shrink-0" alt="" />
+                        : <div className={getAvatarClasses(person.colors, person.status, 'sm')}>{person.initials}</div>}
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-semibold text-slate-900 truncate">{person.name}</p>
+                        <p className="text-[11px] text-slate-400 truncate">{person.role}</p>
+                      </div>
+                    </button>
                   ))}
                 </div>
-              ) : (
-                <p className="text-sm text-slate-400">No one added yet.</p>
-              )}
-            </div>
-
-            <div className="mt-5 space-y-3">
-              {contacts.map((contact) => {
-                const alreadyAdded = selectedPeople.some((person) => person.id === contact.id);
-
-                return (
-                  <div
-                    key={contact.id}
-                    className="flex items-center justify-between rounded-[18px] border border-[#f0dfd6] bg-[#fffdfa] p-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      {contact.avatarUrl ? (
-                        <img src={contact.avatarUrl} alt={contact.name} className="h-10 w-10 rounded-full object-cover" />
-                      ) : (
-                        <div className={getAvatarClasses(contact.colors, contact.status)}>
-                          {contact.initials}
+                <div className="rounded-[18px] border border-[#efe1d9] bg-[#fffdfa] p-3 max-h-[280px] overflow-y-auto">
+                  {selectedOwner ? (
+                    visibleHints.length ? visibleHints.map(hint => (
+                      <label key={hint.id} className={`flex cursor-pointer items-start gap-3 rounded-[14px] border p-3 mb-2 ${form.selectedHintId === hint.id ? 'border-[#f0a384] bg-[#fff4ee]' : 'border-[#efe1d9] bg-white'}`}>
+                        {hint.image_url && <img src={hint.image_url} className="h-10 w-10 rounded-[8px] object-cover shrink-0" alt="" />}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[13px] font-semibold text-slate-900 line-clamp-2">{hint.title}</p>
+                          {extractHintAmount(hint) > 0 && <p className="text-[12px] font-bold text-[#ff8060] mt-0.5">{formatCurrency(extractHintAmount(hint), hint.currency || form.currency)}</p>}
                         </div>
-                      )}
+                        <input type="radio" name="hint" className="mt-1 h-4 w-4 accent-[#f36f64] shrink-0" checked={form.selectedHintId === hint.id} onChange={() => handleSelectHint(hint)} />
+                      </label>
+                    )) : (
+                      <p className="text-sm text-slate-400 p-3">No public hints yet.</p>
+                    )
+                  ) : <p className="text-sm text-slate-400 p-3">Select a person.</p>}
+                </div>
+              </div>
+            )}
+
+            {liveBaseAmount > 0 && (
+              <div className="rounded-[18px] bg-[#fff4ee] p-4 space-y-2">
+                <div className="flex justify-between text-sm"><span className="text-slate-600">Total target</span><span className="font-bold text-slate-900">{formatCurrency(liveTotals.totalAmount, form.currency || 'GBP')}</span></div>
+                <div className="flex justify-between text-[12px] text-slate-500"><span>Suggested per person</span><span>{formatCurrency(recommendedPerPerson, form.currency || 'GBP')}</span></div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 4 — People */}
+        {step === 4 && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-lg font-semibold text-slate-900">Add people</p>
+              <p className="text-sm text-slate-500 mt-1">Invite people to join the circle. They confirm when they accept.</p>
+            </div>
+            {selectedPeople.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {selectedPeople.map(person => (
+                  <div key={person.id} className="inline-flex items-center gap-2 rounded-full border border-[#ead8ce] bg-white px-3 py-1.5">
+                    {person.avatarUrl ? <img src={person.avatarUrl} className="h-6 w-6 rounded-full object-cover" alt="" /> : <div className={getAvatarClasses(person.colors, person.status, 'sm')}>{person.initials}</div>}
+                    <span className="text-sm font-medium text-slate-700">{person.name}</span>
+                    <button type="button" onClick={() => setSelectedPeople(prev => prev.filter(p => p.id !== person.id))} className="text-slate-400 hover:text-slate-600">✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="max-h-[280px] overflow-y-auto space-y-2 pr-1">
+              {contacts.map(contact => {
+                const added = selectedPeople.some(p => p.id === contact.id);
+                return (
+                  <div key={contact.id} className="flex items-center justify-between rounded-[18px] border border-[#f0dfd6] bg-[#fffdfa] p-3">
+                    <div className="flex items-center gap-3">
+                      {contact.avatarUrl ? <img src={contact.avatarUrl} className="h-9 w-9 rounded-full object-cover" alt="" /> : <div className={getAvatarClasses(contact.colors, contact.status)}>{contact.initials}</div>}
                       <div>
                         <p className="text-sm font-semibold text-slate-900">{contact.name}</p>
-                        <p className="text-[12px] text-slate-500">
-                          {contact.role}
-                          {contact.email ? ` · ${contact.email}` : ""}
-                        </p>
+                        <p className="text-[12px] text-slate-500">{contact.role}{contact.email ? ` · ${contact.email}` : ''}</p>
                       </div>
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSelectedPeople((prev) =>
-                          alreadyAdded ? prev : [...prev, contact]
-                        )
-                      }
-                      className={`inline-flex h-9 items-center justify-center rounded-full px-3 text-[12px] font-semibold ${
-                        alreadyAdded
-                          ? "bg-[#edf6eb] text-[#4a7a3a]"
-                          : "border border-[#ead8ce] bg-white text-slate-700 hover:bg-[#fff5f0]"
-                      }`}
-                    >
-                      {alreadyAdded ? "Added" : "Invite"}
+                    <button type="button" onClick={() => setSelectedPeople(prev => added ? prev : [...prev, contact])}
+                      className={`h-9 px-3 rounded-full text-[12px] font-semibold ${added ? 'bg-[#edf6eb] text-[#4a7a3a]' : 'border border-[#ead8ce] bg-white text-slate-700 hover:bg-[#fff5f0]'}`}>
+                      {added ? 'Added' : 'Invite'}
                     </button>
                   </div>
                 );
               })}
             </div>
-
-            <div className="mt-6 flex gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex h-12 flex-1 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-6 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={onSubmit}
-                disabled={isSubmitting}
-                className={`inline-flex h-12 flex-1 items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-lg ${
-                  isSubmitting
-                    ? "cursor-not-allowed bg-[#e9a48d]"
-                    : "bg-gradient-to-b from-[#ff946d] to-[#f36f64]"
-                }`}
-              >
-                {isSubmitting ? "Creating..." : "Create circle"}
-              </button>
-            </div>
           </div>
-        </div>
+        )}
+
+        {/* Step 5 — Review */}
+        {step === 5 && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-lg font-semibold text-slate-900">Review and create</p>
+              <p className="text-sm text-slate-500 mt-1">Check everything looks right before sending invites.</p>
+            </div>
+            <div className="rounded-[18px] border border-[#f0dfd6] bg-[#fffdfa] p-4 space-y-3">
+              <div className="flex justify-between text-sm"><span className="text-slate-500">Circle</span><span className="font-semibold text-slate-900">{form.title}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-slate-500">Event date</span><span className="font-semibold text-slate-900">{form.eventDate || '—'}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-slate-500">Deadline</span><span className="font-semibold text-slate-900">{form.deadline || '—'}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-slate-500">Target</span><span className="font-semibold text-slate-900">{formatCurrency(liveTotals.totalAmount, form.currency || 'GBP')}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-slate-500">Funding</span><span className="font-semibold text-slate-900">{fundingModeToLabel(form.fundingMode)}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-slate-500">People</span><span className="font-semibold text-slate-900">{selectedPeople.length > 0 ? selectedPeople.map(p => p.name).join(', ') : 'Just you'}</span></div>
+            </div>
+            {errorMessage && <div className="rounded-[18px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">{errorMessage}</div>}
+          </div>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex gap-3 px-6 pb-6">
+        {step > 1 ? (
+          <button type="button" onClick={() => setStep(s => s - 1)} className="h-12 flex-1 rounded-full border border-[#ead8ce] bg-white text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]">Back</button>
+        ) : (
+          <button type="button" onClick={() => { setStep(1); onClose(); }} className="h-12 flex-1 rounded-full border border-[#ead8ce] bg-white text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]">Cancel</button>
+        )}
+        {step < TOTAL_STEPS ? (
+          <button type="button" onClick={() => setStep(s => s + 1)} disabled={!canNext()}
+            className={`h-12 flex-1 rounded-full text-sm font-semibold text-white shadow-lg ${canNext() ? 'bg-gradient-to-b from-[#ff946d] to-[#f36f64]' : 'bg-[#f0c4b4] cursor-not-allowed'}`}>
+            Next
+          </button>
+        ) : (
+          <button type="button" onClick={onSubmit} disabled={isSubmitting}
+            className={`h-12 flex-1 rounded-full text-sm font-semibold text-white shadow-lg ${isSubmitting ? 'bg-[#e9a48d] cursor-not-allowed' : 'bg-gradient-to-b from-[#ff946d] to-[#f36f64]'}`}>
+            {isSubmitting ? 'Creating...' : 'Create circle'}
+          </button>
+        )}
       </div>
     </ModalShell>
   );
 }
-
 
 function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentUserId, isContact, onAddContact }) {
   const [hints, setHints] = useState([]);
