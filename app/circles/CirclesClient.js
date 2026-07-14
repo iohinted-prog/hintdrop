@@ -2043,9 +2043,13 @@ function CreateCircleModal({
                     {selectedOwner ? (
                       <>
                         <div className="flex items-center gap-3">
-                          <div className={getAvatarClasses(selectedOwner.colors, selectedOwner.status, "lg")}>
-                            {selectedOwner.initials}
-                          </div>
+                          {selectedOwner.avatarUrl ? (
+                            <img src={selectedOwner.avatarUrl} alt={selectedOwner.name} className="h-11 w-11 rounded-full object-cover shrink-0" />
+                          ) : (
+                            <div className={getAvatarClasses(selectedOwner.colors, selectedOwner.status, "lg")}>
+                              {selectedOwner.initials}
+                            </div>
+                          )}
                           <div>
                             <p className="text-sm font-semibold text-slate-900">
                               {selectedOwner.type === "self" ? "Your hints" : `${selectedOwner.name}'s hints`}
