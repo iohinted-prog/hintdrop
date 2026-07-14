@@ -315,7 +315,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'HintDrop <hello@hintdrop.app>',
-        to: normalizedEmail,
+        to: resolvedEmail || normalizedEmail,
         subject: `${inviterName} invited you to join a circle on HintDrop`,
         html,
       }),
