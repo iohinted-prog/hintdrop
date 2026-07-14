@@ -1103,6 +1103,49 @@ function CircleCard({
                   currency={potCurrency}
                   formatCurrency={formatCurrency}
                 />
+                {circle?.pot?.deadline && (() => {
+                  const daysLeft = Math.ceil((new Date(circle.pot.deadline) - new Date()) / (1000 * 60 * 60 * 24));
+                  const urgent = daysLeft <= 3;
+                  const warning = daysLeft <= 7;
+                  return (
+                    <div className={`mt-4 rounded-[16px] px-4 py-3 flex items-center justify-between ${urgent ? "bg-[#fff1f0] border border-[#fcc]" : warning ? "bg-[#fff8ee] border border-[#fde8b0]" : "bg-[#f7fbf5] border border-[#dce8d8]"}`}>
+                      <div>
+                        <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${urgent ? "text-[#b14f43]" : warning ? "text-[#b07a30]" : "text-[#4e684d]"}`}>Deadline</p>
+                        <p className="text-sm font-semibold text-slate-900 mt-0.5">{formatDateLabel(circle.pot.deadline)}</p>
+                      </div>
+                      <span className={`text-2xl font-bold ${urgent ? "text-[#b14f43]" : warning ? "text-[#b07a30]" : "text-[#4e684d]"}`}>
+                        {daysLeft <= 0 ? "Today!" : `${daysLeft}d`}
+                      </span>
+                    </div>
+                  );
+                })()}
+                <div className="mt-4 space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">Members</p>
+                  {safeMembers.map((member, i) => {
+                    const isAccepted = getAvatarState(member.status) === "accepted";
+                    const isInvitee = getAvatarState(member.status) === "invitee";
+                    return (
+                      <div key={i} className="flex items-center gap-3 rounded-[14px] border border-[#f0e4dd] bg-white px-3 py-2.5">
+                        <div className={`h-8 w-8 shrink-0 rounded-full overflow-hidden flex items-center justify-center ${member.avatarUrl ? "" : `bg-gradient-to-b ${member.colors || "from-[#efcdbf] to-[#bb8168]"}`}`}>
+                          {member.avatarUrl
+                            ? <img src={member.avatarUrl} className="h-8 w-8 object-cover" alt="" />
+                            : <span className="text-[11px] font-bold text-white">{member.initials}</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 truncate">{member.name}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {member.contributed && member.amount > 0 && (
+                            <span className="text-xs font-semibold text-[#4a7a3a]">{formatCurrency(member.amount, potCurrency)}</span>
+                          )}
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${member.contributed ? "bg-[#edf6eb] text-[#4a7a3a]" : isAccepted ? "bg-[#eef4ff] text-[#5676b3]" : isInvitee ? "bg-[#fff3ee] text-[#d57a58]" : "bg-[#f3f4f6] text-slate-500"}`}>
+                            {member.contributed ? "Paid" : isAccepted ? "Joined" : isInvitee ? "Invited" : "Pending"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
 
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                   <span className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
