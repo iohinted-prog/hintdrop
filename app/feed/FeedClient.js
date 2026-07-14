@@ -1176,6 +1176,7 @@ function MiniCalendar({
   const [isDeletingEvent, setIsDeletingEvent] = useState(false);
   const [localError, setLocalError] = useState("");
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [popoverDate, setPopoverDate] = useState(null);
 
   const monthLabel = useMemo(
     () =>
@@ -1206,7 +1207,7 @@ function MiniCalendar({
 
   const handleDayClick = (date) => {
     setSelectedDate(date);
-    setOpenPopover(true);
+    setPopoverDate(date);
   };
 
   const handleAddEvent = async () => {
@@ -1370,6 +1371,38 @@ function MiniCalendar({
 
 
 
+      {popoverDate && (() => {
+        const popKey = toKey(popoverDate);
+        const popEvents = eventsByDate[popKey] || [];
+        const prettyDate = popoverDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+        return (
+          <div className="mt-3 rounded-[18px] border border-[#efdcd2] bg-[#fffaf7] p-4 shadow-[0_8px_30px_rgba(88,46,31,0.12)]">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <p className="text-[12px] font-semibold text-slate-900">{prettyDate}</p>
+              <button type="button" onClick={() => setPopoverDate(null)} className="text-slate-400 hover:text-slate-600 text-xs">✕</button>
+            </div>
+            {popEvents.length === 0 ? (
+              <p className="text-[12px] text-slate-400">Nothing on this day</p>
+            ) : (
+              <div className="space-y-1.5">
+                {popEvents.map((event, i) => {
+                  const style = resolveEventStyle(event);
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full shrink-0 ${style.dot}`} />
+                      <span className="text-[12px] text-slate-700 truncate">{event.title}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <button type="button" onClick={() => { setIsCalendarModalOpen(true); setPopoverDate(null); }}
+              className="mt-3 w-full h-8 rounded-full border border-[#f0a384] bg-white text-[12px] font-semibold text-[#df7b59] hover:bg-[#fff4ee]">
+              Open calendar
+            </button>
+          </div>
+        );
+      })()}
       <button type="button" onClick={() => setIsCalendarModalOpen(true)}
         className="mt-4 w-full h-11 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-sm font-bold text-white shadow-lg">
         Open calendar
