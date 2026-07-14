@@ -573,15 +573,15 @@ export default function HomePageClient() {
               </span>
             </div>
 
-            <h1 className="mt-7 max-w-[580px] text-[48px] font-extrabold leading-[0.98] tracking-[-0.065em] text-slate-900 sm:text-[64px] lg:text-[82px]">
+            <h1 className="mt-7 max-w-[580px] text-[48px] font-extrabold leading-[0.98] tracking-[-0.065em] text-slate-900 sm:text-[64px] lg:text-[82px]" style={{fontFamily: "var(--font-nunito), system-ui, sans-serif", fontWeight: 800}}">
               Never forget.
               <br />
               <span className="text-[#ff8060]">Always thoughtful.</span>
             </h1>
 
             <p className="mt-7 max-w-[560px] text-[16px] leading-8 text-slate-500 sm:text-[18px]">
-              HintDrop helps you remember important moments, collect better gift
-              ideas, plan shared presents with friends, and browse curated picks
+              Save what you actually want. Remember who matters. Plan gifts together.
+              HintDrop keeps it all in one place — your hints, your people, your circles.
               when you need them.
             </p>
 
