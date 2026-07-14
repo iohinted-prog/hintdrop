@@ -3318,14 +3318,14 @@ export default function CirclesClient() {
         throw new Error("Circle was inserted, but the new row could not be returned.");
       }
 
-  async function sha256Hex(value) {
-  const bytes = new TextEncoder().encode(value);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", bytes);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+      async function sha256Hex(value) {
+      const bytes = new TextEncoder().encode(value);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", bytes);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-const inviteRows = await Promise.all(
+      const inviteRows = await Promise.all(
   selectedPeople.map(async (person) => {
     const rawEmail = String(person.email || "").trim();
     const normalizedEmail = rawEmail.toLowerCase();
@@ -3348,8 +3348,8 @@ const inviteRows = await Promise.all(
   })
 );
 
-let insertedInvites = [];
-if (inviteRows.length > 0) {
+      let insertedInvites = [];
+      if (inviteRows.length > 0) {
   const { data: inviteData, error: inviteError } = await supabase
     .from("circle_invites")
     .insert(inviteRows)
