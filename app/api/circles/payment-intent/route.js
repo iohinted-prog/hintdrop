@@ -170,6 +170,10 @@ export async function POST(request) {
     const body = await request.json().catch(() => ({}));
     const circleId = String(body.circleId || body.circle_id || "").trim();
     const amount = parseAmount(body.amount);
+    // Add Stripe processing fee on top so contributor covers it
+    // Stripe fee: 1.5% + 20p (UK cards)
+    const stripeFeeAmount = Math.ceil((amount * 0.015 + 0.20) * 100) / 100;
+    const amountWithStripeFee = Math.round((amount + stripeFeeAmount) * 100) / 100;
     const currency = String(body.currency || "GBP").trim().toUpperCase();
 
     if (!circleId) {
@@ -206,7 +210,7 @@ export async function POST(request) {
         user.email ||
         null,
       contributor_email: body.contributorEmail || user.email || null,
-      amount,
+      amount, // original contribution amount before Stripe fee
       currency,
       payment_status: "pending",
     };
@@ -228,7 +232,7 @@ export async function POST(request) {
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100),
+      amount: Math.round(amountWithStripeFee * 100),
       currency: currency.toLowerCase(),
       customer: customerId,
       automatic_payment_methods: {

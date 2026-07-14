@@ -427,7 +427,7 @@ function buildCircleViewModel(circleRow, inviteRows = [], currentUserName = "You
     })),
   ];
 
-  const totalTarget = Number(circleRow.total_target_amount || 0);
+  const totalTarget = Number(circleRow.item_price_amount || circleRow.item_target_amount || circleRow.total_target_amount || 0);
   const fullItemTitle = circleRow.item_title || "Shared gift";
   const peopleInPotCount = Math.max(members.length, 1);
   const recommendedContribution =
@@ -1161,8 +1161,19 @@ function CircleCard({
             </p>
             {circle?.pot?.active && (
               <>
-                <p className="mt-4 text-2xl font-bold text-slate-900">{moneyLabel}</p>
-                <p className="text-sm text-slate-500">{raisedLabel} raised</p>
+                {(() => {
+                  const acceptedCount = Math.max(safeMembers.filter(m => getAvatarState(m.status) === "accepted").length, 1);
+                  const itemPrice = circle?.pot?.target || 0;
+                  const hintdropFee = 1.50 / acceptedCount + (itemPrice / acceptedCount) * 0.02;
+                  const perPerson = roundCurrency(itemPrice / acceptedCount + hintdropFee);
+                  return (
+                    <>
+                      <p className="mt-4 text-2xl font-bold text-slate-900">{formatCurrency(perPerson, potCurrency)}</p>
+                      <p className="text-sm text-slate-500">per person · {acceptedCount} {acceptedCount === 1 ? "contributor" : "contributors"}</p>
+                      <p className="text-[11px] text-slate-400 mt-1">+Stripe fee at payment · inc. HintDrop fee</p>
+                    </>
+                  );
+                })()}
                 <div className="mt-3 flex flex-wrap justify-center gap-2">
                   <span className="rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">{circle?.pot?.fundingMode}</span>
                   <span className="rounded-full bg-[#edf3ff] px-3 py-1 text-[11px] font-semibold text-slate-600">{potCurrency}</span>
@@ -2950,10 +2961,11 @@ export default function CirclesClient() {
       item_image_url: itemImageUrl,
       item_description: itemDescription,
       currency: String(form.currency || "GBP").trim().toUpperCase(),
+      item_price_amount: totals.itemAmount,
       item_target_amount: totals.itemAmount,
       organising_fee_amount: totals.feeAmount,
       total_target_amount: totals.totalAmount,
-      fee_mode: "included_in_target",
+      fee_mode: "per_contributor",
       payout_mode: "release_to_organiser",
       funding_mode: fundingModeToDb(form.fundingMode),
       status: "draft",
