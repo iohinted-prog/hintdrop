@@ -1638,11 +1638,20 @@ function CreateCircleModal({
             </div>
 
             {form.goalType === 'amount' && (
-              <label className="block space-y-1.5">
-                <span className="text-sm font-medium text-slate-700">Target amount</span>
-                <input type="text" inputMode="decimal" value={form.goalValue} onChange={e => setForm(prev => ({ ...prev, goalValue: e.target.value }))}
-                  placeholder="220" className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]" />
-              </label>
+              <div className="space-y-3">
+                <label className="block space-y-1.5">
+                  <span className="text-sm font-medium text-slate-700">Currency</span>
+                  <select value={form.currency} onChange={e => setForm(prev => ({ ...prev, currency: e.target.value }))}
+                    className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]">
+                    {currencyOptions.map(c => <option key={c.code} value={c.code}>{c.symbol} {c.label}</option>)}
+                  </select>
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-sm font-medium text-slate-700">Item price</span>
+                  <input type="text" inputMode="decimal" value={form.goalValue} onChange={e => setForm(prev => ({ ...prev, goalValue: e.target.value }))}
+                    placeholder="220" className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]" />
+                </label>
+              </div>
             )}
 
             {form.itemSource === 'url' && form.goalType === 'item' && (
