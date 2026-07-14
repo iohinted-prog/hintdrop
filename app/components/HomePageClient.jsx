@@ -479,9 +479,7 @@ function ShopTeaserCard() {
 
 function DemoVideoSection() {
   return (
-      </section>
-
-      <footer className="mt-16 border-t border-[#eaded6]">
+          <footer className="mt-8 border-t border-[#eaded6]">
         <div className="flex flex-col gap-4 px-0 py-6 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between">
           <p className="text-xs text-slate-400">© 2026 HintDrop</p>
           <div className="flex gap-4">
