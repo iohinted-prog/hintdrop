@@ -479,17 +479,236 @@ function ShopTeaserCard() {
 
 function DemoVideoSection() {
   return (
-          <footer className="mt-8 border-t border-[#eaded6]">
-        <div className="flex flex-col gap-4 px-0 py-6 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between">
-          <p className="text-xs text-slate-400">© 2026 HintDrop</p>
-          <div className="flex gap-4">
-            <a href="/terms" className="hover:text-slate-700">Terms</a>
-            <a href="/privacy" className="hover:text-slate-700">Privacy</a>
-            <a href="/about" className="hover:text-slate-700">About</a>
-            <a href="/contact" className="hover:text-slate-700">Contact</a>
+    <section className="mt-20 rounded-[36px] border border-[#eeddd3] bg-white px-5 py-8 shadow-[0_18px_60px_rgba(173,101,72,0.08)] md:px-8 md:py-10">
+      <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+        <div>
+          <div className="inline-flex rounded-full bg-[#fff4ec] px-3 py-1 text-xs font-medium text-[#d77958]">
+            Product demo
+          </div>
+          <h2 className="mt-4 text-[30px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[38px]">
+            A guided walkthrough is coming here.
+          </h2>
+          <p className="mt-4 max-w-[58ch] text-[16px] leading-7 text-slate-600">
+            This section will house a short demo video showing how HintDrop connects
+            reminders, hints, circles, and curated shopping in one flow.
+          </p>
+
+          <div className="mt-6 space-y-3 text-sm text-slate-600">
+            <div className="flex items-center gap-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff2ea] text-[#d77958]">
+                1
+              </span>
+              <span>See a birthday coming up in the calendar.</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#edf4e9] text-[#5d7446]">
+                2
+              </span>
+              <span>Open saved hints or start a circle with friends.</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff2ea] text-[#d77958]">
+                3
+              </span>
+              <span>Browse the Shop and save the right gift idea.</span>
+            </div>
           </div>
         </div>
-      </footer>
+
+        <div className="rounded-[32px] border border-[#efdfd6] bg-[#fff8f4] p-4">
+          <div className="relative flex min-h-[340px] items-center justify-center overflow-hidden rounded-[28px] border border-dashed border-[#e8cfc1] bg-gradient-to-br from-[#fff4ed] via-[#fffaf7] to-[#f4f7f1]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,205,191,0.35),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(152,164,125,0.22),transparent_32%)]" />
+            <div className="relative z-10 flex flex-col items-center text-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-[0_18px_40px_rgba(145,100,76,0.12)]">
+                <span className="ml-1 text-3xl text-[#d77958]">▶</span>
+              </div>
+              <p className="mt-5 text-[12px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Demo placeholder
+              </p>
+              <h3 className="mt-2 text-[24px] font-semibold tracking-[-0.03em] text-slate-900">
+                Product walkthrough coming soon
+              </h3>
+              <p className="mt-3 max-w-[40ch] text-sm leading-6 text-slate-500">
+                Swap this area for your hosted demo video when it is ready.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function HomePageClient() {
+  return (
+    <main className="min-h-screen overflow-x-hidden bg-[#fffaf7] text-slate-800">
+      <div className="mx-auto max-w-[1320px] px-5 pb-16 pt-6 md:px-8">
+        <header className="grid items-center gap-5 pb-8 lg:grid-cols-[auto_1fr_auto] lg:gap-8">
+          <LandingLogo />
+
+          <nav className="hidden items-center justify-center gap-9 text-[15px] text-slate-600 lg:flex" />
+
+          <div className="flex items-center justify-start gap-4 whitespace-nowrap sm:justify-end">
+            <Link
+              href="/gift-shop"
+              className="inline-flex h-12 shrink-0 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-6 text-[15px] font-semibold text-slate-700 transition hover:bg-[#fff5f0]"
+            >
+              Gift Shop
+            </Link>
+            <a
+              href="#signup"
+              className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-6 text-[15px] font-bold text-white shadow-lg transition hover:translate-y-[-1px]"
+            >
+              Get started
+            </a>
+          </div>
+        </header>
+
+        <section className="grid items-start gap-10 xl:grid-cols-[minmax(420px,0.92fr)_minmax(560px,1.08fr)] xl:gap-10">
+          <div className="py-2 lg:pl-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[14px] font-bold text-[#eb7b58] shadow-sm">
+              <span>♡</span>
+              <span>
+                Your hints. Your people. Your moments.
+              </span>
+            </div>
+
+            <h1 className="mt-7 max-w-[580px] text-[48px] font-extrabold leading-[0.98] tracking-[-0.065em] text-slate-900 sm:text-[64px] lg:text-[82px]" style={{fontFamily: "var(--font-nunito), system-ui, sans-serif", fontWeight: 800}}">
+              Never forget.
+              <br />
+              <span className="text-[#ff8060]">Always thoughtful.</span>
+            </h1>
+
+            <p className="mt-7 max-w-[560px] text-[16px] leading-8 text-slate-500 sm:text-[18px]">
+              Save what you actually want. Remember who matters. Plan gifts together.
+              HintDrop keeps it all in one place — your hints, your people, your circles.
+              when you need them.
+            </p>
+
+            <div
+              id="signup"
+              className="mt-8 max-w-[540px] rounded-[28px] border border-slate-200 bg-white p-6 shadow-xl md:p-7"
+            >
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
+                    Join HintDrop
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Save hints, remember dates, plan gifts with friends.
+                    Sign in to get started.
+                  </p>
+                </div>
+                <div className="rounded-full bg-[#fff0e8] px-3 py-2 text-[12px] font-bold text-[#ea7451]">
+                  Google
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <GoogleAuthButtons variant="hero-primary" />
+
+                <div className="rounded-[22px] border border-[#f3e4db] bg-[#fff8f4] p-4">
+                  <p className="text-sm leading-6 text-slate-600">
+                    New here? Use Google to create your account.
+                    Returning users can log in the exact same way.
+                  </p>
+                </div>
+              </div>
+
+              <p className="mt-4 text-xs leading-5 text-slate-500">
+                By continuing, you agree to HintDrop’s{" "}
+                <Link
+                  href="/terms"
+                  className="font-medium text-slate-700 underline underline-offset-2"
+                >
+                  Terms
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="/privacy"
+                  className="font-medium text-slate-700 underline underline-offset-2"
+                >
+                  Privacy Policy
+                </Link>
+                .
+              </p>
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center gap-3.5 text-[15px] text-slate-500">
+              <AvatarStack />
+              <p className="max-w-[320px]">
+                Join thoughtful gifters staying on top of birthdays, milestones,
+                and group surprises.
+              </p>
+            </div>
+          </div>
+
+          <div className="relative min-w-0">
+            <div className="rounded-[34px] border border-[#efd8ce] bg-[#fff7f2] p-4 shadow-[0_25px_80px_rgba(173,101,72,0.16)] sm:p-5">
+              <div className="rounded-[28px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
+                <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[16px] font-bold text-white shadow-sm ring-2 ring-[#f3dfd4]">
+                      M
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold tracking-tight text-slate-900">
+                        Maya
+                      </div>
+                      <div className="text-xs text-slate-500">Hints</div>
+                    </div>
+                  </div>
+                  <div className="hidden items-center gap-4 text-sm text-slate-500 md:flex">
+                    <span>Feed</span>
+                    <span>Circles</span>
+                    <span>Shop</span>
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <h2 className="text-[28px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[34px]">
+                    Your hints.
+                  </h2>
+                  <p className="mt-2 text-[14px] leading-6 text-slate-600">
+                    Keep the useful details that help you remember people,
+                    conversations, gift ideas, and follow-ups.
+                  </p>
+
+                  <div className="mt-5 grid grid-cols-3 gap-3">
+                    {hints.map((hint) => (
+                      <HintCard
+                        key={hint.id}
+                        title={hint.title}
+                        text={hint.text}
+                        image={hint.image}
+                        tag={hint.tag}
+                        tag2={hint.tag2}
+                        starred={hint.starred}
+                        rotate={hint.rotate}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <div className="rounded-full bg-[#2f5d50] px-4 py-2 text-sm font-semibold text-white">
+                      Add hint
+                    </div>
+                    <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600">
+                      Organise cards
+                    </div>
+                    <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600">
+                      Customise view
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+      </section>
+
     </div>
   </main>
   );
