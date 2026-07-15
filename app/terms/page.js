@@ -69,26 +69,11 @@ export default function TermsPage() {
                 to:
               </p>
               <ul className="space-y-3 text-[17px] leading-8 text-slate-700">
-                <li>
-                  - Use the Service for unlawful, misleading, fraudulent, or
-                  abusive purposes.
-                </li>
-                <li>
-                  - Infringe the rights of others, including privacy,
-                  intellectual property, or publicity rights.
-                </li>
-                <li>
-                  - Upload malicious code, interfere with the Service, scrape
-                  the platform without permission, or attempt to gain
-                  unauthorised access.
-                </li>
-                <li>
-                  - Harass, spam, exploit, or harm other users.
-                </li>
-                <li>
-                  - Use HintDrop to collect, expose, or share personal
-                  information improperly.
-                </li>
+                <li>- Use the Service for unlawful, misleading, fraudulent, or abusive purposes.</li>
+                <li>- Infringe the rights of others, including privacy, intellectual property, or publicity rights.</li>
+                <li>- Upload malicious code, interfere with the Service, scrape the platform without permission, or attempt to gain unauthorised access.</li>
+                <li>- Harass, spam, exploit, or harm other users.</li>
+                <li>- Use HintDrop to collect, expose, or share personal information improperly.</li>
               </ul>
             </section>
 
@@ -103,14 +88,14 @@ export default function TermsPage() {
                 or upload.
               </p>
               <p className="text-[17px] leading-8 text-slate-700">
-                By submitting content to HintDrop, you grant us a
-                non-exclusive, worldwide, royalty-free license to host, store,
-                reproduce, adapt, display, and otherwise use that content as
-                needed to operate, improve, and provide the Service.
+                By submitting content to HintDrop, you grant us a non-exclusive,
+                worldwide, royalty-free license to host, store, reproduce,
+                adapt, and display that content as needed to operate, improve,
+                and provide the Service.
               </p>
               <p className="text-[17px] leading-8 text-slate-700">
-                You are solely responsible for your content and for ensuring
-                you have the rights needed to submit it.
+                You are solely responsible for your content and for ensuring you
+                have the rights needed to submit it.
               </p>
             </section>
 
@@ -143,50 +128,14 @@ export default function TermsPage() {
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 HintDrop offers a group gifting feature called Circles that
-                allows a group of people to pool contributions toward a shared
-                purchase. By creating or joining a circle, you agree to the
-                following:
+                helps users coordinate around a shared gift or occasion.
               </p>
               <ul className="space-y-3 text-[17px] leading-8 text-slate-700">
-                <li>
-                  - <strong>Organiser responsibility.</strong> The person who
-                  creates a circle (the organiser) is responsible for using the
-                  pooled funds to make the intended purchase. HintDrop
-                  facilitates the collection and transfer of funds where the
-                  feature is enabled, but HintDrop is not a party to the
-                  transaction between organisers and members.
-                </li>
-                <li>
-                  - <strong>Pot types.</strong> Circles may operate under one
-                  of several funding modes, such as flexible contributions,
-                  all-or-nothing funding, or organiser top-up. The applicable
-                  mode should be shown clearly before a user joins a circle.
-                </li>
-                <li>
-                  - <strong>Fees.</strong> Any platform fee or payment
-                  processing fee will be disclosed clearly before a user
-                  confirms participation.
-                </li>
-                <li>
-                  - <strong>Payments.</strong> If payments are enabled for a
-                  circle, the payment flow may be provided through third-party
-                  payment services. HintDrop is not responsible for disputes
-                  between members relating to contributions, refunds, or the
-                  underlying purchase unless required by law.
-                </li>
-                <li>
-                  - <strong>Refunds.</strong> Any refund terms shown during the
-                  contribution flow will govern the applicable circle. If no
-                  refund terms are shown, you should assume contributions are
-                  final except where required by law or where the payment
-                  provider requires otherwise.
-                </li>
-                <li>
-                  - <strong>Disputes between members.</strong> HintDrop is a
-                  platform and is not responsible for disputes between circle
-                  members or between members and organisers. We encourage users
-                  to only participate in circles with people they trust.
-                </li>
+                <li>- <strong>Coordination only.</strong> At this time, HintDrop does not process, hold, receive, or transfer payments for circles.</li>
+                <li>- <strong>Arrangements between users.</strong> Any money collection, reimbursement, or purchase arrangement happens directly between users outside the platform.</li>
+                <li>- <strong>Organiser responsibility.</strong> The person creating or managing a circle is responsible for how they organise the gift, communicate with participants, and handle any off-platform arrangements.</li>
+                <li>- <strong>No payment liability.</strong> HintDrop is not responsible for payment disputes, failed reimbursements, missing funds, chargebacks, or disagreements between participants relating to off-platform payments or purchases.</li>
+                <li>- <strong>Use at your discretion.</strong> You should only join circles or make off-platform payment arrangements with people you know and trust.</li>
               </ul>
             </section>
 
@@ -232,8 +181,8 @@ export default function TermsPage() {
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 The Service, including its software, branding, designs, text,
-                graphics, logos, and other content provided by HintDrop, is
-                owned by or licensed to HintDrop and is protected by applicable
+                graphics, logos, and other content provided by HintDrop, is owned
+                by or licensed to HintDrop and is protected by applicable
                 intellectual property laws. Except as expressly allowed in these
                 Terms, you may not copy, modify, distribute, sell, or reverse
                 engineer any part of the Service.
@@ -258,10 +207,9 @@ export default function TermsPage() {
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 HintDrop is provided on an &quot;as is&quot; and &quot;as
-                available&quot; basis to the fullest extent permitted by law.
-                We do not guarantee that the Service will always be
-                uninterrupted, error-free, secure, or suitable for every
-                purpose.
+                available&quot; basis to the fullest extent permitted by law. We
+                do not guarantee that the Service will always be uninterrupted,
+                error-free, secure, or suitable for every purpose.
               </p>
             </section>
 
@@ -305,9 +253,9 @@ export default function TermsPage() {
               <p className="text-[17px] leading-8 text-slate-700">
                 We may update these Terms from time to time. If we make material
                 changes, we will post the updated Terms here and revise the
-                &quot;Last updated&quot; date above. By continuing to use
-                HintDrop after those changes become effective, you agree to the
-                updated Terms.
+                &quot;Last updated&quot; date above. By continuing to use HintDrop
+                after those changes become effective, you agree to the updated
+                Terms.
               </p>
             </section>
 
