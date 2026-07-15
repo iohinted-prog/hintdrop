@@ -297,8 +297,9 @@ export default function AppShell({ children }) {
                   </Link>
                 );
               })}
-            </nav>
+          </nav>
 
+          <div className="flex items-center justify-end gap-3">
             <div className="relative" ref={notifRef}>
               <button type="button" onClick={() => setNotifOpen(prev => !prev)}
                 className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white shadow-sm transition hover:bg-[#fff5f0]"
