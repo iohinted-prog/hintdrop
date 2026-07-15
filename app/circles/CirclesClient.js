@@ -2946,7 +2946,7 @@ export default function CirclesClient() {
                 <div className="rounded-[26px] border border-[#f0dfd6] bg-[#fffdfa] p-5">
                   <button type="button" onClick={() => setIsContactsManagerOpen(true)} className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900 hover:text-[#df7b59] transition">Contacts</button>
                   <p className="mt-1 text-xs text-slate-500">Invite people into shared circles.</p>
-                  <div className="mt-4 max-h-[400px] overflow-y-auto space-y-3 pr-1">
+                  <div className="mt-4 max-h-[400px] overflow-y-auto space-y-3 pr-1 py-1">
                     {isLoadingContacts ? (
                       <div className="rounded-[22px] border border-dashed border-[#e5d8cf] bg-[#fffaf7] p-4 text-[13px] leading-6 text-slate-500">
                         Loading contacts...
