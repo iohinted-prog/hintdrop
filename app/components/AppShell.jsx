@@ -188,7 +188,7 @@ export default function AppShell({ children }) {
       const { data: notifData } = await supabase
         .from("notifications")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", user.id)
         .is("read_at", null)
         .order("created_at", { ascending: false })
         .limit(20);
