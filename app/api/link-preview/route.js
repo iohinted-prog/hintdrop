@@ -463,7 +463,7 @@ async function fetchLinkPreview(inputUrl) {
         "X-Linkpreview-Api-Key": apiKey,
       },
     },
-    2500
+    5000
   );
 
   const raw = await res.text();
