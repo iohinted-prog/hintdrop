@@ -14,9 +14,10 @@ export async function GET() {
 
     if (error) throw error;
 
-    return NextResponse.json({
-      products: Array.isArray(data) ? data.map(normalizeProductRow) : [],
-    });
+    return NextResponse.json(
+      { products: Array.isArray(data) ? data.map(normalizeProductRow) : [] },
+      { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } }
+    );
   } catch (error) {
     return NextResponse.json(
       { error: errorToMessage(error), products: [] },
