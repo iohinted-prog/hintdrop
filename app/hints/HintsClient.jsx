@@ -1621,7 +1621,6 @@ export default function HintsClient() {
         body: newHint.retailer || "",
         cta_label: "See Hints",
         cta_href: "/hints",
-        visibility: "contacts",
         occurred_at: new Date().toISOString(),
         metadata: {
           actor_name: currentUser.user_metadata?.full_name || currentUser.email || "You",
