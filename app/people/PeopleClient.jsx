@@ -75,15 +75,34 @@ export default function PeopleClient() {
   const [profileModal, setProfileModal] = useState(null);
   const [search, setSearch] = useState("");
 
+  const [sessionUser, setSessionUser] = useState(null);
+
   async function loadContacts() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+    setSessionUser(user);
     const { data } = await supabase.from("contact_public_state").select("*")
       .eq("owner_user_id", user.id).order("name", { ascending: true });
     setContacts((data || []).map(buildContact));
     setLoading(false);
   }
   useEffect(() => { loadContacts(); }, []);
+
+  async function handleSaveContact(payload) {
+    if (!sessionUser?.id) throw new Error("You must be signed in.");
+    const cleanedEmail = String(payload.email || "").trim().toLowerCase();
+    if (!cleanedEmail) throw new Error("Email is required.");
+    const { error } = await supabase.functions.invoke("send-contact-invite", {
+      body: {
+        email: cleanedEmail,
+        name: payload.name,
+        role: Array.isArray(payload.relationshipTypes) && payload.relationshipTypes.length
+          ? payload.relationshipTypes[0] : "Friend",
+      },
+    });
+    if (error) throw new Error("Failed to send contact invite.");
+    await loadContacts();
+  }
 
   async function handleDelete(contact) {
     if (!confirm(`Remove ${contact.name} from your contacts?`)) return;
@@ -120,7 +139,7 @@ export default function PeopleClient() {
         )}
       </div>
       <AddContactModal key={addKey} modalKey={addKey} open={isAddOpen} onClose={() => setIsAddOpen(false)}
-        onSave={async () => { await loadContacts(); setIsAddOpen(false); }} supabase={supabase} />
+        onSave={async (payload) => { await handleSaveContact(payload); setIsAddOpen(false); }} supabase={supabase} />
       {editingContact && (
         <EditContactModal contact={editingContact} onClose={() => setEditingContact(null)}
           onSave={async () => { await loadContacts(); setEditingContact(null); }} />
