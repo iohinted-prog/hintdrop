@@ -1976,12 +1976,13 @@ export default function FeedClient() {
         const user = await loadSession();
         if (!active || !user) return;
 
-        const loadedContacts = await loadContacts(user.id);
-        const [,, loadedEvents] = await Promise.all([
-          loadFeedItems(user.id, loadedContacts),
+        // Start invites and calendar immediately; feed waits for contacts
+        const [loadedContacts] = await Promise.all([
+          loadContacts(user.id),
           loadInvites(user),
           loadCalendarEvents(user.id),
         ]);
+        await loadFeedItems(user.id, loadedContacts);
         // Merge contact birthdays into calendar after contacts are loaded
         const birthdayEvents = buildContactBirthdayEvents(loadedContacts);
         if (birthdayEvents.length) {
