@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/admin";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -11,7 +11,7 @@ export async function GET(request) {
     return NextResponse.redirect(new URL("/circles?error=invalid_link", request.url));
   }
 
-  const supabase = createClient();
+  const supabase = getSupabaseAdmin();
 
   // Verify token matches circle organiser
   const { data: circle } = await supabase
