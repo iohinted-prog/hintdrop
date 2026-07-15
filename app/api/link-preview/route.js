@@ -236,7 +236,9 @@ const BLOCKED_RETAILERS = [
   "amazon.es", "amazon.it", "amazon.ca", "amazon.com.au",
   "amazon.co.jp", "amazon.in",
   // Confirmed HTML failures
-  "harrods.com",
+  "harrods.com", "etsy.com", "next.co.uk",
+  "net-a-porter.com", "thewhitecompany.com",
+  "notonthehighstreet.com",
 ];
 
 function isBlockedRetailer(url = "") {
