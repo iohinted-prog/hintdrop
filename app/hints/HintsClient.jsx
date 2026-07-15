@@ -332,7 +332,7 @@ function buildFallbackGradient(index) {
 
 function shortenTitle(title = "", retailer = "") {
   const source = String(title || "").trim();
-  if (!source) return "Saved hint";
+  if (!source) return "Hint";
 
   const cleanRetailer = String(retailer || "")
     .replace(/^www\./i, "")
@@ -382,7 +382,7 @@ function shortenTitle(title = "", retailer = "") {
     return true;
   });
 
-  if (!words.length) return "Saved hint";
+  if (!words.length) return "Hint";
   const result = words.slice(0, 2).join(" ").trim();
   return result.charAt(0).toUpperCase() + result.slice(1);
 }
@@ -456,7 +456,7 @@ function buildDraftFromPreview(data, rawUrl) {
     typeof data?.numericPrice === "number" ? data.numericPrice : extractNumericPrice(data?.priceText);
   const priceMeta = sanitisePrice(data?.priceText, extractedNumericPrice);
   const retailer = data?.siteName || normaliseRetailer(rawUrl);
-  const title = shortenTitle(data?.title || "Saved hint", retailer);
+  const title = shortenTitle(data?.title || "Hint", retailer);
   const image = typeof data?.image === "string" && data.image.startsWith("http") ? data.image : "";
   const finalUrl = data?.url || normaliseInputUrl(rawUrl);
   const needsReview = Boolean(data?.needsReview) || !image || !title;
@@ -928,7 +928,7 @@ function HintCard({
             </div>
           )}
 
-          {hint.needsReview && (
+          {hint.needsReview && hint.image && (
             <div className="rounded-full border border-[#f6d2c2] bg-[#fff6f1] px-3 py-1 text-[11px] font-semibold text-[#c46545]">
               Needs review
             </div>
@@ -1211,7 +1211,7 @@ export default function HintsClient() {
       setHints(
         (data || []).map((row, index) => ({
           id: row.id,
-          title: row.title || "Saved hint",
+          title: row.title || "Hint",
           retailer: row.retailer || normaliseRetailer(row.url || ""),
           numericPrice: row.numeric_price,
           rawPrice: row.price_text || "",
@@ -1319,7 +1319,7 @@ export default function HintsClient() {
   async function saveEditChanges() {
     if (!currentUser || editingHintId == null) return;
 
-    const trimmedTitle = editForm.title.trim() || "Saved hint";
+    const trimmedTitle = editForm.title.trim() || "Hint";
     const trimmedUrl = editForm.url.trim();
     const trimmedRetailer = editForm.retailer?.trim() || normaliseRetailer(trimmedUrl);
     const parsedNumericPrice = extractNumericPrice(editForm.priceInput);
@@ -1562,7 +1562,7 @@ export default function HintsClient() {
     beginSaveBusy();
 
     try {
-      const title = newHintForm.title.trim() || pendingHint.title || "Saved hint";
+      const title = newHintForm.title.trim() || pendingHint.title || "Hint";
       const url = newHintForm.url.trim() || pendingHint.url;
       const retailer = newHintForm.retailer?.trim() || normaliseRetailer(url);
       const numericPrice = extractNumericPrice(newHintForm.priceInput);
