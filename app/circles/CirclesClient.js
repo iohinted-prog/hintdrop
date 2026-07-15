@@ -2502,16 +2502,29 @@ export default function CirclesClient() {
 
   async function handleMarkPaid(circle, member) {
     if (!sessionUser?.id) return;
-    if (!member.userId && !member.inviteId) return;
+    if (!member.userId) return;
     try {
       const newStatus = member.contributed ? 'pending_payment' : 'confirmed';
-      await supabase.from('circle_contributions').upsert({
+      const { error } = await supabase.from('circle_contributions').upsert({
         circle_id: circle.id,
         user_id: member.userId,
-        amount: 0,
+        amount: Math.max(member.amount || 0, 0.01),
         currency: circle?.pot?.currency || 'GBP',
         payment_status: newStatus,
       }, { onConflict: 'circle_id,user_id' });
+      if (error) { console.error('Mark paid upsert error:', error); return; }
+      // Notify the member if marking as confirmed
+      if (newStatus === 'confirmed' && member.userId !== sessionUser.id) {
+        supabase.from('notifications').insert({
+          user_id: member.userId,
+          actor_user_id: sessionUser.id,
+          type: 'circle_paid',
+          entity_id: circle.id,
+          title: 'Your contribution has been confirmed',
+          body: circle.name || circle?.pot?.item || 'Circle',
+          data: { circle_id: circle.id, circle_name: circle.name },
+        }).catch(() => {});
+      }
       await refreshCircles();
     } catch (e) {
       console.error('Mark paid failed:', e);
