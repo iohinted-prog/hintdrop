@@ -148,8 +148,9 @@ export default function AppShell({ children }) {
 
   const navItems = [
     { href: "/feed", label: "Feed" },
-    { href: "/hints", label: "Hints" },
     { href: "/circles", label: "Circles" },
+    { href: "/hints", label: "Hints", highlight: true },
+    { href: "/people", label: "People" },
     { href: "/shop", label: "Shop" },
   ];
 
