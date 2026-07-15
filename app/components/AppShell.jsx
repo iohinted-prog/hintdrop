@@ -268,30 +268,29 @@ export default function AppShell({ children }) {
   return (
     <div className="min-h-screen bg-[#fffaf7] text-slate-800">
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
-          <Link href="/feed" className="flex items-center gap-3.5">
+        <div className="mx-auto grid max-w-[1380px] grid-cols-[1fr_auto_1fr] items-center px-5 py-4 md:px-8">
+          <Link href="/feed" className="flex items-center gap-3.5 shrink-0">
             <LogoMark />
             <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
               Hint<span className="text-[#ff875d]">Drop</span>
             </div>
           </Link>
 
-          <div className="flex items-center gap-3 sm:gap-4">
-            <nav className="hidden md:flex items-center justify-center gap-1">
+          <nav className="hidden md:flex items-center justify-center gap-1">
               {navItems.map((item) => {
                 const isActive =
                   pathname === item.href || pathname.startsWith(`${item.href}/`);
 
-                const icons = { "/feed": "🏠", "/hints": "🎁", "/circles": "⭕", "/shop": "🛍️" };
+                const icons = { "/feed": "🏠", "/circles": "⭕", "/hints": "🎁", "/people": "👥", "/shop": "🛍️" };
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-[13px] font-semibold transition ${
-                      isActive
-                        ? "bg-[#ff875d] text-white shadow-sm"
-                        : "text-slate-500 hover:bg-[#fff5f0] hover:text-slate-800"
-                    }`}
+                    className={`inline-flex items-center justify-center gap-2 rounded-full font-semibold transition ${
+                      item.href === "/hints"
+                        ? \`h-12 px-5 text-[14px] bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white shadow-lg \${isActive ? "ring-2 ring-offset-1 ring-[#ff875d]" : "hover:opacity-90"}\`
+                        : \`h-11 px-4 text-[13px] \${isActive ? "bg-[#ff875d] text-white shadow-sm" : "text-slate-500 hover:bg-[#fff5f0] hover:text-slate-800"}\`
+                    }\`}
                   >
                     <span>{icons[item.href]}</span>
                     <span>{item.label}</span>
