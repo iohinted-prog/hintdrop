@@ -2511,6 +2511,7 @@ export default function CirclesClient() {
         amount: Math.max(member.amount || 0, 0.01),
         currency: circle?.pot?.currency || 'GBP',
         payment_status: newStatus,
+        updated_at: new Date().toISOString(),
       }, { onConflict: 'circle_id,user_id' });
       if (error) { console.error('Mark paid upsert error:', error); return; }
       // Notify the member if marking as confirmed
