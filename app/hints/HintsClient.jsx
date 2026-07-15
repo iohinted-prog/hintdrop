@@ -1606,6 +1606,35 @@ export default function HintsClient() {
 
       if (error) throw new Error(errorToMessage(error));
 
+      // Insert feed item — fire and forget
+      const allHints = [newHint, ...hints];
+      const publicHints = allHints.filter(h => !h.private);
+      const previewHints = publicHints.slice(0, 2).map(h => ({
+        id: h.id, title: h.title, image_url: h.image || "", retailer: h.retailer,
+      }));
+      supabase.from("feed_items").insert({
+        owner_user_id: currentUser.id,
+        actor_user_id: currentUser.id,
+        family: "hint",
+        item_type: "hint_saved",
+        headline: `Added a new hint${newHint.title && newHint.title !== "Hint" ? ": " + newHint.title : ""}`,
+        body: newHint.retailer || "",
+        cta_label: "See Hints",
+        cta_href: "/hints",
+        visibility: "contacts",
+        occurred_at: new Date().toISOString(),
+        metadata: {
+          actor_name: currentUser.user_metadata?.full_name || currentUser.email || "You",
+          actor_avatar_url: currentUser.user_metadata?.avatar_url || null,
+          hint_title: newHint.title,
+          hint_image: newHint.image || "",
+          hint_retailer: newHint.retailer,
+          hint_count: publicHints.length,
+          preview_hints: previewHints,
+          social_enabled: true,
+        },
+      }).catch(() => {});
+
       if (image) {
         const ratio = await loadImageAspectRatio(image);
         if (ratio) {
