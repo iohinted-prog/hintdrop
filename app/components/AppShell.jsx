@@ -154,6 +154,7 @@ export default function AppShell({ children }) {
   ];
 
   const [inviteCount, setInviteCount] = useState(0);
+  const [activityNotifs, setActivityNotifs] = useState([]);
   const [invites, setInvites] = useState([]);
   const [circleNotifs, setCircleNotifs] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -183,6 +184,16 @@ export default function AppShell({ children }) {
       profileMap = (profiles || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
     }
     const merged = all.map(i => ({ ...i, inviter: profileMap[i.source === "circle" ? i.user_id : i.inviter_user_id] || null }));
+    // Load activity notifications (reactions, comments)
+      const { data: notifData } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", userId)
+        .is("read_at", null)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      setActivityNotifs(notifData || []);
+
     // Load circle notifications for organiser
     const { data: cnData } = await supabase
       .from("circle_notifications")
@@ -304,6 +315,33 @@ export default function AppShell({ children }) {
                     <h3 className="mt-0.5 text-[17px] font-semibold text-slate-900">Pending invites</h3>
                   </div>
                   <div className="max-h-[400px] overflow-y-auto p-4 space-y-3">
+                    {activityNotifs.map(notif => (
+                      <div key={notif.id} className="rounded-[18px] border border-[#e6ddd7] bg-white p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
+                            {notif.data?.actor_avatar_url
+                              ? <img src={notif.data.actor_avatar_url} className="h-full w-full object-cover" alt="" />
+                              : (notif.data?.actor_name || "?")[0]?.toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-slate-900 truncate">{notif.title}</p>
+                            {notif.body && <p className="text-xs text-slate-500 truncate mt-0.5">{notif.body}</p>}
+                          </div>
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${notif.type === "reaction" ? "bg-[#fff4ee] text-[#df7b59]" : "bg-[#eef4ff] text-[#5676b3]"}`}>
+                            {notif.type === "reaction" ? "React" : "Comment"}
+                          </span>
+                        </div>
+                        <button type="button"
+                          onClick={async () => {
+                            await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", notif.id);
+                            setActivityNotifs(prev => prev.filter(n => n.id !== notif.id));
+                            setInviteCount(prev => Math.max(0, prev - 1));
+                          }}
+                          className="mt-2 text-[11px] text-slate-400 hover:text-slate-600">
+                          Mark as read
+                        </button>
+                      </div>
+                    ))}
                     {circleNotifs.map(notif => (
                       <div key={notif.id} className="rounded-[18px] border border-[#fde0d0] bg-[#fff4f2] p-4">
                         <p className="text-sm font-semibold text-slate-900 mb-1">Circle update</p>
