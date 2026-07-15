@@ -1905,32 +1905,25 @@ export default function FeedClient() {
       invite_token: null,
     }));
 
-    // Fetch inviter names separately since PostgREST join is ambiguous
-    // due to two foreign keys from contact_invites to profiles.
+    // Fetch both sets of inviter profiles in parallel
     const inviterIds = [...new Set(contactInvites.map((i) => i.inviter_user_id).filter(Boolean))];
-    let inviterMap = {};
-    if (inviterIds.length) {
-      const { data: inviterProfiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, invite_name")
-        .in("id", inviterIds);
-      (inviterProfiles || []).forEach((p) => {
-        inviterMap[p.id] = p;
-      });
-    }
-
     const circleInvites = (circleResult.data || []);
     const circleInviterIds = [...new Set(circleInvites.map((i) => i.user_id).filter(Boolean))];
+
+    const [inviterProfiles, circleInviterProfiles] = await Promise.all([
+      inviterIds.length
+        ? supabase.from("profiles").select("id, full_name, invite_name").in("id", inviterIds).then(r => r.data || [])
+        : Promise.resolve([]),
+      circleInviterIds.length
+        ? supabase.from("profiles").select("id, full_name, invite_name, avatar_url").in("id", circleInviterIds).then(r => r.data || [])
+        : Promise.resolve([]),
+    ]);
+
+    let inviterMap = {};
+    inviterProfiles.forEach((p) => { inviterMap[p.id] = p; });
+
     let circleInviterMap = {};
-    if (circleInviterIds.length) {
-      const { data: circleInviterProfiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, invite_name, avatar_url")
-        .in("id", circleInviterIds);
-      (circleInviterProfiles || []).forEach((p) => {
-        circleInviterMap[p.id] = p;
-      });
-    }
+    circleInviterProfiles.forEach((p) => { circleInviterMap[p.id] = p; });
 
     const merged = [
       ...circleInvites.map((invite) => ({
