@@ -1682,12 +1682,7 @@ export default function FeedClient() {
         id: row.contact_id,
         name: row.name || row.email || "Unnamed contact",
         role: contactState === "invitee" ? "Invitee" : (row.role || "Friend"),
-        note:
-          contactState === "user"
-            ? "HintDrop user"
-            : contactState === "invitee"
-              ? "Invitee"
-              : "Contact",
+        note: Array.isArray(row.interests) && row.interests.length ? row.interests.slice(0, 3).join(" · ") : (row.role || "Friend"),
         initials: getInitials(row.name || row.email || "C"),
         email: row.email || "",
         avatarUrl: row.avatar_url || null,
@@ -1696,7 +1691,6 @@ export default function FeedClient() {
         profileId: row.profile_id,
         publicState: row.public_state,
         birthday: row.birthday || null,
-        interests: Array.isArray(row.interests) ? row.interests : [],
         interests: Array.isArray(row.interests) ? row.interests : [],
         isDemo: false,
         raw: row,
