@@ -1770,7 +1770,7 @@ export default function HintsClient() {
             />
 
             {isLoading ? (
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6">
                 {loadingColumns.map((column, columnIndex) => (
                   <div key={`loading-column-${columnIndex}`} className="space-y-6">
                     {column.map((ratio, index) => (
@@ -1788,7 +1788,7 @@ export default function HintsClient() {
                 onDragEnd={handleDragEnd}
                 onDragCancel={handleDragCancel}
               >
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                <div className="hidden md:grid grid-cols-3 gap-6">
                   {columns.map((columnHints, columnIndex) => (
                     <SortableContext
                       key={`column-${columnIndex}`}
@@ -1830,8 +1830,26 @@ export default function HintsClient() {
                   ) : null}
                 </DragOverlay>
               </DndContext>
+              {/* Mobile 2-col masonry — no drag */}
+              <div className="md:hidden columns-2 gap-3 mt-0">
+                {visibleHints.map((hint) => (
+                  <div key={hint.id} className="mb-3 break-inside-avoid">
+                    <HintCard
+                      hint={hint}
+                      imageRatios={imageRatios}
+                      onEdit={openEditModal}
+                      onToggleStarred={toggleStarred}
+                      onTogglePrivate={togglePrivate}
+                      isDragging={false}
+                      dragHandleAttributes={{}}
+                      dragHandleListeners={{}}
+                      formatCurrency={formatCurrency}
+                    />
+                  </div>
+                ))}
+              </div>
             ) : (
-              <div className="columns-2 gap-4 md:columns-3">
+              <div className="columns-2 gap-3 md:columns-3 md:gap-6">
                 {demoHints.map((hint) => (
                   <div key={hint.id} className="mb-6 break-inside-avoid">
                     <HintCard
