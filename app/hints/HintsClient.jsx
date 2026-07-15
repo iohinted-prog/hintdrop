@@ -909,18 +909,14 @@ function HintCard({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="pointer-events-auto flex min-h-[40px] cursor-grab items-center gap-1 rounded-full border border-white/45 bg-white/72 px-3 py-2 text-[11px] font-semibold text-slate-700 backdrop-blur-md active:cursor-grabbing"
+            className="pointer-events-auto hidden sm:flex min-h-[40px] cursor-grab items-center gap-1 rounded-full border border-white/45 bg-white/72 px-3 py-2 text-[11px] font-semibold text-slate-700 backdrop-blur-md active:cursor-grabbing"
             {...dragHandleAttributes}
             {...dragHandleListeners}
           >
             ⋮⋮ Drag
           </button>
 
-          {hint.starred && (
-            <div className="rounded-full border border-[#ffd8c9] bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
-              Top pick
-            </div>
-          )}
+
 
           {hint.private && (
             <div className="rounded-full border border-white/45 bg-white/72 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-md">
