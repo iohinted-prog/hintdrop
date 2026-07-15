@@ -1618,6 +1618,7 @@ export default function HintsClient() {
         actor_user_id: currentUser.id,
         family: "hint",
         item_type: "hint_save_session",
+        visibility: "contacts",
         headline: `Added a new hint${newHint.title && newHint.title !== "Hint" ? ": " + newHint.title : ""}`,
         body: newHint.retailer || "",
         cta_label: "See Hints",
