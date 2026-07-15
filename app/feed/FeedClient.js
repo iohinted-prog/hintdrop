@@ -654,6 +654,39 @@ function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentU
         setClaims(prev => prev.filter(c => c.id !== tempId));
       } else if (data) {
         setClaims(prev => prev.map(c => c.id === tempId ? data : c));
+        // Feed update visible to contacts but not hint owner
+        supabase.from("feed_items").insert({
+          owner_user_id: currentUserId,
+          actor_user_id: currentUserId,
+          family: "hint",
+          item_type: "hint_save_session",
+          headline: "is getting " + (hint.title || "a hint"),
+          body: hint.retailer || "",
+          cta_label: "See Hints",
+          cta_href: "/hints",
+          visibility: "contacts",
+          occurred_at: new Date().toISOString(),
+          metadata: {
+            actor_name: "",
+            hint_title: hint.title,
+            hint_image: hint.image_url || "",
+            hint_retailer: hint.retailer || "",
+            hide_from_user_id: userId,
+            social_enabled: true,
+            preview_hints: [{ id: hint.id, title: hint.title, image_url: hint.image_url || "", retailer: hint.retailer || "" }],
+            hint_count: 1,
+          },
+        }).catch(() => {});
+        // Notify hint owner
+        supabase.from("notifications").insert({
+          user_id: userId,
+          actor_user_id: currentUserId,
+          type: "hint_claim",
+          entity_id: hint.id,
+          title: "Someone is getting one of your hints",
+          body: hint.title || "",
+          data: { hint_id: hint.id, hint_title: hint.title },
+        }).catch(() => {});
       }
     }
   }
