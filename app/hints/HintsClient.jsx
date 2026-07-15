@@ -1782,7 +1782,7 @@ export default function HintsClient() {
                 onDragEnd={handleDragEnd}
                 onDragCancel={handleDragCancel}
               >
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6">
+                <div className="hidden md:grid grid-cols-3 gap-6">
                   {columns.map((columnHints, columnIndex) => (
                     <SortableContext
                       key={`column-${columnIndex}`}
@@ -1804,6 +1804,8 @@ export default function HintsClient() {
                       </div>
                     </SortableContext>
                   ))}
+                  </div>
+                  </div>
                 </div>
 
                 <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.25, 1, 0.5, 1)" }}>
@@ -1822,6 +1824,24 @@ export default function HintsClient() {
                   ) : null}
                 </DragOverlay>
               </DndContext>
+              {/* Mobile 2-col masonry — no drag */}
+              <div className="md:hidden columns-2 gap-3 mt-0">
+                {visibleHints.map((hint) => (
+                  <div key={hint.id} className="mb-3 break-inside-avoid">
+                    <HintCard
+                      hint={hint}
+                      imageRatios={imageRatios}
+                      onEdit={openEditModal}
+                      onToggleStarred={toggleStarred}
+                      onTogglePrivate={togglePrivate}
+                      isDragging={false}
+                      dragHandleAttributes={{}}
+                      dragHandleListeners={{}}
+                      formatCurrency={formatCurrency}
+                    />
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="columns-2 gap-3 md:columns-3 md:gap-6">
                 {demoHints.map((hint) => (
