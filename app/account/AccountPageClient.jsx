@@ -416,8 +416,7 @@ export default function AccountPageClient() {
         throw error;
       }
 
-      router.push("/");
-      router.refresh();
+      window.location.href = "/";
     } catch (error) {
       console.error("Sign out error:", error);
       setMessageType("error");
