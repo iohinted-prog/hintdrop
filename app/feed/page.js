@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import FeedClient from "./FeedClient";
 
 export const metadata = {
-  title: "Feed | HintDrop",
+  title: "Feed",
   description: "Your HintDrop feed with updates, reminders, and activity in one place.",
 };
 

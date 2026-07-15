@@ -1,7 +1,7 @@
 import HintsClient from "./HintsClient";
 
 export const metadata = {
-  title: "Hints | HintDrop",
+  title: "Hints",
   description: "Collect, organise, and move gift ideas around a visual hints board.",
 };
 
