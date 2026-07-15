@@ -230,10 +230,13 @@ function isUsablePreview(result) {
 // Retailers known to block HTML scraping — skip straight to LinkPreview
 // Only list sites where we have a specific strategy (Amazon URL parsing).
 // All other sites try HTML first — the fast-fail block detector handles the rest.
+// Add sites here only when confirmed to fail HTML scraping.
 const BLOCKED_RETAILERS = [
   "amazon.co.uk", "amazon.com", "amazon.de", "amazon.fr",
   "amazon.es", "amazon.it", "amazon.ca", "amazon.com.au",
   "amazon.co.jp", "amazon.in",
+  // Confirmed HTML failures
+  "harrods.com", "ikea.com",
 ];
 
 function isBlockedRetailer(url = "") {
