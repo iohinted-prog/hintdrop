@@ -204,7 +204,7 @@ export default function AppShell({ children }) {
     const cn = cnData || [];
     setCircleNotifs(cn);
     setInvites(merged);
-    setInviteCount(merged.length + cn.length);
+    setInviteCount(merged.length + cn.length + (notifData?.length || 0));
   }, [supabase]);
 
   useEffect(() => { loadInviteCount(); }, [loadInviteCount]);
