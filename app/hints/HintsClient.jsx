@@ -901,7 +901,6 @@ function HintCard({
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.84)_0%,rgba(16,12,10,0.42)_26%,rgba(16,12,10,0.10)_50%,rgba(255,255,255,0)_72%)]" />
           </>
         ) : (
-          <>
             <div
               className={`absolute inset-0 bg-gradient-to-br ${hint.fallbackGradient} ${
                 hint.private ? "opacity-80" : ""
