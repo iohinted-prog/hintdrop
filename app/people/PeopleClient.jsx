@@ -88,14 +88,33 @@ export default function PeopleClient() {
 
   const [sessionUser, setSessionUser] = useState(null);
 
+  const [contactHints, setContactHints] = useState({});
+
   async function loadContacts() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     setSessionUser(user);
     const { data } = await supabase.from("contact_public_state").select("*")
       .eq("owner_user_id", user.id).order("name", { ascending: true });
-    setContacts((data || []).map(buildContact));
+    const mapped = (data || []).map(buildContact);
+    setContacts(mapped);
     setLoading(false);
+    // Fetch hints for contacts with HintDrop accounts
+    const withAccounts = mapped.filter(c => c.profileId);
+    if (!withAccounts.length) return;
+    const { data: hintsData } = await supabase.from("hints")
+      .select("id, title, image_url, user_id")
+      .in("user_id", withAccounts.map(c => c.profileId))
+      .eq("is_private", false)
+      .order("starred", { ascending: false })
+      .limit(100);
+    if (!hintsData) return;
+    const byUser = {};
+    for (const h of hintsData) {
+      if (!byUser[h.user_id]) byUser[h.user_id] = [];
+      byUser[h.user_id].push(h);
+    }
+    setContactHints(byUser);
   }
   useEffect(() => { loadContacts(); }, []);
 
@@ -144,7 +163,8 @@ export default function PeopleClient() {
           <div className="space-y-2">
             {filtered.map(contact => (
               <ContactCard key={contact.id} contact={contact} onOpenProfile={setProfileModal}
-                onEditClick={setEditingContact} onDeleteClick={handleDelete} />
+                onEditClick={setEditingContact} onDeleteClick={handleDelete}
+                previewHints={contactHints[contact.profileId] || []} />
             ))}
           </div>
         )}

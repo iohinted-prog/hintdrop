@@ -23,7 +23,7 @@ function getInitials(name) {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
-export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onEditClick }) {
+export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onEditClick, previewHints = [] }) {
   const profileId = contact.profileId || contact.matchedProfileId || null;
   const isClickable = Boolean(profileId && !contact.isDemo && onOpenProfile);
   function handleClick() {
@@ -55,6 +55,21 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onE
             </p>
           )}
           {isClickable && <p className="text-[11px] text-[#df7b59] mt-0.5">👁 See hints</p>}
+        {previewHints.length > 0 && (
+          <div className="mt-2 flex items-center gap-1.5">
+            {previewHints.slice(0, 2).map(h => (
+              <div key={h.id} className="h-9 w-9 rounded-[8px] overflow-hidden border border-[#f0dfd6] shrink-0 bg-[#fffaf7]">
+                {h.image_url
+                  ? <img src={h.image_url} alt={h.title} className="h-full w-full object-cover" />
+                  : <div className="h-full w-full flex items-center justify-center text-sm bg-gradient-to-br from-[#ead8ca] to-[#c4a17f]">🎁</div>
+                }
+              </div>
+            ))}
+            {previewHints.length > 2 && (
+              <span className="text-[11px] font-semibold text-slate-400">+{previewHints.length - 2}</span>
+            )}
+          </div>
+        )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {onEditClick && (
