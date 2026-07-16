@@ -126,7 +126,7 @@ function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentU
                   <div key={hint.id} className="mb-3 break-inside-avoid">
                     <div className="overflow-hidden rounded-[20px] border border-[#f0dfd6] bg-[#fffaf7]">
                       {hint.image_url ? (
-                        <img src={hint.image_url} alt={hint.title} className="w-full object-cover" style={{ aspectRatio: "3/4", minHeight: "200px" }} />
+                        <img src={hint.image_url} alt={hint.title} className="w-full object-cover"  />
                       ) : (
                         <div className="flex items-center justify-center bg-gradient-to-br from-[#f3d5cc] to-[#d98c76]" >
                           <span className="text-2xl">🎁</span>
@@ -160,7 +160,7 @@ function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentU
                     <div className="overflow-hidden rounded-[20px] border border-[#f0dfd6] bg-[#fffaf7] hover:border-[#e8c9bc] transition-colors">
                       <a href={hint.url} target="_blank" rel="noopener noreferrer" className="block">
                         {hint.image_url ? (
-                          <img src={hint.image_url} alt={hint.title} className="w-full object-cover" style={{ aspectRatio: "3/4", minHeight: "200px" }} />
+                          <img src={hint.image_url} alt={hint.title} className="w-full object-cover"  />
                         ) : (
                           <div className="flex items-center justify-center bg-gradient-to-br from-[#f3d5cc] to-[#d98c76]" >
                             <span className="text-2xl">🎁</span>
