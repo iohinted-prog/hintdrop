@@ -2397,7 +2397,7 @@ export default function FeedClient() {
                 );
               })}
             </div>
-            <div className="rounded-none sm:rounded-[32px] border-0 sm:border border-[#eeddd3] bg-[#fff7f2] p-0 sm:p-4 shadow-none sm:shadow-[0_18px_60px_rgba(173,101,72,0.1)]">
+            <div className="bg-[#fff7f2]">
               <div className="rounded-[28px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
                 <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-100 pb-5">
                   <div>
