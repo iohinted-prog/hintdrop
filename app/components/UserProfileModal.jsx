@@ -38,6 +38,21 @@ function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentU
           .in("hint_id", hintsList.map(h => h.id));
         setClaims(claimsData || []);
       }
+      // Load image aspect ratios
+      const withImages = hintsList.filter(h => h.image_url);
+      const ratios = {};
+      await Promise.all(withImages.map(async h => {
+        try {
+          const r = await new Promise(res => {
+            const img = new window.Image();
+            img.onload = () => res(img.naturalWidth / img.naturalHeight);
+            img.onerror = () => res(null);
+            img.src = h.image_url;
+          });
+          if (r) ratios[h.id] = r;
+        } catch {}
+      }));
+      setImageRatios(ratios);
       setLoading(false);
     }
     load();
@@ -136,7 +151,7 @@ function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentU
                   <div key={hint.id} className="mb-3 break-inside-avoid">
                     <div className="overflow-hidden rounded-[20px] border border-[#f0dfd6] bg-[#fffaf7]">
                       {hint.image_url ? (
-                        <img src={hint.image_url} alt={hint.title} className="w-full object-contain"  />
+                        <img src={hint.image_url} alt={hint.title} className="w-full object-cover" style={imageRatios[hint.id] ? { aspectRatio: String(imageRatios[hint.id]) } : { aspectRatio: "3/4" }}  />
                       ) : (
                         <div className="flex items-center justify-center bg-gradient-to-br from-[#f3d5cc] to-[#d98c76]" >
                           <span className="text-2xl">🎁</span>
@@ -170,7 +185,7 @@ function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentU
                     <div className="overflow-hidden rounded-[20px] border border-[#f0dfd6] bg-[#fffaf7] hover:border-[#e8c9bc] transition-colors">
                       <a href={hint.url} target="_blank" rel="noopener noreferrer" className="block">
                         {hint.image_url ? (
-                          <img src={hint.image_url} alt={hint.title} className="w-full object-contain"  />
+                          <img src={hint.image_url} alt={hint.title} className="w-full object-cover" style={imageRatios[hint.id] ? { aspectRatio: String(imageRatios[hint.id]) } : { aspectRatio: "3/4" }}  />
                         ) : (
                           <div className="flex items-center justify-center bg-gradient-to-br from-[#f3d5cc] to-[#d98c76]" >
                             <span className="text-2xl">🎁</span>
