@@ -15,6 +15,8 @@ function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentU
   const supabase = createClient();
   const [hints, setHints] = useState([]);
   const [imageRatios, setImageRatios] = useState({});
+  const [filter, setFilter] = useState("default"); // default, starred, price_low, price_high, occasion
+  const [occasionFilter, setOccasionFilter] = useState("");
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [claims, setClaims] = useState([]);
@@ -105,6 +107,19 @@ function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentU
   const displayName = profile?.full_name || name || "User";
   const displayAvatar = profile?.avatar_url || avatarUrl;
   const interests = Array.isArray(profile?.interests) ? profile.interests : [];
+
+  const allOccasions = [...new Set(hints.flatMap(h => h.occasions || []))].filter(Boolean);
+
+  const filteredHints = hints
+    .filter(h => !occasionFilter || (h.occasions || []).includes(occasionFilter))
+    .sort((a, b) => {
+      if (filter === "starred") return (b.starred ? 1 : 0) - (a.starred ? 1 : 0);
+      if (filter === "price_low") return (a.numeric_price || 0) - (b.numeric_price || 0);
+      if (filter === "price_high") return (b.numeric_price || 0) - (a.numeric_price || 0);
+      // default: starred first
+      if (b.starred !== a.starred) return (b.starred ? 1 : 0) - (a.starred ? 1 : 0);
+      return 0;
+    });
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(33,24,20,0.42)] backdrop-blur-sm sm:items-center sm:px-4" onClick={onClose}>
