@@ -874,7 +874,13 @@ function MobileHintCard({ hint, onEdit, onToggleStarred, onTogglePrivate, format
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           <div className="absolute top-2 left-2 text-[13px]">{hint.private ? "🔒" : ""}</div>
           <div className="absolute bottom-0 left-0 right-0 p-2">
-            <p className="text-[12px] font-semibold text-white leading-tight line-clamp-1">{hint.title || "Hint"}</p>
+            <div className="flex items-end justify-between gap-1">
+              <p className="text-[12px] font-semibold text-white leading-tight line-clamp-1 flex-1">{hint.title || "Hint"}</p>
+              <div className="flex items-center gap-1 shrink-0">
+                {hint.starred && <span className="text-[12px]">⭐</span>}
+                {hint.rawPrice && <span className="text-[11px] font-bold text-white/90 bg-black/30 rounded-full px-1.5 py-0.5">{hint.rawPrice}</span>}
+              </div>
+            </div>
           </div>
         </div>
       </article>
