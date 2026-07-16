@@ -2,9 +2,19 @@
 import { useState, useEffect } from "react";
 import { createClient } from "../../lib/supabase/client";
 
+function loadImageAspectRatio(src) {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => resolve(img.naturalWidth / img.naturalHeight);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
 function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentUserId, isContact, onAddContact }) {
   const supabase = createClient();
   const [hints, setHints] = useState([]);
+  const [imageRatios, setImageRatios] = useState({});
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [claims, setClaims] = useState([]);
