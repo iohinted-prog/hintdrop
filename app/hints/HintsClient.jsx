@@ -863,7 +863,7 @@ function MobileHintCard({ hint, onEdit, onToggleStarred, onTogglePrivate, format
   return (
     <article className="rounded-[22px] border border-[rgba(255,255,255,0.14)] bg-white shadow-sm overflow-hidden">
       {/* Image area - fixed square */}
-      <div className="relative w-full aspect-square bg-white">
+      <div className="relative w-full bg-white" style={{ minHeight: "140px" }}>
         {hint.image && !imgError ? (
           <img src={hint.image} alt={hint.title} className="w-full h-full object-cover"
             onError={() => setImgError(true)} loading="lazy" referrerPolicy="no-referrer" />
