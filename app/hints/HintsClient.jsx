@@ -1798,16 +1798,13 @@ export default function HintsClient() {
                 </DragOverlay>
               </DndContext>
               <div className="block md:hidden columns-2 gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid">
-                {visibleHints.map((hint, idx) => {
-                  const mr = [0.6,1.2,0.55,1.35,0.65,1.1,0.5,1.3];
-                  return (
-                    <div key={hint.id} style={{ marginBottom: "12px" }} className="break-inside-avoid">
-                      <HintCard hint={hint} imageRatios={{ ...imageRatios, [hint.id]: mr[idx % mr.length] }}
-                        onEdit={openEditModal} onToggleStarred={toggleStarred} onTogglePrivate={togglePrivate}
-                        isDragging={false} dragHandleAttributes={{}} dragHandleListeners={{}} formatCurrency={formatCurrency} />
-                    </div>
-                  );
-                })}
+                {visibleHints.map((hint) => (
+                  <div key={hint.id} style={{ marginBottom: "12px" }} className="break-inside-avoid">
+                    <HintCard hint={hint} imageRatios={imageRatios}
+                      onEdit={openEditModal} onToggleStarred={toggleStarred} onTogglePrivate={togglePrivate}
+                      isDragging={false} dragHandleAttributes={{}} dragHandleListeners={{}} formatCurrency={formatCurrency} />
+                  </div>
+                ))}
               </div>
               </>
             ) : (
