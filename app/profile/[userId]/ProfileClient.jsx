@@ -194,6 +194,13 @@ export default function ProfileClient({ userId }) {
                       {hint.starred && <p className="text-[11px] font-semibold text-[#ff875d] mb-0.5">⭐ Top pick</p>}
                       <p className="text-[13px] font-semibold text-slate-900 line-clamp-2 leading-tight">{hint.title || "Hint"}</p>
                       {hint.retailer && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{hint.retailer}</p>}
+                      {hint.occasions?.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {hint.occasions.slice(0, 2).map(o => (
+                            <span key={o} className="rounded-full bg-[#fff4ee] px-2 py-0.5 text-[10px] font-semibold text-[#df7b59]">{o}</span>
+                          ))}
+                        </div>
+                      )}
                       {hint.numeric_price > 0 && (
                         <p className="text-[13px] font-bold text-[#df7b59] mt-1">
                           {new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numeric_price)}
