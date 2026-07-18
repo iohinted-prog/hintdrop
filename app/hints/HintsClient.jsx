@@ -1478,6 +1478,10 @@ export default function HintsClient() {
     }
 
     setHints((current) => current.filter((hint) => hint.id !== editingHintId));
+      const remainingHints = hints.filter(h => h.id !== editingHintId);
+      const publicHints = remainingHints.filter(h => !h.private);
+      const previewHints = publicHints.slice(0, 2).map(h => ({ id: h.id, title: h.title, image_url: h.image || "", retailer: h.retailer || "" }));
+      supabase.from("feed_items").select("id").eq("owner_user_id", currentUser.id).eq("item_type", "hint_save_session").order("occurred_at", { ascending: false }).limit(1).then(({ data }) => { if (data && data[0]) supabase.from("feed_items").update({ metadata: { actor_name: currentUser.user_metadata?.full_name || "", actor_avatar_url: currentUser.user_metadata?.avatar_url || null, hint_count: publicHints.length, preview_hints: previewHints, social_enabled: true } }).eq("id", data[0].id).catch(() => {}); }).catch(() => {});
     closeEditModal();
   }
 
