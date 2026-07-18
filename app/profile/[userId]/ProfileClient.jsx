@@ -38,28 +38,23 @@ export default function ProfileClient({ userId }) {
   const [filter, setFilter] = useState("default");
   const [occasionFilter, setOccasionFilter] = useState("");
   const [claimingId, setClaimingId] = useState(null);
-  const [selectedHint, setSelectedHint] = useState(null);
   const [isContact, setIsContact] = useState(false);
+  const [selectedHint, setSelectedHint] = useState(null);
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
-
       const [{ data: profileData }, { data: hintsData }] = await Promise.all([
         supabase.from("profiles").select("full_name, avatar_url, interests").eq("id", userId).maybeSingle(),
         supabase.from("hints")
           .select("id, title, image_url, numeric_price, currency, retailer, url, starred, occasions, position, size, size_type")
-          .eq("user_id", userId)
-          .eq("is_private", false)
-          .order("position", { ascending: true })
-          .limit(100),
+          .eq("user_id", userId).eq("is_private", false)
+          .order("position", { ascending: true }).limit(100),
       ]);
-
       setProfile(profileData);
       const hintsList = hintsData || [];
       setHints(hintsList);
-
       if (user && user.id !== userId && hintsList.length) {
         const { data: claimsData } = await supabase.from("hint_claims")
           .select("id, hint_id, claimed_by, claim_type")
@@ -69,10 +64,7 @@ export default function ProfileClient({ userId }) {
           .select("id").eq("user_id", user.id).eq("profile_id", userId).maybeSingle();
         setIsContact(!!contactData);
       }
-
       setLoading(false);
-
-      // Load image ratios after render
       const ratios = {};
       await Promise.all(hintsList.filter(h => h.image_url).map(async h => {
         const r = await loadRatio(h.image_url).catch(() => null);
@@ -120,31 +112,24 @@ export default function ProfileClient({ userId }) {
 
   return (
     <main className="min-h-screen bg-[#fffaf7]">
-      {/* Header */}
       <div className="border-b border-[#f0dfd6] bg-white px-4 py-4 sm:px-8">
         <div className="mx-auto max-w-[1200px] flex items-center gap-4">
           <Link href="/feed" className="h-9 w-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff5f0] shrink-0">←</Link>
-          {profile?.avatar_url ? (
-            <img src={profile.avatar_url} alt={displayName} className="h-14 w-14 rounded-full object-cover border-2 border-[#f0dfd6] shrink-0" />
-          ) : (
-            <div className="h-14 w-14 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[16px] font-bold text-white shrink-0">
-              {getInitials(displayName)}
-            </div>
-          )}
+          {profile?.avatar_url
+            ? <img src={profile.avatar_url} alt={displayName} className="h-14 w-14 rounded-full object-cover border-2 border-[#f0dfd6] shrink-0" />
+            : <div className="h-14 w-14 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[16px] font-bold text-white shrink-0">{getInitials(displayName)}</div>
+          }
           <div className="flex-1 min-w-0">
             <h1 className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900">{displayName}'s Hints</h1>
             {interests.length > 0 && (
               <div className="mt-1 flex flex-wrap gap-1">
-                {interests.slice(0, 6).map(i => (
-                  <span key={i} className="rounded-full bg-[#fff4ee] px-2.5 py-0.5 text-[11px] font-semibold text-[#df7b59]">{i}</span>
-                ))}
+                {interests.slice(0, 6).map(i => <span key={i} className="rounded-full bg-[#fff4ee] px-2.5 py-0.5 text-[11px] font-semibold text-[#df7b59]">{i}</span>)}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Filter bar */}
       <div className="border-b border-[#f0dfd6] bg-white px-4 py-3 sm:px-8">
         <div className="mx-auto max-w-[1200px] flex items-center gap-3 flex-wrap">
           <div className="flex gap-2 overflow-x-auto">
@@ -165,7 +150,6 @@ export default function ProfileClient({ userId }) {
         </div>
       </div>
 
-      {/* Hints grid */}
       <div className="mx-auto max-w-[1200px] px-4 py-6 sm:px-8">
         {loading ? (
           <div className="columns-2 md:columns-3 gap-4">
@@ -178,81 +162,57 @@ export default function ProfileClient({ userId }) {
           </div>
         ) : (
           <div className="columns-2 md:columns-3 gap-4">
-            {filteredHints.map(hint => {
-              const myClaim = claims.find(c => c.hint_id === hint.id && c.claimed_by === currentUser?.id);
-              const otherClaim = claims.find(c => c.hint_id === hint.id && c.claimed_by !== currentUser?.id);
-              const gradient = GRADIENTS[hint.id ? hint.id.charCodeAt(0) % GRADIENTS.length : 0];
+            {filteredHints.map((hint, idx) => {
+              const gradient = GRADIENTS[idx % GRADIENTS.length];
               return (
-                <div key={hint.id} className="mb-4 break-inside-avoid">
-                  <div className="overflow-hidden rounded-[20px] border border-[#f0dfd6] bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedHint(hint)}>
-                    {hint.image_url ? (
-                      <img src={hint.image_url} alt={hint.title} className="w-full object-cover"
-                        style={imageRatios[hint.id] ? { aspectRatio: String(imageRatios[hint.id]) } : { aspectRatio: "3/4" }} />
-                    ) : (
-                      <div className={`w-full bg-gradient-to-br ${gradient} flex items-center justify-center text-4xl`} style={{ aspectRatio: "3/4" }}>🎁</div>
-                    )}
-                    <div className="p-3">
-                      {hint.starred && <p className="text-[11px] font-semibold text-[#ff875d] mb-0.5">⭐ Top pick</p>}
-                      <p className="text-[13px] font-semibold text-slate-900 line-clamp-2 leading-tight">{hint.title || "Hint"}</p>
-                      {hint.retailer && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{hint.retailer}</p>}
-                      {hint.occasions?.length > 0 && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {hint.occasions.slice(0, 2).map(o => (
-                            <span key={o} className="rounded-full bg-[#fff4ee] px-2 py-0.5 text-[10px] font-semibold text-[#df7b59]">{o}</span>
-                          ))}
-                        </div>
-                      )}
+                <div key={hint.id} className="mb-4 break-inside-avoid cursor-pointer" onClick={() => setSelectedHint(hint)}>
+                  <article className="relative overflow-hidden rounded-[22px] shadow-sm">
+                    {hint.image_url
+                      ? <img src={hint.image_url} alt={hint.title} className="w-full object-cover"
+                          style={imageRatios[hint.id] ? { aspectRatio: String(imageRatios[hint.id]) } : { aspectRatio: "3/4" }} />
+                      : <div className={`w-full bg-gradient-to-br ${gradient} flex items-center justify-center text-4xl`} style={{ aspectRatio: "3/4", minHeight: "220px" }}>🎁</div>
+                    }
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
+                    {hint.starred && <div className="absolute top-2 right-2 text-[18px]" style={{ color: "#ff875d" }}>★</div>}
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-[15px] font-bold text-white leading-tight line-clamp-2" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>{hint.title || "Hint"}</p>
                       {hint.numeric_price > 0 && (
-                        <p className="text-[13px] font-bold text-[#df7b59] mt-1">
+                        <span className="mt-1 inline-block text-[11px] font-bold text-white rounded-full px-2 py-0.5" style={{ background: "#ff875d" }}>
                           {new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numeric_price)}
-                        </p>
+                        </span>
                       )}
-                      <div className="mt-2 flex gap-2">
-                        {hint.url && (
-                          <a href={hint.url} target="_blank" rel="noopener noreferrer"
-                            className="flex-1 h-8 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[11px] font-semibold text-white">
-                            Open →
-                          </a>
-                        )}
-                        {isViewingOther && (
-                          <button type="button" disabled={claimingId === hint.id}
-                            onClick={() => { setClaimingId(hint.id); handleToggleClaim(hint).finally(() => setClaimingId(null)); }}
-                            className={`flex-1 h-8 rounded-full text-[11px] font-semibold border transition ${
-                              myClaim ? "bg-[#edf6eb] text-[#4a7a3a] border-[#c5dfc0]"
-                              : otherClaim ? "bg-[#fff8ee] text-[#b87a2a] border-[#f0d9a0]"
-                              : "bg-[#fff4ee] text-[#df7b59] border-[#f0c9b5] hover:bg-[#ffe9db]"
-                            }`}>
-                            {myClaim ? "✓ On it" : otherClaim ? "Buy anyway?" : "I'm getting this"}
-                          </button>
-                        )}
-                      </div>
                     </div>
-                  </div>
+                  </article>
                 </div>
               );
             })}
           </div>
         )}
       </div>
-    {selectedHint && (
+
+      {selectedHint && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center sm:px-4" onClick={() => setSelectedHint(null)}>
-          <div className="w-full max-w-[480px] rounded-t-[28px] sm:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-hidden flex flex-col" style={{ maxHeight: "88dvh" }} onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-[480px] rounded-t-[28px] sm:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto flex flex-col" style={{ maxHeight: "88dvh" }} onClick={e => e.stopPropagation()}>
             <div className="flex justify-end px-4 pt-3 shrink-0">
               <button type="button" onClick={() => setSelectedHint(null)} className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400">✕</button>
             </div>
             {selectedHint.image_url
-              ? <img src={selectedHint.image_url} alt={selectedHint.title} className="w-full object-contain max-h-[280px]" />
+              ? <img src={selectedHint.image_url} alt={selectedHint.title} className="w-full object-contain" style={{ maxHeight: "280px" }} />
               : <div className="w-full bg-gradient-to-br from-[#ead8ca] to-[#c4a17f] flex items-center justify-center text-6xl" style={{ height: "200px" }}>🎁</div>
             }
-            <div className="p-5 overflow-y-auto">
+            <div className="p-5">
               {selectedHint.starred && <p className="text-[11px] font-semibold text-[#ff875d] mb-1">⭐ Top pick</p>}
               <p className="text-[18px] font-semibold text-slate-900 leading-tight">{selectedHint.title || "Hint"}</p>
               {selectedHint.retailer && <p className="text-[13px] text-slate-400 mt-1">{selectedHint.retailer}</p>}
               {selectedHint.numeric_price > 0 && (
-                <p className="text-[16px] font-bold text-[#df7b59] mt-2">{new Intl.NumberFormat("en-GB", { style: "currency", currency: selectedHint.currency || "GBP" }).format(selectedHint.numeric_price)}</p>
+                <p className="text-[16px] font-bold text-[#df7b59] mt-2">
+                  {new Intl.NumberFormat("en-GB", { style: "currency", currency: selectedHint.currency || "GBP" }).format(selectedHint.numeric_price)}
+                </p>
               )}
               {selectedHint.size && (
-                <p className="text-[13px] text-slate-600 mt-2">📏 Size: <strong>{selectedHint.size}</strong>{selectedHint.size_type ? ` (${selectedHint.size_type})` : ""}</p>
+                <p className="text-[13px] text-slate-600 mt-2">
+                  📏 Size: <strong>{selectedHint.size}</strong>{selectedHint.size_type ? ` (${selectedHint.size_type})` : ""}
+                </p>
               )}
               {selectedHint.occasions?.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
@@ -272,7 +232,7 @@ export default function ProfileClient({ userId }) {
                   return (
                     <button type="button" disabled={claimingId === selectedHint.id}
                       onClick={() => { setClaimingId(selectedHint.id); handleToggleClaim(selectedHint).finally(() => setClaimingId(null)); }}
-                      className={\`flex-1 h-11 rounded-full text-[13px] font-semibold border transition \${myClaim ? "bg-[#edf6eb] text-[#4a7a3a] border-[#c5dfc0]" : otherClaim ? "bg-[#fff8ee] text-[#b87a2a] border-[#f0d9a0]" : "bg-[#fff4ee] text-[#df7b59] border-[#f0c9b5] hover:bg-[#ffe9db]"}\`}>
+                      className={`flex-1 h-11 rounded-full text-[13px] font-semibold border transition ${myClaim ? "bg-[#edf6eb] text-[#4a7a3a] border-[#c5dfc0]" : otherClaim ? "bg-[#fff8ee] text-[#b87a2a] border-[#f0d9a0]" : "bg-[#fff4ee] text-[#df7b59] border-[#f0c9b5] hover:bg-[#ffe9db]"}`}>
                       {myClaim ? "✓ On it" : otherClaim ? "Buy anyway?" : "I'm getting this"}
                     </button>
                   );
