@@ -173,7 +173,7 @@ export default function ProfileClient({ userId }) {
                       : <div className={`w-full bg-gradient-to-br ${gradient} flex items-center justify-center text-4xl`} style={{ aspectRatio: "3/4", minHeight: "220px" }}>🎁</div>
                     }
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
-                    {hint.starred && <div className="absolute top-2 right-2 text-[18px]" style={{ color: "#ff875d" }}>★</div>}
+                    {hint.starred && <div className="absolute top-2 right-2 text-[18px]" >⭐</div>}
                     <div className="absolute bottom-0 left-0 right-0 p-3">
                       <p className="text-[15px] font-bold text-white leading-tight line-clamp-2" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>{hint.title || "Hint"}</p>
                       {hint.numeric_price > 0 && (
