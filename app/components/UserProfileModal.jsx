@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { createClient } from "../../lib/supabase/client";
+import Link from "next/link";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -146,7 +147,10 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
                 )}
               </div>
             </div>
-            <button type="button" onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#efe0d7] text-slate-500 hover:bg-[#faf6f3]">✕</button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link href={`/profile/${userId}`} onClick={onClose} className="h-9 px-3 flex items-center justify-center rounded-full border border-[#ead8ce] text-[11px] font-semibold text-slate-600 hover:bg-[#fff5f0]">Full profile</Link>
+              <button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full border border-[#efe0d7] text-slate-500 hover:bg-[#faf6f3]">✕</button>
+            </div>
           </div>
         </div>
         {/* Hints */}
