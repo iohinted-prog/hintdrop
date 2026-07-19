@@ -737,9 +737,6 @@ function FeedItem({
                   {metadata.hint_count > 2 && (
                     <span className="text-sm font-semibold text-slate-400">+{metadata.hint_count - 2} more hints</span>
                   )}
-            {metadata.preview_hints?.length > 0 && (
-                  <button type="button" onClick={e => { e.stopPropagation(); setSessionHintsModal({ hints: metadata.preview_hints || [], actorUserId, actorName: metadata.actor_name, actorAvatar: actorAvatarUrl }); }} className="ml-auto text-sm font-semibold text-[#df7b59]">See new hints →</button>
-            )}
                 </div>
               </div>
             </div>

@@ -26,8 +26,8 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
   const [loading, setLoading] = useState(true);
   const [claims, setClaims] = useState([]);
   const [claimingId, setClaimingId] = useState(null);
-  const [selectedHint, setSelectedHint] = useState(null);
   const [imageRatios, setImageRatios] = useState({});
+  const [selectedHint, setSelectedHint] = useState(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -85,8 +85,7 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
         style={{ maxHeight: "90dvh" }} onClick={(e) => e.stopPropagation()}>
         <div className="shrink-0 border-b border-[#f2e5de] px-6 py-5">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Link href={`/profile/${userId}`} onClick={onClose} className="flex items-center gap-4 hover:opacity-80 transition-opacity">
+            <Link href={"/profile/" + userId} onClick={onClose} className="flex items-center gap-4 hover:opacity-80 transition-opacity">
               {displayAvatar
                 ? <img src={displayAvatar} alt={displayName} className="h-14 w-14 rounded-full object-cover" />
                 : <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[14px] font-bold text-white">{displayInitials}</div>
@@ -101,9 +100,8 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
                   </div>
                 )}
               </div>
-              </Link>
-            </div>
-            <button type="button" onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#efe0d7] text-slate-500 hover:bg-[#faf6f3]">✕</button>
+            </Link>
+            <button type="button" onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#efe0d7] text-slate-500 hover:bg-[#faf6f3]">X</button>
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
@@ -128,37 +126,28 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
                 const otherClaim = claims.find(c => c.hint_id === hint.id && c.claimed_by !== currentUserId);
                 return (
                   <div key={hint.id} className="mb-3 break-inside-avoid">
-                    <div className="overflow-hidden rounded-[20px] border border-[#f0dfd6] bg-[#fffaf7] hover:border-[#e8c9bc] transition-colors">
-                      {hint.image_url ? (
-                        <div className="block cursor-pointer" onClick={() => setSelectedHint(hint)}>
-                          <img src={hint.image_url} alt={hint.title} className="w-full object-cover"
+                    <div className="overflow-hidden rounded-[20px] border border-[#f0dfd6] bg-[#fffaf7] hover:border-[#e8c9bc] transition-colors cursor-pointer" onClick={() => setSelectedHint(hint)}>
+                      {hint.image_url
+                        ? <img src={hint.image_url} alt={hint.title} className="w-full object-cover"
                             style={imageRatios[hint.id] ? { aspectRatio: String(imageRatios[hint.id]) } : { aspectRatio: "3/4" }} />
-                        </div>
-                      ) : (
-                        <div className="w-full bg-gradient-to-br from-[#f3d5cc] to-[#d98c76] flex items-center justify-center text-2xl" style={{ aspectRatio: "3/4" }}>🎁</div>
-                      )}
+                        : <div className="w-full bg-gradient-to-br from-[#f3d5cc] to-[#d98c76] flex items-center justify-center text-2xl" style={{ aspectRatio: "3/4" }}>🎁</div>
+                      }
                       <div className="p-3">
-                        <div className="cursor-pointer" onClick={() => setSelectedHint(hint)}>
                         {hint.starred && <p className="text-[11px] font-semibold text-[#ff875d] mb-0.5">⭐ Top pick</p>}
                         <p className="text-[13px] font-semibold text-slate-900 line-clamp-2">{hint.title}</p>
                         {hint.retailer && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{hint.retailer}</p>}
-                        </div>
                         {hint.numeric_price > 0 && (
                           <p className="text-[12px] font-bold text-[#df7b59] mt-1">
                             {new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numeric_price)}
                           </p>
                         )}
                         {isViewingOther && (
-                          <div className="mt-2 flex items-center justify-between gap-2">
+                          <div className="mt-2 flex items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
                             {otherClaim && !myClaim ? <span className="text-[11px] text-slate-400">Someone is on it</span> : <span />}
                             <button type="button" disabled={claimingId === hint.id}
                               onClick={() => { setClaimingId(hint.id); handleToggleClaim(hint).finally(() => setClaimingId(null)); }}
-                              className={`ml-auto text-[11px] font-semibold rounded-full px-3 py-1 border transition ${
-                                myClaim ? "bg-[#edf6eb] text-[#4a7a3a] border-[#c5dfc0]"
-                                : otherClaim ? "bg-[#fff8ee] text-[#b87a2a] border-[#f0d9a0] hover:bg-[#fff0d6]"
-                                : "bg-[#fff4ee] text-[#df7b59] border-[#f0c9b5] hover:bg-[#ffe9db]"
-                              }`}>
-                              {myClaim ? "I am on it ✓" : otherClaim ? "Buy anyway?" : "I am getting this"}
+                              className={"ml-auto text-[11px] font-semibold rounded-full px-3 py-1 border transition " + (myClaim ? "bg-[#edf6eb] text-[#4a7a3a] border-[#c5dfc0]" : otherClaim ? "bg-[#fff8ee] text-[#b87a2a] border-[#f0d9a0] hover:bg-[#fff0d6]" : "bg-[#fff4ee] text-[#df7b59] border-[#f0c9b5] hover:bg-[#ffe9db]")}>
+                              {myClaim ? "I am on it" : otherClaim ? "Buy anyway?" : "I am getting this"}
                             </button>
                           </div>
                         )}
@@ -170,56 +159,60 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
             </div>
           )}
         </div>
-        {selectedHint && (
-          <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center sm:px-4" onClick={() => setSelectedHint(null)}>
-            <div className="w-full max-w-[480px] rounded-t-[28px] sm:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto" style={{ maxHeight: "88dvh" }} onClick={e => e.stopPropagation()}>
-              <div className="flex justify-end px-4 pt-3"><button type="button" onClick={() => setSelectedHint(null)} className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400">✕</button></div>
-              {selectedHint.image_url
-                ? <img src={selectedHint.image_url} alt={selectedHint.title} className="w-full object-contain" style={{ maxHeight: "280px" }} />
-                : <div className="w-full bg-gradient-to-br from-[#ead8ca] to-[#c4a17f] flex items-center justify-center text-6xl" style={{ height: "200px" }}>🎁</div>
-              }
-              <div className="p-5">
-                {selectedHint.starred && <p className="text-[11px] font-semibold text-[#ff875d] mb-1">⭐ Top pick</p>}
-                <p className="text-[18px] font-semibold text-slate-900 leading-tight">{selectedHint.title || "Hint"}</p>
-                {selectedHint.retailer && <p className="text-[13px] text-slate-400 mt-1">{selectedHint.retailer}</p>}
-                {selectedHint.numeric_price > 0 && (
-                  <p className="text-[16px] font-bold text-[#df7b59] mt-2">{new Intl.NumberFormat("en-GB", { style: "currency", currency: selectedHint.currency || "GBP" }).format(selectedHint.numeric_price)}</p>
-                )}
-                {selectedHint.occasions?.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {selectedHint.occasions.map(o => <span key={o} className="rounded-full bg-[#fff4ee] px-2.5 py-0.5 text-[11px] font-semibold text-[#df7b59]">{o}</span>)}
-                  </div>
-                )}
-                <div className="mt-4 flex gap-3">
-                  {selectedHint.url && (
-                    <a href={selectedHint.url} target="_blank" rel="noopener noreferrer"
-                      className="flex-1 h-11 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-lg">
-                      Open →
-                    </a>
-                  )}
-                  {isViewingOther && (() => {
-                    const myClaim = claims.find(c => c.hint_id === selectedHint.id && c.claimed_by === currentUserId);
-                    const otherClaim = claims.find(c => c.hint_id === selectedHint.id && c.claimed_by !== currentUserId);
-                    return (
-                      <button type="button" disabled={claimingId === selectedHint.id}
-                        onClick={() => { setClaimingId(selectedHint.id); handleToggleClaim(selectedHint).finally(() => setClaimingId(null)); }}
-                        className={\`flex-1 h-11 rounded-full text-[13px] font-semibold border transition \${myClaim ? "bg-[#edf6eb] text-[#4a7a3a] border-[#c5dfc0]" : otherClaim ? "bg-[#fff8ee] text-[#b87a2a] border-[#f0d9a0]" : "bg-[#fff4ee] text-[#df7b59] border-[#f0c9b5] hover:bg-[#ffe9db]"}\`}>
-                        {myClaim ? "I am on it ✓" : otherClaim ? "Buy anyway?" : "I am getting this"}
-                      </button>
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
         <div className="px-4 pb-5 pt-2 shrink-0 border-t border-[#f2e5de]">
-          <Link href={`/profile/${userId}`} onClick={onClose}
+          <Link href={"/profile/" + userId} onClick={onClose}
             className="w-full h-11 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-lg">
-            See full profile →
+            See full profile
           </Link>
         </div>
       </div>
+      {selectedHint && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center sm:px-4" onClick={() => setSelectedHint(null)}>
+          <div className="w-full max-w-[480px] rounded-t-[28px] sm:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto" style={{ maxHeight: "88dvh" }} onClick={e => e.stopPropagation()}>
+            <div className="flex justify-end px-4 pt-3">
+              <button type="button" onClick={() => setSelectedHint(null)} className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400">X</button>
+            </div>
+            {selectedHint.image_url
+              ? <img src={selectedHint.image_url} alt={selectedHint.title} className="w-full object-contain" style={{ maxHeight: "280px" }} />
+              : <div className="w-full bg-gradient-to-br from-[#ead8ca] to-[#c4a17f] flex items-center justify-center text-6xl" style={{ height: "200px" }}>🎁</div>
+            }
+            <div className="p-5">
+              {selectedHint.starred && <p className="text-[11px] font-semibold text-[#ff875d] mb-1">⭐ Top pick</p>}
+              <p className="text-[18px] font-semibold text-slate-900 leading-tight">{selectedHint.title || "Hint"}</p>
+              {selectedHint.retailer && <p className="text-[13px] text-slate-400 mt-1">{selectedHint.retailer}</p>}
+              {selectedHint.numeric_price > 0 && (
+                <p className="text-[16px] font-bold text-[#df7b59] mt-2">
+                  {new Intl.NumberFormat("en-GB", { style: "currency", currency: selectedHint.currency || "GBP" }).format(selectedHint.numeric_price)}
+                </p>
+              )}
+              {selectedHint.occasions && selectedHint.occasions.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {selectedHint.occasions.map(o => <span key={o} className="rounded-full bg-[#fff4ee] px-2.5 py-0.5 text-[11px] font-semibold text-[#df7b59]">{o}</span>)}
+                </div>
+              )}
+              <div className="mt-4 flex gap-3">
+                {selectedHint.url && (
+                  <a href={selectedHint.url} target="_blank" rel="noopener noreferrer"
+                    className="flex-1 h-11 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-lg">
+                    Open
+                  </a>
+                )}
+                {isViewingOther && (() => {
+                  const myClaim = claims.find(c => c.hint_id === selectedHint.id && c.claimed_by === currentUserId);
+                  const otherClaim = claims.find(c => c.hint_id === selectedHint.id && c.claimed_by !== currentUserId);
+                  return (
+                    <button type="button" disabled={claimingId === selectedHint.id}
+                      onClick={() => { setClaimingId(selectedHint.id); handleToggleClaim(selectedHint).finally(() => setClaimingId(null)); }}
+                      className={"flex-1 h-11 rounded-full text-[13px] font-semibold border transition " + (myClaim ? "bg-[#edf6eb] text-[#4a7a3a] border-[#c5dfc0]" : otherClaim ? "bg-[#fff8ee] text-[#b87a2a] border-[#f0d9a0]" : "bg-[#fff4ee] text-[#df7b59] border-[#f0c9b5] hover:bg-[#ffe9db]")}>
+                      {myClaim ? "I am on it" : otherClaim ? "Buy anyway?" : "I am getting this"}
+                    </button>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
