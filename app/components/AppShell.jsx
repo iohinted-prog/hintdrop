@@ -95,6 +95,7 @@ export default function AppShell({ children }) {
       }
 
       setEmail(user.email || "");
+        setCurrentUserId(user.id);
       setFullName(profile?.full_name || metadataName || "");
       setAvatarUrl(profile?.avatar_url || metadataAvatar || "");
     }
