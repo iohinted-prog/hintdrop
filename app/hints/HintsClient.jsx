@@ -1734,7 +1734,7 @@ export default function HintsClient() {
         metadata: {
           actor_name: currentUser.user_metadata?.full_name || currentUser.email || "You",
           actor_avatar_url: currentUser.user_metadata?.avatar_url || null,
-          hint_count: publicHints.length,
+          hint_count: sessionHints.length,
           preview_hints: previewHints,
           social_enabled: true,
         },
