@@ -14,8 +14,10 @@ const TITLE_COLORS = {
   "mother": { dot: "bg-[#c77dff]", badge: "bg-[#f3e8ff] text-[#7b2d8b]", border: "border-[#e0b8ff]" },
   "father": { dot: "bg-[#4895ef]", badge: "bg-[#e8f4fd] text-[#1a6fb5]", border: "border-[#b8d9f5]" },
   "easter": { dot: "bg-[#80b918]", badge: "bg-[#f0fbd0] text-[#4a7c00]", border: "border-[#c8f09a]" },
+  "patrick": { dot: "bg-[#2d6a4f]", badge: "bg-[#d8f3dc] text-[#2d6a4f]", border: "border-[#b7e4c7]" },
+  "bonfire": { dot: "bg-[#e07c00]", badge: "bg-[#fff0d6] text-[#e07c00]", border: "border-[#ffd49e]" },
 };
-const BIRTHDAY_COLOR = { dot: "bg-[#ff875d]", badge: "bg-[#fff4ee] text-[#df7b59]", border: "border-[#f0c9b5]" };
+const BIRTHDAY_COLOR = { dot: "bg-[#6ab0d4]", badge: "bg-[#e8f4fa] text-[#2d7da8]", border: "border-[#b3d9ee]" };
 const DEFAULT_COLOR = { dot: "bg-[#4a7a8a]", badge: "bg-[#e8f4f6] text-[#2d5f6e]", border: "border-[#b8d9e0]" };
 
 function eventColor(e) {
@@ -144,7 +146,6 @@ export default function CalendarClient() {
     <main className="min-h-screen bg-[#fffaf7] pb-24">
       <div className="px-4 pt-6 pb-2 sm:px-8 max-w-[640px] mx-auto">
         <h1 className="text-[26px] font-semibold tracking-[-0.04em] text-slate-900 mb-4">Calendar</h1>
-        {debugInfo && <p className="text-xs text-slate-400 mb-2">{debugInfo}</p>}
 
         <div className="flex items-center justify-between mb-3">
           <button onClick={() => setCurrentMonth(new Date(year, month - 1))}
