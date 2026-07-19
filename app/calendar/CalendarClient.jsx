@@ -93,7 +93,7 @@ export default function CalendarClient() {
   }, []);
 
   const eventsByDate = events.reduce((acc, e) => {
-    const key = e.event_date?.slice(0, 10);
+    const key = (e.event_date || "").slice(0, 10);
     if (!key) return acc;
     if (!acc[key]) acc[key] = [];
     acc[key].push(e);
