@@ -1753,9 +1753,11 @@ export default function HintsClient() {
 
       if (error) throw new Error(errorToMessage(error));
 
+      // Only show the newly added hint in the session preview
+      const sessionHints = newHint.private ? [] : [{ id: newHint.id, title: newHint.title, image_url: newHint.image || "", retailer: newHint.retailer || "", url: newHint.url || "" }];
       const allHints = [newHint, ...hints];
       const publicHints = allHints.filter(h => !h.private);
-      const previewHints = publicHints.slice(0, 2).map(h => ({ id: h.id, title: h.title, image_url: h.image || "", retailer: h.retailer || "" }));
+      const previewHints = sessionHints;
       supabase.from("feed_items").insert({
         owner_user_id: currentUser.id,
         actor_user_id: currentUser.id,
