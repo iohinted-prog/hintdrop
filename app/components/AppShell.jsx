@@ -434,17 +434,13 @@ export default function AppShell({ children }) {
                     </p>
                   </div>
 
-                  <div className="mt-2 flex flex-col">
-          {currentUserId && (
-            <Link
-              href={"/profile/" + currentUserId}
-              className="rounded-[16px] px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-[#fff5f0]"
-            >
-              Profile
-            </Link>
-          )}
-
-                  </div>
+          <div className="mt-2 flex flex-col">
+            {currentUserId && (
+              <Link href={"/profile/" + currentUserId} className="rounded-[16px] px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-[#fff5f0]">Profile</Link>
+            )}
+            <Link href="/settings" className="rounded-[16px] px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-[#fff5f0]">Settings</Link>
+            <Link href="/account" className="rounded-[16px] px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-[#fff5f0]">Account</Link>
+          </div>
                 </div>
               ) : null}
             </div>
