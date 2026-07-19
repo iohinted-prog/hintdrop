@@ -1332,7 +1332,7 @@ export default function HintsClient() {
     return () => { cancelled = true; };
   }, []);
 
-  const visibleHints = hints;
+  const visibleHints = [...hints].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0));
   const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
   const columns = useMemo(() => splitIntoColumns(visibleHints, 3), [visibleHints]);
 
