@@ -40,12 +40,13 @@ function buildContactBirthdayEvents(contacts) {
     const month = bday.getMonth();
     const day = bday.getDate();
     for (let y = now.getFullYear(); y <= now.getFullYear() + 2; y++) {
-      const date = new Date(Date.UTC(y, month, day));
+      const date = new Date(y, month, day);
       if (date >= now) {
         rows.push({
           id: "birthday-" + (contact.contact_id || contact.id) + "-" + y,
           title: (contact.name || "Contact") + "'s Birthday",
-          event_date: date.toISOString().slice(0, 10),
+          event_date: `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`,
+
           type: "Birthday",
           source: "contact",
           cta_label: "See hints",
