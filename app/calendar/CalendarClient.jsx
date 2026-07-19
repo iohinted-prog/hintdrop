@@ -64,6 +64,7 @@ export default function CalendarClient() {
   const [userId, setUserId] = useState(null);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState("");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -84,6 +85,7 @@ export default function CalendarClient() {
       ]);
       const birthdayEvents = buildContactBirthdayEvents(contacts || []);
       console.log("calEvents:", calEvents, "birthdayEvents:", birthdayEvents);
+      setDebugInfo("calEvents: " + (calEvents?.length || 0) + " birthdayEvents: " + birthdayEvents.length);
       setEvents([...(calEvents || []), ...birthdayEvents]);
       setLoading(false);
     }
@@ -139,6 +141,7 @@ export default function CalendarClient() {
     <main className="min-h-screen bg-[#fffaf7] pb-24">
       <div className="px-4 pt-6 pb-2 sm:px-8 max-w-[640px] mx-auto">
         <h1 className="text-[26px] font-semibold tracking-[-0.04em] text-slate-900 mb-4">Calendar</h1>
+        {debugInfo && <p className="text-xs text-slate-400 mb-2">{debugInfo}</p>}
 
         <div className="flex items-center justify-between mb-3">
           <button onClick={() => setCurrentMonth(new Date(year, month - 1))}
