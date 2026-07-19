@@ -712,33 +712,38 @@ function FeedItem({
               {formatRelativeFromDate(item.occurred_at || item.created_at)}
             </span>
           </div>
-          {bucket === "hint" && metadata.preview_hints?.length > 0 && (
-            <div className="mt-4">
-              <button
-                role="button"
-                onClick={() => actorUserId && onOpenProfile && onOpenProfile({ userId: actorUserId, name: metadata.actor_name, avatarUrl: actorAvatarUrl, initials: actorInitials })}
-                className="w-full text-left"
-              >
-                <div className="grid grid-cols-2 gap-2">
-                  {metadata.preview_hints.slice(0, 2).map((hint, i) => (
-                    <div key={i} className="relative aspect-square overflow-hidden rounded-[18px] border border-[#f0dfd6] bg-[#fffaf7]">
-                      {hint.image_url
-                      ? <img src={hint.image_url} alt={hint.title} className="h-full w-full object-cover" />
-                      : <div className="w-full flex items-center justify-center text-4xl bg-gradient-to-br from-[#ead8ca] to-[#c4a17f]" style={{ minHeight: "120px" }}>🎁</div>
-                      }
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                        <p className="text-[11px] font-semibold text-white truncate">{hint.title}</p>
-                        {hint.retailer && <p className="text-[10px] text-white/70 truncate">{hint.retailer}</p>}
+            {bucket === "hint" && metadata.preview_hints?.length > 0 && (
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => actorUserId && onOpenProfile && onOpenProfile({ userId: actorUserId, name: metadata.actor_name, avatarUrl: actorAvatarUrl, initials: actorInitials })}
+                  className="w-full text-left"
+                >
+                  <div className="grid grid-cols-2 gap-2">
+                    {metadata.preview_hints.slice(0, 2).map((hint, i) => (
+                      <div key={i} className="relative aspect-square overflow-hidden rounded-[18px] border border-[#f0dfd6] bg-[#fffaf7]">
+                        {hint.image_url
+                          ? <img src={hint.image_url} alt={hint.title} className="h-full w-full object-cover" />
+                          : <div className="w-full flex items-center justify-center text-4xl bg-gradient-to-br from-[#ead8ca] to-[#c4a17f]" style={{ minHeight: "120px" }}>🎁</div>
+                        }
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                          <p className="text-[11px] font-semibold text-white truncate">{hint.title}</p>
+                          {hint.retailer && <p className="text-[10px] text-white/70 truncate">{hint.retailer}</p>}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-2 flex items-center justify-between">
-                  {metadata.hint_count > 2 && (
-                    <span className="text-sm font-semibold text-slate-400">+{metadata.hint_count - 2} more hints</span>
-                  )}
-                </div>
-          )}
+                    ))}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    {metadata.hint_count > 2 && (
+                      <span className="text-sm font-semibold text-slate-400">+{metadata.hint_count - 2} more hints</span>
+                    )}
+                    {metadata.preview_hints?.length > 0 && (
+                      <button type="button" onClick={e => { e.stopPropagation(); setSessionHintsModal({ hints: metadata.preview_hints || [], actorUserId, actorName: metadata.actor_name, actorAvatar: actorAvatarUrl }); }} className="ml-auto text-sm font-semibold text-[#df7b59]">See new hints →</button>
+                    )}
+                  </div>
+                </button>
+              </div>
+            )}
           {(bucket !== "hint") && item.cta_label && item.cta_href ? (
             <div className="mt-4">
               <Link
