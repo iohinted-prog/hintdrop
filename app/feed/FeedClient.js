@@ -2208,7 +2208,7 @@ export default function FeedClient() {
           }),
           body: "A reminder so you have time to sort the gift.",
           cta_label: "See hints",
-          cta_href: "/shop",
+              cta_href: contact.profileId ? ("/profile/" + contact.profileId) : "/feed",
           occurred_at: new Date().toISOString(),
           created_at: new Date().toISOString(),
           metadata: {
