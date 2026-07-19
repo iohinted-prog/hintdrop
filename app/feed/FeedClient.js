@@ -738,7 +738,6 @@ function FeedItem({
                     <span className="text-sm font-semibold text-slate-400">+{metadata.hint_count - 2} more hints</span>
                   )}
                 </div>
-                </div>
           )}
           {(bucket !== "hint") && item.cta_label && item.cta_href ? (
             <div className="mt-4">
