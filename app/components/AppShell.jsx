@@ -424,7 +424,7 @@ export default function AppShell({ children }) {
               </button>
 
               {menuOpen ? (
-                <div className="absolute right-0 z-50 mt-3 w-[220px] overflow-hidden rounded-[22px] border border-[#ead8ce] bg-white p-2 shadow-[0_18px_50px_rgba(173,101,72,0.18)] z-[100]">
+                <div className="absolute right-0 z-50 mt-3 w-[220px] overflow-hidden rounded-[22px] border border-[#ead8ce] bg-white p-2 shadow-[0_18px_50px_rgba(173,101,72,0.18)] z-[200]">
                   <div className="rounded-[18px] bg-[#fff8f4] px-3 py-3">
                     <p className="truncate text-sm font-semibold text-slate-900">
                       {fullName || "Your account"}
