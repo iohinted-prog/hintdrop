@@ -67,7 +67,7 @@ export default function CalendarClient() {
       if (!user) return;
       const [{ data: calEvents }, { data: contacts }] = await Promise.all([
         supabase.from("calendar_events").select("*").eq("user_id", user.id)
-          .gte("event_date", todayKey).lte("event_date", threeMonthsKey).order("event_date"),
+          .order("event_date"),
         supabase.from("contact_public_state").select("*").eq("owner_user_id", user.id),
       ]);
       const birthdayEvents = buildContactBirthdayEvents(contacts || []);
@@ -102,12 +102,13 @@ export default function CalendarClient() {
 
   const upcoming = events
     .filter(e => e.event_date >= todayKey)
-    .sort((a, b) => a.event_date.localeCompare(b.event_date));
+    .sort((a, b) => a.event_date.localeCompare(b.event_date))
+    .slice(0, 3);
 
   // Max month is 3 months ahead
   const maxMonth = new Date(); maxMonth.setMonth(maxMonth.getMonth() + 3);
-  const canGoNext = new Date(year, month + 1) <= maxMonth;
-  const canGoPrev = new Date(year, month) > new Date(today.getFullYear(), today.getMonth());
+  const canGoNext = true;
+  const canGoPrev = true;
 
   return (
     <main className="min-h-screen bg-[#fffaf7] pb-24">
