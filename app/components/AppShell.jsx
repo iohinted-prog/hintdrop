@@ -459,7 +459,7 @@ export default function AppShell({ children }) {
                     </div>
                     {hint?.image_url && (
                       <div className="flex gap-3 mb-3 items-center">
-                        <img src={hint.image_url} alt={hint.title} className="h-16 w-16 object-cover rounded-[12px] shrink-0" />
+                        <img src={hint.image_url} alt={hint.title} className="h-16 w-16 object-cover rounded-[12px] shrink-0 cursor-pointer" onClick={() => { setNotifOpen(false); window.location.href = `/profile/${gh?.recipient_user_id}`; }} />
                         <div>
                           <p className="text-[13px] font-semibold text-slate-900 leading-tight">{hint?.title}</p>
                           {hint?.numeric_price > 0 && <p className="text-[13px] font-bold text-[#df7b59] mt-0.5">{new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numeric_price)}</p>}
@@ -776,7 +776,7 @@ export default function AppShell({ children }) {
                     </div>
                     {hint?.image_url && (
                       <div className="flex gap-3 mb-3 items-center">
-                        <img src={hint.image_url} alt={hint.title} className="h-16 w-16 object-cover rounded-[12px] shrink-0" />
+                        <img src={hint.image_url} alt={hint.title} className="h-16 w-16 object-cover rounded-[12px] shrink-0 cursor-pointer" onClick={() => { setNotifOpen(false); window.location.href = `/profile/${gh?.recipient_user_id}`; }} />
                         <div>
                           <p className="text-[13px] font-semibold text-slate-900 leading-tight">{hint?.title}</p>
                           {hint?.numeric_price > 0 && <p className="text-[13px] font-bold text-[#df7b59] mt-0.5">{new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numeric_price)}</p>}
