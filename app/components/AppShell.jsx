@@ -160,6 +160,7 @@ export default function AppShell({ children }) {
   const [invites, setInvites] = useState([]);
   const [circleNotifs, setCircleNotifs] = useState([]);
   const [groupHintInvites, setGroupHintInvites] = useState([]);
+  const [groupHintToast, setGroupHintToast] = useState(null);
   const [notifOpen, setNotifOpen] = useState(false);
   const [inviteActionId, setInviteActionId] = useState(null);
   const [notifActionId, setNotifActionId] = useState(null);
@@ -282,6 +283,7 @@ export default function AppShell({ children }) {
       });
     }
     setGroupHintInvites(prev => prev.filter(m => m.id !== member.id));
+      if (accepted) setGroupHintToast("You're in! The organiser will be in touch to sort out contributions.");
     // Send response email to organiser
     fetch("/api/group-hint-notify", {
       method: "POST",
