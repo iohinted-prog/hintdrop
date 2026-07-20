@@ -372,33 +372,61 @@ export default function AppShell({ children }) {
                     <h3 className="mt-0.5 text-[17px] font-semibold text-slate-900">Pending invites</h3>
                   </div>
                   <div className="max-h-[400px] overflow-y-auto p-4 space-y-3">
-                    {activityNotifs.map(notif => (
-                      <div key={notif.id} className="rounded-[18px] border border-[#e6ddd7] bg-white p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
-                            {notif.data?.actor_avatar_url
-                              ? <img src={notif.data.actor_avatar_url} className="h-full w-full object-cover" alt="" />
-                              : (notif.data?.actor_name || "?")[0]?.toUpperCase()}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-slate-900 truncate">{notif.title}</p>
-                            {notif.body && <p className="text-xs text-slate-500 truncate mt-0.5">{notif.body}</p>}
-                          </div>
-                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${notif.type === "reaction" ? "bg-[#fff4ee] text-[#df7b59]" : "bg-[#eef4ff] text-[#5676b3]"}`}>
-                            {notif.type === "reaction" ? "React" : "Comment"}
-                          </span>
-                        </div>
-                        <button type="button"
-                          onClick={async () => {
-                            await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", notif.id);
-                            setActivityNotifs(prev => prev.filter(n => n.id !== notif.id));
-                            setInviteCount(prev => Math.max(0, prev - 1));
-                          }}
-                          className="mt-2 text-[11px] text-slate-400 hover:text-slate-600">
-                          Mark as read
-                        </button>
-                      </div>
-                    ))}
+      {activityNotifs.filter(n => n.type === "group_hint_response").map(notif => (
+        <div key={notif.id} className="rounded-[18px] border border-[#e6ddd7] bg-white p-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
+              {(notif.data?.actor_name || "?")[0]?.toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-semibold text-slate-900 leading-tight">{notif.title}</p>
+              {notif.body && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{notif.body}</p>}
+            </div>
+            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${notif.data?.response === "in" ? "bg-[#eef7ee] text-[#3a7a3a]" : "bg-[#fff0f0] text-[#b14f43]"}`}>
+              {notif.data?.response === "in" ? "Accepted" : "Declined"}
+            </span>
+          </div>
+          {notif.data?.response === "in" && (
+            <p className="text-[12px] text-slate-500 mb-2">Get in touch with them to sort out contributions.</p>
+          )}
+          <button type="button"
+            onClick={async () => {
+              await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", notif.id);
+              setActivityNotifs(prev => prev.filter(n => n.id !== notif.id));
+              setInviteCount(prev => Math.max(0, prev - 1));
+            }}
+            className="mt-1 text-[11px] text-slate-400 hover:text-slate-600">
+            Dismiss
+          </button>
+        </div>
+      ))}
+      {activityNotifs.filter(n => n.type !== "group_hint_response").map(notif => (
+        <div key={notif.id} className="rounded-[18px] border border-[#e6ddd7] bg-white p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
+              {notif.data?.actor_avatar_url
+                ? <img src={notif.data.actor_avatar_url} className="h-full w-full object-cover" alt="" />
+                : (notif.data?.actor_name || "?")[0]?.toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-slate-900 truncate">{notif.title}</p>
+              {notif.body && <p className="text-xs text-slate-500 truncate mt-0.5">{notif.body}</p>}
+            </div>
+            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${notif.type === "reaction" ? "bg-[#fff4ee] text-[#df7b59]" : "bg-[#eef4ff] text-[#5676b3]"}`}>
+              {notif.type === "reaction" ? "React" : "Comment"}
+            </span>
+          </div>
+          <button type="button"
+            onClick={async () => {
+              await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", notif.id);
+              setActivityNotifs(prev => prev.filter(n => n.id !== notif.id));
+              setInviteCount(prev => Math.max(0, prev - 1));
+            }}
+            className="mt-2 text-[11px] text-slate-400 hover:text-slate-600">
+            Mark as read
+          </button>
+        </div>
+      ))}
                     {groupHintInvites.map(member => {
                 const gh = member.group_hints;
                 const hint = gh?.hints;
