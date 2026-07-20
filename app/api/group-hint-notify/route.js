@@ -91,7 +91,7 @@ export async function POST(req) {
         subject: accepted ? `${responderName} is in!` : `${responderName} declined`,
         html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
           <h2 style="color:${accepted ? "#4a7a3a" : "#b14f43"}">${accepted ? "🎉 They're in!" : "They declined"}</h2>
-          <p><strong>${responderName}</strong> has ${accepted ? "accepted" : "declined"} your group gift invite for <strong>${gh?.hints?.title || "a hint"}</strong>.</p>
+          <p><strong>${responderName}</strong> has ${accepted ? "accepted" : "declined"} your group gift invite for <strong>${gh?.hints?.title || "a hint"}</strong>.</p>${accepted ? `<p style="color:#555;font-size:14px;margin-top:8px">Get in touch with them to sort out contributions between yourselves.</p>` : ""}
           <a href="https://hintdrop.app/feed" style="display:inline-block;margin-top:20px;background:linear-gradient(to bottom,#ff966f,#ff7e54);color:white;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:bold">View in HintDrop</a>
         </div>`,
       });
