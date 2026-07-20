@@ -64,7 +64,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
         organiser_id: organiserId,
         recipient_user_id: recipientUserId,
       }).select().maybeSingle();
-      console.log("group_hints result:", gh, ghError);
+      alert("insert result: " + JSON.stringify({id: gh?.id, err: ghError?.message}));
       ghId = gh?.id;
       setGroupHint(gh);
     }
