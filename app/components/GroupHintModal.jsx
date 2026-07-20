@@ -54,8 +54,10 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
     if (!selected.length) return;
     setSending(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setSending(false); return; }
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) { setSendError("Not logged in"); setSending(false); return; }
+      setSendError("");
 
       // Insert group hint
       const { data: gh, error: ghErr } = await supabase
