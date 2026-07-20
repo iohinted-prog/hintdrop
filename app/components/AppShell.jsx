@@ -200,7 +200,7 @@ export default function AppShell({ children }) {
     // Load group hint invites
     const { data: ghiData } = await supabase
       .from("group_hint_members")
-      .select("id, status, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name, avatar_url))")
+      .select("id, status, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name, avatar_url), group_hint_members(id))")
       .eq("user_id", user.id)
       .eq("status", "invited");
     setGroupHintInvites(ghiData || []);
@@ -425,6 +425,7 @@ export default function AppShell({ children }) {
                           <p className="text-[13px] font-semibold text-slate-900 leading-tight">{hint?.title}</p>
                           {hint?.numeric_price > 0 && <p className="text-[13px] font-bold text-[#df7b59] mt-0.5">{new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numeric_price)}</p>}
                           {hint?.retailer && <p className="text-[11px] text-slate-400 mt-0.5">{hint.retailer}</p>}
+                {(() => { const c = member.group_hints?.group_hint_members?.length || 0; return c > 0 ? <p className="text-[11px] text-slate-400 mt-0.5">{c} {c === 1 ? "person" : "people"} invited</p> : null; })()}
                         </div>
                       </div>
                     )}
