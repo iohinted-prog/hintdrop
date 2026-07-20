@@ -273,7 +273,7 @@ export default function AppShell({ children }) {
         type: "group_hint_response",
         title: accepted ? responderName + " is in!" : responderName + " declined",
         body: gh.hints?.title || "a hint",
-        data: {},
+        data: { actor_name: responderName, response: status, hint_title: gh.hints?.title },
         created_at: new Date().toISOString(),
       });
       fetch("/api/group-hint-notify", {
@@ -457,7 +457,7 @@ export default function AppShell({ children }) {
                         </div>
                       </div>
                     ))}
-                    {invites.length === 0 && circleNotifs.length === 0 ? (
+                    {invites.length === 0 && circleNotifs.length === 0 && activityNotifs.length === 0 && groupHintInvites.length === 0 ? (
                       <p className="text-sm text-slate-400 text-center py-4">No pending invites</p>
                     ) : invites.map(invite => (
                       <div key={invite.id} className={`rounded-[18px] border p-4 ${invite.source === "contact" ? "border-[#e6ddd7] bg-white" : "border-[#dce8d8] bg-[#f7fbf5]"}`}>
@@ -774,7 +774,7 @@ export default function AppShell({ children }) {
                         </div>
                       </div>
                     ))}
-                    {invites.length === 0 && circleNotifs.length === 0 ? (
+                    {invites.length === 0 && circleNotifs.length === 0 && activityNotifs.length === 0 && groupHintInvites.length === 0 ? (
                       <p className="text-sm text-slate-400 text-center py-4">No pending invites</p>
                     ) : invites.map(invite => (
                       <div key={invite.id} className={`rounded-[18px] border p-4 ${invite.source === "contact" ? "border-[#e6ddd7] bg-white" : "border-[#dce8d8] bg-[#f7fbf5]"}`}>
