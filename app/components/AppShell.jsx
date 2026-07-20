@@ -285,6 +285,7 @@ export default function AppShell({ children }) {
     }
     setGroupHintInvites(prev => prev.filter(m => m.id !== member.id));
       if (accepted) setGroupHintToast("You're in! The organiser will be in touch to sort out contributions.");
+    alert("[pre-fetch] gh?.organiser_id:" + gh?.organiser_id + " currentUserId:" + currentUserId);
     // Send response email to organiser
     fetch("/api/group-hint-notify", {
       method: "POST",
