@@ -53,14 +53,18 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
     if (!selected.length) return;
     setSending(true);
 
+    const { data: { user } } = await supabase.auth.getUser();
+    const organiserId = user?.id;
+    if (!organiserId) { setSending(false); return; }
+
     let ghId = groupHint?.id;
     if (!ghId) {
       const { data: gh, error: ghError } = await supabase.from("group_hints").insert({
         hint_id: hint.id,
-        organiser_id: currentUserId,
+        organiser_id: organiserId,
         recipient_user_id: recipientUserId,
       }).select().maybeSingle();
-      if (ghError) { console.error("group_hints insert error:", ghError); setSending(false); return; }
+      if (ghError) { console.error("group_hints insert error:", ghError.message); setSending(false); return; }
       ghId = gh?.id;
       setGroupHint(gh);
     }
