@@ -404,7 +404,8 @@ export default function AppShell({ children }) {
           )}
           <button type="button"
             onClick={async () => {
-              await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", notif.id);
+              const { error } = await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", notif.id);
+              if (error) { alert("dismiss error: " + JSON.stringify(error)); return; }
               setActivityNotifs(prev => prev.filter(n => n.id !== notif.id));
               setInviteCount(prev => Math.max(0, prev - 1));
             }}
