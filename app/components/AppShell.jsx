@@ -289,7 +289,7 @@ export default function AppShell({ children }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "response", memberId: member.id, responderId: currentUserId, response: status }),
-    }).catch(() => {});
+      }).then(async r => { const t = await r.text(); alert("[response] " + r.status + ": " + t); }).catch(e => alert("[err] " + e.message));
     await loadInviteCount();
   }
 
