@@ -281,6 +281,12 @@ export default function AppShell({ children }) {
       });
     }
     setGroupHintInvites(prev => prev.filter(m => m.id !== member.id));
+    // Send response email to organiser
+    fetch("/api/group-hint-notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "response", memberId: member.id, responderId: currentUserId, response: status }),
+    }).catch(() => {});
     await loadInviteCount();
   }
 
