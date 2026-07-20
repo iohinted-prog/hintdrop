@@ -82,7 +82,6 @@ Deno.serve(async (req) => {
       if (nextBday <= todayDate) nextBday.setUTCFullYear(todayDate.getUTCFullYear() + 1)
       const daysUntil = Math.round((nextBday.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24))
 
-      console.log(`${profile.full_name}: daysUntil=${daysUntil}`);
       if (daysUntil !== 10 && daysUntil !== 3) continue
 
       // Get all contacts who have this person in their contacts
