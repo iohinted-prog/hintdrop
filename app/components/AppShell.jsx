@@ -214,10 +214,18 @@ export default function AppShell({ children }) {
     // Load conversations
     const { data: convData } = await supabase
       .from("conversation_members")
-      .select("conversation_id, last_read_at, conversations(id, type, group_hint_id, group_hints(id, hints(title, image_url)), conversation_members(user_id, profiles(full_name, avatar_url)))")
+      .select("conversation_id, last_read_at, conversations(id, type, group_hint_id, conversation_members(user_id, profiles(full_name, avatar_url)))")
       .eq("user_id", user.id);
     const convs = (convData || []).map(c => c.conversations).filter(Boolean);
-    setGroupMessages(convs);
+    // Fetch hint details for group convs
+    const ghIds = convs.map(c => c.group_hint_id).filter(Boolean);
+    let ghMap = {};
+    if (ghIds.length) {
+      const { data: ghData } = await supabase.from("group_hints").select("id, hints(title, image_url)").in("id", ghIds);
+      (ghData || []).forEach(gh => { ghMap[gh.id] = gh; });
+    }
+    const convsWithHints = convs.map(c => ({ ...c, group_hints: ghMap[c.group_hint_id] || null }));
+    setGroupMessages(convsWithHints);
 
     // Load circle notifications for organiser
     const { data: cnData } = await supabase
