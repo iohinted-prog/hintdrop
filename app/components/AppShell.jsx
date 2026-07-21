@@ -217,7 +217,6 @@ export default function AppShell({ children }) {
       .select("conversation_id")
       .eq("user_id", user.id);
     const convIds = (myMemberships || []).map(m => m.conversation_id);
-    if (!convIds.length) alert("no convIds, myMemberships=" + JSON.stringify(myMemberships));
     if (convIds.length) {
       const [{ data: convsData }, { data: allMembers }] = await Promise.all([
         supabase.from("conversations").select("id, type, group_hint_id").in("id", convIds),
@@ -335,7 +334,7 @@ export default function AppShell({ children }) {
             convId = newId;
             // Add organiser as member
             const { error: orgMemErr } = await supabase.from("conversation_members").insert({ conversation_id: convId, user_id: gh.organiser_id });
-            alert("org member: " + (orgMemErr ? JSON.stringify(orgMemErr) : "ok, id=" + gh.organiser_id));
+            if (orgMemErr) console.error("org member err:", orgMemErr);
           }
         }
         // Add accepter as member

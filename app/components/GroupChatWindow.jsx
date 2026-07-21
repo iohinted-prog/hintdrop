@@ -100,7 +100,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
   }
 
   return (
-    <div className="fixed inset-0 z-[70] md:inset-auto md:bottom-4 md:right-4 md:w-[380px] md:h-[580px] flex flex-col bg-[#fffaf7] md:rounded-[22px] border border-[#efdcd2] shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-[110] md:inset-auto md:bottom-4 md:right-4 md:w-[380px] md:h-[580px] flex flex-col bg-[#fffaf7] md:rounded-[22px] border border-[#efdcd2] shadow-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-[#f0e4dd] shrink-0">
         <div className="flex -space-x-2 shrink-0">

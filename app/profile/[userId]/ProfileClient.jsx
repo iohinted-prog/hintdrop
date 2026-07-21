@@ -109,6 +109,39 @@ export default function ProfileClient({ userId }) {
       return (a.position ?? 999) - (b.position ?? 999);
     });
 
+  const [addingContact, setAddingContact] = useState(false);
+  const [addedContact, setAddedContact] = useState(false);
+
+  async function handleAddToCircle() {
+    if (!currentUser) return;
+    setAddingContact(true);
+    await supabase.from("contacts").insert({
+      user_id: currentUser.id,
+      name: profile?.full_name || "Contact",
+      profile_id: userId,
+      status: "active",
+    });
+    setIsContact(true);
+    setAddedContact(true);
+    setAddingContact(false);
+  }
+
+  const isOwnProfile = currentUser?.id === userId;
+  const [addingContact, setAddingContact] = useState(false);
+
+  async function handleAddToCircle() {
+    if (!currentUser) return;
+    setAddingContact(true);
+    await supabase.from("contacts").insert({
+      user_id: currentUser.id,
+      name: profile?.full_name || "Contact",
+      profile_id: userId,
+      status: "active",
+    });
+    setIsContact(true);
+    setAddingContact(false);
+  }
+
   const displayName = profile?.full_name || "User";
   const interests = Array.isArray(profile?.interests) ? profile.interests : [];
 
@@ -123,6 +156,13 @@ export default function ProfileClient({ userId }) {
           }
           <div className="flex-1 min-w-0">
             <h1 className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900">{displayName}'s Hints</h1>
+            {!isOwnProfile && currentUser && (
+              <button type="button" onClick={isContact ? undefined : handleAddToCircle}
+                disabled={addingContact}
+                className={`mt-2 text-[12px] font-semibold px-3 py-1 rounded-full border transition ${isContact ? "border-[#c3e0c3] bg-[#f0faf0] text-[#3a7a3a] cursor-default" : "border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d]"}`}>
+                {isContact ? "✓ In your circle" : addingContact ? "Adding..." : "+ Add to circle"}
+              </button>
+            )}
             {interests.length > 0 && (
               <div className="mt-1 flex flex-wrap gap-1">
                 {interests.slice(0, 6).map(i => <span key={i} className="rounded-full bg-[#fff4ee] px-2.5 py-0.5 text-[11px] font-semibold text-[#df7b59]">{i}</span>)}
