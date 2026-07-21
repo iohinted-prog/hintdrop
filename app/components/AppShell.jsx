@@ -211,16 +211,13 @@ export default function AppShell({ children }) {
       .eq("status", "invited");
     setGroupHintInvites(ghiData || []);
 
-    // Load group hint threads (as organiser or member)
-    const [{ data: organisedThreads }, { data: memberThreads }] = await Promise.all([
-      supabase.from("group_hints").select("id, hints(title, image_url), group_hint_members(user_id, status)").eq("organiser_id", user.id).order("created_at", { ascending: false }),
-      supabase.from("group_hint_members").select("group_hint_id, group_hints(id, hints(title, image_url), organiser_id, group_hint_members(user_id, status))").eq("user_id", user.id).eq("status", "in"),
-    ]);
-    const allThreads = [
-      ...(organisedThreads || []),
-      ...(memberThreads || []).map(m => m.group_hints).filter(Boolean),
-    ].filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i);
-    setGroupMessages(allThreads);
+    // Load conversations
+    const { data: convData } = await supabase
+      .from("conversation_members")
+      .select("conversation_id, last_read_at, conversations(id, type, group_hint_id, group_hints(id, hints(title, image_url)), conversation_members(user_id, profiles(full_name, avatar_url)))")
+      .eq("user_id", user.id);
+    const convs = (convData || []).map(c => c.conversations).filter(Boolean);
+    setGroupMessages(convs);
 
     // Load circle notifications for organiser
     const { data: cnData } = await supabase
