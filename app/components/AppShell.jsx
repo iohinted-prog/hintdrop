@@ -738,8 +738,6 @@ export default function AppShell({ children }) {
         />
       )}
     </div>
-  );
-}
       await supabase.from("circle_notifications").update({ acted_on: true }).eq("id", notif.id);
       await loadInviteCount();
     } finally {
