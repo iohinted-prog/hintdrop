@@ -407,7 +407,7 @@ export default function AppShell({ children }) {
                 )}
               </button>
               {messagesOpen && (
-                <div className="absolute left-0 md:left-auto md:right-0 top-14 z-50 w-[calc(100vw-2rem)] md:w-80 rounded-[22px] border border-[#efdcd2] bg-[#fffaf7] shadow-[0_20px_60px_rgba(88,46,31,0.15)] overflow-hidden">
+                <div className="absolute right-0 top-14 z-50 w-80 max-w-[calc(100vw-1rem)] rounded-[22px] border border-[#efdcd2] bg-[#fffaf7] shadow-[0_20px_60px_rgba(88,46,31,0.15)] overflow-hidden">
                   <div className="px-5 py-4 border-b border-[#f0e4dd]">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Messages</p>
                     <h3 className="mt-0.5 text-[17px] font-semibold text-slate-900">Messages</h3>
@@ -458,7 +458,7 @@ export default function AppShell({ children }) {
                 )}
               </button>
               {notifOpen && (
-                <div className="absolute left-0 md:left-auto md:right-0 top-14 z-50 w-[calc(100vw-2rem)] md:w-80 rounded-[22px] border border-[#efdcd2] bg-[#fffaf7] shadow-[0_20px_60px_rgba(88,46,31,0.15)] overflow-hidden">
+                <div className="absolute right-0 top-14 z-50 w-80 max-w-[calc(100vw-1rem)] rounded-[22px] border border-[#efdcd2] bg-[#fffaf7] shadow-[0_20px_60px_rgba(88,46,31,0.15)] overflow-hidden">
                   <div className="px-5 py-4 border-b border-[#f0e4dd]">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Notifications</p>
                     <h3 className="mt-0.5 text-[17px] font-semibold text-slate-900">Pending invites</h3>
@@ -848,7 +848,7 @@ export default function AppShell({ children }) {
                 )}
               </button>
               {messagesOpen && (
-                <div className="absolute left-0 md:left-auto md:right-0 top-14 z-50 w-[calc(100vw-2rem)] md:w-80 rounded-[22px] border border-[#efdcd2] bg-[#fffaf7] shadow-[0_20px_60px_rgba(88,46,31,0.15)] overflow-hidden">
+                <div className="absolute right-0 top-14 z-50 w-80 max-w-[calc(100vw-1rem)] rounded-[22px] border border-[#efdcd2] bg-[#fffaf7] shadow-[0_20px_60px_rgba(88,46,31,0.15)] overflow-hidden">
                   <div className="px-5 py-4 border-b border-[#f0e4dd]">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Messages</p>
                     <h3 className="mt-0.5 text-[17px] font-semibold text-slate-900">Messages</h3>
@@ -894,7 +894,7 @@ export default function AppShell({ children }) {
                 )}
               </button>
               {notifOpen && (
-                <div className="absolute left-0 md:left-auto md:right-0 top-14 z-50 w-[calc(100vw-2rem)] md:w-80 rounded-[22px] border border-[#efdcd2] bg-[#fffaf7] shadow-[0_20px_60px_rgba(88,46,31,0.15)] overflow-hidden">
+                <div className="absolute right-0 top-14 z-50 w-80 max-w-[calc(100vw-1rem)] rounded-[22px] border border-[#efdcd2] bg-[#fffaf7] shadow-[0_20px_60px_rgba(88,46,31,0.15)] overflow-hidden">
                   <div className="px-5 py-4 border-b border-[#f0e4dd]">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Notifications</p>
                     <h3 className="mt-0.5 text-[17px] font-semibold text-slate-900">Pending invites</h3>
