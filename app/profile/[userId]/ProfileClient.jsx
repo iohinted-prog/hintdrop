@@ -127,7 +127,6 @@ export default function ProfileClient({ userId }) {
   }
 
   const isOwnProfile = currentUser?.id === userId;
-  const [addingContact, setAddingContact] = useState(false);
 
   async function handleAddToCircle() {
     if (!currentUser) return;
