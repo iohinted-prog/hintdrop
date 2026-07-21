@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
+import GroupChatWindow from "./GroupChatWindow";
 
 function LogoMark() {
   return (
@@ -165,6 +166,7 @@ export default function AppShell({ children }) {
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [groupMessages, setGroupMessages] = useState([]);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [activeThread, setActiveThread] = useState(null);
   const [inviteActionId, setInviteActionId] = useState(null);
   const [notifActionId, setNotifActionId] = useState(null);
   const notifRef = useRef(null);
@@ -378,7 +380,7 @@ export default function AppShell({ children }) {
                       <p className="text-sm text-slate-400 text-center py-4">No group gift chats yet</p>
                     ) : groupMessages.map(thread => (
                       <div key={thread.id} className="rounded-[18px] border border-[#f0dfd6] bg-white p-4 cursor-pointer hover:bg-[#fff5f0]"
-                        onClick={() => { setMessagesOpen(false); }}>
+                        onClick={() => { setMessagesOpen(false); setActiveThread(thread); }}>
                         <div className="flex items-center gap-3">
                           {thread.hints?.image_url
                             ? <img src={thread.hints.image_url} className="h-10 w-10 rounded-[10px] object-cover shrink-0" alt="" />
@@ -716,6 +718,13 @@ export default function AppShell({ children }) {
         </a>
       </nav>
       <div className="h-20 md:hidden" />
+      {activeThread && (
+        <GroupChatWindow
+          thread={activeThread}
+          currentUserId={currentUserId}
+          onClose={() => setActiveThread(null)}
+        />
+      )}
     </div>
   );
 
