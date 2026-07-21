@@ -211,6 +211,17 @@ export default function AppShell({ children }) {
       .eq("status", "invited");
     setGroupHintInvites(ghiData || []);
 
+    // Load group hint threads (as organiser or member)
+    const [{ data: organisedThreads }, { data: memberThreads }] = await Promise.all([
+      supabase.from("group_hints").select("id, hints(title, image_url), group_hint_members(user_id, status)").eq("organiser_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("group_hint_members").select("group_hint_id, group_hints(id, hints(title, image_url), organiser_id, group_hint_members(user_id, status))").eq("user_id", user.id).eq("status", "in"),
+    ]);
+    const allThreads = [
+      ...(organisedThreads || []),
+      ...(memberThreads || []).map(m => m.group_hints).filter(Boolean),
+    ].filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i);
+    setGroupMessages(allThreads);
+
     // Load circle notifications for organiser
     const { data: cnData } = await supabase
       .from("circle_notifications")
