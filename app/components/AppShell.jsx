@@ -211,22 +211,32 @@ export default function AppShell({ children }) {
       .eq("status", "invited");
     setGroupHintInvites(ghiData || []);
 
-    // Load conversations
-    const { data: convData } = await supabase
+    // Load conversations - step by step to avoid recursive joins
+    const { data: myMemberships } = await supabase
       .from("conversation_members")
-      .select("conversation_id, last_read_at, conversations(id, type, group_hint_id, conversation_members(user_id, profiles(full_name, avatar_url)))")
+      .select("conversation_id")
       .eq("user_id", user.id);
-    const convs = (convData || []).map(c => c.conversations).filter(Boolean);
-    if (convs.length === 0) alert("convData=" + JSON.stringify(convData?.slice(0,2)));
-    // Fetch hint details for group convs
-    const ghIds = convs.map(c => c.group_hint_id).filter(Boolean);
-    let ghMap = {};
-    if (ghIds.length) {
-      const { data: ghData } = await supabase.from("group_hints").select("id, hints(title, image_url)").in("id", ghIds);
-      (ghData || []).forEach(gh => { ghMap[gh.id] = gh; });
+    const convIds = (myMemberships || []).map(m => m.conversation_id);
+    if (convIds.length) {
+      const [{ data: convsData }, { data: allMembers }] = await Promise.all([
+        supabase.from("conversations").select("id, type, group_hint_id").in("id", convIds),
+        supabase.from("conversation_members").select("conversation_id, user_id, profiles(full_name, avatar_url)").in("conversation_id", convIds),
+      ]);
+      const ghIds = (convsData || []).map(c => c.group_hint_id).filter(Boolean);
+      let ghMap = {};
+      if (ghIds.length) {
+        const { data: ghData } = await supabase.from("group_hints").select("id, hints(title, image_url)").in("id", ghIds);
+        (ghData || []).forEach(gh => { ghMap[gh.id] = gh; });
+      }
+      const convsWithData = (convsData || []).map(c => ({
+        ...c,
+        group_hints: ghMap[c.group_hint_id] || null,
+        conversation_members: (allMembers || []).filter(m => m.conversation_id === c.id),
+      }));
+      setGroupMessages(convsWithData);
+    } else {
+      setGroupMessages([]);
     }
-    const convsWithHints = convs.map(c => ({ ...c, group_hints: ghMap[c.group_hint_id] || null }));
-    setGroupMessages(convsWithHints);
 
     // Load circle notifications for organiser
     const { data: cnData } = await supabase
