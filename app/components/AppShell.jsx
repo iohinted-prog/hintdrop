@@ -217,6 +217,7 @@ export default function AppShell({ children }) {
       .select("conversation_id, last_read_at, conversations(id, type, group_hint_id, conversation_members(user_id, profiles(full_name, avatar_url)))")
       .eq("user_id", user.id);
     const convs = (convData || []).map(c => c.conversations).filter(Boolean);
+    if (convs.length === 0) alert("convData=" + JSON.stringify(convData?.slice(0,2)));
     // Fetch hint details for group convs
     const ghIds = convs.map(c => c.group_hint_id).filter(Boolean);
     let ghMap = {};
