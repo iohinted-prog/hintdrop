@@ -32,12 +32,13 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
   const gh = conversation?.group_hints;
   const hint = gh?.hints;
 
-  // Thread title: other people's names
+  // Thread title: first names, truncated after 2
+  const firstName = n => n?.split(" ")[0] || "?";
   const title = otherMembers.length === 0
     ? "Just you"
-    : otherMembers.length === 1
-      ? otherMembers[0].profiles?.full_name || "Someone"
-      : otherMembers.map(m => m.profiles?.full_name?.split(" ")[0] || "?").join(", ");
+    : otherMembers.length <= 2
+      ? otherMembers.map(m => firstName(m.profiles?.full_name)).join(", ")
+      : otherMembers.slice(0, 2).map(m => firstName(m.profiles?.full_name)).join(", ") + ` + ${otherMembers.length - 2} others`;
 
   useEffect(() => {
     if (!conversation?.id) return;
