@@ -333,6 +333,7 @@ export default function AppShell({ children }) {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-[#fffaf7] text-slate-800">
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur relative z-[100]">
         <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
@@ -730,14 +731,16 @@ export default function AppShell({ children }) {
       </nav>
       <div className="h-20 md:hidden" />
     </div>
+    {activeThread && (
+      <GroupChatWindow
+        thread={activeThread}
+        currentUserId={currentUserId}
+        onClose={() => setActiveThread(null)}
+      />
+    )}
+    </>
   );
-
-
-  async function handleCircleNotifAction(notif, action) {
-    setNotifActionId(notif.id);
-    try {
-      if (action === "cancel") {
-        await supabase.from("circles").update({ status: "cancelled" }).eq("id", notif.circle_id);
+}
       }
       await supabase.from("circle_notifications").update({ acted_on: true }).eq("id", notif.id);
       await loadInviteCount();
