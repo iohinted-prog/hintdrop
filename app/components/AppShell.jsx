@@ -279,9 +279,23 @@ export default function AppShell({ children }) {
 
   useEffect(() => {
     loadInviteCount();
-    // Poll every 30 seconds for new notifications
-    const interval = setInterval(loadInviteCount, 30000);
-    return () => clearInterval(interval);
+    // Poll every 10 seconds for new notifications
+    const interval = setInterval(loadInviteCount, 10000);
+
+    // Also subscribe to new messages for instant updates
+    const msgChannel = supabase.channel("new-messages-global")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" },
+        () => loadInviteCount()
+      )
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "conversation_members" },
+        () => loadInviteCount()
+      )
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(msgChannel);
+    };
   }, [loadInviteCount]);
 
   useEffect(() => {
@@ -489,7 +503,7 @@ export default function AppShell({ children }) {
                   <div className="max-h-[400px] overflow-y-auto p-4 space-y-3">
                     {groupMessages.length === 0 ? (
                       <p className="text-sm text-slate-400 text-center py-4">No messages yet</p>
-                    ) : groupMessages.map(conv => {
+                    ) : groupMessages.slice(0, 8).map(conv => {
                       const others = (conv.conversation_members || []).filter(m => m.user_id !== currentUserId);
                       const hint = conv.group_hints?.hints;
                       const title = others.length === 0 ? "Just you" : others.length === 1 ? others[0].profiles?.full_name || "Someone" : others.map(m => m.profiles?.full_name?.split(" ")[0] || "?").join(", ");
@@ -531,7 +545,7 @@ export default function AppShell({ children }) {
                     <h3 className="mt-0.5 text-[17px] font-semibold text-slate-900">Pending invites</h3>
                   </div>
                   <div className="max-h-[400px] overflow-y-auto p-4 space-y-3">
-      {activityNotifs.filter(n => n.type === "group_hint_response").map(notif => {
+      {activityNotifs.filter(n => n.type === "group_hint_response").slice(0, 5).map(notif => {
         const hintImage = notif.data?.hint_image;
         const recipientId = notif.data?.recipient_user_id;
         return (
@@ -573,7 +587,7 @@ export default function AppShell({ children }) {
         </div>
         );
       })}
-      {activityNotifs.filter(n => n.type === "birthday_reminder").map(notif => (
+      {activityNotifs.filter(n => n.type === "birthday_reminder").slice(0, 3).map(notif => (
         <div key={notif.id} className="rounded-[18px] border border-[#e6ddd7] bg-white p-4">
           <div className="flex items-center gap-3 mb-2">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
@@ -598,7 +612,7 @@ export default function AppShell({ children }) {
           </button>
         </div>
       ))}
-      {activityNotifs.filter(n => n.type !== "group_hint_response" && n.type !== "birthday_reminder").map(notif => (
+      {activityNotifs.filter(n => n.type !== "group_hint_response" && n.type !== "birthday_reminder").slice(0, 5).map(notif => (
         <div key={notif.id} className="rounded-[18px] border border-[#e6ddd7] bg-white p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
