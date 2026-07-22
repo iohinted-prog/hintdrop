@@ -230,10 +230,20 @@ export default function AppShell({ children }) {
         const { data: ghData } = await supabase.from("group_hints").select("id, hints(title, image_url)").in("id", ghIds);
         (ghData || []).forEach(gh => { ghMap[gh.id] = gh; });
       }
+      // Fetch last message per conversation
+      const { data: lastMsgs } = await supabase
+        .from("messages")
+        .select("conversation_id, body, type, created_at, profiles(full_name)")
+        .in("conversation_id", convIds)
+        .order("created_at", { ascending: false });
+      const lastMsgMap = {};
+      (lastMsgs || []).forEach(m => { if (!lastMsgMap[m.conversation_id]) lastMsgMap[m.conversation_id] = m; });
+
       const convsWithData = (convsData || []).map(c => ({
         ...c,
         group_hints: ghMap[c.group_hint_id] || null,
         conversation_members: (allMembers || []).filter(m => m.conversation_id === c.id),
+        last_message: lastMsgMap[c.id] || null,
       }));
       setGroupMessages(convsWithData);
     } else {
@@ -482,7 +492,13 @@ export default function AppShell({ children }) {
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-[13px] font-semibold text-slate-900 truncate">{title}</p>
-                              {hint && <p className="text-[11px] text-slate-400 truncate mt-0.5">re: {hint.title}</p>}
+                              {conv.last_message && (
+                                <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                                  {conv.last_message.type === "system"
+                                    ? conv.last_message.body
+                                    : `${conv.last_message.profiles?.full_name?.split(" ")[0] || "?"}: ${conv.last_message.body}`}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </div>
