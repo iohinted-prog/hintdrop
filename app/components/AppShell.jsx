@@ -233,7 +233,7 @@ export default function AppShell({ children }) {
       // Fetch last message per conversation
       const { data: lastMsgs } = await supabase
         .from("messages")
-        .select("conversation_id, body, type, created_at, profiles(full_name)")
+        .select("conversation_id, body, type, created_at, sender_id, profiles(full_name)")
         .in("conversation_id", convIds)
         .order("created_at", { ascending: false });
       const lastMsgMap = {};
@@ -246,9 +246,10 @@ export default function AppShell({ children }) {
       const convsWithData = (convsData || []).map(c => {
         const lastRead = myMembershipMap[c.id];
         const lastMsg = lastMsgMap[c.id];
-        const unread = lastMsg && lastRead
+        const isOwnMessage = lastMsg?.sender_id === user.id;
+        const unread = !isOwnMessage && lastMsg && lastRead
           ? new Date(lastMsg.created_at) > new Date(lastRead) ? 1 : 0
-          : lastMsg ? 1 : 0;
+          : !isOwnMessage && lastMsg && !lastRead ? 1 : 0;
         return {
           ...c,
           group_hints: ghMap[c.group_hint_id] || null,
@@ -509,7 +510,7 @@ export default function AppShell({ children }) {
                       const title = others.length === 0 ? "Just you" : others.length === 1 ? others[0].profiles?.full_name || "Someone" : others.map(m => m.profiles?.full_name?.split(" ")[0] || "?").join(", ");
                       return (
                         <div key={conv.id} className="rounded-[18px] border border-[#f0dfd6] bg-white p-4 cursor-pointer hover:bg-[#fff5f0]"
-                          onClick={() => { setMessagesOpen(false); setActiveThread(conv); }}>
+                          onClick={async () => { setMessagesOpen(false); setActiveThread(conv); await supabase.from("conversation_members").update({ last_read_at: new Date().toISOString() }).eq("conversation_id", conv.id).eq("user_id", currentUserId); loadInviteCount(); }}>
                           <div className="flex items-center gap-3">
                             <div className="flex -space-x-2 shrink-0">
                               {others.slice(0, 2).map(m => (
