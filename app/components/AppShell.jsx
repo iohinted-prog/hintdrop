@@ -163,7 +163,6 @@ export default function AppShell({ children }) {
   const [groupHintInvites, setGroupHintInvites] = useState([]);
   const [groupHintToast, setGroupHintToast] = useState(null);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [groupMessages, setGroupMessages] = useState([]);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
@@ -174,7 +173,6 @@ export default function AppShell({ children }) {
 
   const loadInviteCount = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    setIsLoggedIn(!!session);
     if (!session) return;
     const user = session.user;
     if (!user) return;
@@ -230,23 +228,10 @@ export default function AppShell({ children }) {
         const { data: ghData } = await supabase.from("group_hints").select("id, hints(title, image_url)").in("id", ghIds);
         (ghData || []).forEach(gh => { ghMap[gh.id] = gh; });
       }
-        // Fetch last message per conversation
-      const { data: lastMsgs } = await supabase
-        .from("messages")
-        .select("conversation_id, body, type, created_at, profiles(full_name)")
-        .in("conversation_id", convIds)
-        .order("created_at", { ascending: false });
-
-      const lastMsgMap = {};
-      (lastMsgs || []).forEach(m => {
-        if (!lastMsgMap[m.conversation_id]) lastMsgMap[m.conversation_id] = m;
-      });
-
       const convsWithData = (convsData || []).map(c => ({
         ...c,
         group_hints: ghMap[c.group_hint_id] || null,
         conversation_members: (allMembers || []).filter(m => m.conversation_id === c.id),
-        last_message: lastMsgMap[c.id] || null,
       }));
       setGroupMessages(convsWithData);
     } else {
@@ -416,13 +401,7 @@ export default function AppShell({ children }) {
           </Link>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            {!isLoggedIn && (
-              <div className="flex items-center gap-2">
-                <Link href="/shop" className="hidden md:flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold text-slate-600 border border-[#ead8ce] hover:bg-[#fff5f0]">🛍️ Shop</Link>
-                <Link href="/login" className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white shadow-sm">Sign in</Link>
-              </div>
-            )}
-            {isLoggedIn && <nav className="hidden md:flex items-center justify-center gap-1">
+            <nav className="hidden md:flex items-center justify-center gap-1">
               {navItems.map((item) => {
                 const isActive =
                   pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -443,9 +422,9 @@ export default function AppShell({ children }) {
                   </Link>
                 );
               })}
-            </nav>}
+            </nav>
 
-            {isLoggedIn && <div className="relative">
+            <div className="relative">
               <button type="button" onClick={() => { setMessagesOpen(prev => !prev); setNotifOpen(false); }}
                 className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white shadow-sm transition hover:bg-[#fff5f0]"
                 aria-label="Messages">
@@ -459,7 +438,7 @@ export default function AppShell({ children }) {
                 )}
               </button>
 
-            </div>}
+            </div>
 
             <div className="relative" ref={notifRef}>
               <button type="button" onClick={() => { setNotifOpen(prev => !prev); setMessagesOpen(false); }}
@@ -501,11 +480,7 @@ export default function AppShell({ children }) {
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-[13px] font-semibold text-slate-900 truncate">{title}</p>
-                              {conv.last_message && (
-                                <p className="text-[11px] text-slate-400 truncate mt-0.5">
-                                  {conv.last_message.type === "system" ? conv.last_message.body : `${conv.last_message.profiles?.full_name?.split(" ")[0] || "?"}: ${conv.last_message.body}`}
-                                </p>
-                              )}
+                              {hint && <p className="text-[11px] text-slate-400 truncate mt-0.5">re: {hint.title}</p>}
                             </div>
                           </div>
                         </div>
@@ -749,7 +724,7 @@ export default function AppShell({ children }) {
           </div>
                 </div>
               ) : null}
-            </div>}
+            </div>
           </div>
         </div>
       </header>
@@ -825,6 +800,37 @@ export default function AppShell({ children }) {
         />
       )}
     </div>
+  );
+
+
+  async function handleCircleNotifAction(notif, action) {
+    setNotifActionId(notif.id);
+    try {
+      if (action === "cancel") {
+        await supabase.from("circles").update({ status: "cancelled" }).eq("id", notif.circle_id);
+      }
+      await supabase.from("circle_notifications").update({ acted_on: true }).eq("id", notif.id);
+      await loadInviteCount();
+    } finally {
+      setNotifActionId(null);
+    }
+  }
+
+  async function handleDeclineInvite(invite) {
+    setInviteActionId(invite.id);
+    try {
+      if (invite.source === "contact") {
+        await supabase.from("contact_invites").update({ status: "revoked" }).eq("id", invite.id);
+      } else {
+        await supabase.from("circle_invites").update({ status: "declined" }).eq("id", invite.id);
+        supabase.functions.invoke("notify-circle-decline", { body: { invite_id: invite.id } }).catch(() => {});
+      }
+      await loadInviteCount();
+    } finally {
+      setInviteActionId(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#fffaf7] text-slate-800">
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur relative z-[100]">
@@ -837,13 +843,7 @@ export default function AppShell({ children }) {
           </Link>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            {!isLoggedIn && (
-              <div className="flex items-center gap-2">
-                <Link href="/shop" className="hidden md:flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold text-slate-600 border border-[#ead8ce] hover:bg-[#fff5f0]">🛍️ Shop</Link>
-                <Link href="/login" className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white shadow-sm">Sign in</Link>
-              </div>
-            )}
-            {isLoggedIn && <nav className="hidden md:flex items-center justify-center gap-1">
+            <nav className="hidden md:flex items-center justify-center gap-1">
               {navItems.map((item) => {
                 const isActive =
                   pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -864,9 +864,9 @@ export default function AppShell({ children }) {
                   </Link>
                 );
               })}
-            </nav>}
+            </nav>
 
-            {isLoggedIn && <div className="relative">
+            <div className="relative">
               <button type="button" onClick={() => { setMessagesOpen(prev => !prev); setNotifOpen(false); }}
                 className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white shadow-sm transition hover:bg-[#fff5f0]"
                 aria-label="Messages">
