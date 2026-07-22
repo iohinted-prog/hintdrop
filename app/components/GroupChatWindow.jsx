@@ -90,7 +90,19 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
       .insert({ conversation_id: conversation.id, sender_id: currentUserId, body: body.trim(), type: "text" })
       .select("id, body, type, created_at, sender_id, profiles(full_name, avatar_url)")
       .maybeSingle();
-    if (data) { setMessages(prev => [...prev, data]); setBody(""); }
+    if (data) {
+      setMessages(prev => [...prev, data]);
+      setBody("");
+      // Notify other members
+      fetch("https://egdghdutgjcdvhazmblw.supabase.co/functions/v1/notify-new-message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnZGdoZHV0Z2pjZHZoYXptYmx3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTcxMzQ0NCwiZXhwIjoyMDk3Mjg5NDQ0fQ.eNmDXF87_sP4U7cF3xwHDiXjH3pNQ5QNswTYkVpYqHM"
+        },
+        body: JSON.stringify({ record: data }),
+      }).catch(console.error);
+    }
     setSending(false);
   }
 
