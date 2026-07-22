@@ -70,11 +70,16 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
         })
       .subscribe();
 
-    supabase.from("conversation_members")
-      .update({ last_read_at: new Date().toISOString() })
-      .eq("conversation_id", conversation.id)
-      .eq("user_id", currentUserId)
-      .then(() => {});
+    // Mark as read - get user from session to ensure we have the id
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      const uid = user?.id || currentUserId;
+      if (!uid) return;
+      supabase.from("conversation_members")
+        .update({ last_read_at: new Date().toISOString() })
+        .eq("conversation_id", conversation.id)
+        .eq("user_id", uid)
+        .then(() => {});
+    });
 
     return () => supabase.removeChannel(channel);
   }, [conversation?.id]);
