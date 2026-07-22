@@ -52,7 +52,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
 
     // Load pinned hints
     supabase.from("conversation_hints")
-      .select("id, group_hint_id, dismissed, group_hints(id, hint_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name))")
+      .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name))")
       .eq("conversation_id", conversation.id)
       .eq("dismissed", false)
       .then(({ data }) => setPinnedHints(data || []));
@@ -63,7 +63,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_hints", filter: "conversation_id=eq." + conversation.id },
         () => {
           supabase.from("conversation_hints")
-            .select("id, group_hint_id, dismissed, group_hints(id, hint_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name))")
+            .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name))")
             .eq("conversation_id", conversation.id)
             .eq("dismissed", false)
             .then(({ data }) => setPinnedHints(data || []));
@@ -128,18 +128,28 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
             return (
               <div key={ph.id} className="flex items-center gap-2 bg-white rounded-[14px] border border-[#f0dfd6] p-2">
                 {hint?.image_url && (
-                  <img src={hint.image_url} className="h-10 w-10 rounded-[10px] object-cover shrink-0" alt="" />
+                  <img
+                    src={hint.image_url}
+                    className="h-10 w-10 rounded-[10px] object-cover shrink-0 cursor-pointer"
+                    alt=""
+                    onClick={() => { if (ph.group_hints?.organiser_id) { window.location.href = `/profile/${ph.group_hints.organiser_id}`; onClose(); } }}
+                  />
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-[12px] font-semibold text-slate-900 truncate">{hint?.title || "Group gift"}</p>
                   {price && <p className="text-[11px] text-[#df7b59] font-semibold">{price}</p>}
                   {organiser && <p className="text-[10px] text-slate-400">by {organiser.full_name?.split(" ")[0]}</p>}
                 </div>
-                <div className="flex flex-col gap-1 shrink-0 items-end">
-                  {ph.group_hints?.hint_id && (
-                    <Link href={`/profile/${ph.group_hints?.organiser_id || ""}`} className="text-[10px] font-semibold text-[#df7b59]" onClick={onClose}>See hints</Link>
-                  )}
-                  <button type="button" onClick={() => dismissHint(ph.id)} className="text-[10px] text-slate-400 hover:text-slate-600">Dismiss</button>
+                <div className="flex gap-1 shrink-0">
+                  <button type="button"
+                    onClick={() => { if (ph.group_hints?.organiser_id) { window.location.href = `/profile/${ph.group_hints.organiser_id}`; onClose(); } }}
+                    className="text-[10px] font-semibold px-2 py-1 rounded-full border border-[#f0dfd6] text-[#df7b59] hover:bg-[#fff5f0]">
+                    See hints
+                  </button>
+                  <button type="button" onClick={() => dismissHint(ph.id)}
+                    className="text-[10px] font-semibold px-2 py-1 rounded-full border border-[#f0dfd6] text-slate-400 hover:bg-slate-50">
+                    Dismiss
+                  </button>
                 </div>
               </div>
             );
