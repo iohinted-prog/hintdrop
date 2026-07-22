@@ -4,6 +4,7 @@ import { createClient } from "../../lib/supabase/client";
 import AddContactModal from "../components/AddContactModal";
 import EditContactModal from "../components/EditContactModal";
 import ContactCard from "../components/ContactCard";
+import GroupChatWindow from "../components/GroupChatWindow";
 import UserProfileModal from "../components/UserProfileModal";
 
 function getInitials(name) {
@@ -73,6 +74,13 @@ function HintsPreview({ userId, supabase }) {
         </a>
       ))}
     </div>
+    {activeChat && (
+      <GroupChatWindow
+        conversation={activeChat}
+        currentUserId={sessionUser?.id}
+        onClose={() => setActiveChat(null)}
+      />
+    )}
   );
 }
 
@@ -89,6 +97,32 @@ export default function PeopleClient() {
   const [sessionUser, setSessionUser] = useState(null);
 
   const [contactHints, setContactHints] = useState({});
+  const [activeChat, setActiveChat] = useState(null);
+
+  async function handleMessageContact(contact) {
+    if (!sessionUser || !contact.profileId) return;
+    // Find or create direct conversation between sessionUser and contact.profileId
+    const { data: myMemberships } = await supabase.from("conversation_members").select("conversation_id").eq("user_id", sessionUser.id);
+    const { data: theirMemberships } = await supabase.from("conversation_members").select("conversation_id").eq("user_id", contact.profileId);
+    const myIds = new Set((myMemberships || []).map(m => m.conversation_id));
+    const sharedId = (theirMemberships || []).map(m => m.conversation_id).find(id => myIds.has(id));
+
+    let convId = sharedId;
+    if (!convId) {
+      const newId = crypto.randomUUID();
+      await supabase.from("conversations").insert({ id: newId, type: "direct" });
+      await supabase.from("conversation_members").insert([
+        { conversation_id: newId, user_id: sessionUser.id },
+        { conversation_id: newId, user_id: contact.profileId },
+      ]);
+      convId = newId;
+    }
+
+    // Load full conversation for GroupChatWindow
+    const { data: convsData } = await supabase.from("conversations").select("id, type").eq("id", convId).maybeSingle();
+    const { data: members } = await supabase.from("conversation_members").select("user_id, profiles(full_name, avatar_url)").eq("conversation_id", convId);
+    setActiveChat({ ...convsData, conversation_members: members || [], group_hints: null });
+  }
 
   async function loadContacts() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -164,6 +198,7 @@ export default function PeopleClient() {
             {filtered.map(contact => (
               <ContactCard key={contact.id} contact={contact} onOpenProfile={setProfileModal}
                 onEditClick={setEditingContact} onDeleteClick={handleDelete}
+                onMessageClick={handleMessageContact}
                 previewHints={contactHints[contact.profileId] || []} />
             ))}
           </div>
