@@ -825,37 +825,6 @@ export default function AppShell({ children }) {
         />
       )}
     </div>
-  );
-
-
-  async function handleCircleNotifAction(notif, action) {
-    setNotifActionId(notif.id);
-    try {
-      if (action === "cancel") {
-        await supabase.from("circles").update({ status: "cancelled" }).eq("id", notif.circle_id);
-      }
-      await supabase.from("circle_notifications").update({ acted_on: true }).eq("id", notif.id);
-      await loadInviteCount();
-    } finally {
-      setNotifActionId(null);
-    }
-  }
-
-  async function handleDeclineInvite(invite) {
-    setInviteActionId(invite.id);
-    try {
-      if (invite.source === "contact") {
-        await supabase.from("contact_invites").update({ status: "revoked" }).eq("id", invite.id);
-      } else {
-        await supabase.from("circle_invites").update({ status: "declined" }).eq("id", invite.id);
-        supabase.functions.invoke("notify-circle-decline", { body: { invite_id: invite.id } }).catch(() => {});
-      }
-      await loadInviteCount();
-    } finally {
-      setInviteActionId(null);
-    }
-  }
-
   return (
     <div className="min-h-screen bg-[#fffaf7] text-slate-800">
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur relative z-[100]">
