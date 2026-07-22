@@ -74,13 +74,6 @@ function HintsPreview({ userId, supabase }) {
         </a>
       ))}
     </div>
-    {activeChat && (
-      <GroupChatWindow
-        conversation={activeChat}
-        currentUserId={sessionUser?.id}
-        onClose={() => setActiveChat(null)}
-      />
-    )}
   );
 }
 
@@ -223,6 +216,13 @@ export default function PeopleClient() {
             await handleSaveContact({ name: profileModal.name, email: "" });
             setProfileModal(null);
           }}
+        />
+      )}
+      {activeChat && (
+        <GroupChatWindow
+          conversation={activeChat}
+          currentUserId={sessionUser?.id}
+          onClose={() => setActiveChat(null)}
         />
       )}
     </main>
