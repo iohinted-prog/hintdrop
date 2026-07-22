@@ -163,6 +163,7 @@ export default function AppShell({ children }) {
   const [groupHintInvites, setGroupHintInvites] = useState([]);
   const [groupHintToast, setGroupHintToast] = useState(null);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [groupMessages, setGroupMessages] = useState([]);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
@@ -173,6 +174,7 @@ export default function AppShell({ children }) {
 
   const loadInviteCount = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
+    setIsLoggedIn(!!session);
     if (!session) return;
     const user = session.user;
     if (!user) return;
