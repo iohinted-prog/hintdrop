@@ -739,7 +739,7 @@ export default function AppShell({ children }) {
 
       <main>{children}</main>
 
-      {isLoggedIn && <footer className="border-t border-[#eaded6] bg-[#fffaf7]">
+      <footer className="border-t border-[#eaded6] bg-[#fffaf7]">
         <div className="mx-auto flex max-w-[1380px] flex-col gap-4 px-5 py-6 text-sm text-slate-500 md:px-8 lg:flex-row lg:items-center lg:justify-between">
           <p className="max-w-[720px] text-xs leading-5 text-slate-500 lg:text-sm">
             By continuing, you agree to{" "}
@@ -1114,7 +1114,7 @@ export default function AppShell({ children }) {
 
       <main>{children}</main>
 
-      {isLoggedIn && <footer className="border-t border-[#eaded6] bg-[#fffaf7]">
+      <footer className="border-t border-[#eaded6] bg-[#fffaf7]">
         <div className="mx-auto flex max-w-[1380px] flex-col gap-4 px-5 py-6 text-sm text-slate-500 md:px-8 lg:flex-row lg:items-center lg:justify-between">
           <p className="max-w-[720px] text-xs leading-5 text-slate-500 lg:text-sm">
             By continuing, you agree to{" "}
