@@ -113,7 +113,7 @@ export default function AppShell({ children }) {
       activeListener = false;
       subscription.unsubscribe();
     };
-  }, [supabase, showShell]);
+  }, [supabase]);
 
   useEffect(() => {
     if (!menuOpen) {
