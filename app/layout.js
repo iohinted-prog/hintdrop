@@ -51,10 +51,18 @@ if (typeof window !== "undefined") {
   });
 }
 
+const VConsoleScript = () => (
+  <>
+    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js" />
+    <script dangerouslySetInnerHTML={{ __html: "new window.VConsole();" }} />
+  </>
+);
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} ${nunito.variable} antialiased`}>
+        <VConsoleScript />
         <PreferencesProvider>
           <AppShell>{children}</AppShell>
         </PreferencesProvider>
