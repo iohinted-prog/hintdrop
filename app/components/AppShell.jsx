@@ -825,9 +825,7 @@ export default function AppShell({ children }) {
           </div>
         </div>
       </footer>
-      )}
 
-      {/* Mobile bottom tab bar */}
       {/* Mobile bottom tab bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 flex md:hidden items-center justify-around border-t border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur-sm px-2 pb-2">
         <a href="/feed" className={`flex flex-col items-center gap-0.5 px-3 py-2 ${pathname === "/feed" ? "text-[#ff875d]" : "text-slate-400"}`}>
@@ -1164,67 +1162,6 @@ export default function AppShell({ children }) {
 
       <main>{children}</main>
 
-      <footer className="border-t border-[#eaded6] bg-[#fffaf7]">
-        <div className="mx-auto flex max-w-[1380px] flex-col gap-4 px-5 py-6 text-sm text-slate-500 md:px-8 lg:flex-row lg:items-center lg:justify-between">
-          <p className="max-w-[720px] text-xs leading-5 text-slate-500 lg:text-sm">
-            By continuing, you agree to{" "}
-            <Link
-              href="/terms"
-              className="font-medium text-slate-700 underline underline-offset-2 transition hover:text-slate-900"
-            >
-              Terms
-            </Link>{" "}
-            and{" "}
-            <Link
-              href="/privacy"
-              className="font-medium text-slate-700 underline underline-offset-2 transition hover:text-slate-900"
-            >
-              Privacy Policy
-            </Link>
-            .
-          </p>
-
-          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-            <Link href="/about" className="transition hover:text-slate-900">
-              About
-            </Link>
-            <Link href="/for-brands" className="transition hover:text-slate-900">
-              For Brands
-            </Link>
-            <Link href="/contact" className="transition hover:text-slate-900">
-              Contact
-            </Link>
-          </div>
-        </div>
-      </footer>
-      )}
-
-      {/* Mobile bottom tab bar */}
-      {/* Mobile bottom tab bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex md:hidden items-center justify-around border-t border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur-sm px-2 pb-2">
-        <a href="/feed" className={`flex flex-col items-center gap-0.5 px-3 py-2 ${pathname === "/feed" ? "text-[#ff875d]" : "text-slate-400"}`}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          <span className="text-[10px] font-semibold">Home</span>
-        </a>
-        <a href="/people" className={`flex flex-col items-center gap-0.5 px-3 py-2 ${pathname === "/people" ? "text-[#ff875d]" : "text-slate-400"}`}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
-          <span className="text-[10px] font-semibold">Circle</span>
-        </a>
-        <a href="/hints" className="flex flex-col items-center gap-0.5 px-2 -mt-3">
-          <div className={`flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] shadow-lg shadow-[#ff7e54]/40 text-2xl ${pathname === "/hints" ? "ring-2 ring-[#ff875d] ring-offset-2" : ""}`}>
-            🎁
-          </div>
-          <span className={`text-[10px] font-semibold mt-0.5 ${pathname === "/hints" ? "text-[#ff875d]" : "text-slate-400"}`}>Hints</span>
-        </a>
-        <a href="/calendar" className={`flex flex-col items-center gap-0.5 px-3 py-2 ${pathname === "/calendar" ? "text-[#ff875d]" : "text-slate-400"}`}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <span className="text-[10px] font-semibold">Calendar</span>
-        </a>
-        <a href="/shop" className={`flex flex-col items-center gap-0.5 px-3 py-2 ${pathname === "/shop" ? "text-[#ff875d]" : "text-slate-400"}`}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-          <span className="text-[10px] font-semibold">Shop</span>
-        </a>
-      </nav>
       <div className="h-20 md:hidden" />
     </div>
   );
