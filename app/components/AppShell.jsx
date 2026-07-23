@@ -284,18 +284,23 @@ export default function AppShell({ children }) {
     const interval = setInterval(loadInviteCount, 10000);
 
     // Also subscribe to new messages for instant updates
-    const msgChannel = supabase.channel("new-messages-global")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" },
-        () => loadInviteCount()
-      )
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "conversation_members" },
-        () => loadInviteCount()
-      )
-      .subscribe();
+    let msgChannel = null;
+    try {
+      msgChannel = supabase.channel("new-messages-global")
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" },
+          () => loadInviteCount()
+        )
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "conversation_members" },
+          () => loadInviteCount()
+        )
+        .subscribe();
+    } catch (e) {
+      console.error("realtime subscription error:", e);
+    }
 
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(msgChannel);
+      if (msgChannel) supabase.removeChannel(msgChannel);
     };
   }, [loadInviteCount]);
 
