@@ -432,6 +432,7 @@ export default function OnboardingPage() {
       }
 
       router.refresh();
+      await new Promise(r => setTimeout(r, 500));
       router.push("/feed");
     } catch (error) {
       console.error("Error finishing onboarding:", error);
