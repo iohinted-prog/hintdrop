@@ -239,7 +239,8 @@ export default function OnboardingPage() {
 
       if (existingProfile?.onboarding_completed === true && !hasRedirectedRef.current) {
         hasRedirectedRef.current = true;
-        router.replace("/feed");
+        router.refresh();
+      router.replace("/feed");
         return;
       }
 
@@ -430,6 +431,7 @@ export default function OnboardingPage() {
         }
       }
 
+      router.refresh();
       router.push("/feed");
     } catch (error) {
       console.error("Error finishing onboarding:", error);
