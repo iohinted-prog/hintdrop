@@ -441,6 +441,7 @@ export default function AppShell({ children }) {
 
   return (
     <div className="min-h-screen bg-[#fffaf7] text-slate-800">
+      {!isLoggedIn && ["/terms", "/privacy", "/about", "/for-brands", "/contact"].includes(pathname) ? null : (
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur relative z-[100]">
         <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
           <Link href="/feed" className="flex items-center gap-3.5">
@@ -787,6 +788,7 @@ export default function AppShell({ children }) {
           </div>
         </div>
       </header>
+      )}
 
       <main>{children}</main>
 
@@ -892,6 +894,7 @@ export default function AppShell({ children }) {
 
   return (
     <div className="min-h-screen bg-[#fffaf7] text-slate-800">
+      {!isLoggedIn && ["/terms", "/privacy", "/about", "/for-brands", "/contact"].includes(pathname) ? null : (
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur relative z-[100]">
         <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
           <Link href="/feed" className="flex items-center gap-3.5">
@@ -1156,6 +1159,7 @@ export default function AppShell({ children }) {
           </div>
         </div>
       </header>
+      )}
 
       <main>{children}</main>
 
