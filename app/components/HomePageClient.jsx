@@ -543,21 +543,21 @@ export default function HomePageClient() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#fffaf7] text-slate-800">
       <div className="mx-auto max-w-[1320px] px-5 pb-16 pt-6 md:px-8">
-        <header className="grid items-center gap-5 pb-8 lg:grid-cols-[auto_1fr_auto] lg:gap-8">
+        <header className="flex items-center justify-between gap-3 pb-8 lg:grid lg:grid-cols-[auto_1fr_auto] lg:items-center lg:gap-8">
           <LandingLogo />
 
           <nav className="hidden items-center justify-center gap-9 text-[15px] text-slate-600 lg:flex" />
 
-          <div className="flex items-center justify-start gap-4 whitespace-nowrap sm:justify-end">
+          <div className="flex shrink-0 items-center justify-end gap-2 whitespace-nowrap sm:gap-4">
             <Link
               href="/gift-shop"
-              className="inline-flex h-12 shrink-0 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-6 text-[15px] font-semibold text-slate-700 transition hover:bg-[#fff5f0]"
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-3.5 text-[13px] font-semibold text-slate-700 transition hover:bg-[#fff5f0] sm:h-12 sm:px-6 sm:text-[15px]"
             >
               Gift Shop
             </Link>
             <a
               href="#signup"
-              className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-6 text-[15px] font-bold text-white shadow-lg transition hover:translate-y-[-1px]"
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-3.5 text-[13px] font-bold text-white shadow-lg transition hover:translate-y-[-1px] sm:h-12 sm:px-6 sm:text-[15px]"
             >
               Get started
             </a>
