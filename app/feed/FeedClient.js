@@ -11,8 +11,6 @@ import AddContactModal from "../components/AddContactModal";
 import EditContactModal from "../components/EditContactModal";
 import ContactsManagerModal from "../components/ContactsManagerModal";
 
-const supabase = createClient();
-
 const feedFilters = [
   { key: "all", label: "All activity" },
   { key: "hint", label: "Hints" },
@@ -1445,6 +1443,7 @@ function buildGenericCalendarEvents() {
 }
 
 export default function FeedClient() {
+  const supabase = useMemo(() => createClient(), []);
   const [sessionUser, setSessionUser] = useState(null);
 
   const [contacts, setContacts] = useState([]);
