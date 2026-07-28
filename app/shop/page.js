@@ -5,6 +5,8 @@ import Script from "next/script";
 import { createClient } from "../../lib/supabase/client";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 
+const CARD_MIN_HEIGHT = "220px";
+
 const INTEREST_OPTIONS = [
   "Home",
   "Food",
@@ -190,6 +192,7 @@ function ShopCard({
       className="group relative w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.60)] transition-all duration-300 hover:-translate-y-1"
       style={{
         aspectRatio: ratio,
+        minHeight: CARD_MIN_HEIGHT,
         maxHeight: "min(540px, 68vh)",
         boxShadow:
           "0 10px 30px rgba(176,118,86,0.10), inset 0 1px 0 rgba(255,255,255,0.24)",
