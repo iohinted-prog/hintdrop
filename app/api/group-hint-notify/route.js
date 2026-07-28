@@ -25,7 +25,6 @@ async function sendEmail({ to, subject, html }) {
 
 export async function POST(req) {
   const supabase = getSupabase();
-  const supabase = getSupabase();
   const { type, groupHintId, memberId, responderId, response } = await req.json();
 
   if (type === "invite") {
