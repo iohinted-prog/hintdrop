@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import PublicShell from "../components/PublicShell";
+import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 
 const CATEGORIES = [
   "Home", "Food", "Beauty", "Tech", "Travel", "Wellness",
@@ -14,20 +15,35 @@ function getTagArray(value) {
   return [];
 }
 
-function GiftCard({ product }) {
+function GiftCard({ product, formatCurrency }) {
   const tags = [...getTagArray(product.interest_tags).slice(0,1), ...getTagArray(product.occasion_tags).slice(0,1)].slice(0,2);
   const url = product.affiliate_url || product.product_url || "#";
 
+  const numericPrice =
+    typeof product?.numeric_price === "number" ? product.numeric_price : null;
+  const displayPrice =
+    numericPrice != null
+      ? formatCurrency(numericPrice, product?.currency || "GBP")
+      : "Price unavailable";
+
   return (
     <article className="rounded-[22px] bg-white border border-[#f0dfd6] overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-      {product.image_url && (
-        <div className="w-full aspect-[4/3] overflow-hidden bg-[#fdf5f0]">
-          <img src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
-        </div>
-      )}
+      <div className="w-full aspect-[4/3] overflow-hidden bg-[#fdf5f0]">
+        {product.image_url ? (
+          <img
+            src={product.image_url}
+            alt={product.title}
+            className="w-full h-full object-cover"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]" />
+        )}
+      </div>
       <div className="p-4">
         <p className="text-[13px] font-semibold text-slate-900 leading-tight line-clamp-2 mb-1">{product.title}</p>
-        <p className="text-[12px] font-bold text-[#df7b59] mb-1">{product.price_text}</p>
+        <p className="text-[12px] font-bold text-[#df7b59] mb-1">{displayPrice}</p>
         {product.retailer && <p className="text-[11px] text-slate-400 mb-2">{product.retailer}</p>}
         {tags.length > 0 && (
           <div className="flex gap-1 flex-wrap mb-3">
@@ -52,6 +68,7 @@ function GiftCard({ product }) {
 }
 
 export default function GiftShopPage() {
+  const { formatCurrency } = useCurrencyFormatter();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState(null);
@@ -96,7 +113,7 @@ export default function GiftShopPage() {
           <div className="mb-10">
             <h2 className="text-[18px] font-semibold text-slate-900 mb-4">🏆 Bestsellers</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {featured.map(p => <GiftCard key={p.id} product={p} />)}
+              {featured.map(p => <GiftCard key={p.id} product={p} formatCurrency={formatCurrency} />)}
             </div>
           </div>
         )}
@@ -139,7 +156,7 @@ export default function GiftShopPage() {
           <p className="text-center text-slate-400 py-16">No gifts found</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {filtered.map(p => <GiftCard key={p.id} product={p} />)}
+            {filtered.map(p => <GiftCard key={p.id} product={p} formatCurrency={formatCurrency} />)}
           </div>
         )}
 
