@@ -408,21 +408,6 @@ export default function ShopPage() {
 
         setCurrentUser(user || null);
 
-        if (user) {
-          const { data: profileData } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .maybeSingle();
-
-          if (!active) return;
-
-          const profileInterests = getProfileInterestTags(profileData);
-          if (profileInterests.length) {
-            setSelectedInterests(profileInterests.slice(0, 4));
-          }
-        }
-
         const response = await fetch("/api/products", { cache: "no-store" });
         const data = await response.json();
 
