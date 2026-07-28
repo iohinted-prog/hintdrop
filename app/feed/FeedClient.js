@@ -11,8 +11,6 @@ import AddContactModal from "../components/AddContactModal";
 import EditContactModal from "../components/EditContactModal";
 import ContactsManagerModal from "../components/ContactsManagerModal";
 
-const supabase = createClient();
-
 const feedFilters = [
   { key: "all", label: "All activity" },
   { key: "hint", label: "Hints" },
@@ -1445,6 +1443,7 @@ function buildGenericCalendarEvents() {
 }
 
 export default function FeedClient() {
+  const supabase = useMemo(() => createClient(), []);
   const [sessionUser, setSessionUser] = useState(null);
 
   const [contacts, setContacts] = useState([]);
@@ -2416,23 +2415,6 @@ export default function FeedClient() {
                     </h2>
                   </div>
 
-                </div>
-
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddContactOpen(true)}
-                    className="inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-5 text-sm font-semibold text-white shadow-lg"
-                  >
-                    Add contact
-                  </button>
-
-                  <Link
-                    href="/circles"
-                    className="inline-flex h-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
-                  >
-                    Create circle
-                  </Link>
                 </div>
 
                 <div className="mt-5 space-y-4">

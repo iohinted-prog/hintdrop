@@ -34,3 +34,16 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+python3 -c "
+import base64
+p = 'app/feed/FeedClient.js'
+s = open(p).read()
+o1 = base64.b64decode('aW1wb3J0IENvbnRhY3RzTWFuYWdlck1vZGFsIGZyb20gIi4uL2NvbXBvbmVudHMvQ29udGFjdHNNYW5hZ2VyTW9kYWwiOwoKY29uc3Qgc3VwYWJhc2UgPSBjcmVhdGVDbGllbnQoKTsKCmNvbnN0IGZlZWRGaWx0ZXJz').decode()
+n1 = base64.b64decode('aW1wb3J0IENvbnRhY3RzTWFuYWdlck1vZGFsIGZyb20gIi4uL2NvbXBvbmVudHMvQ29udGFjdHNNYW5hZ2VyTW9kYWwiOwoKY29uc3QgZmVlZEZpbHRlcnM=').decode()
+o2 = base64.b64decode('ZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gRmVlZENsaWVudCgpIHsKICBjb25zdCBbc2Vzc2lvblVzZXIsIHNldFNlc3Npb25Vc2VyXSA9IHVzZVN0YXRlKG51bGwpOw==').decode()
+n2 = base64.b64decode('ZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gRmVlZENsaWVudCgpIHsKICBjb25zdCBzdXBhYmFzZSA9IHVzZU1lbW8oKCkgPT4gY3JlYXRlQ2xpZW50KCksIFtdKTsKICBjb25zdCBbc2Vzc2lvblVzZXIsIHNldFNlc3Npb25Vc2VyXSA9IHVzZVN0YXRlKG51bGwpOw==').decode()
+assert s.count(o1) == 1, 'block 1 not found'
+assert s.count(o2) == 1, 'block 2 not found'
+s = s.replace(o1, n1, 1).replace(o2, n2, 1)
+open(p, 'w').write(s)
+print('done
