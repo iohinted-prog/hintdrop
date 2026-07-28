@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Script from "next/script";
 import { createClient } from "../../lib/supabase/client";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
@@ -177,6 +177,7 @@ function ShopCard({
   isSavingHint,
   isOpeningLink,
   formatCurrency,
+  onImageError,
 }) {
   const ratio = getCardAspectRatio(product, imageRatios);
   const interestTags = getTagArray(product.interest_tags);
@@ -202,6 +203,7 @@ function ShopCard({
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             loading="lazy"
             referrerPolicy="no-referrer"
+            onError={() => onImageError?.(product.id)}
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]" />
@@ -389,6 +391,16 @@ export default function ShopPage() {
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [imageRatios, setImageRatios] = useState({});
+  const [brokenImageIds, setBrokenImageIds] = useState(() => new Set());
+
+  const handleImageError = useCallback((productId) => {
+    setBrokenImageIds((current) => {
+      if (current.has(productId)) return current;
+      const next = new Set(current);
+      next.add(productId);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -407,6 +419,21 @@ export default function ShopPage() {
         if (!active) return;
 
         setCurrentUser(user || null);
+
+        if (user) {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (!active) return;
+
+          const profileInterests = getProfileInterestTags(profileData);
+          if (profileInterests.length) {
+            setSelectedInterests(profileInterests.slice(0, 4));
+          }
+        }
 
         const response = await fetch("/api/products", { cache: "no-store" });
         const data = await response.json();
@@ -525,6 +552,11 @@ export default function ShopPage() {
         return priceA - priceB;
       });
   }, [products, searchQuery, selectedInterests, selectedOccasion]);
+
+  const visibleProducts = useMemo(
+    () => filteredProducts.filter((product) => !brokenImageIds.has(product.id)),
+    [filteredProducts, brokenImageIds]
+  );
 
   function toggleInterest(interest) {
     setSelectedInterests((current) => {
@@ -717,10 +749,10 @@ export default function ShopPage() {
             <div className="relative">
               {isLoading ? (
                 <ShopSkeleton />
-              ) : filteredProducts.length ? (
-                <div className="columns-1 gap-6 md:columns-2 xl:columns-3">
-                  {filteredProducts.map((product) => (
-                    <div key={product.id} className="mb-6 break-inside-avoid">
+              ) : visibleProducts.length ? (
+                <div className="columns-2 gap-4 md:columns-3 md:gap-6 xl:columns-4">
+                  {visibleProducts.map((product) => (
+                    <div key={product.id} className="mb-4 break-inside-avoid md:mb-6">
                       <ShopCard
                         product={product}
                         imageRatios={imageRatios}
@@ -729,6 +761,7 @@ export default function ShopPage() {
                         isSavingHint={savingHintId === product.id}
                         isOpeningLink={openingLinkId === product.id}
                         formatCurrency={formatCurrency}
+                        onImageError={handleImageError}
                       />
                     </div>
                   ))}

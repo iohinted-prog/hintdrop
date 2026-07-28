@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import PublicShell from "../components/PublicShell";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
@@ -15,7 +15,7 @@ function getTagArray(value) {
   return [];
 }
 
-function GiftCard({ product, formatCurrency }) {
+function GiftCard({ product, formatCurrency, onImageError }) {
   const tags = [...getTagArray(product.interest_tags).slice(0,1), ...getTagArray(product.occasion_tags).slice(0,1)].slice(0,2);
   const url = product.affiliate_url || product.product_url || "#";
 
@@ -36,6 +36,7 @@ function GiftCard({ product, formatCurrency }) {
             className="w-full h-full object-cover"
             loading="lazy"
             referrerPolicy="no-referrer"
+            onError={() => onImageError?.(product.id)}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]" />
@@ -73,6 +74,16 @@ export default function GiftShopPage() {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState(null);
   const [search, setSearch] = useState("");
+  const [brokenImageIds, setBrokenImageIds] = useState(() => new Set());
+
+  const handleImageError = useCallback((productId) => {
+    setBrokenImageIds((current) => {
+      if (current.has(productId)) return current;
+      const next = new Set(current);
+      next.add(productId);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     fetch("/api/products", { cache: "no-store" })
@@ -81,8 +92,13 @@ export default function GiftShopPage() {
       .catch(() => setLoading(false));
   }, []);
 
+  const workingProducts = useMemo(
+    () => products.filter(p => !brokenImageIds.has(p.id)),
+    [products, brokenImageIds]
+  );
+
   const filtered = useMemo(() => {
-    let list = products;
+    let list = workingProducts;
     if (activeCategory) {
       list = list.filter(p => getTagArray(p.interest_tags).includes(activeCategory) || getTagArray(p.occasion_tags).includes(activeCategory));
     }
@@ -91,9 +107,9 @@ export default function GiftShopPage() {
       list = list.filter(p => p.title?.toLowerCase().includes(q) || p.retailer?.toLowerCase().includes(q));
     }
     return list;
-  }, [products, activeCategory, search]);
+  }, [workingProducts, activeCategory, search]);
 
-  const featured = useMemo(() => products.slice(0, 4), [products]);
+  const featured = useMemo(() => workingProducts.slice(0, 4), [workingProducts]);
 
   return (
     <PublicShell>
@@ -113,7 +129,7 @@ export default function GiftShopPage() {
           <div className="mb-10">
             <h2 className="text-[18px] font-semibold text-slate-900 mb-4">🏆 Bestsellers</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {featured.map(p => <GiftCard key={p.id} product={p} formatCurrency={formatCurrency} />)}
+              {featured.map(p => <GiftCard key={p.id} product={p} formatCurrency={formatCurrency} onImageError={handleImageError} />)}
             </div>
           </div>
         )}
@@ -156,7 +172,7 @@ export default function GiftShopPage() {
           <p className="text-center text-slate-400 py-16">No gifts found</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {filtered.map(p => <GiftCard key={p.id} product={p} formatCurrency={formatCurrency} />)}
+            {filtered.map(p => <GiftCard key={p.id} product={p} formatCurrency={formatCurrency} onImageError={handleImageError} />)}
           </div>
         )}
 
