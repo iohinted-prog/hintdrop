@@ -181,119 +181,166 @@ function ShopCard({
   formatCurrency,
   onImageError,
 }) {
+  const [showModal, setShowModal] = useState(false);
   const ratio = getCardAspectRatio(product, imageRatios);
   const interestTags = getTagArray(product.interest_tags);
   const occasionTags = getTagArray(product.occasion_tags);
   const displayTags = [...interestTags.slice(0, 1), ...occasionTags.slice(0, 1)].slice(0, 2);
   const displayPrice = getDisplayPrice(product, formatCurrency);
+  const retailerLabel = product.retailer || normaliseRetailer(getOutboundUrl(product));
 
   return (
-    <article
-      className="group relative w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.60)] transition-all duration-300 hover:-translate-y-1"
-      style={{
-        aspectRatio: ratio,
-        minHeight: CARD_MIN_HEIGHT,
-        maxHeight: "min(540px, 68vh)",
-        boxShadow:
-          "0 10px 30px rgba(176,118,86,0.10), inset 0 1px 0 rgba(255,255,255,0.24)",
-      }}
-    >
-      <div className="absolute inset-0">
-        {product.image_url ? (
-          <img
-            src={product.image_url}
-            alt={product.title || "Gift idea"}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            onError={() => onImageError?.(product.id)}
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]" />
-        )}
+    <>
+      <article
+        className="group relative w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.60)] cursor-pointer transition-all duration-300 hover:-translate-y-1"
+        style={{
+          aspectRatio: ratio,
+          minHeight: CARD_MIN_HEIGHT,
+          maxHeight: "min(540px, 68vh)",
+          boxShadow:
+            "0 10px 30px rgba(176,118,86,0.10), inset 0 1px 0 rgba(255,255,255,0.24)",
+        }}
+        onClick={() => setShowModal(true)}
+      >
+        <div className="absolute inset-0">
+          {product.image_url ? (
+            <img
+              src={product.image_url}
+              alt={product.title || "Gift idea"}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={() => onImageError?.(product.id)}
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]" />
+          )}
 
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.84)_0%,rgba(16,12,10,0.40)_30%,rgba(16,12,10,0.10)_55%,rgba(255,255,255,0)_100%)]" />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.72)] via-[rgba(22,18,16,0.18)] to-transparent" />
-      </div>
-
-      <div className="absolute left-4 right-4 top-4 z-30 flex items-start justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {displayTags.map((tag) => (
-            <span
-              key={`${product.id}-${tag}`}
-              className="rounded-full border border-white/45 bg-white/76 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-md"
-            >
-              {tag}
-            </span>
-          ))}
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.84)_0%,rgba(16,12,10,0.40)_30%,rgba(16,12,10,0.10)_55%,rgba(255,255,255,0)_100%)]" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.72)] via-[rgba(22,18,16,0.18)] to-transparent" />
         </div>
 
-        <div className="rounded-full border border-[#ffd8c9] bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
-          {displayPrice}
+        <div className="absolute left-4 right-4 top-4 z-30 flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {displayTags.map((tag) => (
+              <span
+                key={`${product.id}-${tag}`}
+                className="rounded-full border border-white/45 bg-white/76 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-md"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <div className="rounded-full border border-[#ffd8c9] bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
+            {displayPrice}
+          </div>
         </div>
-      </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-4 sm:p-5">
-        <div className="min-w-0">
-          <h3
-            className="overflow-hidden text-[22px] font-semibold tracking-[-0.05em] text-white"
-            style={{
-              display: "-webkit-box",
-              WebkitBoxOrient: "vertical",
-              WebkitLineClamp: 2,
-              lineClamp: 2,
-              textShadow: "0 1px 2px rgba(0,0,0,0.24)",
-            }}
-          >
-            {product.title || "Gift idea"}
-          </h3>
-
-          <p className="mt-1 truncate text-[13px] text-white/80">
-            {product.retailer || normaliseRetailer(getOutboundUrl(product))}
-          </p>
-
-          {product.short_note ? (
-            <p
-              className="mt-3 overflow-hidden text-[13px] leading-6 text-white/84"
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-4 sm:p-5">
+          <div className="min-w-0">
+            <h3
+              className="overflow-hidden text-[22px] font-semibold tracking-[-0.05em] text-white"
               style={{
                 display: "-webkit-box",
                 WebkitBoxOrient: "vertical",
-                WebkitLineClamp: 3,
-                lineClamp: 3,
+                WebkitLineClamp: 2,
+                lineClamp: 2,
+                textShadow: "0 1px 2px rgba(0,0,0,0.24)",
               }}
             >
-              {product.short_note}
-            </p>
-          ) : null}
+              {product.title || "Gift idea"}
+            </h3>
 
-          {(product.primary_category || product.subcategory) && (
-            <p className="mt-3 text-[12px] text-white/72">
-              {[product.primary_category, product.subcategory].filter(Boolean).join(" · ")}
-            </p>
-          )}
+            <p className="mt-1 truncate text-[13px] text-white/80">{retailerLabel}</p>
+          </div>
+
+          <div className="pointer-events-auto mt-4 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToHints(product);
+              }}
+              disabled={isSavingHint}
+              className="rounded-full border border-[#ffb38f] bg-[#ff875d] px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur-md hover:bg-[#f47145] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isSavingHint ? "Adding..." : "Add to hints"}
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewItem(product);
+              }}
+              disabled={isOpeningLink}
+              className="rounded-full border border-white/45 bg-white/76 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-md hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isOpeningLink ? "Opening..." : "View item"}
+            </button>
+          </div>
         </div>
+      </article>
 
-        <div className="pointer-events-auto mt-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onAddToHints(product)}
-            disabled={isSavingHint}
-            className="rounded-full border border-[#ffb38f] bg-[#ff875d] px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur-md hover:bg-[#f47145] disabled:cursor-not-allowed disabled:opacity-70"
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
+          style={{ animation: "fadeIn 0.15s ease" }}
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="w-full max-w-[480px] rounded-t-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto"
+            style={{ maxHeight: "92dvh", animation: "slideUp 0.2s ease" }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {isSavingHint ? "Adding..." : "Add to hints"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onViewItem(product)}
-            disabled={isOpeningLink}
-            className="rounded-full border border-white/45 bg-white/76 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-md hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isOpeningLink ? "Opening..." : "View item"}
-          </button>
+            <div className="flex justify-end px-4 pt-3">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400 text-lg"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="relative">
+              {product.image_url ? (
+                <img src={product.image_url} alt={product.title || "Gift idea"} className="w-full object-contain" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="w-full bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f] flex items-center justify-center text-6xl" style={{ height: "200px" }}>🎁</div>
+              )}
+            </div>
+            <div className="p-5">
+              <p className="text-[18px] font-semibold text-slate-900 leading-tight mb-1">{product.title || "Gift idea"}</p>
+              {retailerLabel && <p className="text-[13px] text-slate-400 mb-1">{retailerLabel}</p>}
+              <p className="text-[15px] font-bold text-[#df7b59] mb-4">{displayPrice}</p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onAddToHints(product);
+                  }}
+                  disabled={isSavingHint}
+                  className="flex-1 h-11 rounded-full border border-[#ead8ce] bg-white text-[13px] font-semibold text-slate-700 disabled:opacity-70"
+                >
+                  {isSavingHint ? "Adding..." : "Add to hints"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onViewItem(product);
+                  }}
+                  disabled={isOpeningLink}
+                  className="flex-1 h-11 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white flex items-center justify-center shadow-lg disabled:opacity-70"
+                >
+                  {isOpeningLink ? "Opening..." : "View item →"}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </article>
+      )}
+    </>
   );
 }
 

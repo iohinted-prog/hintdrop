@@ -16,6 +16,7 @@ function getTagArray(value) {
 }
 
 function GiftCard({ product, formatCurrency, onImageError }) {
+  const [showModal, setShowModal] = useState(false);
   const tags = [...getTagArray(product.interest_tags).slice(0,1), ...getTagArray(product.occasion_tags).slice(0,1)].slice(0,2);
   const url = product.affiliate_url || product.product_url || "#";
 
@@ -27,44 +28,102 @@ function GiftCard({ product, formatCurrency, onImageError }) {
       : "Price unavailable";
 
   return (
-    <article className="rounded-[22px] bg-white border border-[#f0dfd6] overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-      <div className="w-full aspect-[4/3] overflow-hidden bg-[#fdf5f0]">
-        {product.image_url ? (
-          <img
-            src={product.image_url}
-            alt={product.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            onError={() => onImageError?.(product.id)}
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]" />
-        )}
-      </div>
-      <div className="p-4">
-        <p className="text-[13px] font-semibold text-slate-900 leading-tight line-clamp-2 mb-1">{product.title}</p>
-        <p className="text-[12px] font-bold text-[#df7b59] mb-1">{displayPrice}</p>
-        {product.retailer && <p className="text-[11px] text-slate-400 mb-2">{product.retailer}</p>}
-        {tags.length > 0 && (
-          <div className="flex gap-1 flex-wrap mb-3">
-            {tags.map(t => (
-              <span key={t} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#fff4ee] text-[#df7b59]">{t}</span>
-            ))}
-          </div>
-        )}
-        <div className="flex gap-2">
-          <a href={url} target="_blank" rel="noopener noreferrer"
-            className="flex-1 h-9 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[12px] font-semibold text-white">
-            View item
-          </a>
-          <Link href="/login"
-            className="flex-1 h-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-[12px] font-semibold text-slate-600 hover:bg-[#fff5f0]">
-            Save to hints
-          </Link>
+    <>
+      <article
+        className="rounded-[22px] bg-white border border-[#f0dfd6] overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+        onClick={() => setShowModal(true)}
+      >
+        <div className="w-full aspect-[4/3] overflow-hidden bg-[#fdf5f0]">
+          {product.image_url ? (
+            <img
+              src={product.image_url}
+              alt={product.title}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={() => onImageError?.(product.id)}
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]" />
+          )}
         </div>
-      </div>
-    </article>
+        <div className="p-4">
+          <p className="text-[13px] font-semibold text-slate-900 leading-tight line-clamp-2 mb-1">{product.title}</p>
+          <p className="text-[12px] font-bold text-[#df7b59] mb-1">{displayPrice}</p>
+          {product.retailer && <p className="text-[11px] text-slate-400 mb-2">{product.retailer}</p>}
+          {tags.length > 0 && (
+            <div className="flex gap-1 flex-wrap mb-3">
+              {tags.map(t => (
+                <span key={t} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#fff4ee] text-[#df7b59]">{t}</span>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+              className="flex-1 h-9 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[12px] font-semibold text-white">
+              View item
+            </a>
+            <Link href="/login" onClick={(e) => e.stopPropagation()}
+              className="flex-1 h-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-[12px] font-semibold text-slate-600 hover:bg-[#fff5f0]">
+              Save to hints
+            </Link>
+          </div>
+        </div>
+      </article>
+
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
+          style={{ animation: "fadeIn 0.15s ease" }}
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="w-full max-w-[480px] rounded-t-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto"
+            style={{ maxHeight: "92dvh", animation: "slideUp 0.2s ease" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-end px-4 pt-3">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400 text-lg"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="relative">
+              {product.image_url ? (
+                <img src={product.image_url} alt={product.title} className="w-full object-contain" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="w-full bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f] flex items-center justify-center text-6xl" style={{ height: "200px" }}>🎁</div>
+              )}
+            </div>
+            <div className="p-5">
+              <p className="text-[18px] font-semibold text-slate-900 leading-tight mb-1">{product.title}</p>
+              {product.retailer && <p className="text-[13px] text-slate-400 mb-1">{product.retailer}</p>}
+              <p className="text-[15px] font-bold text-[#df7b59] mb-4">{displayPrice}</p>
+              {tags.length > 0 && (
+                <div className="flex gap-1 flex-wrap mb-4">
+                  {tags.map(t => (
+                    <span key={t} className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#fff4ee] text-[#df7b59]">{t}</span>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-3">
+                <a href={url} target="_blank" rel="noopener noreferrer"
+                  className="flex-1 h-11 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white flex items-center justify-center shadow-lg">
+                  View item →
+                </a>
+                <Link href="/login"
+                  className="flex-1 h-11 rounded-full border border-[#ead8ce] bg-white text-[13px] font-semibold text-slate-700 flex items-center justify-center">
+                  Save to hints
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
