@@ -319,10 +319,16 @@ export default function AppShell({ children }) {
   async function handleAcceptInvite(invite) {
     setInviteActionId(invite.id);
     try {
+      let result;
       if (invite.source === "contact") {
-        await supabase.functions.invoke("accept-contact-invite", { body: { invite_id: invite.id } });
+        result = await supabase.functions.invoke("accept-contact-invite", { body: { invite_id: invite.id } });
       } else {
-        await supabase.functions.invoke("accept-circle-invite", { body: { token: invite.invite_token } });
+        result = await supabase.functions.invoke("accept-circle-invite", { body: { token: invite.invite_token } });
+      }
+      if (result.error) {
+        alert("accept invite error: " + JSON.stringify(result.error) + " | body: " + JSON.stringify(result.data));
+      } else if (result.data?.ok === false) {
+        alert("accept invite failed: " + JSON.stringify(result.data));
       }
       await loadInviteCount();
     } finally {
