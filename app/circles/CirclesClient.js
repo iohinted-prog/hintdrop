@@ -2464,6 +2464,14 @@ export default function CirclesClient() {
       const { error } = await supabase.from("contacts").delete().eq("id", contact.id);
       if (error) throw new Error(normalizeSupabaseError(error, "Failed to delete contact."));
 
+      if (sessionUser?.id && contact.name) {
+        await supabase.from("calendar_events").delete()
+          .eq("user_id", sessionUser.id)
+          .eq("type", "birthday")
+          .eq("source", "contact_sync")
+          .eq("title", contact.name);
+      }
+
       setContacts((prev) => prev.filter((item) => item.id !== contact.id));
       setPublicHintsByContact((prev) => {
         const next = { ...prev };

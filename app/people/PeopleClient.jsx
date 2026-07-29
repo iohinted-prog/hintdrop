@@ -164,6 +164,13 @@ export default function PeopleClient() {
   async function handleDelete(contact) {
     if (!confirm(`Remove ${contact.name} from your contacts?`)) return;
     await supabase.from("contacts").delete().eq("id", contact.id);
+    if (sessionUser?.id && contact.name) {
+      await supabase.from("calendar_events").delete()
+        .eq("user_id", sessionUser.id)
+        .eq("type", "birthday")
+        .eq("source", "contact_sync")
+        .eq("title", contact.name);
+    }
     await loadContacts();
   }
 
