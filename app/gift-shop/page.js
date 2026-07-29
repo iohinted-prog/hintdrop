@@ -152,7 +152,7 @@ export default function GiftShopPage() {
   }, []);
 
   const workingProducts = useMemo(
-    () => products.filter(p => !brokenImageIds.has(p.id)),
+    () => products.filter(p => p.image_url && !brokenImageIds.has(p.id)),
     [products, brokenImageIds]
   );
 
