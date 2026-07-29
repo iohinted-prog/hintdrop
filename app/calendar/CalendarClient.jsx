@@ -143,8 +143,9 @@ export default function CalendarClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[#fffaf7] pb-24">
-      <div className="px-4 pt-6 pb-2 sm:px-8 max-w-[640px] mx-auto">
+    <main className="min-h-screen bg-[#fffaf7] pb-24 md:pb-12">
+      <div className="px-4 pt-6 pb-2 sm:px-8 md:px-8 md:max-w-[1100px] md:mx-auto md:grid md:grid-cols-[1fr_380px] md:gap-8 md:items-start">
+        <div className="max-w-[640px] mx-auto md:max-w-none md:mx-0 w-full">
         <h1 className="text-[26px] font-semibold tracking-[-0.04em] text-slate-900 mb-4">Calendar</h1>
 
         <div className="flex items-center justify-between mb-3">
@@ -161,7 +162,7 @@ export default function CalendarClient() {
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-0.5">
+        <div className="grid grid-cols-7 gap-0.5 md:gap-1.5">
           {Array.from({ length: firstDay }).map((_, i) => <div key={"e" + i} />)}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const d = i + 1;
@@ -172,11 +173,11 @@ export default function CalendarClient() {
             const dotColors = [...new Set(dayEvents.map(e => eventColor(e).dot))].slice(0, 3);
             return (
               <button key={d} type="button" onClick={() => openDate(d)}
-                className={"relative flex flex-col items-center justify-center h-10 rounded-full text-[13px] font-semibold transition " +
+                className={"relative flex flex-col items-center justify-center h-10 md:h-14 rounded-full md:rounded-[14px] text-[13px] font-semibold transition " +
                   (isSelected ? "bg-[#ff875d] text-white" : isToday ? "bg-[#fff4ee] text-[#ff875d]" : dayEvents.length ? "text-slate-900 hover:bg-[#fff4ee]" : "text-slate-400 hover:bg-[#f9f6f3]")}>
                 {d}
                 {dotColors.length > 0 && !isSelected && (
-                  <div className="absolute bottom-1 flex gap-0.5">
+                  <div className="absolute bottom-1 md:bottom-2 flex gap-0.5">
                     {dotColors.map((c, i) => <span key={i} className={"h-1 w-1 rounded-full " + c} />)}
                   </div>
                 )}
@@ -211,11 +212,84 @@ export default function CalendarClient() {
             </div>
           }
         </div>
+        </div>
+
+        {/* Desktop day-detail sidebar — replaces the mobile bottom sheet on md+ screens */}
+        <div className="hidden md:block sticky top-6 rounded-[20px] border border-[#efe0d7] bg-white p-5 min-h-[420px]">
+          {selectedDate ? (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[15px] font-semibold text-slate-900">
+                  {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+                </p>
+                <button type="button" onClick={() => setShowAdd(v => !v)}
+                  className="h-8 px-3 flex items-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[11px] font-semibold text-white">
+                  + Add event
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {showAdd && (
+                  <form onSubmit={handleAddEvent} className="rounded-[16px] border border-[#ead8ce] bg-[#fffaf7] p-4 space-y-3">
+                    <p className="text-[13px] font-semibold text-slate-900">New event</p>
+                    <input value={addForm.title} onChange={e => setAddForm(f => ({ ...f, title: e.target.value }))}
+                      placeholder="Event title" required
+                      className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#ff875d]" />
+                    <input type="date" value={addForm.date} onChange={e => setAddForm(f => ({ ...f, date: e.target.value }))}
+                      required
+                      className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]" />
+                    <select value={addForm.type} onChange={e => setAddForm(f => ({ ...f, type: e.target.value }))}
+                      className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]">
+                      {EVENT_TYPES.map(t => <option key={t}>{t}</option>)}
+                    </select>
+                    <select value={addForm.recur} onChange={e => setAddForm(f => ({ ...f, recur: e.target.value }))}
+                      className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]">
+                      <option value="none">Does not repeat</option>
+                      <option value="weekly">Repeats weekly</option>
+                      <option value="monthly">Repeats monthly</option>
+                      <option value="yearly">Repeats yearly</option>
+                    </select>
+                    <button type="submit" disabled={saving}
+                      className="w-full h-10 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white">
+                      {saving ? "Saving..." : "Save event"}
+                    </button>
+                  </form>
+                )}
+
+                {selectedEvents.length === 0 && !showAdd && (
+                  <p className="text-sm text-slate-400 text-center py-4">No events on this day.</p>
+                )}
+
+                {selectedEvents.map(e => {
+                  const c = eventColor(e);
+                  return (
+                    <div key={e.id} className={"rounded-[16px] border bg-white p-4 " + c.border}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={"h-2 w-2 rounded-full shrink-0 " + c.dot} />
+                        <span className={"text-[11px] font-semibold rounded-full px-2 py-0.5 " + c.badge}>{e.type || "Event"}</span>
+                        {e.recurrence && <span className="text-[11px] text-slate-400">↻ {e.recurrence}</span>}
+                      </div>
+                      <p className="text-[15px] font-semibold text-slate-900">{e.title}</p>
+                      {e.body && <p className="text-[13px] text-slate-500 mt-1">{e.body}</p>}
+                      {e.cta_label && e.cta_href && (
+                        <a href={e.cta_href} className="mt-3 inline-flex h-9 px-4 items-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[12px] font-semibold text-white">
+                          {e.cta_label}
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-slate-400 text-center py-10">Select a date to see what's on, or add a new event.</p>
+          )}
+        </div>
       </div>
 
-      {/* Bottom sheet for selected date */}
+      {/* Bottom sheet for selected date — mobile only */}
       {selectedDate && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setSelectedDate(null); setShowAdd(false); }}>
+        <div className="md:hidden fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setSelectedDate(null); setShowAdd(false); }}>
           <div className="w-full max-w-[640px] rounded-t-[28px] bg-[#fffaf7] border-t border-[#efdcd2] shadow-xl max-h-[80dvh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#f2e5de] shrink-0">
               <p className="text-[15px] font-semibold text-slate-900">

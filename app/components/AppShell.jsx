@@ -149,6 +149,7 @@ export default function AppShell({ children }) {
     { href: "/feed", label: "Feed" },
     { href: "/hints", label: "Hints" },
     { href: "/people", label: "Circle" },
+    { href: "/calendar", label: "Calendar" },
     { href: "/shop", label: "Shop" },
   ];
 
