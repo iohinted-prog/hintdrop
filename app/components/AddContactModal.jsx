@@ -48,7 +48,7 @@ export default function AddContactModal({ open, onClose, onSave, modalKey }) {
         const { data: { session } } = await supabase.auth.getSession();
         const providerToken = session?.provider_token;
         if (!providerToken) {
-          if (!cancelled) { setContactResults([]); setContactsMessage("Sign out and sign back in to enable contact search."); }
+          if (!cancelled) { setContactResults([]); setContactsMessage("Contact search needs Google sign-in — add this contact manually below."); }
           return;
         }
         const [savedRes, otherRes] = await Promise.all([

@@ -1,6 +1,7 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
-import GoogleAuthButtons from "./GoogleAuthButtons";
+import AuthModal from "./AuthModal";
 
 function LogoMark() {
   return (
@@ -11,6 +12,7 @@ function LogoMark() {
 }
 
 export default function PublicShell({ children }) {
+  const [authOpen, setAuthOpen] = useState(false);
   return (
     <div className="min-h-screen bg-[#fffaf7] text-slate-800 flex flex-col">
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur sticky top-0 z-50">
@@ -25,7 +27,13 @@ export default function PublicShell({ children }) {
             <Link href="/gift-shop" className="hidden md:flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold text-slate-600 border border-[#ead8ce] hover:bg-[#fff5f0] transition">
               🛍️ Gift Shop
             </Link>
-            <GoogleAuthButtons variant="header-login" />
+            <button
+              type="button"
+              onClick={() => setAuthOpen(true)}
+              className="inline-flex h-12 shrink-0 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-6 text-[15px] font-semibold text-slate-700 transition hover:bg-[#fff5f0]"
+            >
+              Sign in
+            </button>
           </div>
         </div>
       </header>
@@ -39,6 +47,7 @@ export default function PublicShell({ children }) {
           <span>© {new Date().getFullYear()} HintDrop</span>
         </div>
       </footer>
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
   );
 }

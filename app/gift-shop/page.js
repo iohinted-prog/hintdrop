@@ -2,26 +2,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import PublicShell from "../components/PublicShell";
+import AuthModal from "../components/AuthModal";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
-import { createClient } from "../../lib/supabase/client";
 
 const CATEGORIES = [
   "Home", "Food", "Beauty", "Tech", "Travel", "Wellness",
   "Books", "Fashion", "Experiences", "Music", "Gaming", "Kids", "Hobbies",
 ];
-
-function handleSignIn(e) {
-  e?.stopPropagation?.();
-  const supabase = createClient();
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-  supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${baseUrl}/auth/callback`,
-      scopes: "https://www.googleapis.com/auth/contacts.readonly https://www.googleapis.com/auth/contacts.other.readonly",
-    },
-  });
-}
 
 function getTagArray(value) {
   if (Array.isArray(value)) return value.filter(Boolean);
@@ -29,7 +16,7 @@ function getTagArray(value) {
   return [];
 }
 
-function GiftCard({ product, formatCurrency, onImageError }) {
+function GiftCard({ product, formatCurrency, onImageError, onRequestSignIn }) {
   const [showModal, setShowModal] = useState(false);
   const tags = [...getTagArray(product.interest_tags).slice(0,1), ...getTagArray(product.occasion_tags).slice(0,1)].slice(0,2);
   const url = product.affiliate_url || product.product_url || "#";
@@ -77,7 +64,7 @@ function GiftCard({ product, formatCurrency, onImageError }) {
               className="flex-1 h-9 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[12px] font-semibold text-white">
               View item
             </a>
-            <button type="button" onClick={handleSignIn}
+            <button type="button" onClick={(e) => { e.stopPropagation(); onRequestSignIn(); }}
               className="flex-1 h-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-[12px] font-semibold text-slate-600 hover:bg-[#fff5f0]">
               Save to hints
             </button>
@@ -128,7 +115,7 @@ function GiftCard({ product, formatCurrency, onImageError }) {
                   className="flex-1 h-11 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white flex items-center justify-center shadow-lg">
                   View item →
                 </a>
-                <button type="button" onClick={handleSignIn}
+                <button type="button" onClick={() => onRequestSignIn()}
                   className="flex-1 h-11 rounded-full border border-[#ead8ce] bg-white text-[13px] font-semibold text-slate-700 flex items-center justify-center">
                   Save to hints
                 </button>
@@ -143,6 +130,7 @@ function GiftCard({ product, formatCurrency, onImageError }) {
 
 export default function GiftShopPage() {
   const { formatCurrency } = useCurrencyFormatter();
+  const [authOpen, setAuthOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState(null);
@@ -202,7 +190,7 @@ export default function GiftShopPage() {
           <div className="mb-10">
             <h2 className="text-[18px] font-semibold text-slate-900 mb-4">🏆 Bestsellers</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {featured.map(p => <GiftCard key={p.id} product={p} formatCurrency={formatCurrency} onImageError={handleImageError} />)}
+              {featured.map(p => <GiftCard key={p.id} product={p} formatCurrency={formatCurrency} onImageError={handleImageError} onRequestSignIn={() => setAuthOpen(true)} />)}
             </div>
           </div>
         )}
@@ -245,7 +233,7 @@ export default function GiftShopPage() {
           <p className="text-center text-slate-400 py-16">No gifts found</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {filtered.map(p => <GiftCard key={p.id} product={p} formatCurrency={formatCurrency} onImageError={handleImageError} />)}
+            {filtered.map(p => <GiftCard key={p.id} product={p} formatCurrency={formatCurrency} onImageError={handleImageError} onRequestSignIn={() => setAuthOpen(true)} />)}
           </div>
         )}
 
@@ -253,11 +241,12 @@ export default function GiftShopPage() {
         <div className="mt-16 text-center py-10 rounded-[28px] bg-[#fff5f0] border border-[#f0dfd6]">
           <p className="text-[18px] font-semibold text-slate-900 mb-2">Save gifts to your wishlist</p>
           <p className="text-[14px] text-slate-500 mb-5">Create a free HintDrop account to save hints and share with the people who buy for you.</p>
-          <button type="button" onClick={handleSignIn} className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-[14px] font-semibold bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white shadow-sm">
+          <button type="button" onClick={() => setAuthOpen(true)} className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-[14px] font-semibold bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white shadow-sm">
             Get started free
           </button>
         </div>
       </div>
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </PublicShell>
   );
 }

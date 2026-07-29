@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import GoogleAuthButtons from "./GoogleAuthButtons";
+import AuthModal from "./AuthModal";
 
 const hints = [
   {
@@ -540,6 +542,7 @@ function DemoVideoSection() {
 }
 
 export default function HomePageClient() {
+  const [authOpen, setAuthOpen] = useState(false);
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#fffaf7] text-slate-800">
       <div className="mx-auto max-w-[1320px] px-5 pb-16 pt-6 md:px-8">
@@ -600,16 +603,24 @@ export default function HomePageClient() {
                   </p>
                 </div>
                 <div className="rounded-full bg-[#fff0e8] px-3 py-2 text-[12px] font-bold text-[#ea7451]">
-                  Google
+                  Free
                 </div>
               </div>
 
               <div className="space-y-4">
                 <GoogleAuthButtons variant="hero-primary" />
 
+                <button
+                  type="button"
+                  onClick={() => setAuthOpen(true)}
+                  className="inline-flex h-11 w-full items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-[#fff5f0]"
+                >
+                  Continue with email
+                </button>
+
                 <div className="rounded-[22px] border border-[#f3e4db] bg-[#fff8f4] p-4">
                   <p className="text-sm leading-6 text-slate-600">
-                    New here? Use Google to create your account.
+                    New here? Sign up with Google or your email.
                     Returning users can log in the exact same way.
                   </p>
                 </div>
@@ -907,6 +918,7 @@ export default function HomePageClient() {
           </div>
         </footer>
       </div>
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </main>
   );
 }
