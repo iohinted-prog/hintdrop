@@ -18,6 +18,7 @@ export default function AuthModal({ open, onClose }) {
   const [mode, setMode] = useState("signin"); // "signin" | "signup"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -25,7 +26,7 @@ export default function AuthModal({ open, onClose }) {
   if (!open) return null;
 
   function reset() {
-    setEmail(""); setPassword(""); setError(""); setMessage(""); setLoading(false); setMode("signin");
+    setEmail(""); setPassword(""); setConfirmPassword(""); setError(""); setMessage(""); setLoading(false); setMode("signin");
   }
 
   function handleClose() {
@@ -80,6 +81,10 @@ export default function AuthModal({ open, onClose }) {
     }
     if (password.length < 6) {
       setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (mode === "signup" && password !== confirmPassword) {
+      setError("Passwords don't match.");
       return;
     }
 
@@ -164,6 +169,17 @@ export default function AuthModal({ open, onClose }) {
             minLength={6}
             className="w-full h-12 rounded-[12px] border border-[#ead8ce] bg-white px-4 text-[14px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#ff875d]"
           />
+          {mode === "signup" && (
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm password"
+              required
+              minLength={6}
+              className="w-full h-12 rounded-[12px] border border-[#ead8ce] bg-white px-4 text-[14px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#ff875d]"
+            />
+          )}
 
           {error && (
             <p className="rounded-[14px] border border-[#f1d2c6] bg-[#fff4ef] px-4 py-2.5 text-[13px] text-[#b85c3e]">
@@ -188,7 +204,7 @@ export default function AuthModal({ open, onClose }) {
         <p className="mt-4 text-center text-[13px] text-slate-500">
           {mode === "signup" ? (
             <>Already have an account?{" "}
-              <button type="button" onClick={() => { setMode("signin"); setError(""); setMessage(""); }} className="font-semibold text-[#ff875d]">Sign in</button>
+              <button type="button" onClick={() => { setMode("signin"); setError(""); setMessage(""); setConfirmPassword(""); }} className="font-semibold text-[#ff875d]">Sign in</button>
             </>
           ) : (
             <>Don't have an account?{" "}
