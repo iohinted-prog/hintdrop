@@ -122,6 +122,7 @@ Deno.serve(async (req) => {
     }
 
     if (new Date(invite.expires_at) < new Date()) {
+      await supabase.from('contact_invites').delete().eq('id', invite.id)
       return new Response(JSON.stringify({ ok: false, error: 'Invite has expired' }), {
         status: 410,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
