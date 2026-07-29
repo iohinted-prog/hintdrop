@@ -870,9 +870,10 @@ function EditHintModal({
 }
 
 
-function MobileHintCard({ hint, onEdit, onToggleStarred, onTogglePrivate, formatCurrency }) {
+function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePrivate, formatCurrency }) {
   const [imgError, setImgError] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const ratio = getCardAspectRatio(hint, imageRatios || {});
   const GRADIENTS = [
     "from-[#d9dfcf] via-[#b9c7aa] to-[#90a27e]",
     "from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]",
@@ -884,12 +885,12 @@ function MobileHintCard({ hint, onEdit, onToggleStarred, onTogglePrivate, format
   return (
     <>
       <article className="rounded-[22px] overflow-hidden shadow-sm cursor-pointer" onClick={() => setShowModal(true)}>
-        <div className="relative w-full">
+        <div className="relative w-full" style={{ aspectRatio: `${ratio}` }}>
           {hint.image && !imgError ? (
-            <img src={hint.image} alt={hint.title} className="w-full object-cover"
+            <img src={hint.image} alt={hint.title} className="h-full w-full object-cover"
               onError={() => setImgError(true)} loading="lazy" referrerPolicy="no-referrer" />
           ) : (
-            <div className={`w-full bg-gradient-to-br ${gradient} flex items-center justify-center text-4xl`} style={{ minHeight: "160px" }}>🎁</div>
+            <div className={`h-full w-full bg-gradient-to-br ${gradient} flex items-center justify-center text-4xl`}>🎁</div>
           )}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           <div className="absolute top-2 left-2 text-[13px]">{hint.private ? "🔒" : ""}</div>
@@ -1972,7 +1973,7 @@ export default function HintsClient() {
               <div className="block md:hidden columns-2 gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid">
                 {visibleHints.map((hint) => (
                   <div key={hint.id} className="break-inside-avoid mb-3">
-                    <MobileHintCard hint={hint} onEdit={openEditModal}
+                    <MobileHintCard hint={hint} imageRatios={imageRatios} onEdit={openEditModal}
                       onToggleStarred={toggleStarred} onTogglePrivate={togglePrivate}
                       formatCurrency={formatCurrency} />
                   </div>
@@ -2001,6 +2002,7 @@ export default function HintsClient() {
                     <div key={hint.id} className="break-inside-avoid mb-3">
                       <MobileHintCard
                         hint={hint}
+                        imageRatios={imageRatios}
                         onEdit={() => {}}
                         onToggleStarred={() => {}}
                         onTogglePrivate={() => {}}
