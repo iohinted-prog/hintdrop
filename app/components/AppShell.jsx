@@ -147,8 +147,8 @@ export default function AppShell({ children }) {
 
   const navItems = [
     { href: "/feed", label: "Feed" },
-    { href: "/hints", label: "Hints" },
     { href: "/people", label: "Circle" },
+    { href: "/hints", label: "Hints" },
     { href: "/calendar", label: "Calendar" },
     { href: "/shop", label: "Shop" },
   ];
@@ -476,7 +476,23 @@ export default function AppShell({ children }) {
                 const isActive =
                   pathname === item.href || pathname.startsWith(`${item.href}/`);
 
-                const icons = { "/feed": "🏠", "/hints": "🎁", "/circles": "⭕", "/people": "⭕", "/shop": "🛍️" };
+                const icons = { "/feed": "🏠", "/hints": "🎁", "/circles": "⭕", "/people": "⭕", "/calendar": "📅", "/shop": "🛍️" };
+
+                if (item.href === "/hints") {
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 mx-1 text-[13px] font-bold text-white bg-gradient-to-b from-[#ff966f] to-[#ff7e54] shadow-md shadow-[#ff7e54]/30 transition hover:translate-y-[-1px] ${
+                        isActive ? "ring-2 ring-[#ff875d] ring-offset-2" : ""
+                      }`}
+                    >
+                      <span>{icons[item.href]}</span>
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                }
+
                 return (
                   <Link
                     key={item.href}
