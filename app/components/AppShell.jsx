@@ -484,23 +484,12 @@ export default function AppShell({ children }) {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`relative inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 mx-1 text-[13px] font-bold transition hover:translate-y-[-1px] ${
-                        isActive
-                          ? "text-white bg-gradient-to-b from-[#ff966f] to-[#ff7e54] shadow-md shadow-[#ff7e54]/30"
-                          : "text-[#c65f3d] bg-[#fff4ee] border border-[#f3d9ca] shadow-[0_4px_10px_rgba(255,126,84,0.14)]"
+                      className={`mx-1 flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-xl shadow-lg shadow-[#ff7e54]/40 transition hover:translate-y-[-1px] ${
+                        isActive ? "ring-2 ring-[#ff875d] ring-offset-2" : ""
                       }`}
-                      style={
-                        !isActive
-                          ? {
-                              backgroundImage:
-                                "linear-gradient(to right, rgba(214, 148, 110, 0.14) 1px, transparent 1px), linear-gradient(to bottom, rgba(214, 148, 110, 0.14) 1px, transparent 1px)",
-                              backgroundSize: "10px 10px",
-                            }
-                          : undefined
-                      }
+                      title={item.label}
                     >
                       <span>{icons[item.href]}</span>
-                      <span>{item.label}</span>
                     </Link>
                   );
                 }
