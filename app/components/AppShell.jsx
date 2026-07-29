@@ -326,7 +326,17 @@ export default function AppShell({ children }) {
         result = await supabase.functions.invoke("accept-circle-invite", { body: { token: invite.invite_token } });
       }
       if (result.error) {
-        alert("accept invite error: " + JSON.stringify(result.error) + " | body: " + JSON.stringify(result.data));
+        let detail = result.error.message;
+        try {
+          if (result.error.context?.text) {
+            detail = await result.error.context.text();
+          } else if (result.error.context?.json) {
+            detail = JSON.stringify(await result.error.context.json());
+          }
+        } catch (readErr) {
+          detail = detail + " (couldn't read body: " + readErr.message + ")";
+        }
+        alert("accept invite error: " + detail + " | status: " + result.error.context?.status);
       } else if (result.data?.ok === false) {
         alert("accept invite failed: " + JSON.stringify(result.data));
       }
