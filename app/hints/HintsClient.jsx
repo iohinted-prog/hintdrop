@@ -1980,21 +1980,36 @@ export default function HintsClient() {
               </div>
               </>
             ) : (
-              <div className="columns-2 gap-4 md:columns-3">
-                {demoHints.map((hint) => (
-                  <div key={hint.id} className="mb-6 break-inside-avoid">
-                    <HintCard
-                      hint={hint}
-                      imageRatios={imageRatios}
-                      onEdit={() => {}}
-                      onToggleStarred={() => {}}
-                      onTogglePrivate={() => {}}
-                      isDragging={false}
-                      formatCurrency={formatCurrency}
-                    />
-                  </div>
-                ))}
-              </div>
+              <>
+                <div className="hidden md:block columns-2 gap-4 md:columns-3">
+                  {demoHints.map((hint) => (
+                    <div key={hint.id} className="mb-6 break-inside-avoid">
+                      <HintCard
+                        hint={hint}
+                        imageRatios={imageRatios}
+                        onEdit={() => {}}
+                        onToggleStarred={() => {}}
+                        onTogglePrivate={() => {}}
+                        isDragging={false}
+                        formatCurrency={formatCurrency}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="block md:hidden columns-2 gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid">
+                  {demoHints.map((hint) => (
+                    <div key={hint.id} className="break-inside-avoid mb-3">
+                      <MobileHintCard
+                        hint={hint}
+                        onEdit={() => {}}
+                        onToggleStarred={() => {}}
+                        onTogglePrivate={() => {}}
+                        formatCurrency={formatCurrency}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </section>
