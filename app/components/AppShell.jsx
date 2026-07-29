@@ -326,19 +326,21 @@ export default function AppShell({ children }) {
         result = await supabase.functions.invoke("accept-circle-invite", { body: { token: invite.invite_token } });
       }
       if (result.error) {
-        let detail = result.error.message;
+        let message = "Something went wrong accepting that invite. Please try again.";
         try {
-          if (result.error.context?.text) {
-            detail = await result.error.context.text();
-          } else if (result.error.context?.json) {
-            detail = JSON.stringify(await result.error.context.json());
+          const body = result.error.context?.text ? await result.error.context.text() : null;
+          const parsed = body ? JSON.parse(body) : null;
+          if (parsed?.error === "Invite has expired") {
+            message = "This invite has expired. Ask them to send you a new one.";
+          } else if (parsed?.error === "Invite not found or already used") {
+            message = "This invite has already been used or is no longer valid.";
+          } else if (parsed?.error) {
+            message = parsed.error;
           }
-        } catch (readErr) {
-          detail = detail + " (couldn't read body: " + readErr.message + ")";
+        } catch {
+          // fall back to the generic message above
         }
-        alert("accept invite error: " + detail + " | status: " + result.error.context?.status);
-      } else if (result.data?.ok === false) {
-        alert("accept invite failed: " + JSON.stringify(result.data));
+        alert(message);
       }
       await loadInviteCount();
     } finally {
