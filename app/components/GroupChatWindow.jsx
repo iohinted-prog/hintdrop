@@ -99,12 +99,9 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
       setMessages(prev => [...prev, data]);
       setBody("");
       // Notify other members
-      fetch("https://egdghdutgjcdvhazmblw.supabase.co/functions/v1/notify-new-message", {
+      fetch("/api/notify-new-message", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnZGdoZHV0Z2pjZHZoYXptYmx3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTcxMzQ0NCwiZXhwIjoyMDk3Mjg5NDQ0fQ.eNmDXF87_sP4U7cF3xwHDiXjH3pNQ5QNswTYkVpYqHM"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ record: data }),
       }).catch(console.error);
     }
