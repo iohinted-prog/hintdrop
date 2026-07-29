@@ -43,6 +43,29 @@ function getInitials(fullName = "", email = "") {
   );
 }
 
+function getNotifLastSeen() {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem("hintdrop_notif_seen_at");
+  } catch {
+    return null;
+  }
+}
+
+function setNotifLastSeen(iso) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("hintdrop_notif_seen_at", iso);
+  } catch {
+    // ignore
+  }
+}
+
+function countUnseenSince(items, lastSeen) {
+  if (!lastSeen) return items.length;
+  return items.filter((i) => i.created_at && i.created_at > lastSeen).length;
+}
+
 export default function AppShell({ children }) {
   const pathname = usePathname();
   const supabase = createClient();
@@ -207,7 +230,7 @@ export default function AppShell({ children }) {
     // Load group hint invites
     const { data: ghiData } = await supabase
       .from("group_hint_members")
-      .select("id, status, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name, avatar_url), group_hint_members(id))")
+      .select("id, status, created_at, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name, avatar_url), group_hint_members(id))")
       .eq("user_id", user.id)
       .eq("status", "invited");
     setGroupHintInvites(ghiData || []);
@@ -274,7 +297,13 @@ export default function AppShell({ children }) {
     const cn = cnData || [];
     setCircleNotifs(cn);
     setInvites(merged);
-    setInviteCount(merged.length + cn.length + (notifData?.length || 0) + (ghiData?.length || 0));
+    const lastSeen = getNotifLastSeen();
+    setInviteCount(
+      countUnseenSince(merged, lastSeen) +
+      countUnseenSince(cn, lastSeen) +
+      countUnseenSince(notifData || [], lastSeen) +
+      countUnseenSince(ghiData || [], lastSeen)
+    );
   }, [supabase]);
 
   useEffect(() => { loadInviteCountRef.current = loadInviteCount; }, [loadInviteCount]);
@@ -528,7 +557,17 @@ export default function AppShell({ children }) {
             </div>
 
             <div className="relative" ref={notifRef}>
-              <button type="button" onClick={() => { setNotifOpen(prev => !prev); setMessagesOpen(false); }}
+              <button type="button" onClick={() => {
+                  setNotifOpen(prev => {
+                    const opening = !prev;
+                    if (opening) {
+                      setNotifLastSeen(new Date().toISOString());
+                      setInviteCount(0);
+                    }
+                    return opening;
+                  });
+                  setMessagesOpen(false);
+                }}
                 className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white shadow-sm transition hover:bg-[#fff5f0]"
                 aria-label="Notifications">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600">
