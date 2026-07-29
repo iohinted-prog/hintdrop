@@ -220,23 +220,6 @@ function ShopCard({
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.72)] via-[rgba(22,18,16,0.18)] to-transparent" />
         </div>
 
-        <div className="absolute left-4 right-4 top-4 z-30 flex items-start justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {displayTags.map((tag) => (
-              <span
-                key={`${product.id}-${tag}`}
-                className="rounded-full border border-white/45 bg-white/76 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-md"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          <div className="rounded-full border border-[#ffd8c9] bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
-            {displayPrice}
-          </div>
-        </div>
-
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-4 sm:p-5">
           <div className="min-w-0">
             <h3
@@ -252,7 +235,12 @@ function ShopCard({
               {product.title || "Gift idea"}
             </h3>
 
-            <p className="mt-1 truncate text-[13px] text-white/80">{retailerLabel}</p>
+            <div className="mt-1 flex items-center justify-between gap-3">
+              <p className="min-w-0 truncate text-[13px] text-white/80">{retailerLabel}</p>
+              <div className="shrink-0 rounded-full border border-[#ffd8c9] bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
+                {displayPrice}
+              </div>
+            </div>
           </div>
 
           <div className="pointer-events-auto mt-4 flex flex-wrap items-center gap-2">
@@ -314,6 +302,18 @@ function ShopCard({
               <p className="text-[18px] font-semibold text-slate-900 leading-tight mb-1">{product.title || "Gift idea"}</p>
               {retailerLabel && <p className="text-[13px] text-slate-400 mb-1">{retailerLabel}</p>}
               <p className="text-[15px] font-bold text-[#df7b59] mb-4">{displayPrice}</p>
+              {displayTags.length > 0 && (
+                <div className="flex gap-1 flex-wrap mb-4">
+                  {displayTags.map((tag) => (
+                    <span
+                      key={`${product.id}-modal-${tag}`}
+                      className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#fff4ee] text-[#df7b59]"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className="flex gap-3">
                 <button
                   type="button"
@@ -786,16 +786,6 @@ export default function ShopPage() {
 
         <section className="mt-12">
           <div className="relative rounded-[36px] border border-[#efe0d7] bg-[#fffdfb] p-3 shadow-[0_12px_32px_rgba(176,118,86,0.08)] sm:p-5">
-            <div
-              className="pointer-events-none absolute inset-0 rounded-[36px] opacity-70"
-              style={{
-                backgroundImage:
-                  "linear-gradient(to right, rgba(214, 195, 184, 0.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(214, 195, 184, 0.28) 1px, transparent 1px)",
-                backgroundSize: "76px 76px",
-                backgroundPosition: "center center",
-              }}
-            />
-
             <div className="relative">
               {isLoading ? (
                 <ShopSkeleton />
