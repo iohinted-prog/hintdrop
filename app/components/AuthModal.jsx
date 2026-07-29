@@ -13,6 +13,15 @@ function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim().toLowerCase());
 }
 
+function getErrorMessage(err, fallback) {
+  console.error("Auth error:", err);
+  const msg = err?.message;
+  if (typeof msg === "string" && msg.trim() && msg.trim() !== "{}" && msg.trim() !== "[object Object]") {
+    return msg;
+  }
+  return fallback;
+}
+
 export default function AuthModal({ open, onClose }) {
   const supabase = createClient();
   const [mode, setMode] = useState("signin"); // "signin" | "signup" | "forgot"
@@ -46,7 +55,7 @@ export default function AuthModal({ open, onClose }) {
       });
       if (error) throw error;
     } catch (err) {
-      setError(err?.message || "Google sign in failed.");
+      setError(getErrorMessage(err, "Google sign in failed."));
       setLoading(false);
     }
   }
@@ -113,7 +122,7 @@ export default function AuthModal({ open, onClose }) {
         await redirectAfterAuth();
       }
     } catch (err) {
-      setError(err?.message || "Something went wrong. Please try again.");
+      setError(getErrorMessage(err, "Something went wrong. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -134,7 +143,7 @@ export default function AuthModal({ open, onClose }) {
       if (error) throw error;
       setMessage("If that email has an account, a reset link is on its way. Check your inbox.");
     } catch (err) {
-      setError(err?.message || "Something went wrong. Please try again.");
+      setError(getErrorMessage(err, "Something went wrong. Please try again."));
     } finally {
       setLoading(false);
     }
