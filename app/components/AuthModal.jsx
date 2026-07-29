@@ -50,6 +50,26 @@ export default function AuthModal({ open, onClose }) {
     }
   }
 
+  async function redirectAfterAuth() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("onboarding_completed")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (typeof window !== "undefined") {
+          window.location.href = profile?.onboarding_completed ? "/feed" : "/onboarding";
+        }
+        return;
+      }
+    } catch {
+      // fall through to default below
+    }
+    if (typeof window !== "undefined") window.location.href = "/feed";
+  }
+
   async function handleEmailSubmit(e) {
     e.preventDefault();
     setError(""); setMessage("");
@@ -74,7 +94,7 @@ export default function AuthModal({ open, onClose }) {
         if (error) throw error;
         if (data?.session) {
           handleClose();
-          if (typeof window !== "undefined") window.location.href = "/feed";
+          await redirectAfterAuth();
         } else {
           setMessage("Check your email to confirm your account, then come back and sign in.");
         }
@@ -85,7 +105,7 @@ export default function AuthModal({ open, onClose }) {
         });
         if (error) throw error;
         handleClose();
-        if (typeof window !== "undefined") window.location.href = "/feed";
+        await redirectAfterAuth();
       }
     } catch (err) {
       setError(err?.message || "Something went wrong. Please try again.");
