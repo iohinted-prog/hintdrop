@@ -109,6 +109,12 @@ export default function AuthModal({ open, onClose }) {
         if (data?.session) {
           handleClose();
           await redirectAfterAuth();
+        } else if (data?.user && (data.user.identities?.length ?? 0) === 0) {
+          // Supabase returns a user with no identities (and no error, by
+          // design, to avoid email enumeration) when the email is already
+          // registered. We surface a clear message anyway since HintDrop
+          // is accepting that UX tradeoff deliberately.
+          setError("That email is already in use. Try signing in instead.");
         } else {
           setMessage("Check your email to confirm your account, then come back and sign in.");
         }
