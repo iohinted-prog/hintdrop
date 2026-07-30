@@ -924,6 +924,7 @@ function EditHintModal({
 function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePrivate, formatCurrency }) {
   const [imgError, setImgError] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const pointerDownRef = useRef(null);
   const ratio = getCardAspectRatio(hint, imageRatios || {});
   const GRADIENTS = [
     "from-[#d9dfcf] via-[#b9c7aa] to-[#90a27e]",
@@ -933,9 +934,34 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
     "from-[#eadce8] via-[#d8bfd1] to-[#bb9ab6]",
   ];
   const gradient = GRADIENTS[hint.id ? hint.id.charCodeAt(0) % GRADIENTS.length : 0];
+
+  function handleTapDown(e) {
+    pointerDownRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+  }
+
+  function handleTapUp(e) {
+    const down = pointerDownRef.current;
+    pointerDownRef.current = null;
+    if (!down) return;
+    const dx = Math.abs(e.clientX - down.x);
+    const dy = Math.abs(e.clientY - down.y);
+    const dt = Date.now() - down.time;
+    // A quick tap with minimal movement opens the modal, even when this
+    // card is also wrapped in a drag-and-drop sortable (native click can
+    // get suppressed by the drag sensor's touch handling, so we detect
+    // taps directly from raw pointer events instead).
+    if (dx < 8 && dy < 8 && dt < 250) {
+      setShowModal(true);
+    }
+  }
+
   return (
     <>
-      <article className="rounded-[22px] overflow-hidden shadow-sm cursor-pointer" onClick={() => setShowModal(true)}>
+      <article
+        className="rounded-[22px] overflow-hidden shadow-sm cursor-pointer"
+        onPointerDown={handleTapDown}
+        onPointerUp={handleTapUp}
+      >
         <div className="relative w-full" style={{ aspectRatio: `${ratio}` }}>
           {hint.image && !imgError ? (
             <img src={hint.image} alt={hint.title} className="h-full w-full object-cover"
@@ -1232,6 +1258,7 @@ function SortableMobileHintCard({
     transition,
     zIndex: isDragging ? 20 : 1,
     position: "relative",
+    touchAction: "none",
   };
 
   return (
