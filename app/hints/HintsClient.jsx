@@ -1666,7 +1666,10 @@ export default function HintsClient() {
           body: JSON.stringify({ prompt: trimmed, currency: userCurrency || BASE_CURRENCY }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || "Could not generate a hint from that description.");
+        if (!res.ok) {
+          console.error("hint-idea error:", data?.error);
+          throw new Error("Couldn't generate a hint from that description right now.");
+        }
 
         const draft = buildDraftFromAiIdea(data, trimmed);
         setPendingHint(draft);
@@ -1675,7 +1678,8 @@ export default function HintsClient() {
         setIsAddModalOpen(true);
         setLink("");
       } catch (err) {
-        setError(err?.message || "Could not generate a hint from that description. Try a link instead?");
+        console.error("hint-idea request failed:", err);
+        setError("Couldn't generate a hint from that description right now — try pasting a link instead?");
       } finally {
         setIsAdding(false);
         closeBusy();
