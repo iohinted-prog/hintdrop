@@ -265,11 +265,16 @@ function normaliseRetailer(url) {
 }
 
 function isValidHttpUrl(value = "") {
+  const trimmed = String(value || "").trim();
+  if (!trimmed || /\s/.test(trimmed)) return false;
   try {
     const withProtocol =
-      value.startsWith("http://") || value.startsWith("https://") ? value : `https://${value}`;
+      trimmed.startsWith("http://") || trimmed.startsWith("https://") ? trimmed : `https://${trimmed}`;
     const parsed = new URL(withProtocol);
-    return ["http:", "https:"].includes(parsed.protocol);
+    return (
+      ["http:", "https:"].includes(parsed.protocol) &&
+      /\.[a-z]{2,}$/i.test(parsed.hostname)
+    );
   } catch {
     return false;
   }
