@@ -242,7 +242,8 @@ export default function AppShell({ children }) {
         const { data: ghData } = await supabase.from("group_hints").select("id, hints(title, image_url)").in("id", ghIds);
         (ghData || []).forEach(gh => { ghMap[gh.id] = gh; });
       }
-      // Fetch last message per conversation
+      // Fetch messages for these conversations (used for both last-message
+      // preview and real per-conversation unread counts)
       const { data: lastMsgs } = await supabase
         .from("messages")
         .select("conversation_id, body, type, created_at, sender_id, profiles(full_name)")
@@ -251,23 +252,28 @@ export default function AppShell({ children }) {
       const lastMsgMap = {};
       (lastMsgs || []).forEach(m => { if (!lastMsgMap[m.conversation_id]) lastMsgMap[m.conversation_id] = m; });
 
-      // Calculate unread counts
+      // Calculate real unread counts (not just a 0/1 flag)
       const myMembershipMap = {};
       (myMemberships || []).forEach(m => { myMembershipMap[m.conversation_id] = m.last_read_at; });
 
+      const unreadCountMap = {};
+      (lastMsgs || []).forEach(m => {
+        if (m.sender_id === user.id) return;
+        const lastRead = myMembershipMap[m.conversation_id];
+        const isUnread = !lastRead || new Date(m.created_at) > new Date(lastRead);
+        if (isUnread) {
+          unreadCountMap[m.conversation_id] = (unreadCountMap[m.conversation_id] || 0) + 1;
+        }
+      });
+
       const convsWithData = (convsData || []).map(c => {
-        const lastRead = myMembershipMap[c.id];
         const lastMsg = lastMsgMap[c.id];
-        const isOwnMessage = lastMsg?.sender_id === user.id;
-        const unread = !isOwnMessage && lastMsg && lastRead
-          ? new Date(lastMsg.created_at) > new Date(lastRead) ? 1 : 0
-          : !isOwnMessage && lastMsg && !lastRead ? 1 : 0;
         return {
           ...c,
           group_hints: ghMap[c.group_hint_id] || null,
           conversation_members: (allMembers || []).filter(m => m.conversation_id === c.id),
           last_message: lastMsg || null,
-          unread,
+          unread: unreadCountMap[c.id] || 0,
         };
       });
       const sortedConvs = [...convsWithData].sort((a, b) => {
