@@ -181,8 +181,6 @@ export default function AppShell({ children }) {
   const [activityNotifs, setActivityNotifs] = useState([]);
   const [invites, setInvites] = useState([]);
   const [circleNotifs, setCircleNotifs] = useState([]);
-  const [groupHintInvites, setGroupHintInvites] = useState([]);
-  const [groupHintToast, setGroupHintToast] = useState(null);
   const [notifOpen, setNotifOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
@@ -226,14 +224,6 @@ export default function AppShell({ children }) {
         .order("created_at", { ascending: false })
         .limit(20);
       setActivityNotifs(notifData || []);
-
-    // Load group hint invites
-    const { data: ghiData } = await supabase
-      .from("group_hint_members")
-      .select("id, status, created_at, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name, avatar_url), group_hint_members(id))")
-      .eq("user_id", user.id)
-      .eq("status", "invited");
-    setGroupHintInvites(ghiData || []);
 
     // Load conversations - step by step to avoid recursive joins
     const { data: myMemberships } = await supabase
@@ -301,8 +291,7 @@ export default function AppShell({ children }) {
     setInviteCount(
       countUnseenSince(merged, lastSeen) +
       countUnseenSince(cn, lastSeen) +
-      countUnseenSince(notifData || [], lastSeen) +
-      countUnseenSince(ghiData || [], lastSeen)
+      countUnseenSince(notifData || [], lastSeen)
     );
   }, [supabase]);
 
@@ -377,86 +366,6 @@ export default function AppShell({ children }) {
     } finally {
       setInviteActionId(null);
     }
-  }
-
-  async function handleGroupHintResponse(member, action) {
-    const status = action === "accept" ? "in" : "declined";
-    const accepted = action === "accept";
-    await supabase.from("group_hint_members").update({ status }).eq("id", member.id);
-    const gh = member.group_hints;
-    if (gh?.organiser_id) {
-      const { data: responderProfile } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", currentUserId).maybeSingle();
-      const responderName = responderProfile?.full_name || "Someone";
-      await supabase.from("feed_items").insert({
-        owner_user_id: gh.organiser_id,
-        actor_user_id: currentUserId,
-        family: "group",
-        item_type: "group_hint_response",
-        headline: accepted ? responderName + " is in!" : responderName + " declined",
-        body: gh.hints?.title || "a hint",
-        visibility: "private",
-        occurred_at: new Date().toISOString(),
-        metadata: { actor_name: responderName, hint_title: gh.hints?.title, response: status, social_enabled: false },
-      });
-      await supabase.from("notifications").insert({
-        user_id: gh.organiser_id,
-        actor_user_id: currentUserId,
-        type: "group_hint_response",
-        title: accepted ? responderName + " is in!" : responderName + " declined",
-        body: gh.hints?.title || "a hint",
-        data: { actor_name: responderName, actor_avatar_url: responderProfile?.avatar_url || null, response: status, hint_title: gh.hints?.title, hint_image: gh.hints?.image_url, recipient_user_id: gh.recipient_user_id },
-        created_at: new Date().toISOString(),
-      });
-      fetch("/api/group-hint-notify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "response", memberId: member.id, responderId: currentUserId, response: status }),
-      }).catch(console.error);
-
-      if (accepted) {
-        // Find or create a conversation for this group hint
-        const { data: existingConv } = await supabase
-          .from("conversations")
-          .select("id")
-          .eq("group_hint_id", gh.id)
-          .maybeSingle();
-
-        let convId = existingConv?.id;
-        if (!convId) {
-          // Generate id client-side to avoid RLS select-after-insert issue
-          const newId = crypto.randomUUID();
-          const { error: convErr } = await supabase
-            .from("conversations")
-            .insert({ id: newId, type: "group", group_hint_id: gh.id });
-          if (convErr) alert("conv insert err: " + JSON.stringify(convErr));
-          else {
-            convId = newId;
-            // Add organiser as member
-            const { error: orgMemErr } = await supabase.from("conversation_members").insert({ conversation_id: convId, user_id: gh.organiser_id });
-            if (orgMemErr) console.error("org member err:", orgMemErr);
-          }
-        }
-        // Add accepter as member
-        if (convId) {
-          await supabase.from("conversation_members").upsert({ conversation_id: convId, user_id: currentUserId }, { onConflict: "conversation_id,user_id" });
-          // Insert system message
-          const isNewConv = !existingConv?.id;
-          const hintTitle = gh.hints?.title || "a gift";
-          const organiserFirstName = gh.profiles?.full_name?.split(" ")[0] || "Someone";
-          // Pin the gift in the conversation
-          await supabase.from("conversation_hints").upsert({ conversation_id: convId, group_hint_id: gh.id }, { onConflict: "conversation_id,group_hint_id" });
-          if (isNewConv) {
-            await supabase.from("messages").insert({ conversation_id: convId, sender_id: currentUserId, body: `${organiserFirstName} started a group gift for ${hintTitle} 🎁`, type: "system" });
-          } else {
-            await supabase.from("messages").insert({ conversation_id: convId, sender_id: currentUserId, body: `${organiserFirstName} added a group gift for ${hintTitle} 🎁`, type: "system" });
-          }
-          await supabase.from("messages").insert({ conversation_id: convId, sender_id: currentUserId, body: `${responderName} joined the group 🎉`, type: "system" });
-        }
-      }
-    }
-    setGroupHintInvites(prev => prev.filter(m => m.id !== member.id));
-    if (accepted) setGroupHintToast("You're in! The organiser will be in touch to sort out contributions.");
-    await loadInviteCount();
   }
 
 
@@ -725,46 +634,6 @@ export default function AppShell({ children }) {
           </button>
         </div>
       ))}
-                    {groupHintInvites.map(member => {
-                const gh = member.group_hints;
-                const hint = gh?.hints;
-                const organiser = gh?.profiles;
-                return (
-                  <div key={member.id} className="rounded-[18px] border border-[#f0dfd6] bg-white p-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      {organiser?.avatar_url
-                        ? <img src={organiser.avatar_url} className="h-9 w-9 rounded-full object-cover shrink-0" alt="" />
-                        : <div className="h-9 w-9 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[11px] font-bold text-white shrink-0">{organiser?.full_name?.[0] || "?"}</div>
-                      }
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-semibold text-slate-900 leading-tight">{organiser?.full_name || "Someone"} wants to chip in on a gift</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5 truncate">{hint?.title}</p>
-                      </div>
-                    </div>
-                    {hint?.image_url && (
-                      <div className="flex gap-3 mb-3 items-center">
-                        <img src={hint.image_url} alt={hint.title} className="h-16 w-16 object-cover rounded-[12px] shrink-0 cursor-pointer" onClick={() => { setNotifOpen(false); window.location.href = `/profile/${gh?.recipient_user_id}`; }} />
-                        <div>
-                          <p className="text-[13px] font-semibold text-slate-900 leading-tight">{hint?.title}</p>
-                          {hint?.numeric_price > 0 && <p className="text-[13px] font-bold text-[#df7b59] mt-0.5">{new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numeric_price)}</p>}
-                          {hint?.retailer && <p className="text-[11px] text-slate-400 mt-0.5">{hint.retailer}</p>}
-                {(() => { const c = member.group_hints?.group_hint_members?.length || 0; if (c === 0) return null; const label = c === 1 ? "Only you so far" : `You and ${c - 1} other${c - 1 === 1 ? "" : "s"}`; return <p className="text-[11px] text-slate-400 mt-0.5">{label}</p>; })()}
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => handleGroupHintResponse(member, "accept")}
-                        className="flex-1 h-8 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[11px] font-semibold text-white">
-                        I am in!
-                      </button>
-                      <button type="button" onClick={() => handleGroupHintResponse(member, "decline")}
-                        className="flex-1 h-8 rounded-full border border-[#efc0ba] bg-white text-[11px] font-semibold text-[#b14f43]">
-                        Decline
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
               {circleNotifs.map(notif => (
                       <div key={notif.id} className="rounded-[18px] border border-[#fde0d0] bg-[#fff4f2] p-4">
                         <p className="text-sm font-semibold text-slate-900 mb-1">Circle update</p>
@@ -783,7 +652,7 @@ export default function AppShell({ children }) {
                         </div>
                       </div>
                     ))}
-                    {invites.length === 0 && circleNotifs.length === 0 && activityNotifs.length === 0 && groupHintInvites.length === 0 ? (
+                    {invites.length === 0 && circleNotifs.length === 0 && activityNotifs.length === 0 ? (
                       <p className="text-sm text-slate-400 text-center py-4">No pending invites</p>
                     ) : invites.map(invite => (
                       <div key={invite.id} className={`rounded-[18px] border p-4 ${invite.source === "contact" ? "border-[#e6ddd7] bg-white" : "border-[#dce8d8] bg-[#f7fbf5]"}`}>
