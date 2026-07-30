@@ -486,22 +486,23 @@ function buildDraftFromPreview(data, rawUrl) {
 
 function buildDraftFromAiIdea(data, prompt) {
   const title = String(data?.title || prompt || "Hint").trim();
-  const image = typeof data?.image === "string" && data.image.startsWith("http") ? data.image : "";
+  const images = Array.isArray(data?.images) ? data.images.filter((u) => typeof u === "string" && u.startsWith("http")) : [];
 
   return {
     title,
     retailer: data?.retailer || "Experience idea",
-    image,
+    image: images[0] || "",
+    imageOptions: images,
     uploadedImage: null,
     url: "",
-    priceInput: typeof data?.numericPrice === "number" ? String(data.numericPrice) : "",
-    numericPrice: typeof data?.numericPrice === "number" ? data.numericPrice : null,
-    rawPrice: data?.priceText || "",
-    currency: data?.currency || BASE_CURRENCY,
+    priceInput: "",
+    numericPrice: null,
+    rawPrice: "",
+    currency: BASE_CURRENCY,
     starred: false,
     private: false,
     needsReview: true,
-    source: "ai-idea",
+    source: "stock-photo",
   };
 }
 
@@ -789,6 +790,7 @@ function AddHintModal({
   onSubmit,
   isSaving,
   notice,
+  imageOptions,
 }) {
   const helperCopy = notice
     ? "We tried to get your info, but this shop asked you to put it in instead."
@@ -821,6 +823,29 @@ function AddHintModal({
         ) : null}
 
         <p className="text-sm text-slate-500">{helperCopy}</p>
+
+        {Array.isArray(imageOptions) && imageOptions.length > 1 && (
+          <div>
+            <p className="mb-2 text-sm font-semibold text-slate-700">Choose a photo</p>
+            <div className="grid grid-cols-3 gap-2">
+              {imageOptions.map((url, i) => (
+                <button
+                  key={url + i}
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, image: url, uploadedImage: null }))}
+                  className={`relative aspect-square overflow-hidden rounded-[16px] border-2 transition ${
+                    form.image === url ? "border-[#ff946d]" : "border-transparent hover:border-[#f0dfd6]"
+                  }`}
+                >
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  {form.image === url && (
+                    <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#ff946d] text-white text-[11px]">✓</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <HintFormFields
           form={form}
@@ -1657,29 +1682,29 @@ export default function HintsClient() {
     beginFetchBusy();
 
     // A description (not a URL) — e.g. "a hot air balloon ride" — gets
-    // routed to the AI idea generator instead of the link scraper.
+    // routed to a stock-photo search instead of the link scraper.
     if (!isValidHttpUrl(trimmed)) {
       try {
         const res = await fetch("/api/hint-idea", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: trimmed, currency: userCurrency || BASE_CURRENCY }),
+          body: JSON.stringify({ prompt: trimmed }),
         });
         const data = await res.json();
         if (!res.ok) {
           console.error("hint-idea error:", data?.error);
-          throw new Error("Couldn't generate a hint from that description right now.");
+          throw new Error("Couldn't find stock photos for that description right now.");
         }
 
         const draft = buildDraftFromAiIdea(data, trimmed);
         setPendingHint(draft);
         setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...draft });
-        setAddModalNotice("We've put together an idea based on your description — check it over before saving.");
+        setAddModalNotice("Pick a photo below, then add a price if you'd like before saving.");
         setIsAddModalOpen(true);
         setLink("");
       } catch (err) {
         console.error("hint-idea request failed:", err);
-        setError("Couldn't generate a hint from that description right now — try pasting a link instead?");
+        setError("Couldn't find stock photos for that description right now — try pasting a link instead?");
       } finally {
         setIsAdding(false);
         closeBusy();
@@ -2077,6 +2102,7 @@ export default function HintsClient() {
         onSubmit={submitNewHint}
         isSaving={isSubmittingNewHint}
         notice={addModalNotice}
+        imageOptions={pendingHint?.imageOptions}
       />
 
       <EditHintModal
