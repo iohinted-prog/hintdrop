@@ -698,7 +698,11 @@ export default function AppShell({ children }) {
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((prev) => !prev)}
-                className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-[#ead8ce] bg-white shadow-sm transition hover:bg-[#fff5f0]"
+                className={`flex h-11 w-11 items-center justify-center overflow-hidden rounded-full shadow-sm transition ${
+                  avatarUrl
+                    ? "border border-[#ead8ce] bg-white hover:bg-[#fff5f0]"
+                    : "bg-gradient-to-b from-[#ff966f] to-[#ff7e54] hover:opacity-90"
+                }`}
               >
                 {avatarUrl ? (
                   <img
@@ -707,7 +711,7 @@ export default function AppShell({ children }) {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <span className="text-[12px] font-bold text-slate-700">
+                  <span className="text-[12px] font-bold text-white">
                     {initials}
                   </span>
                 )}
