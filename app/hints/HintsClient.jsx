@@ -1205,6 +1205,49 @@ function SortableHintCard({
   );
 }
 
+function SortableMobileHintCard({
+  hint,
+  imageRatios,
+  onEdit,
+  onToggleStarred,
+  onTogglePrivate,
+  formatCurrency,
+}) {
+  const animateLayoutChanges = (args) => {
+    if (args.isSorting || args.wasDragging) return defaultAnimateLayoutChanges(args);
+    return true;
+  };
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: hint.id,
+    animateLayoutChanges,
+    transition: {
+      duration: 240,
+      easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+    },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 20 : 1,
+    position: "relative",
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <MobileHintCard
+        hint={hint}
+        imageRatios={imageRatios}
+        onEdit={onEdit}
+        onToggleStarred={onToggleStarred}
+        onTogglePrivate={onTogglePrivate}
+        formatCurrency={formatCurrency}
+      />
+    </div>
+  );
+}
+
 function LoadingHintCard({ ratio = "0.92" }) {
   return (
     <div
@@ -1259,6 +1302,10 @@ export default function HintsClient() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+  const mobileSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -1918,6 +1965,39 @@ export default function HintsClient() {
     setActiveId(null);
   }
 
+  async function handleMobileDragEnd(event) {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over || active.id === over.id || hints.length === 0) return;
+
+    const nextColumns = splitIntoColumns(hints, 2);
+    const fromColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === active.id));
+    const toColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === over.id));
+
+    if (fromColumnIndex === -1 || toColumnIndex === -1) return;
+
+    const fromItems = [...nextColumns[fromColumnIndex]];
+    const toItems = fromColumnIndex === toColumnIndex ? fromItems : [...nextColumns[toColumnIndex]];
+    const oldIndex = fromItems.findIndex((item) => item.id === active.id);
+    const newIndex = toItems.findIndex((item) => item.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    if (fromColumnIndex === toColumnIndex) {
+      nextColumns[fromColumnIndex] = arrayMove(fromItems, oldIndex, newIndex);
+    } else {
+      const [moved] = fromItems.splice(oldIndex, 1);
+      toItems.splice(newIndex, 0, moved);
+      nextColumns[fromColumnIndex] = fromItems;
+      nextColumns[toColumnIndex] = toItems;
+    }
+
+    const nextHints = rebuildFromColumns(nextColumns);
+    setHints(nextHints);
+    await persistOrder(nextHints);
+  }
+
   const editingHint = visibleHints.find((hint) => hint.id === editingHintId) || null;
 
   const loadingColumns = [
@@ -2046,17 +2126,52 @@ export default function HintsClient() {
                   ) : null}
                 </DragOverlay>
               </DndContext>
-              <div className="grid grid-cols-2 gap-3 md:hidden">
-                {mobileColumns.map((col, colIndex) => (
-                  <div key={colIndex} className="flex flex-col gap-3">
-                    {col.map((hint) => (
-                      <MobileHintCard key={hint.id} hint={hint} imageRatios={imageRatios} onEdit={openEditModal}
-                        onToggleStarred={toggleStarred} onTogglePrivate={togglePrivate}
-                        formatCurrency={formatCurrency} />
-                    ))}
-                  </div>
-                ))}
-              </div>
+              <DndContext
+                sensors={mobileSensors}
+                collisionDetection={closestCenter}
+                measuring={measuring}
+                onDragStart={handleDragStart}
+                onDragEnd={handleMobileDragEnd}
+                onDragCancel={handleDragCancel}
+              >
+                <div className="grid grid-cols-2 gap-3 md:hidden">
+                  {mobileColumns.map((col, colIndex) => (
+                    <SortableContext
+                      key={`mobile-column-${colIndex}`}
+                      items={col.map((hint) => hint.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="flex flex-col gap-3">
+                        {col.map((hint) => (
+                          <SortableMobileHintCard
+                            key={hint.id}
+                            hint={hint}
+                            imageRatios={imageRatios}
+                            onEdit={openEditModal}
+                            onToggleStarred={toggleStarred}
+                            onTogglePrivate={togglePrivate}
+                            formatCurrency={formatCurrency}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  ))}
+                </div>
+                <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.25, 1, 0.5, 1)" }}>
+                  {activeHint ? (
+                    <div className="w-full max-w-[220px] md:hidden">
+                      <MobileHintCard
+                        hint={activeHint}
+                        imageRatios={imageRatios}
+                        onEdit={() => {}}
+                        onToggleStarred={() => {}}
+                        onTogglePrivate={() => {}}
+                        formatCurrency={formatCurrency}
+                      />
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
               </>
             ) : (
               <>
