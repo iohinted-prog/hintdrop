@@ -53,5 +53,31 @@ export default async function Page() {
     redirect("/feed");
   }
 
-  return <HomePageClient />;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        name: "HintDrop",
+        url: "https://hintdrop.app",
+        logo: "https://hintdrop.app/favicon.png",
+      },
+      {
+        "@type": "WebSite",
+        name: "HintDrop",
+        url: "https://hintdrop.app",
+        description: "Save what you actually want. Remember who matters. Plan gifts together.",
+      },
+    ],
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <HomePageClient />
+    </>
+  );
 }
