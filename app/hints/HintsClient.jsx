@@ -1638,13 +1638,6 @@ export default function HintsClient() {
     if (!currentUser) return;
     const supabase = createClient();
     const newStarred = !hint.starred;
-  if (newStarred) {
-    const starredCount = hints.filter(h => h.starred && h.id !== hint.id).length;
-    if (starredCount >= 3) {
-      setError("You can only have 3 top picks. Unstar one first.");
-      return;
-    }
-  }
 
     setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, starred: newStarred } : h)));
 

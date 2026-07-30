@@ -37,13 +37,11 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
       setLoading(true);
       const [{ data: profileData }, { data: hintsData }] = await Promise.all([
         supabase.from("profiles").select("full_name, avatar_url, interests").eq("id", userId).maybeSingle(),
-        Promise.all([
-          supabase.from("hints").select("id, title, image_url, numeric_price, currency, retailer, url, starred, occasions, size, size_type").eq("user_id", userId).eq("is_private", false).eq("starred", true).limit(3),
-          supabase.from("hints").select("id, title, image_url, numeric_price, currency, retailer, url, starred, occasions, size, size_type").eq("user_id", userId).eq("is_private", false).neq("starred", true).order("created_at", { ascending: false }).limit(6),
-        ]).then(([s, n]) => { const starred = s.data || []; const newest = (n.data || []).filter(h => !starred.find(s => s.id === h.id)).slice(0, 6 - starred.length); return { data: [...starred, ...newest], error: s.error || n.error }; }),
+        supabase.from("hints").select("id, title, image_url, numeric_price, currency, retailer, url, starred, occasions, size, size_type")
+          .eq("user_id", userId).eq("is_private", false).order("position", { ascending: true }).limit(8),
       ]);
       setProfile(profileData);
-      const hintsList = hintsData || [];
+      const hintsList = [...(hintsData || [])].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0));
       setHints(hintsList);
       if (hintsList.length && currentUserId && currentUserId !== userId) {
         const { data: claimsData } = await supabase.from("hint_claims")
