@@ -50,9 +50,9 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
       .order("created_at", { ascending: true })
       .then(({ data }) => setMessages(data || []));
 
-    // Load pinned hints
+    // Load pinned hints, including the current user's own status on each
     supabase.from("conversation_hints")
-      .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name))")
+      .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status))")
       .eq("conversation_id", conversation.id)
       .eq("dismissed", false)
       .then(({ data }) => setPinnedHints(data || []));
@@ -63,7 +63,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_hints", filter: "conversation_id=eq." + conversation.id },
         () => {
           supabase.from("conversation_hints")
-            .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name))")
+            .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status))")
             .eq("conversation_id", conversation.id)
             .eq("dismissed", false)
             .then(({ data }) => setPinnedHints(data || []));
@@ -113,6 +113,44 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
     setPinnedHints(prev => prev.filter(h => h.id !== pinnedHintId));
   }
 
+  async function respondToGroupHint(ph, action) {
+    const gh = ph.group_hints;
+    const myMember = (gh?.group_hint_members || []).find(m => m.user_id === currentUserId);
+    if (!myMember) return;
+
+    const status = action === "accept" ? "in" : "declined";
+    await supabase.from("group_hint_members").update({ status }).eq("id", myMember.id);
+
+    const myName = myProfile?.full_name || "Someone";
+    const hintTitle = gh?.hints?.title || "a hint";
+    const announceBody = action === "accept"
+      ? `${myName} is in! 🎉`
+      : `${myName} declined`;
+
+    if (action === "decline") {
+      // Post the decline notice first, while they're still a member (RLS
+      // requires the sender to be a member), then remove them from the chat.
+      await supabase.from("messages").insert({ conversation_id: conversation.id, sender_id: currentUserId, body: announceBody, type: "system" });
+      await supabase.from("conversation_members").delete().eq("conversation_id", conversation.id).eq("user_id", currentUserId);
+      onClose();
+      return;
+    }
+
+    await supabase.from("messages").insert({ conversation_id: conversation.id, sender_id: currentUserId, body: announceBody, type: "system" });
+
+    setPinnedHints(prev => prev.map(p => p.id === ph.id
+      ? { ...p, group_hints: { ...p.group_hints, group_hint_members: (p.group_hints.group_hint_members || []).map(m => m.user_id === currentUserId ? { ...m, status } : m) } }
+      : p
+    ));
+
+    // Email nudge to the organiser, same as before
+    fetch("/api/group-hint-notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "response", memberId: myMember.id, responderId: currentUserId, response: status }),
+    }).catch(console.error);
+  }
+
   return (
     <div className="fixed inset-0 z-[110] md:inset-auto md:bottom-4 md:right-4 md:w-[380px] md:h-[580px] flex flex-col bg-[#fffaf7] md:rounded-[22px] border border-[#efdcd2] shadow-2xl overflow-hidden">
       {/* Header */}
@@ -136,6 +174,8 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
           {pinnedHints.map(ph => {
             const hint = ph.group_hints?.hints;
             const organiser = ph.group_hints?.profiles;
+            const myMember = (ph.group_hints?.group_hint_members || []).find(m => m.user_id === currentUserId);
+            const isPending = myMember?.status === "invited";
             const price = hint?.numeric_price > 0
               ? new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numeric_price)
               : null;
@@ -154,17 +194,30 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
                   {price && <p className="text-[11px] text-[#df7b59] font-semibold">{price}</p>}
                   {organiser && <p className="text-[10px] text-slate-400">by {organiser.full_name?.split(" ")[0]}</p>}
                 </div>
-                <div className="flex gap-1 shrink-0">
-                  <button type="button"
-                    onClick={() => { if (ph.group_hints?.organiser_id) { window.location.href = `/profile/${ph.group_hints.recipient_user_id || ph.group_hints.organiser_id}`; onClose(); } }}
-                    className="text-[10px] font-semibold px-2 py-1 rounded-full border border-[#f0dfd6] text-[#df7b59] hover:bg-[#fff5f0]">
-                    See hints
-                  </button>
-                  <button type="button" onClick={() => dismissHint(ph.id)}
-                    className="text-[10px] font-semibold px-2 py-1 rounded-full border border-[#f0dfd6] text-slate-400 hover:bg-slate-50">
-                    Dismiss
-                  </button>
-                </div>
+                {isPending ? (
+                  <div className="flex gap-1 shrink-0">
+                    <button type="button" onClick={() => respondToGroupHint(ph, "accept")}
+                      className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white">
+                      I'm in
+                    </button>
+                    <button type="button" onClick={() => respondToGroupHint(ph, "decline")}
+                      className="text-[10px] font-semibold px-2.5 py-1 rounded-full border border-[#f0dfd6] text-slate-400 hover:bg-slate-50">
+                      Decline
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-1 shrink-0">
+                    <button type="button"
+                      onClick={() => { if (ph.group_hints?.organiser_id) { window.location.href = `/profile/${ph.group_hints.recipient_user_id || ph.group_hints.organiser_id}`; onClose(); } }}
+                      className="text-[10px] font-semibold px-2 py-1 rounded-full border border-[#f0dfd6] text-[#df7b59] hover:bg-[#fff5f0]">
+                      See hints
+                    </button>
+                    <button type="button" onClick={() => dismissHint(ph.id)}
+                      className="text-[10px] font-semibold px-2 py-1 rounded-full border border-[#f0dfd6] text-slate-400 hover:bg-slate-50">
+                      Dismiss
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
