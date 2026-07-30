@@ -1919,7 +1919,7 @@ export default function HintsClient() {
                     handleAddHint();
                   }
                 }}
-                placeholder="Paste a URL or describe an experience"
+                placeholder="Paste a URL or describe an experience..."
                 className="h-[72px] w-full rounded-full border border-[#eadcd3] bg-white px-8 text-[16px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
               />
               <button
@@ -1937,8 +1937,7 @@ export default function HintsClient() {
             ) : (
               <div className="mt-3 space-y-1 text-sm text-slate-500">
                 <p>
-                  We’ll try our best to pull the title, image, and price before you review it —
-                  or describe an experience (like "a hot air balloon ride") and we'll suggest one with a stock photo.
+                  We’ll try our best to pull the title, image, and price before you review it.
                 </p>
               </div>
             )}
