@@ -190,6 +190,7 @@ export default function AppShell({ children }) {
   const [inviteActionId, setInviteActionId] = useState(null);
   const [notifActionId, setNotifActionId] = useState(null);
   const notifRef = useRef(null);
+  const messagesRef = useRef(null);
 
   const loadInviteCountRef = useRef(null);
   const loadInviteCount = useCallback(async () => {
@@ -337,6 +338,7 @@ export default function AppShell({ children }) {
   useEffect(() => {
     function handleClick(e) {
       if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+      if (messagesRef.current && !messagesRef.current.contains(e.target)) setMessagesOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -460,7 +462,7 @@ export default function AppShell({ children }) {
               })}
             </nav>
 
-            <div className="relative">
+            <div className="relative" ref={messagesRef}>
               <button type="button" onClick={() => { setMessagesOpen(prev => !prev); setNotifOpen(false); }}
                 className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white shadow-sm transition hover:bg-[#fff5f0]"
                 aria-label="Messages">
@@ -470,33 +472,6 @@ export default function AppShell({ children }) {
                 {unreadMessageCount > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#f36f64] text-[10px] font-bold text-white">
                     {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
-                  </span>
-                )}
-              </button>
-
-            </div>
-
-            <div className="relative" ref={notifRef}>
-              <button type="button" onClick={() => {
-                  setNotifOpen(prev => {
-                    const opening = !prev;
-                    if (opening) {
-                      setNotifLastSeen(new Date().toISOString());
-                      setInviteCount(0);
-                    }
-                    return opening;
-                  });
-                  setMessagesOpen(false);
-                }}
-                className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white shadow-sm transition hover:bg-[#fff5f0]"
-                aria-label="Notifications">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                </svg>
-                {inviteCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#f36f64] text-[10px] font-bold text-white">
-                    {inviteCount > 9 ? "9+" : inviteCount}
                   </span>
                 )}
               </button>
@@ -544,6 +519,32 @@ export default function AppShell({ children }) {
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="relative" ref={notifRef}>
+              <button type="button" onClick={() => {
+                  setNotifOpen(prev => {
+                    const opening = !prev;
+                    if (opening) {
+                      setNotifLastSeen(new Date().toISOString());
+                      setInviteCount(0);
+                    }
+                    return opening;
+                  });
+                  setMessagesOpen(false);
+                }}
+                className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white shadow-sm transition hover:bg-[#fff5f0]"
+                aria-label="Notifications">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                {inviteCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#f36f64] text-[10px] font-bold text-white">
+                    {inviteCount > 9 ? "9+" : inviteCount}
+                  </span>
+                )}
+              </button>
               {notifOpen && (
                 <div className="absolute right-0 top-14 z-50 w-80 max-w-[calc(100vw-1rem)] rounded-[22px] border border-[#efdcd2] bg-[#fffaf7] shadow-[0_20px_60px_rgba(88,46,31,0.15)] overflow-hidden">
                   <div className="px-5 py-4 border-b border-[#f0e4dd]">
