@@ -1097,13 +1097,11 @@ function HintCard({
 
           <button
             onClick={() => onToggleStarred(hint)}
-            className={`pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/72 text-[16px] backdrop-blur-md ${
-              hint.starred ? "text-[#f36f64]" : "text-slate-400 hover:text-[#f36f64]"
-            }`}
+            className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/72 text-[16px] backdrop-blur-md"
             aria-label={hint.starred ? "Unhighlight hint" : "Highlight hint"}
             type="button"
           >
-            ★
+            {hint.starred ? "⭐" : "☆"}
           </button>
         </div>
       </div>
@@ -1387,6 +1385,7 @@ export default function HintsClient() {
   const visibleHints = [...hints].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0));
   const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
   const columns = useMemo(() => splitIntoColumns(visibleHints, 3), [visibleHints]);
+  const mobileColumns = useMemo(() => splitIntoColumns(visibleHints, 2), [visibleHints]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2047,12 +2046,14 @@ export default function HintsClient() {
                   ) : null}
                 </DragOverlay>
               </DndContext>
-              <div className="block md:hidden columns-2 gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid">
-                {visibleHints.map((hint) => (
-                  <div key={hint.id} className="break-inside-avoid mb-3">
-                    <MobileHintCard hint={hint} imageRatios={imageRatios} onEdit={openEditModal}
-                      onToggleStarred={toggleStarred} onTogglePrivate={togglePrivate}
-                      formatCurrency={formatCurrency} />
+              <div className="grid grid-cols-2 gap-3 md:hidden">
+                {mobileColumns.map((col, colIndex) => (
+                  <div key={colIndex} className="flex flex-col gap-3">
+                    {col.map((hint) => (
+                      <MobileHintCard key={hint.id} hint={hint} imageRatios={imageRatios} onEdit={openEditModal}
+                        onToggleStarred={toggleStarred} onTogglePrivate={togglePrivate}
+                        formatCurrency={formatCurrency} />
+                    ))}
                   </div>
                 ))}
               </div>
