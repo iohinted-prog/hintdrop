@@ -176,18 +176,34 @@ export async function GET(request) {
 
     if (contactsError) throw contactsError
 
-    for (const contact of contacts || []) {
-      try {
-        const { data: owner } = await supabase
+    // Pre-fetch each unique owner's profile + auth email once, instead of
+    // once per contact (a contact-heavy user was causing duplicate lookups
+    // for the same owner on every one of their contacts).
+    const uniqueOwnerIds = [...new Set((contacts || []).map(c => c.user_id).filter(Boolean))]
+
+    const { data: ownerProfiles } = uniqueOwnerIds.length
+      ? await supabase
           .from('profiles')
           .select('id, full_name, email_reminders, default_reminder_days, unsubscribe_token')
-          .eq('id', contact.user_id)
-          .maybeSingle()
+          .in('id', uniqueOwnerIds)
+      : { data: [] }
+    const ownerProfileMap = {}
+    ;(ownerProfiles || []).forEach(p => { ownerProfileMap[p.id] = p })
 
+    const ownerEmailMap = {}
+    await Promise.all(uniqueOwnerIds.map(async (id) => {
+      const profile = ownerProfileMap[id]
+      if (!profile || !profile.email_reminders) return
+      const { data: authUser } = await supabase.auth.admin.getUserById(id)
+      if (authUser?.user?.email) ownerEmailMap[id] = authUser.user.email
+    }))
+
+    for (const contact of contacts || []) {
+      try {
+        const owner = ownerProfileMap[contact.user_id]
         if (!owner || !owner.email_reminders) continue
 
-        const { data: authUser } = await supabase.auth.admin.getUserById(owner.id)
-        const ownerEmail = authUser?.user?.email
+        const ownerEmail = ownerEmailMap[owner.id]
         if (!ownerEmail) continue
 
         const bday = new Date(contact.birthday)
