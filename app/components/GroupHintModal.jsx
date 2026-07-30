@@ -9,6 +9,53 @@ function getInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+// Finds an existing conversation whose member set exactly matches
+// participantIds, or creates a new one if none matches. Matching is
+// by exact set regardless of who organised it, so the same group of
+// people always ends up in the same thread.
+async function findOrCreateGroupConversation(supabase, currentUserId, participantIds) {
+  const target = [...new Set(participantIds)].sort();
+
+  const { data: myMemberships } = await supabase
+    .from("conversation_members")
+    .select("conversation_id")
+    .eq("user_id", currentUserId);
+  const candidateIds = (myMemberships || []).map(m => m.conversation_id);
+
+  if (candidateIds.length) {
+    const { data: allMembers } = await supabase
+      .from("conversation_members")
+      .select("conversation_id, user_id")
+      .in("conversation_id", candidateIds);
+
+    const byConv = {};
+    (allMembers || []).forEach(m => {
+      if (!byConv[m.conversation_id]) byConv[m.conversation_id] = [];
+      byConv[m.conversation_id].push(m.user_id);
+    });
+
+    for (const [convId, memberIds] of Object.entries(byConv)) {
+      const sorted = [...new Set(memberIds)].sort();
+      if (sorted.length === target.length && sorted.every((v, i) => v === target[i])) {
+        return { id: convId, isNew: false };
+      }
+    }
+  }
+
+  const newId = crypto.randomUUID();
+  const { error: convErr } = await supabase
+    .from("conversations")
+    .insert({ id: newId, type: target.length > 2 ? "group" : "direct" });
+  if (convErr) throw convErr;
+
+  const { error: memErr } = await supabase
+    .from("conversation_members")
+    .insert(target.map(uid => ({ conversation_id: newId, user_id: uid })));
+  if (memErr) throw memErr;
+
+  return { id: newId, isNew: true };
+}
+
 export default function GroupHintModal({ hint, recipientUserId, recipientName, currentUserId, onClose }) {
   const supabase = createClient();
   const [contacts, setContacts] = useState([]);
@@ -87,45 +134,42 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
         .from("profiles").select("full_name").eq("id", user.id).maybeSingle();
       const organiserName = profile?.full_name || "Someone";
 
-      // Feed notification to each invitee
-      for (const uid of selected) {
-        await supabase.from("feed_items").insert({
-          owner_user_id: uid,
-          actor_user_id: user.id,
-          family: "group",
-          item_type: "group_hint_invite",
-          headline: "wants to get a group gift together",
-          body: hint.title || "a hint",
-          cta_label: "I am in",
-          cta_href: "/feed",
-          visibility: "private",
-          occurred_at: new Date().toISOString(),
-          metadata: {
-            actor_name: organiserName,
-            actor_avatar_url: null,
-            hint_id: hint.id,
-            hint_title: hint.title,
-            hint_image: hint.image_url || "",
-            hint_retailer: hint.retailer || "",
-            recipient_name: recipientName,
-            group_hint_id: gh.id,
-            hide_from_user_id: recipientUserId,
-            social_enabled: false,
-          },
-        });
-      }
-
-      // Reload members
+      // Reload members (includes previously-existing + newly invited)
       const { data: newMembers } = await supabase
         .from("group_hint_members")
         .select("id, user_id, status, profiles(full_name, avatar_url)")
         .eq("group_hint_id", gh.id);
 
+      // Find or create the conversation for this exact group of people
+      // (organiser + every invited member, regardless of who's organising).
+      // Recipient of the gift is never part of this conversation.
+      const participantIds = [user.id, ...(newMembers || []).map(m => m.user_id)];
+      const { id: convId, isNew: isNewConv } = await findOrCreateGroupConversation(supabase, user.id, participantIds);
+
+      // Pin this hint into the conversation
+      await supabase.from("conversation_hints").upsert(
+        { conversation_id: convId, group_hint_id: gh.id },
+        { onConflict: "conversation_id,group_hint_id" }
+      );
+
+      // Announce the new invitees in the conversation itself — this is
+      // the only place invitees are notified now, replacing the old
+      // separate feed notification.
+      const newlyInvitedNames = selected
+        .map(uid => contacts.find(c => c.profile_id === uid)?.name)
+        .filter(Boolean);
+      const inviteBody = isNewConv
+        ? `${organiserName} started a group gift for ${hint.title || "a hint"} 🎁`
+        : newlyInvitedNames.length
+          ? `${organiserName} invited ${newlyInvitedNames.join(", ")} to chip in on ${hint.title || "a hint"} 🎁`
+          : `${organiserName} wants to chip in on ${hint.title || "a hint"} 🎁`;
+      await supabase.from("messages").insert({ conversation_id: convId, sender_id: user.id, body: inviteBody, type: "system" });
+
       setGroupHint(gh);
       setMembers(newMembers || []);
       setSelected([]);
       setDone(true);
-      // Send invite emails
+      // Send invite emails (kept as an out-of-band nudge alongside the in-chat invite)
       fetch("/api/group-hint-notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -207,7 +251,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
               )}
               {done && (
                 <div className="rounded-[14px] bg-[#edf6eb] px-4 py-3 text-[13px] font-semibold text-[#4a7a3a]">
-                  ✓ Invites sent — they'll see it in their feed
+                  ✓ Invites sent — you'll find them in your chats
                 </div>
               )}
             </>
