@@ -4,7 +4,6 @@ import ContactCard from "../components/ContactCard";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import UserProfileModal from "../components/UserProfileModal";
-import SessionHintsModal from "../components/SessionHintsModal";
 import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
 import AddContactModal from "../components/AddContactModal";
@@ -628,7 +627,7 @@ function FeedItem({
   demoReactionsState,
   onToggleDemoReaction,
   onOpenProfile,
-  onOpenSessionHints,
+  onOpenHintDetail,
   sessionUser,
   reactions = [],
   onToggleReaction,
@@ -721,32 +720,22 @@ function FeedItem({
           </div>
             {bucket === "hint" && metadata.preview_hints?.length > 0 && (
               <div className="mt-4">
-                <div
-                  className="w-full text-left"
-                >
-                  <div className="grid grid-cols-2 gap-2">
-                    {metadata.preview_hints.slice(0, 2).map((hint, i) => (
-                      <div key={i} className="relative aspect-square overflow-hidden rounded-[18px] border border-[#f0dfd6] bg-[#fffaf7] cursor-pointer" onClick={() => onOpenProfile && onOpenProfile({ userId: actorUserId, name: metadata.actor_name, avatarUrl: actorAvatarUrl, initials: actorInitials })}>
-                        {hint.image_url
-                          ? <img src={hint.image_url} alt={hint.title} className="h-full w-full object-cover" />
-                          : <div className="w-full flex items-center justify-center text-4xl bg-gradient-to-br from-[#ead8ca] to-[#c4a17f]" style={{ minHeight: "120px" }}>🎁</div>
-                        }
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                          <p className="text-[11px] font-semibold text-white truncate">{hint.title}</p>
-                          {hint.retailer && <p className="text-[10px] text-white/70 truncate">{hint.retailer}</p>}
-                        </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                  {metadata.preview_hints.map((hint, i) => (
+                    <div key={hint.id || i}
+                      className="relative aspect-square w-28 shrink-0 overflow-hidden rounded-[18px] border border-[#f0dfd6] bg-[#fffaf7] cursor-pointer"
+                      onClick={e => { e.stopPropagation(); e.preventDefault(); onOpenHintDetail && onOpenHintDetail(hint); }}>
+                      {hint.image_url
+                        ? <img src={hint.image_url} alt={hint.title} className="h-full w-full object-cover" />
+                        : <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-[#ead8ca] to-[#c4a17f]">🎁</div>
+                      }
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                        <p className="text-[11px] font-semibold text-white truncate">{hint.title}</p>
+                        {hint.retailer && <p className="text-[10px] text-white/70 truncate">{hint.retailer}</p>}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-                  <div className="mt-2 flex items-center justify-between">
-                    {metadata.hint_count > 2 && (
-                      <span className="text-sm font-semibold text-slate-400">+{metadata.hint_count - 2} more hints</span>
-                    )}
-                    {metadata.preview_hints?.length > 0 && (
-                    <button type="button" onClick={e => { e.stopPropagation(); e.preventDefault(); onOpenSessionHints && onOpenSessionHints({ hints: metadata.preview_hints, actorUserId, actorName: metadata.actor_name, actorAvatar: actorAvatarUrl }); }} className="ml-auto text-sm font-semibold text-[#df7b59]">See new hints →</button>
-                    )}
-                  </div>
               </div>
             )}
           {(bucket !== "hint") && item.cta_label && item.cta_href ? (
@@ -1465,7 +1454,7 @@ export default function FeedClient() {
 
   const [feedItems, setFeedItems] = useState([]);
   const [profileModal, setProfileModal] = useState(null);
-  const [sessionHintsModal, setSessionHintsModal] = useState(null); // { userId, name, avatarUrl, initials }
+  const [feedHintDetail, setFeedHintDetail] = useState(null); // a single hint object
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
@@ -2467,7 +2456,7 @@ export default function FeedClient() {
                           demoReactionsState={demoReactionsByFeedId[item.id]}
                           onToggleDemoReaction={handleToggleDemoReaction}
                           onOpenProfile={setProfileModal}
-                          onOpenSessionHints={setSessionHintsModal}
+                          onOpenHintDetail={setFeedHintDetail}
                           sessionUser={sessionUser}
                           reactions={reactionsByFeedId[item.id] || []}
                           onToggleReaction={handleToggleReaction}
@@ -2564,15 +2553,28 @@ export default function FeedClient() {
         isDeleting={isDeletingContact}
         errorMessage={deleteContactError}
       />
-      {sessionHintsModal && (
-        <SessionHintsModal
-          hints={sessionHintsModal.hints}
-          actorUserId={sessionHintsModal.actorUserId}
-          actorName={sessionHintsModal.actorName}
-          actorAvatar={sessionHintsModal.actorAvatar}
-          currentUserId={sessionUser?.id}
-          onClose={() => setSessionHintsModal(null)}
-        />
+      {feedHintDetail && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center sm:px-4" onClick={() => setFeedHintDetail(null)}>
+          <div className="w-full max-w-[480px] rounded-t-[28px] sm:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto" style={{ maxHeight: "88dvh" }} onClick={e => e.stopPropagation()}>
+            <div className="flex justify-end px-4 pt-3">
+              <button type="button" onClick={() => setFeedHintDetail(null)} className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400">✕</button>
+            </div>
+            {feedHintDetail.image_url
+              ? <img src={feedHintDetail.image_url} alt={feedHintDetail.title} className="w-full object-contain" style={{ maxHeight: "280px" }} />
+              : <div className="w-full bg-gradient-to-br from-[#ead8ca] to-[#c4a17f] flex items-center justify-center text-6xl" style={{ height: "200px" }}>🎁</div>
+            }
+            <div className="p-5">
+              <p className="text-[18px] font-semibold text-slate-900 leading-tight">{feedHintDetail.title || "Hint"}</p>
+              {feedHintDetail.retailer && <p className="text-[13px] text-slate-400 mt-1">{feedHintDetail.retailer}</p>}
+              {feedHintDetail.url && (
+                <a href={feedHintDetail.url} target="_blank" rel="noopener noreferrer"
+                  className="mt-4 h-11 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-lg">
+                  Open
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
       )}
       {profileModal && (
         <UserProfileModal

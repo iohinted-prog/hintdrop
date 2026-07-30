@@ -1887,7 +1887,7 @@ export default function HintsClient() {
             const existingPreviews = existingMeta.preview_hints || [];
             const newPreview = sessionHints[0];
             const mergedPreviews = newPreview && !existingPreviews.find(p => p.id === newPreview.id)
-              ? [newPreview, ...existingPreviews].slice(0, 2)
+              ? [newPreview, ...existingPreviews]
               : existingPreviews;
             const newCount = (existingMeta.hint_count || 0) + sessionHints.length;
             supabase.from("feed_items").update({
