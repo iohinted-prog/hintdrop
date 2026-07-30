@@ -971,7 +971,7 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
           )}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           <div className="absolute top-2 left-2 text-[13px]">{hint.private ? "🔒" : ""}</div>
-          {hint.starred && <div className="absolute top-2 right-2 text-[22px]" >⭐</div>}
+          {hint.starred && <div className="absolute top-2 right-2 text-[13px]" >⭐</div>}
           <div className="absolute bottom-0 left-0 right-0 p-3">
             <p className="text-[19px] font-extrabold text-white leading-tight line-clamp-2 mb-1" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.6)" }}>{hint.title || "Hint"}</p>
             {(hint.rawPrice || hint.numericPrice > 0) && <span className="inline-block text-[12px] font-bold text-white rounded-full px-2.5 py-0.5" style={{ background: "#ff875d" }}>{hint.rawPrice || new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numericPrice)}</span>}
