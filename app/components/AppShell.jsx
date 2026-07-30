@@ -270,9 +270,14 @@ export default function AppShell({ children }) {
           unread,
         };
       });
+      const sortedConvs = [...convsWithData].sort((a, b) => {
+        const aTime = a.last_message?.created_at ? new Date(a.last_message.created_at).getTime() : 0;
+        const bTime = b.last_message?.created_at ? new Date(b.last_message.created_at).getTime() : 0;
+        return bTime - aTime;
+      });
       const totalUnread = convsWithData.reduce((sum, c) => sum + (c.unread || 0), 0);
       setUnreadMessageCount(totalUnread);
-      setGroupMessages(convsWithData);
+      setGroupMessages(sortedConvs);
     } else {
       setGroupMessages([]);
     }
