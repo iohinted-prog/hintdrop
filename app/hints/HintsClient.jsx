@@ -479,6 +479,27 @@ function buildDraftFromPreview(data, rawUrl) {
   };
 }
 
+function buildDraftFromAiIdea(data, prompt) {
+  const title = String(data?.title || prompt || "Hint").trim();
+  const image = typeof data?.image === "string" && data.image.startsWith("http") ? data.image : "";
+
+  return {
+    title,
+    retailer: data?.retailer || "Experience idea",
+    image,
+    uploadedImage: null,
+    url: "",
+    priceInput: typeof data?.numericPrice === "number" ? String(data.numericPrice) : "",
+    numericPrice: typeof data?.numericPrice === "number" ? data.numericPrice : null,
+    rawPrice: data?.priceText || "",
+    currency: data?.currency || BASE_CURRENCY,
+    starred: false,
+    private: false,
+    needsReview: true,
+    source: "ai-idea",
+  };
+}
+
 function buildManualDraft(rawUrl) {
   const normalisedUrl = normaliseInputUrl(rawUrl);
   const retailer = normaliseRetailer(normalisedUrl);
@@ -1621,12 +1642,7 @@ export default function HintsClient() {
     const trimmed = link.trim();
 
     if (!trimmed) {
-      setError("Paste a link first.");
-      return;
-    }
-
-    if (!isValidHttpUrl(trimmed)) {
-      setError("Please paste a valid product or experience URL.");
+      setError("Paste a link or describe an experience first.");
       return;
     }
 
@@ -1634,6 +1650,33 @@ export default function HintsClient() {
     setError("");
     setAddModalNotice("");
     beginFetchBusy();
+
+    // A description (not a URL) — e.g. "a hot air balloon ride" — gets
+    // routed to the AI idea generator instead of the link scraper.
+    if (!isValidHttpUrl(trimmed)) {
+      try {
+        const res = await fetch("/api/hint-idea", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: trimmed, currency: userCurrency || BASE_CURRENCY }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Could not generate a hint from that description.");
+
+        const draft = buildDraftFromAiIdea(data, trimmed);
+        setPendingHint(draft);
+        setNewHintForm({ ...EMPTY_NEW_HINT_FORM, ...draft });
+        setAddModalNotice("We've put together an idea based on your description — check it over before saving.");
+        setIsAddModalOpen(true);
+        setLink("");
+      } catch (err) {
+        setError(err?.message || "Could not generate a hint from that description. Try a link instead?");
+      } finally {
+        setIsAdding(false);
+        closeBusy();
+      }
+      return;
+    }
 
     try {
       const normalisedUrl = normaliseInputUrl(trimmed);
@@ -1855,14 +1898,14 @@ export default function HintsClient() {
       <div className="mx-auto max-w-[1380px] px-5 py-10 md:px-8">
         <section className="text-center">
           <h1 className="text-[32px] font-extrabold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
-            Paste a link here...
+            Paste a link or describe it...
           </h1>
 
           <div className="mt-6">
             <div className="mx-auto flex w-full max-w-[980px] flex-col gap-3 sm:flex-row">
               <input
                 id="hint-link"
-                type="url"
+                type="text"
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
                 onKeyDown={(e) => {
@@ -1871,7 +1914,7 @@ export default function HintsClient() {
                     handleAddHint();
                   }
                 }}
-                placeholder="Paste a link here..."
+                placeholder="Paste a link, or describe an experience..."
                 className="h-[72px] w-full rounded-full border border-[#eadcd3] bg-white px-8 text-[16px] text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
               />
               <button
@@ -1889,7 +1932,8 @@ export default function HintsClient() {
             ) : (
               <div className="mt-3 space-y-1 text-sm text-slate-500">
                 <p>
-                  We’ll try our best to pull the title, image, and price before you review it.
+                  We’ll try our best to pull the title, image, and price before you review it —
+                  or describe an experience (like "a hot air balloon ride") and we'll suggest one with a stock photo.
                 </p>
               </div>
             )}
