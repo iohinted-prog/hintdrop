@@ -96,12 +96,8 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
     if (data) {
       setMessages(prev => [data, ...prev]);
       setBody("");
-      // Notify other members
-      fetch("/api/notify-new-message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ record: data }),
-      }).catch(console.error);
+      // Notification is now handled by a Postgres trigger (pg_net) on
+      // messages insert, no client-side call needed.
     }
     setSending(false);
   }
