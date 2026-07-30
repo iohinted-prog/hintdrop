@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "../../lib/supabase/client";
 import Link from "next/link";
 
@@ -27,7 +27,6 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [myProfile, setMyProfile] = useState(null);
-  const bottomRef = useRef(null);
 
   const members = conversation?.conversation_members || [];
   const otherMembers = members.filter(m => m.user_id !== currentUserId);
@@ -47,23 +46,24 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
     supabase.from("messages")
       .select("id, body, type, created_at, sender_id, profiles(full_name, avatar_url)")
       .eq("conversation_id", conversation.id)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
       .then(({ data }) => setMessages(data || []));
 
-    // Load pinned hints, including the current user's own status on each
+    // Load pinned hints, including the current user's own status on each,
+    // and everyone's status/profile for the "who's in" display
     supabase.from("conversation_hints")
-      .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status))")
+      .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url)))")
       .eq("conversation_id", conversation.id)
       .eq("dismissed", false)
       .then(({ data }) => setPinnedHints(data || []));
 
     const channel = supabase.channel("conv-" + conversation.id)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: "conversation_id=eq." + conversation.id },
-        payload => setMessages(prev => [...prev, payload.new]))
+        payload => setMessages(prev => [payload.new, ...prev]))
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_hints", filter: "conversation_id=eq." + conversation.id },
         () => {
           supabase.from("conversation_hints")
-            .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status))")
+            .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url)))")
             .eq("conversation_id", conversation.id)
             .eq("dismissed", false)
             .then(({ data }) => setPinnedHints(data || []));
@@ -84,9 +84,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
     return () => supabase.removeChannel(channel);
   }, [conversation?.id]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // Newest messages render at the top now, so no auto-scroll needed.
 
   async function handleSend() {
     if (!body.trim() || sending) return;
@@ -96,7 +94,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
       .select("id, body, type, created_at, sender_id, profiles(full_name, avatar_url)")
       .maybeSingle();
     if (data) {
-      setMessages(prev => [...prev, data]);
+      setMessages(prev => [data, ...prev]);
       setBody("");
       // Notify other members
       fetch("/api/notify-new-message", {
@@ -193,6 +191,26 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
                   <p className="text-[12px] font-semibold text-slate-900 truncate">{hint?.title || "Group gift"}</p>
                   {price && <p className="text-[11px] text-[#df7b59] font-semibold">{price}</p>}
                   {organiser && <p className="text-[10px] text-slate-400">by {organiser.full_name?.split(" ")[0]}</p>}
+                  {(() => {
+                    const allMembers = ph.group_hints?.group_hint_members || [];
+                    if (!allMembers.length) return null;
+                    const inMembers = allMembers.filter(m => m.status === "in");
+                    const pendingMembers = allMembers.filter(m => m.status === "invited");
+                    return (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <div className="flex -space-x-1.5">
+                          {allMembers.slice(0, 4).map(m => (
+                            <div key={m.id} className={"rounded-full ring-2 " + (m.status === "in" ? "ring-[#8fc98f]" : m.status === "declined" ? "ring-slate-200 opacity-40" : "ring-[#ffcaa8]")}>
+                              <Avatar profile={m.profiles} size="h-4 w-4" />
+                            </div>
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-slate-400">
+                          {inMembers.length} in{pendingMembers.length > 0 ? `, ${pendingMembers.length} pending` : ""}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
                 {isPending ? (
                   <div className="flex gap-1 shrink-0">
@@ -251,7 +269,6 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
             </div>
           );
         })}
-        <div ref={bottomRef} />
       </div>
 
       {/* Input */}
