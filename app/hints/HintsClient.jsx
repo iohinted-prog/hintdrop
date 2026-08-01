@@ -394,10 +394,18 @@ function shortenTitle(title = "", retailer = "") {
   return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
-function splitIntoColumns(items, columnCount = 3) {
+function splitIntoColumns(items, columnCount = 3, imageRatios = {}) {
   const columns = Array.from({ length: columnCount }, () => []);
-  items.forEach((item, index) => {
-    columns[index % columnCount].push(item);
+  const heights = Array.from({ length: columnCount }, () => 0);
+  items.forEach((item) => {
+    const ratio = getCardAspectRatio(item, imageRatios);
+    const estimatedHeight = ratio > 0 ? 1 / ratio : 1;
+    let shortest = 0;
+    for (let i = 1; i < columnCount; i++) {
+      if (heights[i] < heights[shortest]) shortest = i;
+    }
+    columns[shortest].push(item);
+    heights[shortest] += estimatedHeight;
   });
   return columns;
 }
@@ -1458,10 +1466,10 @@ export default function HintsClient() {
     return () => { cancelled = true; };
   }, []);
 
-  const visibleHints = [...hints].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0));
+  const visibleHints = hints;
   const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
-  const columns = useMemo(() => splitIntoColumns(visibleHints, 3), [visibleHints]);
-  const mobileColumns = useMemo(() => splitIntoColumns(visibleHints, 2), [visibleHints]);
+  const columns = useMemo(() => splitIntoColumns(visibleHints, 3, imageRatios), [visibleHints, imageRatios]);
+  const mobileColumns = useMemo(() => splitIntoColumns(visibleHints, 2, imageRatios), [visibleHints, imageRatios]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1956,7 +1964,7 @@ export default function HintsClient() {
 
     if (!over || active.id === over.id || hints.length === 0) return;
 
-    const nextColumns = splitIntoColumns(hints, 3);
+    const nextColumns = splitIntoColumns(hints, 3, imageRatios);
     const fromColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === active.id));
     const toColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === over.id));
 
@@ -1993,7 +2001,7 @@ export default function HintsClient() {
 
     if (!over || active.id === over.id || hints.length === 0) return;
 
-    const nextColumns = splitIntoColumns(hints, 2);
+    const nextColumns = splitIntoColumns(hints, 2, imageRatios);
     const fromColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === active.id));
     const toColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === over.id));
 
