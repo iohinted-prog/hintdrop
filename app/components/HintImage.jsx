@@ -16,10 +16,16 @@ export default function HintImage({
   sizes,
   priority = false,
   fallbackClassName = "",
+  onError,
   ...rest
 }) {
   const [failed, setFailed] = useState(false);
   const showFallback = !src || failed;
+
+  function handleError(e) {
+    setFailed(true);
+    onError?.(e);
+  }
 
   if (showFallback) {
     return (
@@ -48,7 +54,7 @@ export default function HintImage({
       className={className}
       priority={priority}
       referrerPolicy="no-referrer"
-      onError={() => setFailed(true)}
+      onError={handleError}
       {...rest}
     />
   );

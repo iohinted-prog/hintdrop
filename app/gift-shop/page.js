@@ -6,6 +6,7 @@ import AuthModal from "../components/AuthModal";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 import { createClient } from "../../lib/supabase/client";
 import { trackRetailerClick } from "../../lib/trackRetailerClick";
+import HintImage from "../components/HintImage";
 
 const CATEGORIES = [
   "Home", "Food", "Beauty", "Tech", "Travel", "Wellness",
@@ -36,14 +37,15 @@ function GiftCard({ product, formatCurrency, onImageError, onRequestSignIn }) {
         className="rounded-[22px] bg-white border border-[#f0dfd6] overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
         onClick={() => setShowModal(true)}
       >
-        <div className="w-full aspect-[4/3] overflow-hidden bg-[#fdf5f0]">
+        <div className="relative w-full aspect-[4/3] overflow-hidden bg-[#fdf5f0]">
           {product.image_url ? (
-            <img
+            <HintImage
               src={product.image_url}
               alt={product.title}
-              className="w-full h-full object-cover"
-              loading="lazy"
-              referrerPolicy="no-referrer"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 50vw, 300px"
+              fallbackClassName="hidden"
               onError={() => onImageError?.(product.id)}
             />
           ) : (
@@ -97,7 +99,7 @@ function GiftCard({ product, formatCurrency, onImageError, onRequestSignIn }) {
             </div>
             <div className="relative">
               {product.image_url ? (
-                <img src={product.image_url} alt={product.title} className="w-full object-contain" referrerPolicy="no-referrer" />
+                <HintImage src={product.image_url} alt={product.title} width={480} height={360} className="w-full h-auto" style={{ objectFit: "contain" }} />
               ) : (
                 <div className="w-full bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f] flex items-center justify-center text-6xl" style={{ height: "200px" }}>🎁</div>
               )}
