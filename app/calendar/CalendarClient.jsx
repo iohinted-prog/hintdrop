@@ -17,16 +17,74 @@ const TITLE_COLORS = {
   "patrick": { dot: "bg-[#2d6a4f]", badge: "bg-[#d8f3dc] text-[#2d6a4f]", border: "border-[#b7e4c7]" },
   "bonfire": { dot: "bg-[#e07c00]", badge: "bg-[#fff0d6] text-[#e07c00]", border: "border-[#ffd49e]" },
 };
-const BIRTHDAY_COLOR = { dot: "bg-[#6ab0d4]", badge: "bg-[#e8f4fa] text-[#2d7da8]", border: "border-[#b3d9ee]" };
-const DEFAULT_COLOR = { dot: "bg-[#4a7a8a]", badge: "bg-[#e8f4f6] text-[#2d5f6e]", border: "border-[#b8d9e0]" };
+const BIRTHDAY_COLOR = { dot: "bg-[#ff966f]", badge: "bg-[#fff1ea] text-[#c9633f]", border: "border-[#f6cbb3]" };
+const DEFAULT_COLOR = { dot: "bg-[#e8a06f]", badge: "bg-[#fdf1e7] text-[#b06a3a]", border: "border-[#f0d4b8]" };
+
+// Curated pastel swatches for user-chosen event colors — kept soft/muted
+// on purpose rather than a full picker, matching a calm calendar feel.
+const PASTEL_PALETTE = [
+  { hex: "#ffb3b3", label: "Blush" },
+  { hex: "#ffd6a5", label: "Peach" },
+  { hex: "#fdffb6", label: "Butter" },
+  { hex: "#caffbf", label: "Mint" },
+  { hex: "#9bf6ff", label: "Sky" },
+  { hex: "#a0c4ff", label: "Periwinkle" },
+  { hex: "#bdb2ff", label: "Lilac" },
+  { hex: "#ffc6ff", label: "Bubblegum" },
+];
+
+function pastelColorSet(hex) {
+  return { dot: "", badge: "", border: "border-[#f0dfd6]", custom: hex };
+}
 
 function eventColor(e) {
+  if (e.color) return pastelColorSet(e.color);
   if (e.type === "Birthday") return BIRTHDAY_COLOR;
   const t = (e.title || "").toLowerCase();
   for (const [key, val] of Object.entries(TITLE_COLORS)) {
     if (t.includes(key)) return val;
   }
   return DEFAULT_COLOR;
+}
+
+const EVENT_EMOJI = {
+  Holiday: "🌴",
+  Birthday: "🎂",
+  Celebration: "🎉",
+  Anniversary: "💍",
+  Wedding: "💒",
+  Other: "📌",
+};
+function eventEmoji(e) {
+  const t = (e.title || "").toLowerCase();
+  if (t.includes("christmas")) return "🎄";
+  if (t.includes("halloween")) return "🎃";
+  if (t.includes("valentine")) return "💝";
+  if (t.includes("easter")) return "🐣";
+  if (t.includes("new year")) return "🎆";
+  return EVENT_EMOJI[e.type] || "📌";
+}
+
+function EventDot({ color, className = "h-2 w-2" }) {
+  if (color.custom) {
+    return <span className={`${className} rounded-full shrink-0`} style={{ backgroundColor: color.custom }} />;
+  }
+  return <span className={`${className} rounded-full shrink-0 ${color.dot}`} />;
+}
+
+function EventBadge({ color, children }) {
+  if (color.custom) {
+    return (
+      <span className="text-[11px] font-semibold rounded-full px-2 py-0.5" style={{ backgroundColor: color.custom + "55", color: "#6b4a2f" }}>
+        {children}
+      </span>
+    );
+  }
+  return <span className={`text-[11px] font-semibold rounded-full px-2 py-0.5 ${color.badge}`}>{children}</span>;
+}
+
+function eventBorderStyle(color) {
+  return color.custom ? { borderColor: color.custom } : {};
 }
 
 const EVENT_TYPES = ["Holiday", "Birthday", "Celebration", "Anniversary", "Wedding", "Other"];
@@ -46,9 +104,10 @@ function buildContactBirthdayEvents(contacts) {
       if (date >= now) {
         rows.push({
           id: "birthday-" + (contact.contact_id || contact.id) + "-" + y,
+          contact_id: contact.contact_id || contact.id,
           title: (contact.name || "Contact") + "'s Birthday",
           event_date: `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`,
-
+          raw_birthday: contact.birthday,
           type: "Birthday",
           source: "contact",
           cta_label: "See hints",
@@ -65,16 +124,18 @@ export default function CalendarClient() {
   const supabase = createClient();
   const [userId, setUserId] = useState(null);
   const [events, setEvents] = useState([]);
+  const [contactsList, setContactsList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [debugInfo, setDebugInfo] = useState("");
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [showAdd, setShowAdd] = useState(false);
-  const [addForm, setAddForm] = useState({ title: "", date: "", type: "Holiday", recur: "none" });
-  const [saving, setSaving] = useState(false);
-
   const today = new Date();
   const todayKey = toKey(today);
+  const [selectedDate, setSelectedDate] = useState(todayKey);
+  const [showAdd, setShowAdd] = useState(false);
+  const [addForm, setAddForm] = useState({ title: "", date: "", type: "Holiday", recur: "none", color: "" });
+  const [saving, setSaving] = useState(false);
+  const [editingBirthdayId, setEditingBirthdayId] = useState(null);
+  const [birthdayDraft, setBirthdayDraft] = useState("");
+  const [monthDirection, setMonthDirection] = useState(0);
 
   useEffect(() => {
     async function load() {
@@ -88,9 +149,8 @@ export default function CalendarClient() {
         ]).then(([personal, shared]) => ({ data: [...(personal.data || []), ...(shared.data || [])], error: personal.error || shared.error })),
         supabase.from("contact_public_state").select("*").eq("owner_user_id", user.id),
       ]);
+      setContactsList(contacts || []);
       const birthdayEvents = buildContactBirthdayEvents(contacts || []);
-      console.log("calEvents:", calEvents, "birthdayEvents:", birthdayEvents);
-      setDebugInfo("dates: " + (calEvents||[]).map(e => e.event_date).join(" | "));
       setEvents([...(calEvents || []), ...birthdayEvents]);
       setLoading(false);
     }
@@ -128,10 +188,11 @@ export default function CalendarClient() {
       event_date: addForm.date,
       type: addForm.type,
       recurrence: addForm.recur !== "none" ? addForm.recur : null,
+      color: addForm.color || null,
     }).select().maybeSingle();
     if (inserted) setEvents(prev => [...prev, inserted]);
     setShowAdd(false);
-    setAddForm({ title: "", date: selectedDate || "", type: "Holiday", recur: "none" });
+    setAddForm({ title: "", date: selectedDate || "", type: "Holiday", recur: "none", color: "" });
     setSaving(false);
   }
 
@@ -141,11 +202,108 @@ export default function CalendarClient() {
     setEvents(prev => prev.filter(e => e.id !== eventId));
   }
 
+  async function handleUpdateBirthday(contactId) {
+    if (!birthdayDraft) return;
+    await supabase.from("contacts").update({ birthday: birthdayDraft }).eq("id", contactId);
+    const updatedContacts = contactsList.map(c => (c.contact_id || c.id) === contactId ? { ...c, birthday: birthdayDraft } : c);
+    setContactsList(updatedContacts);
+    const nonBirthdayEvents = events.filter(e => e.source !== "contact");
+    setEvents([...nonBirthdayEvents, ...buildContactBirthdayEvents(updatedContacts)]);
+    setEditingBirthdayId(null);
+    setBirthdayDraft("");
+  }
+
   function openDate(d) {
     const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     setSelectedDate(key);
     setAddForm(f => ({ ...f, date: key }));
     setShowAdd(false);
+  }
+
+  function renderAddEventForm() {
+    return (
+      <form onSubmit={handleAddEvent} className="rounded-[16px] border border-[#ead8ce] bg-[#fffaf7] p-4 space-y-3" style={{ animation: "calCardIn 0.2s ease" }}>
+        <p className="text-[13px] font-semibold text-slate-900">New event</p>
+        <input value={addForm.title} onChange={e => setAddForm(f => ({ ...f, title: e.target.value }))}
+          placeholder="Event title" required
+          className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#ff875d]" />
+        <input type="date" value={addForm.date} onChange={e => setAddForm(f => ({ ...f, date: e.target.value }))}
+          required
+          className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]" />
+        <select value={addForm.type} onChange={e => setAddForm(f => ({ ...f, type: e.target.value }))}
+          className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]">
+          {EVENT_TYPES.map(t => <option key={t}>{EVENT_EMOJI[t]} {t}</option>)}
+        </select>
+        <select value={addForm.recur} onChange={e => setAddForm(f => ({ ...f, recur: e.target.value }))}
+          className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]">
+          <option value="none">Does not repeat</option>
+          <option value="weekly">Repeats weekly</option>
+          <option value="monthly">Repeats monthly</option>
+          <option value="yearly">Repeats yearly</option>
+        </select>
+        <div>
+          <p className="text-[11px] font-semibold text-slate-500 mb-1.5">Colour (optional)</p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setAddForm(f => ({ ...f, color: "" }))}
+              className={`h-7 w-7 rounded-full border-2 flex items-center justify-center text-[10px] text-slate-400 ${!addForm.color ? "border-[#ff875d]" : "border-[#ead8ce]"}`}>
+              ✕
+            </button>
+            {PASTEL_PALETTE.map(p => (
+              <button key={p.hex} type="button" title={p.label} onClick={() => setAddForm(f => ({ ...f, color: p.hex }))}
+                className={`h-7 w-7 rounded-full border-2 transition-transform hover:scale-110 ${addForm.color === p.hex ? "border-slate-700 scale-110" : "border-white"}`}
+                style={{ backgroundColor: p.hex }} />
+            ))}
+          </div>
+        </div>
+        <button type="submit" disabled={saving}
+          className="w-full h-10 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white">
+          {saving ? "Saving..." : "Save event"}
+        </button>
+      </form>
+    );
+  }
+
+  function renderEventCard(e) {
+    const c = eventColor(e);
+    const isDeletable = e.source !== "contact";
+    const isEditingThisBirthday = e.source === "contact" && editingBirthdayId === e.contact_id;
+    return (
+      <div key={e.id} className="rounded-[16px] border bg-white p-4" style={{ ...eventBorderStyle(c), animation: "calCardIn 0.2s ease" }}>
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2">
+            <EventDot color={c} />
+            <EventBadge color={c}>{eventEmoji(e)} {e.type || "Event"}</EventBadge>
+            {e.recurrence && <span className="text-[11px] text-slate-400">↻ {e.recurrence}</span>}
+          </div>
+          <div className="flex items-center gap-1">
+            {e.source === "contact" && (
+              <button type="button" onClick={() => { setEditingBirthdayId(e.contact_id); setBirthdayDraft(e.raw_birthday || ""); }}
+                className="h-6 w-6 flex items-center justify-center rounded-full text-slate-300 hover:bg-[#fff4ee] hover:text-[#ff875d] text-xs">✎</button>
+            )}
+            {isDeletable && (
+              <button type="button" onClick={() => handleDeleteEvent(e.id)}
+                className="h-6 w-6 flex items-center justify-center rounded-full text-slate-300 hover:bg-[#fff0f0] hover:text-[#b14f43] text-xs">✕</button>
+            )}
+          </div>
+        </div>
+        <p className="text-[15px] font-semibold text-slate-900">{e.title}</p>
+        {e.body && <p className="text-[13px] text-slate-500 mt-1">{e.body}</p>}
+        {isEditingThisBirthday ? (
+          <div className="mt-3 flex items-center gap-2">
+            <input type="date" value={birthdayDraft} onChange={ev => setBirthdayDraft(ev.target.value)}
+              className="flex-1 rounded-[10px] border border-[#ead8ce] bg-[#fffaf7] px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]" />
+            <button type="button" onClick={() => handleUpdateBirthday(e.contact_id)}
+              className="h-9 px-3 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[12px] font-semibold text-white">Save</button>
+            <button type="button" onClick={() => setEditingBirthdayId(null)}
+              className="h-9 w-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400 text-xs">✕</button>
+          </div>
+        ) : e.cta_label && e.cta_href && (
+          <a href={e.cta_href} className="mt-3 inline-flex h-9 px-4 items-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[12px] font-semibold text-white">
+            {e.cta_label}
+          </a>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -154,12 +312,26 @@ export default function CalendarClient() {
         <div className="max-w-[640px] mx-auto md:max-w-none md:mx-0 w-full">
         <h1 className="text-[26px] font-semibold tracking-[-0.04em] text-slate-900 mb-4">Calendar</h1>
 
-        <div className="flex items-center justify-between mb-3">
-          <button onClick={() => setCurrentMonth(new Date(year, month - 1))}
-            className="h-9 w-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff4ee]">←</button>
-          <p className="text-[15px] font-semibold text-slate-900">{monthName}</p>
-          <button onClick={() => setCurrentMonth(new Date(year, month + 1))}
-            className="h-9 w-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff4ee]">→</button>
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => { setMonthDirection(-1); setCurrentMonth(new Date(year, month - 1)); }}
+            aria-label="Previous month"
+            className="h-11 w-11 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff4ee] hover:border-[#f0b394] hover:text-[#ff875d] active:scale-90 transition-all duration-150">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+          </button>
+          <div className="flex flex-col items-center">
+            <p key={monthName} className="text-[17px] font-bold text-slate-900 tracking-[-0.02em]" style={{ animation: "calFadeIn 0.25s ease" }}>{monthName}</p>
+            {selectedDate !== todayKey && (
+              <button onClick={() => { setCurrentMonth(today); setSelectedDate(todayKey); }}
+                className="mt-0.5 text-[11px] font-semibold text-[#df7b59] hover:text-[#c4633f]">
+                Jump to today
+              </button>
+            )}
+          </div>
+          <button onClick={() => { setMonthDirection(1); setCurrentMonth(new Date(year, month + 1)); }}
+            aria-label="Next month"
+            className="h-11 w-11 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff4ee] hover:border-[#f0b394] hover:text-[#ff875d] active:scale-90 transition-all duration-150">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+          </button>
         </div>
 
         <div className="grid grid-cols-7 mb-1">
@@ -168,7 +340,7 @@ export default function CalendarClient() {
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-0.5 md:gap-1.5">
+        <div key={monthName + "-grid"} className="grid grid-cols-7 gap-0.5 md:gap-1.5" style={{ animation: `calSlide${monthDirection >= 0 ? "Left" : "Right"} 0.22s ease` }}>
           {Array.from({ length: firstDay }).map((_, i) => <div key={"e" + i} />)}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const d = i + 1;
@@ -176,15 +348,15 @@ export default function CalendarClient() {
             const dayEvents = eventsByDate[key] || [];
             const isToday = key === todayKey;
             const isSelected = key === selectedDate;
-            const dotColors = [...new Set(dayEvents.map(e => eventColor(e).dot))].slice(0, 3);
+            const dotEntries = dayEvents.slice(0, 3).map(e => eventColor(e));
             return (
               <button key={d} type="button" onClick={() => openDate(d)}
-                className={"relative flex flex-col items-center justify-center h-10 md:h-14 rounded-full md:rounded-[14px] text-[13px] font-semibold transition " +
-                  (isSelected ? "bg-[#ff875d] text-white" : isToday ? "bg-[#fff4ee] text-[#ff875d]" : dayEvents.length ? "text-slate-900 hover:bg-[#fff4ee]" : "text-slate-400 hover:bg-[#f9f6f3]")}>
+                className={"relative flex flex-col items-center justify-center h-10 md:h-14 rounded-full md:rounded-[14px] text-[13px] font-semibold transition-all duration-150 hover:scale-105 active:scale-95 " +
+                  (isSelected ? "bg-[#ff875d] text-white shadow-md shadow-[#ff875d]/30" : isToday ? "bg-[#fff4ee] text-[#ff875d] ring-1 ring-[#f6cbb3]" : dayEvents.length ? "text-slate-900 hover:bg-[#fff4ee]" : "text-slate-400 hover:bg-[#f9f6f3]")}>
                 {d}
-                {dotColors.length > 0 && !isSelected && (
+                {dotEntries.length > 0 && !isSelected && (
                   <div className="absolute bottom-1 md:bottom-2 flex gap-0.5">
-                    {dotColors.map((c, i) => <span key={i} className={"h-1 w-1 rounded-full " + c} />)}
+                    {dotEntries.map((c, i) => <EventDot key={i} color={c} className="h-1 w-1" />)}
                   </div>
                 )}
               </button>
@@ -201,11 +373,11 @@ export default function CalendarClient() {
               {upcoming.map(e => {
                 const c = eventColor(e);
                 return (
-                  <div key={e.id} className={"rounded-[16px] border bg-white p-3 flex items-center justify-between gap-3 " + c.border}>
+                  <div key={e.id} className="rounded-[16px] border bg-white p-3 flex items-center justify-between gap-3" style={{ ...eventBorderStyle(c), animation: "calCardIn 0.2s ease" }}>
                     <div className="flex items-center gap-3">
-                      <span className={"h-2 w-2 rounded-full shrink-0 " + c.dot} />
+                      <EventDot color={c} />
                       <div>
-                        <p className="text-[13px] font-semibold text-slate-900">{e.title}</p>
+                        <p className="text-[13px] font-semibold text-slate-900">{eventEmoji(e)} {e.title}</p>
                         <p className="text-[11px] text-slate-400 mt-0.5">{new Date(e.event_date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</p>
                       </div>
                     </div>
@@ -222,81 +394,28 @@ export default function CalendarClient() {
 
         {/* Desktop day-detail sidebar — replaces the mobile bottom sheet on md+ screens */}
         <div className="hidden md:block sticky top-6 rounded-[20px] border border-[#efe0d7] bg-white p-5 min-h-[420px]">
-          {selectedDate ? (
-            <>
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-[15px] font-semibold text-slate-900">
-                  {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
-                </p>
-                <button type="button" onClick={() => setShowAdd(v => !v)}
-                  className="h-8 px-3 flex items-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[11px] font-semibold text-white">
-                  + Add event
-                </button>
-              </div>
+          <div key={selectedDate} style={{ animation: "calFadeIn 0.2s ease" }}>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[15px] font-semibold text-slate-900">
+                {selectedDate === todayKey ? "Today · " : ""}
+                {new Date((selectedDate || todayKey) + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+              </p>
+              <button type="button" onClick={() => setShowAdd(v => !v)}
+                className="h-8 px-3 flex items-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[11px] font-semibold text-white">
+                + Add event
+              </button>
+            </div>
 
-              <div className="space-y-3">
-                {showAdd && (
-                  <form onSubmit={handleAddEvent} className="rounded-[16px] border border-[#ead8ce] bg-[#fffaf7] p-4 space-y-3">
-                    <p className="text-[13px] font-semibold text-slate-900">New event</p>
-                    <input value={addForm.title} onChange={e => setAddForm(f => ({ ...f, title: e.target.value }))}
-                      placeholder="Event title" required
-                      className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#ff875d]" />
-                    <input type="date" value={addForm.date} onChange={e => setAddForm(f => ({ ...f, date: e.target.value }))}
-                      required
-                      className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]" />
-                    <select value={addForm.type} onChange={e => setAddForm(f => ({ ...f, type: e.target.value }))}
-                      className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]">
-                      {EVENT_TYPES.map(t => <option key={t}>{t}</option>)}
-                    </select>
-                    <select value={addForm.recur} onChange={e => setAddForm(f => ({ ...f, recur: e.target.value }))}
-                      className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]">
-                      <option value="none">Does not repeat</option>
-                      <option value="weekly">Repeats weekly</option>
-                      <option value="monthly">Repeats monthly</option>
-                      <option value="yearly">Repeats yearly</option>
-                    </select>
-                    <button type="submit" disabled={saving}
-                      className="w-full h-10 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white">
-                      {saving ? "Saving..." : "Save event"}
-                    </button>
-                  </form>
-                )}
+            <div className="space-y-3">
+              {showAdd && renderAddEventForm()}
 
-                {selectedEvents.length === 0 && !showAdd && (
-                  <p className="text-sm text-slate-400 text-center py-4">No events on this day.</p>
-                )}
+              {selectedEvents.length === 0 && !showAdd && (
+                <p className="text-sm text-slate-400 text-center py-4">Nothing on this day yet.</p>
+              )}
 
-                {selectedEvents.map(e => {
-                  const c = eventColor(e);
-                  const isDeletable = e.source !== "contact";
-                  return (
-                    <div key={e.id} className={"rounded-[16px] border bg-white p-4 " + c.border}>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className={"h-2 w-2 rounded-full shrink-0 " + c.dot} />
-                          <span className={"text-[11px] font-semibold rounded-full px-2 py-0.5 " + c.badge}>{e.type || "Event"}</span>
-                          {e.recurrence && <span className="text-[11px] text-slate-400">↻ {e.recurrence}</span>}
-                        </div>
-                        {isDeletable && (
-                          <button type="button" onClick={() => handleDeleteEvent(e.id)}
-                            className="h-6 w-6 flex items-center justify-center rounded-full text-slate-300 hover:bg-[#fff0f0] hover:text-[#b14f43] text-xs">✕</button>
-                        )}
-                      </div>
-                      <p className="text-[15px] font-semibold text-slate-900">{e.title}</p>
-                      {e.body && <p className="text-[13px] text-slate-500 mt-1">{e.body}</p>}
-                      {e.cta_label && e.cta_href && (
-                        <a href={e.cta_href} className="mt-3 inline-flex h-9 px-4 items-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[12px] font-semibold text-white">
-                          {e.cta_label}
-                        </a>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-slate-400 text-center py-10">Select a date to see what's on, or add a new event.</p>
-          )}
+              {selectedEvents.map(renderEventCard)}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -319,63 +438,13 @@ export default function CalendarClient() {
             </div>
 
             <div className="overflow-y-auto flex-1 p-4 space-y-3">
-              {showAdd && (
-                <form onSubmit={handleAddEvent} className="rounded-[16px] border border-[#ead8ce] bg-white p-4 space-y-3">
-                  <p className="text-[13px] font-semibold text-slate-900">New event</p>
-                  <input value={addForm.title} onChange={e => setAddForm(f => ({ ...f, title: e.target.value }))}
-                    placeholder="Event title" required
-                    className="w-full rounded-[10px] border border-[#ead8ce] bg-[#fffaf7] px-3 py-2 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#ff875d]" />
-                  <input type="date" value={addForm.date} onChange={e => setAddForm(f => ({ ...f, date: e.target.value }))}
-                    required
-                    className="w-full rounded-[10px] border border-[#ead8ce] bg-[#fffaf7] px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]" />
-                  <select value={addForm.type} onChange={e => setAddForm(f => ({ ...f, type: e.target.value }))}
-                    className="w-full rounded-[10px] border border-[#ead8ce] bg-[#fffaf7] px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]">
-                    {EVENT_TYPES.map(t => <option key={t}>{t}</option>)}
-                  </select>
-                  <select value={addForm.recur} onChange={e => setAddForm(f => ({ ...f, recur: e.target.value }))}
-                    className="w-full rounded-[10px] border border-[#ead8ce] bg-[#fffaf7] px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]">
-                    <option value="none">Does not repeat</option>
-                    <option value="weekly">Repeats weekly</option>
-                    <option value="monthly">Repeats monthly</option>
-                    <option value="yearly">Repeats yearly</option>
-                  </select>
-                  <button type="submit" disabled={saving}
-                    className="w-full h-10 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white">
-                    {saving ? "Saving..." : "Save event"}
-                  </button>
-                </form>
-              )}
+              {showAdd && renderAddEventForm()}
 
               {selectedEvents.length === 0 && !showAdd && (
-                <p className="text-sm text-slate-400 text-center py-4">No events on this day.</p>
+                <p className="text-sm text-slate-400 text-center py-4">Nothing on this day yet.</p>
               )}
 
-              {selectedEvents.map(e => {
-                const c = eventColor(e);
-                const isDeletable = e.source !== "contact";
-                return (
-                  <div key={e.id} className={"rounded-[16px] border bg-white p-4 " + c.border}>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className={"h-2 w-2 rounded-full shrink-0 " + c.dot} />
-                        <span className={"text-[11px] font-semibold rounded-full px-2 py-0.5 " + c.badge}>{e.type || "Event"}</span>
-                        {e.recurrence && <span className="text-[11px] text-slate-400">↻ {e.recurrence}</span>}
-                      </div>
-                      {isDeletable && (
-                        <button type="button" onClick={() => handleDeleteEvent(e.id)}
-                          className="h-6 w-6 flex items-center justify-center rounded-full text-slate-300 hover:bg-[#fff0f0] hover:text-[#b14f43] text-xs">✕</button>
-                      )}
-                    </div>
-                    <p className="text-[15px] font-semibold text-slate-900">{e.title}</p>
-                    {e.body && <p className="text-[13px] text-slate-500 mt-1">{e.body}</p>}
-                    {e.cta_label && e.cta_href && (
-                      <a href={e.cta_href} className="mt-3 inline-flex h-9 px-4 items-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[12px] font-semibold text-white">
-                        {e.cta_label}
-                      </a>
-                    )}
-                  </div>
-                );
-              })}
+              {selectedEvents.map(renderEventCard)}
             </div>
           </div>
         </div>
