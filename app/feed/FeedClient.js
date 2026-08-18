@@ -2516,32 +2516,12 @@ export default function FeedClient() {
               <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.03em] text-slate-900">
                 {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
               </h2>
-              <p className="mt-2 text-sm text-slate-500">
-                {sidebarReminders.length > 0
-                  ? `${sidebarReminders.length} upcoming event${sidebarReminders.length === 1 ? "" : "s"} below.`
-                  : "Add birthdays and reminders to keep track of key dates."}
-              </p>
-              <Link href="/calendar"
-                className="mt-4 flex w-full h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-sm font-bold text-white shadow-lg">
-                Open calendar
-              </Link>
-            </section>
-
-            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Upcoming reminders
-                </p>
-                <h2 className="mt-1 text-base font-semibold text-slate-900">
-                  Your next 3 events
-                </h2>
-              </div>
 
               {sidebarReminders.length === 0 ? (
                 <div className="mt-4 rounded-[22px] border border-dashed border-[#ecd9cf] bg-[#fcf8f5] px-4 py-5">
                   <p className="text-sm font-medium text-slate-700">No upcoming events yet.</p>
                   <p className="mt-1 text-sm leading-6 text-slate-500">
-                    Events more than a week away will appear here.
+                    Add birthdays and reminders to keep track of key dates.
                   </p>
                 </div>
               ) : (
@@ -2565,6 +2545,11 @@ export default function FeedClient() {
                   ))}
                 </div>
               )}
+
+              <Link href="/calendar"
+                className="mt-4 flex w-full h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-sm font-bold text-white shadow-lg">
+                Open calendar
+              </Link>
             </section>
           </aside>
         </div>
