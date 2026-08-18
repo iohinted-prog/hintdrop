@@ -1506,17 +1506,18 @@ export default function HintsClient() {
   async function persistOrder(nextHints) {
     if (!currentUser) return;
     const supabase = createClient();
-    // Single upsert instead of N individual updates
-    const { error } = await supabase.from("hints").upsert(
-      nextHints.map((hint, index) => ({
-        id: hint.id,
-        user_id: currentUser.id,
-        position: index,
-      })),
-      { onConflict: "id" }
+    // These are always existing hints being reordered, never new ones, so a
+    // plain update per row (run in parallel) is correct here — an upsert
+    // would validate NOT NULL columns like title against the phantom
+    // insert attempt before it even checks for a conflict, and fail.
+    const results = await Promise.all(
+      nextHints.map((hint, index) =>
+        supabase.from("hints").update({ position: index }).eq("id", hint.id).eq("user_id", currentUser.id)
+      )
     );
-    if (error) {
-      console.error("persistOrder failed:", error);
+    const failed = results.find((r) => r.error);
+    if (failed) {
+      console.error("persistOrder failed:", failed.error);
     }
   }
 
