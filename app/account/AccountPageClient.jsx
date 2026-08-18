@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
+import HintImage from "../components/HintImage";
 
 function splitName(fullName = "") {
   const trimmed = fullName.trim();
@@ -521,12 +522,15 @@ export default function AccountPageClient() {
             <h2 className="text-[18px] font-semibold text-slate-900">Profile photo</h2>
 
             <div className="mt-5 flex flex-col items-center">
-              <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-2xl font-bold text-white ring-4 ring-[#fff4ee]">
+              <div className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-2xl font-bold text-white ring-4 ring-[#fff4ee]">
                 {photoPreview ? (
-                  <img
+                  <HintImage
                     src={photoPreview}
                     alt="Profile preview"
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="112px"
+                    className="object-cover"
+                    fallbackClassName="hidden"
                   />
                 ) : (
                   initials
