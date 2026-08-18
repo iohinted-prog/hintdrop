@@ -2372,6 +2372,33 @@ export default function FeedClient() {
         <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)_360px]">
           <aside className="hidden xl:block space-y-5">
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Filter</p>
+              <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.03em] text-slate-900">
+                Show me
+              </h2>
+              <div className="mt-4 flex flex-col gap-1.5">
+                {feedFilters.map((filter) => {
+                  const selected = activeFilter === filter.key;
+                  return (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setActiveFilter(filter.key)}
+                      className={`flex items-center justify-between rounded-[14px] px-4 py-2.5 text-sm font-medium transition text-left ${
+                        selected
+                          ? "bg-[#2f3b2d] text-white shadow-sm"
+                          : "text-slate-600 hover:bg-[#fff5f0]"
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Your recents</p>
               <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.03em] text-slate-900">
                 Jump back in
@@ -2449,26 +2476,6 @@ export default function FeedClient() {
           </aside>
 
           <section className={`min-w-0 ${mobileTab !== "home" ? "hidden xl:block" : ""}`}>
-            <div className="mb-4 hidden md:flex flex-wrap gap-2">
-              {feedFilters.map((filter) => {
-                const selected = activeFilter === filter.key;
-                return (
-                  <button
-                    key={filter.key}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => setActiveFilter(filter.key)}
-                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                      selected
-                        ? "bg-[#2f3b2d] text-white shadow-sm"
-                        : "border border-[#efe4dd] bg-white text-slate-600 hover:bg-[#faf7f5]"
-                    }`}
-                  >
-                    {filter.label}
-                  </button>
-                );
-              })}
-            </div>
             <div className="bg-[#fff7f2]">
               <div className="rounded-[28px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
                 <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-100 pb-5">
