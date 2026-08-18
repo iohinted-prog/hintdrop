@@ -281,6 +281,11 @@ function isValidHttpUrl(value = "") {
   }
 }
 
+function buildDropHeadline(count, title) {
+  if (count > 1) return `Dropped ${count} Hints`;
+  return "Dropped a Hint" + (title && title !== "Hint" ? ": " + title : "");
+}
+
 function normaliseInputUrl(value = "") {
   const trimmed = String(value).trim();
   if (!trimmed) return "";
@@ -1909,7 +1914,7 @@ export default function HintsClient() {
             const newCount = (existingMeta.hint_count || 0) + sessionHints.length;
             supabase.from("feed_items").update({
               occurred_at: new Date().toISOString(),
-              headline: "Dropped a Hint" + (newHint.title && newHint.title !== "Hint" ? ": " + newHint.title : ""),
+              headline: buildDropHeadline(newCount, newHint.title),
               metadata: {
                 ...existingMeta,
                 hint_count: newCount,
@@ -1923,7 +1928,7 @@ export default function HintsClient() {
               actor_user_id: currentUser.id,
               family: "hint",
               item_type: "hint_save_session",
-              headline: "Dropped a Hint" + (newHint.title && newHint.title !== "Hint" ? ": " + newHint.title : ""),
+              headline: buildDropHeadline(sessionHints.length, newHint.title),
               body: newHint.retailer || "",
               cta_label: "See new hints",
               cta_href: "/hints",
