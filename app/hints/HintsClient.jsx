@@ -24,6 +24,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "../../lib/supabase/client";
 import { trackRetailerClick } from "../../lib/trackRetailerClick";
+import HintImage from "../components/HintImage";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 import { usePreferences } from "../providers/PreferencesProvider";
 import AvatarMenu from "../components/AvatarMenu";
@@ -844,7 +845,7 @@ function AddHintModal({
                     form.image === url ? "border-[#ff946d]" : "border-transparent hover:border-[#f0dfd6]"
                   }`}
                 >
-                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <HintImage src={url} alt="" fill className="object-cover" sizes="120px" />
                   {form.image === url && (
                     <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#ff946d] text-white text-[11px]">✓</span>
                   )}
@@ -970,12 +971,7 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
         onPointerUp={handleTapUp}
       >
         <div className="relative w-full" style={{ aspectRatio: `${ratio}` }}>
-          {hint.image && !imgError ? (
-            <img src={hint.image} alt={hint.title} className="h-full w-full object-cover"
-              onError={() => setImgError(true)} loading="lazy" referrerPolicy="no-referrer" />
-          ) : (
-            <div className={`h-full w-full bg-gradient-to-br ${gradient} flex items-center justify-center text-4xl`}>🎁</div>
-          )}
+          <HintImage src={hint.image} alt={hint.title} fill className="object-cover" sizes="(max-width: 768px) 50vw, 300px" fallbackClassName="text-4xl" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           <div className="absolute top-2 left-2 text-[13px]">{hint.private ? "🔒" : ""}</div>
           {hint.starred && <div className="absolute top-2 right-2 text-[13px]" >⭐</div>}
@@ -991,7 +987,7 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
               <div className="flex justify-end px-4 pt-3"><button type="button" onClick={() => setShowModal(false)} className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400 text-lg">✕</button></div>
             <div className="relative">
               {hint.image && !imgError
-                ? <img src={hint.image} alt={hint.title} className="w-full object-contain" />
+                ? <HintImage src={hint.image} alt={hint.title} width={800} height={600} className="w-full h-auto" />
                 : <div className={`w-full bg-gradient-to-br ${gradient} flex items-center justify-center text-6xl`} style={{ height: "200px" }}>🎁</div>
               }
             </div>
@@ -1071,14 +1067,14 @@ function HintCard({
       <div className="absolute inset-0">
         {hint.image ? (
           <>
-            <img
+            <HintImage
               src={hint.image}
               alt={hint.title}
-              className={`h-full w-full object-cover transition-transform duration-500 ${
+              fill
+              sizes="(max-width: 768px) 100vw, 33vw"
+              className={`object-cover transition-transform duration-500 ${
                 isDragging ? "scale-[1.01]" : "group-hover:scale-[1.03]"
               } ${hint.private ? "opacity-84" : ""}`}
-              loading="lazy"
-              referrerPolicy="no-referrer"
             />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.84)_0%,rgba(16,12,10,0.42)_26%,rgba(16,12,10,0.10)_50%,rgba(255,255,255,0)_72%)]" />
           </>

@@ -1,4 +1,5 @@
 "use client";
+import HintImage from "./HintImage";
 export function getStarSign(birthday) {
   if (!birthday) return null;
   const d = new Date(birthday + "T00:00:00");
@@ -46,7 +47,7 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onE
       <div className="flex items-center gap-3">
         <div className={`h-11 w-11 shrink-0 rounded-full overflow-hidden flex items-center justify-center ${isClickable ? "cursor-pointer" : ""}`} onClick={isClickable ? handleClick : undefined}>
           {contact.avatarUrl ? (
-            <img src={contact.avatarUrl} alt={contact.name || "Contact"} className="h-11 w-11 rounded-full object-cover" />
+            <HintImage src={contact.avatarUrl} alt={contact.name || "Contact"} width={44} height={44} className="rounded-full object-cover" />
           ) : (
             <div className={`flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b ${contact.colors || "from-[#efcdbf] to-[#bb8168]"} text-[12px] font-bold text-white`}>
               {contact.initials || getInitials(contact.name)}
@@ -65,9 +66,9 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onE
         {previewHints.length > 0 && (
           <div className="mt-2 flex items-center gap-1.5 md:hidden">
             {previewHints.slice(0, 2).map(h => (
-              <div key={h.id} className="h-9 w-9 rounded-[8px] overflow-hidden border border-[#f0dfd6] shrink-0 bg-[#fffaf7]">
+              <div key={h.id} className="relative h-9 w-9 rounded-[8px] overflow-hidden border border-[#f0dfd6] shrink-0 bg-[#fffaf7]">
                 {h.image_url
-                  ? <img src={h.image_url} alt={h.title} className="h-full w-full object-cover" />
+                  ? <HintImage src={h.image_url} alt={h.title} fill className="object-cover" sizes="36px" fallbackClassName="text-sm" />
                   : <div className="h-full w-full flex items-center justify-center text-sm bg-gradient-to-br from-[#ead8ca] to-[#c4a17f]">🎁</div>
                 }
               </div>
@@ -101,7 +102,7 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onE
           {previewHints.slice(0, 6).map((h, i) => (
             <div key={h.id} className="relative overflow-hidden rounded-[10px] bg-[#fffaf7] border border-[#f0dfd6]" style={{ aspectRatio: "1/1" }}>
               {h.image_url
-                ? <img src={h.image_url} alt={h.title} className="absolute inset-0 h-full w-full object-cover" />
+                ? <HintImage src={h.image_url} alt={h.title} fill className="object-cover" sizes="100px" fallbackClassName="text-lg" />
                 : <div className={`absolute inset-0 bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]} flex items-center justify-center text-lg opacity-80`}>🎁</div>
               }
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.55)_0%,rgba(255,255,255,0)_55%)]" />
