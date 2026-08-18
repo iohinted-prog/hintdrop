@@ -6,6 +6,7 @@ import EditContactModal from "../components/EditContactModal";
 import ContactCard from "../components/ContactCard";
 import GroupChatWindow from "../components/GroupChatWindow";
 import UserProfileModal from "../components/UserProfileModal";
+import HintImage from "../components/HintImage";
 
 function getInitials(name) {
   return String(name || "").trim().split(/\s+/).slice(0, 2).map(p => p[0]?.toUpperCase() || "").join("");
@@ -63,7 +64,7 @@ function HintsPreview({ userId, supabase }) {
           className="relative overflow-hidden rounded-[22px] border border-[rgba(255,255,255,0.14)] bg-white shadow-sm"
           style={{ aspectRatio: "3/4", minHeight: "200px" }}>
           {hint.image_url
-            ? <img src={hint.image_url} alt={hint.title} className="absolute inset-0 h-full w-full object-cover" />
+            ? <HintImage src={hint.image_url} alt={hint.title} fill className="object-cover" sizes="(max-width: 640px) 50vw, 300px" fallbackClassName="hidden" />
             : <div className={`absolute inset-0 bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]} flex items-center justify-center text-4xl opacity-80`}>🎁</div>
           }
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.84)_0%,rgba(16,12,10,0.42)_30%,rgba(255,255,255,0)_60%)]" />
