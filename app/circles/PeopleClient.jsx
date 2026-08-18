@@ -178,7 +178,7 @@ export default function PeopleClient() {
 
   return (
     <main className="min-h-screen bg-[#fffaf7]">
-      <div className="px-4 pt-6 pb-32">
+      <div className="px-4 pt-6 pb-32 md:px-8 md:max-w-[1380px] md:mx-auto">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-[28px] font-semibold tracking-[-0.04em] text-slate-900">Your Circle</h1>
           <button type="button" onClick={() => { setAddKey(k => k + 1); setIsAddOpen(true); }}
