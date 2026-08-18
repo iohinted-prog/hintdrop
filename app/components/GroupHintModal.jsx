@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { createClient } from "../../lib/supabase/client";
+import HintImage from "./HintImage";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -209,7 +210,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
                     {members.map(m => (
                       <div key={m.id} className="flex items-center gap-3 py-1">
                         {m.profiles?.avatar_url
-                          ? <img src={m.profiles.avatar_url} className="h-9 w-9 rounded-full object-cover" alt="" />
+                          ? <HintImage src={m.profiles.avatar_url} width={36} height={36} className="rounded-full object-cover" alt="" />
                           : <div className="h-9 w-9 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[11px] font-bold text-white">{getInitials(m.profiles?.full_name)}</div>
                         }
                         <p className="text-[13px] font-semibold text-slate-900 flex-1">{m.profiles?.full_name}</p>
@@ -229,7 +230,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
                     {availableContacts.map(c => (
                       <div key={c.profile_id} className="flex items-center gap-3 py-1 cursor-pointer" onClick={() => toggleContact(c.profile_id)}>
                         {c.avatar_url
-                          ? <img src={c.avatar_url} className="h-9 w-9 rounded-full object-cover" alt="" />
+                          ? <HintImage src={c.avatar_url} width={36} height={36} className="rounded-full object-cover" alt="" />
                           : <div className="h-9 w-9 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[11px] font-bold text-white">{getInitials(c.name)}</div>
                         }
                         <p className="text-[13px] font-semibold text-slate-900 flex-1">{c.name}</p>

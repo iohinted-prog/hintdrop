@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "../../lib/supabase/client";
 import Link from "next/link";
+import HintImage from "./HintImage";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -12,9 +13,9 @@ function getInitials(name) {
 
 function Avatar({ profile, size = "h-7 w-7" }) {
   return (
-    <div className={`${size} rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[10px] font-bold text-white shrink-0 overflow-hidden`}>
+    <div className={`relative ${size} rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[10px] font-bold text-white shrink-0 overflow-hidden`}>
       {profile?.avatar_url
-        ? <img src={profile.avatar_url} className="h-full w-full object-cover" alt="" />
+        ? <HintImage src={profile.avatar_url} fill className="object-cover" sizes="40px" alt="" fallbackClassName="hidden" />
         : getInitials(profile?.full_name)}
     </div>
   );
@@ -176,9 +177,11 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
             return (
               <div key={ph.id} className="flex items-center gap-2 bg-white rounded-[14px] border border-[#f0dfd6] p-2">
                 {hint?.image_url && (
-                  <img
+                  <HintImage
                     src={hint.image_url}
-                    className="h-10 w-10 rounded-[10px] object-cover shrink-0 cursor-pointer"
+                    width={40}
+                    height={40}
+                    className="rounded-[10px] object-cover shrink-0 cursor-pointer"
                     alt=""
                     onClick={() => { if (ph.group_hints?.organiser_id) { window.location.href = `/profile/${ph.group_hints.recipient_user_id || ph.group_hints.organiser_id}`; onClose(); } }}
                   />

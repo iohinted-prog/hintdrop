@@ -16,6 +16,7 @@ export default function HintImage({
   sizes,
   priority = false,
   fallbackClassName = "",
+  ...rest
 }) {
   const [failed, setFailed] = useState(false);
   const showFallback = !src || failed;
@@ -27,6 +28,7 @@ export default function HintImage({
           fill ? "absolute inset-0" : ""
         } ${className} ${fallbackClassName}`}
         style={!fill ? { width, height } : undefined}
+        {...rest}
       >
         <div className="flex items-center justify-center rounded-[22%] bg-white/35 backdrop-blur-sm" style={{ width: "42%", height: "42%" }}>
           <span style={{ fontSize: "55%" }}>🎁</span>
@@ -47,6 +49,7 @@ export default function HintImage({
       priority={priority}
       referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
+      {...rest}
     />
   );
 }
