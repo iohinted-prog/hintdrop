@@ -2,6 +2,7 @@
 import ContactCard from "../components/ContactCard";
 
 import Link from "next/link";
+import HintImage from "../components/HintImage";
 import { getRecentProfiles } from "../../lib/recentProfiles";
 import { getRecentHints, recordHintView } from "../../lib/recentHints";
 import { trackRetailerClick } from "../../lib/trackRetailerClick";
@@ -438,10 +439,13 @@ function ContactAvatar({ contact }) {
   return (
     <div className="relative h-11 w-11 shrink-0">
       {contact.avatarUrl ? (
-        <img
+        <HintImage
           src={contact.avatarUrl}
           alt={contact.name || "Contact"}
-          className="h-11 w-11 rounded-full object-cover"
+          fill
+          sizes="44px"
+          className="rounded-full object-cover"
+          fallbackClassName="hidden"
         />
       ) : (
         <div className={getAvatarClasses(contact.colors, contact.contactState, "lg")}>
@@ -675,9 +679,9 @@ function FeedItem({
           <button
             type="button"
             onClick={() => onOpenProfile && onOpenProfile({ userId: actorUserId, name: metadata.actor_name, avatarUrl: actorAvatarUrl, initials: actorInitials })}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[12px] font-bold text-white transition hover:scale-[1.03] overflow-hidden"
+            className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[12px] font-bold text-white transition hover:scale-[1.03] overflow-hidden"
           >
-            {actorAvatarUrl ? <img src={actorAvatarUrl} alt={metadata.actor_name || ""} className="w-full object-contain block" /> : actorInitials}
+            {actorAvatarUrl ? <HintImage src={actorAvatarUrl} alt={metadata.actor_name || ""} fill sizes="44px" className="object-cover" fallbackClassName="hidden" /> : actorInitials}
           </button>
         ) : (
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[12px] font-bold text-white">
@@ -728,7 +732,7 @@ function FeedItem({
                       className="relative aspect-square w-28 shrink-0 overflow-hidden rounded-[18px] border border-[#f0dfd6] bg-[#fffaf7] cursor-pointer"
                       onClick={e => { e.stopPropagation(); e.preventDefault(); onOpenHintDetail && onOpenHintDetail(hint); }}>
                       {hint.image_url
-                        ? <img src={hint.image_url} alt={hint.title} className="h-full w-full object-cover" />
+                        ? <HintImage src={hint.image_url} alt={hint.title} fill sizes="112px" className="object-cover" fallbackClassName="hidden" />
                         : <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-[#ead8ca] to-[#c4a17f]">🎁</div>
                       }
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
@@ -806,7 +810,7 @@ function FeedItem({
                     <div key={comment.id} className="flex items-start gap-3 rounded-[18px] border border-[#f0e8e3] bg-white px-4 py-3">
                       <button type="button" onClick={() => comment.user_id && comment.user_id !== sessionUser?.id && onOpenProfile && onOpenProfile({ userId: comment.user_id, name: comment.author_name, avatarUrl: comment.author_avatar, initials: getInitials(comment.author_name || "S") })} className="shrink-0 mt-0.5">
                         {comment.author_avatar ? (
-                          <img src={comment.author_avatar} alt={comment.author_name} className="h-7 w-7 rounded-full object-cover" />
+                          <HintImage src={comment.author_avatar} alt={comment.author_name} width={28} height={28} className="rounded-full object-cover" fallbackClassName="hidden" />
                         ) : (
                           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[10px] font-bold text-white">
                             {getInitials(comment.author_name || "S")}
@@ -830,7 +834,7 @@ function FeedItem({
               {activeComposerId === item.id ? (
                 <div className="mt-4 flex gap-3">
                   {sessionUser?.user_metadata?.avatar_url ? (
-                    <img src={sessionUser.user_metadata.avatar_url} alt="You" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                    <HintImage src={sessionUser.user_metadata.avatar_url} alt="You" width={36} height={36} className="shrink-0 rounded-full object-cover" fallbackClassName="hidden" />
                   ) : (
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white">
                       {getInitials(sessionUser?.user_metadata?.full_name || sessionUser?.email || "Y") || "Y"}
@@ -1348,7 +1352,7 @@ function InviteCard({ invite, inviteActionId, onAccept, onDelete }) {
       <div className="flex items-start gap-3">
         <div className="relative h-11 w-11 shrink-0">
           {invite.inviter?.avatar_url ? (
-            <img src={invite.inviter.avatar_url} alt={invite.inviter.full_name || ""} className="h-11 w-11 rounded-full object-cover" />
+            <HintImage src={invite.inviter.avatar_url} alt={invite.inviter.full_name || ""} fill sizes="44px" className="rounded-full object-cover" fallbackClassName="hidden" />
           ) : (
             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b from-[#8aa587] to-[#4e684d] text-[12px] font-bold text-white">
               {getInitials(invite.inviter?.full_name || invite.invite_name || "?")}
@@ -2410,9 +2414,9 @@ export default function FeedClient() {
                     <div key={profile.userId}
                       className="flex items-center gap-3 rounded-[18px] border border-[#ecd9cf] bg-[#fcf8f5] p-3 cursor-pointer hover:bg-[#fff5f0]"
                       onClick={() => setProfileModal({ userId: profile.userId, name: profile.name, avatarUrl: profile.avatarUrl, initials: profile.initials })}>
-                      <div className="h-10 w-10 shrink-0 rounded-full overflow-hidden flex items-center justify-center">
+                      <div className="relative h-10 w-10 shrink-0 rounded-full overflow-hidden flex items-center justify-center">
                         {profile.avatarUrl
-                          ? <img src={profile.avatarUrl} alt={profile.name} className="h-10 w-10 rounded-full object-cover" />
+                          ? <HintImage src={profile.avatarUrl} alt={profile.name} fill sizes="40px" className="object-cover" fallbackClassName="hidden" />
                           : <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white">{profile.initials}</div>
                         }
                       </div>
@@ -2455,9 +2459,9 @@ export default function FeedClient() {
                     <div key={hint.id}
                       className="flex items-center gap-3 rounded-[18px] border border-[#ecd9cf] bg-[#fcf8f5] p-3 cursor-pointer hover:bg-[#fff5f0]"
                       onClick={() => setFeedHintDetail(hint)}>
-                      <div className="h-11 w-11 shrink-0 rounded-[12px] overflow-hidden bg-[#fffaf7] border border-[#f0dfd6]">
+                      <div className="relative h-11 w-11 shrink-0 rounded-[12px] overflow-hidden bg-[#fffaf7] border border-[#f0dfd6]">
                         {hint.imageUrl
-                          ? <img src={hint.imageUrl} alt={hint.title} className="h-full w-full object-cover" />
+                          ? <HintImage src={hint.imageUrl} alt={hint.title} fill sizes="44px" className="object-cover" fallbackClassName="hidden" />
                           : <div className="h-full w-full flex items-center justify-center text-lg">🎁</div>
                         }
                       </div>
@@ -2628,7 +2632,7 @@ export default function FeedClient() {
               <button type="button" onClick={() => setFeedHintDetail(null)} className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400">✕</button>
             </div>
             {feedHintDetail.image_url
-              ? <img src={feedHintDetail.image_url} alt={feedHintDetail.title} className="w-full object-contain" style={{ maxHeight: "280px" }} />
+              ? <HintImage src={feedHintDetail.image_url} alt={feedHintDetail.title} width={480} height={280} className="w-full h-auto" style={{ maxHeight: "280px", objectFit: "contain" }} />
               : <div className="w-full bg-gradient-to-br from-[#ead8ca] to-[#c4a17f] flex items-center justify-center text-6xl" style={{ height: "200px" }}>🎁</div>
             }
             <div className="p-5">
