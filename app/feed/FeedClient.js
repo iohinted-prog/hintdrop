@@ -2211,6 +2211,24 @@ export default function FeedClient() {
 
   const displayContacts = (contacts.length > 0 ? contacts : demoContacts).slice(0, 10);
 
+  const upcomingBirthdays = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return (contacts || [])
+      .filter(c => c.birthday)
+      .map(c => {
+        const bday = new Date(c.birthday + "T00:00:00");
+        if (isNaN(bday.getTime())) return null;
+        let next = new Date(today.getFullYear(), bday.getMonth(), bday.getDate());
+        if (next < today) next = new Date(today.getFullYear() + 1, bday.getMonth(), bday.getDate());
+        const daysUntil = Math.round((next - today) / 86400000);
+        return { ...c, daysUntil, nextBirthday: next };
+      })
+      .filter(c => c && c.daysUntil <= 30)
+      .sort((a, b) => a.daysUntil - b.daysUntil)
+      .slice(0, 4);
+  }, [contacts]);
+
   const shortReminderFeedItems = useMemo(() => {
     return (calendarEvents || [])
       .map((event) => {
@@ -2362,43 +2380,54 @@ export default function FeedClient() {
         <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)_360px]">
           <aside className="hidden xl:block space-y-5">
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <button type="button" onClick={() => setIsContactsManagerOpen(true)} className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900 hover:text-[#df7b59] transition">Contacts</button>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Your circle</p>
+              <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.03em] text-slate-900">
+                {upcomingBirthdays.length > 0 ? "Coming up" : "Stay in touch"}
+              </h2>
 
-              </div>
-              <p className="mt-1 text-xs text-slate-500">Invitees and contacts live here.</p>
-
-              <div className="mt-4 space-y-3">
-                {contactsLoading ? (
-                  <div className="rounded-[22px] border border-dashed border-[#e5d8cf] bg-[#fffaf7] p-4 text-[13px] leading-6 text-slate-500">
-                    Loading contacts...
-                  </div>
-                ) : displayContacts.length ? (
-                  displayContacts.map((contact) => (
-                    <ContactCard
-                      key={contact.id}
-                      contact={contact}
-                      previewHints={contact.previewHints || []}
-                      onDeleteClick={openDeleteContactModal}
-                      onOpenProfile={setProfileModal}
-                    />
-                  ))
-                ) : (
-                  <div className="rounded-[22px] border border-dashed border-[#e5d8cf] bg-[#fffaf7] p-4 text-[13px] leading-6 text-slate-500">
-                    No contacts added yet.
-                  </div>
-                )}
-              </div>
+              {contactsLoading ? (
+                <div className="mt-4 rounded-[22px] border border-dashed border-[#e5d8cf] bg-[#fffaf7] p-4 text-[13px] leading-6 text-slate-500">
+                  Loading...
+                </div>
+              ) : upcomingBirthdays.length > 0 ? (
+                <div className="mt-4 space-y-3">
+                  {upcomingBirthdays.map((contact) => (
+                    <div key={contact.id}
+                      className="flex items-center gap-3 rounded-[18px] border border-[#ecd9cf] bg-[#fcf8f5] p-3 cursor-pointer hover:bg-[#fff5f0]"
+                      onClick={() => contact.profileId && setProfileModal({ userId: contact.profileId, name: contact.name, avatarUrl: contact.avatarUrl, initials: contact.initials })}>
+                      <div className="h-10 w-10 shrink-0 rounded-full overflow-hidden flex items-center justify-center">
+                        {contact.avatarUrl
+                          ? <img src={contact.avatarUrl} alt={contact.name} className="h-10 w-10 rounded-full object-cover" />
+                          : <div className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b ${contact.colors || "from-[#efcdbf] to-[#bb8168]"} text-[11px] font-bold text-white`}>{contact.initials}</div>
+                        }
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-semibold text-slate-900 truncate">{contact.name}</p>
+                        <p className="text-[11px] text-[#df7b59] mt-0.5">
+                          🎂 {contact.daysUntil === 0 ? "Today!" : contact.daysUntil === 1 ? "Tomorrow" : `In ${contact.daysUntil} days`}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-4 rounded-[22px] border border-dashed border-[#ecd9cf] bg-[#fcf8f5] px-4 py-5">
+                  <p className="text-sm font-medium text-slate-700">No birthdays in the next 30 days.</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    Add birthdays to your circle to see them here.
+                  </p>
+                </div>
+              )}
 
               <div className="mt-4 flex gap-2">
                 <button type="button" onClick={() => setIsAddContactOpen(true)}
                   className="flex-1 h-10 inline-flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-sm font-semibold text-white shadow-lg">
                   Add contact
                 </button>
-                <button type="button" onClick={() => setIsContactsManagerOpen(true)}
+                <Link href="/circles"
                   className="flex-1 h-10 inline-flex items-center justify-center rounded-full border border-[#f0a384] bg-white px-4 text-sm font-semibold text-[#df7b59] hover:bg-[#fff4ee]">
-                  View all
-                </button>
+                  View circle
+                </Link>
               </div>
             </section>
 
