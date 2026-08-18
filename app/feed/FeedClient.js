@@ -2499,13 +2499,21 @@ export default function FeedClient() {
           </section>
 
           <aside className={`space-y-5 ${true !== "never" ? "hidden xl:block" : ""}`}>
-            <MiniCalendar
-              eventsByDate={eventsByDate}
-              calendarLoading={calendarLoading}
-              calendarError={calendarError}
-              onCreateEvent={handleCreateCalendarEvent}
-              onDeleteEvent={handleDeleteCalendarEvent}
-            />
+            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Calendar</p>
+              <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.03em] text-slate-900">
+                {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+              </h2>
+              <p className="mt-2 text-sm text-slate-500">
+                {sidebarReminders.length > 0
+                  ? `${sidebarReminders.length} upcoming event${sidebarReminders.length === 1 ? "" : "s"} below.`
+                  : "Add birthdays and reminders to keep track of key dates."}
+              </p>
+              <Link href="/calendar"
+                className="mt-4 flex w-full h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-sm font-bold text-white shadow-lg">
+                Open calendar
+              </Link>
+            </section>
 
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
               <div>
