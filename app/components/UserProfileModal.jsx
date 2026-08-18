@@ -4,6 +4,7 @@ import { createClient } from "../../lib/supabase/client";
 import Link from "next/link";
 import GroupHintModal from "./GroupHintModal";
 import { recordProfileVisit } from "../../lib/recentProfiles";
+import { recordHintView } from "../../lib/recentHints";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -129,7 +130,7 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
                 const otherClaim = claims.find(c => c.hint_id === hint.id && c.claimed_by !== currentUserId);
                 return (
                   <div key={hint.id} className="mb-3 break-inside-avoid">
-                    <div className="overflow-hidden rounded-[20px] border border-[#f0dfd6] bg-[#fffaf7] hover:border-[#e8c9bc] transition-colors cursor-pointer" onClick={() => setSelectedHint(hint)}>
+                    <div className="overflow-hidden rounded-[20px] border border-[#f0dfd6] bg-[#fffaf7] hover:border-[#e8c9bc] transition-colors cursor-pointer" onClick={() => { setSelectedHint(hint); recordHintView(supabase, currentUserId, hint.id); }}>
                       {hint.image_url
                         ? <img src={hint.image_url} alt={hint.title} className="w-full object-cover"
                             style={imageRatios[hint.id] ? { aspectRatio: String(imageRatios[hint.id]) } : { aspectRatio: "3/4" }} />

@@ -3,6 +3,7 @@ import ContactCard from "../components/ContactCard";
 
 import Link from "next/link";
 import { getRecentProfiles } from "../../lib/recentProfiles";
+import { getRecentHints, recordHintView } from "../../lib/recentHints";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import UserProfileModal from "../components/UserProfileModal";
 import { createClient } from "../../lib/supabase/client";
@@ -2213,10 +2214,12 @@ export default function FeedClient() {
   const displayContacts = (contacts.length > 0 ? contacts : demoContacts).slice(0, 10);
 
   const [recentProfiles, setRecentProfiles] = useState([]);
+  const [recentHints, setRecentHints] = useState([]);
   useEffect(() => {
     if (!sessionUser?.id) return;
     getRecentProfiles(supabase, sessionUser.id).then(setRecentProfiles);
-  }, [profileModal, sessionUser?.id]);
+    getRecentHints(supabase, sessionUser.id).then(setRecentHints);
+  }, [profileModal, feedHintDetail, sessionUser?.id]);
 
   const shortReminderFeedItems = useMemo(() => {
     return (calendarEvents || [])
@@ -2414,6 +2417,35 @@ export default function FeedClient() {
               </div>
             </section>
 
+            {recentHints.length > 0 && (
+              <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Recently viewed</p>
+                <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.03em] text-slate-900">
+                  Hints you've seen
+                </h2>
+                <div className="mt-4 space-y-3">
+                  {recentHints.map((hint) => (
+                    <div key={hint.id}
+                      className="flex items-center gap-3 rounded-[18px] border border-[#ecd9cf] bg-[#fcf8f5] p-3 cursor-pointer hover:bg-[#fff5f0]"
+                      onClick={() => setFeedHintDetail(hint)}>
+                      <div className="h-11 w-11 shrink-0 rounded-[12px] overflow-hidden bg-[#fffaf7] border border-[#f0dfd6]">
+                        {hint.imageUrl
+                          ? <img src={hint.imageUrl} alt={hint.title} className="h-full w-full object-cover" />
+                          : <div className="h-full w-full flex items-center justify-center text-lg">🎁</div>
+                        }
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-semibold text-slate-900 truncate">{hint.title}</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                          {hint.ownerName ? `${hint.ownerName.split(" ")[0]}'s hint` : hint.retailer || "Hint"}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
           </aside>
 
           <section className={`min-w-0 ${mobileTab !== "home" ? "hidden xl:block" : ""}`}>
@@ -2492,7 +2524,7 @@ export default function FeedClient() {
                           demoReactionsState={demoReactionsByFeedId[item.id]}
                           onToggleDemoReaction={handleToggleDemoReaction}
                           onOpenProfile={setProfileModal}
-                          onOpenHintDetail={setFeedHintDetail}
+                          onOpenHintDetail={(hint) => { setFeedHintDetail(hint); recordHintView(supabase, sessionUser?.id, hint.id); }}
                           sessionUser={sessionUser}
                           reactions={reactionsByFeedId[item.id] || []}
                           onToggleReaction={handleToggleReaction}
