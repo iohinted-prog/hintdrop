@@ -6,6 +6,7 @@ import GroupHintModal from "./GroupHintModal";
 import { recordProfileVisit } from "../../lib/recentProfiles";
 import { recordHintView } from "../../lib/recentHints";
 import { trackRetailerClick } from "../../lib/trackRetailerClick";
+import HintImage from "./HintImage";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -92,7 +93,7 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
           <div className="flex items-center justify-between gap-4">
             <Link href={"/profile/" + userId} onClick={onClose} className="flex items-center gap-4 hover:opacity-80 transition-opacity">
               {displayAvatar
-                ? <img src={displayAvatar} alt={displayName} className="h-14 w-14 rounded-full object-cover" />
+                ? <HintImage src={displayAvatar} alt={displayName} width={56} height={56} className="rounded-full object-cover" fallbackClassName="hidden" />
                 : <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[14px] font-bold text-white">{displayInitials}</div>
               }
               <div>
@@ -133,8 +134,9 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
                   <div key={hint.id} className="mb-3 break-inside-avoid">
                     <div className="overflow-hidden rounded-[20px] border border-[#f0dfd6] bg-[#fffaf7] hover:border-[#e8c9bc] transition-colors cursor-pointer" onClick={() => { setSelectedHint(hint); recordHintView(supabase, currentUserId, hint.id); }}>
                       {hint.image_url
-                        ? <img src={hint.image_url} alt={hint.title} className="w-full object-cover"
-                            style={imageRatios[hint.id] ? { aspectRatio: String(imageRatios[hint.id]) } : { aspectRatio: "3/4" }} />
+                        ? <div className="relative w-full" style={imageRatios[hint.id] ? { aspectRatio: String(imageRatios[hint.id]) } : { aspectRatio: "3/4" }}>
+                            <HintImage src={hint.image_url} alt={hint.title} fill className="object-cover" sizes="(max-width: 640px) 50vw, 300px" fallbackClassName="hidden" />
+                          </div>
                         : <div className="w-full bg-gradient-to-br from-[#f3d5cc] to-[#d98c76] flex items-center justify-center text-2xl" style={{ aspectRatio: "3/4" }}>🎁</div>
                       }
                       <div className="p-3">
@@ -178,7 +180,7 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
               <button type="button" onClick={() => setSelectedHint(null)} className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400">X</button>
             </div>
             {selectedHint.image_url
-              ? <img src={selectedHint.image_url} alt={selectedHint.title} className="w-full object-contain" style={{ maxHeight: "280px" }} />
+              ? <HintImage src={selectedHint.image_url} alt={selectedHint.title} width={480} height={280} className="w-full h-auto" style={{ maxHeight: "280px", objectFit: "contain" }} />
               : <div className="w-full bg-gradient-to-br from-[#ead8ca] to-[#c4a17f] flex items-center justify-center text-6xl" style={{ height: "200px" }}>🎁</div>
             }
             <div className="p-5">
