@@ -16,7 +16,6 @@ import ContactsManagerModal from "../components/ContactsManagerModal";
 const feedFilters = [
   { key: "all", label: "All activity" },
   { key: "hint", label: "Hints" },
-  { key: "circle", label: "Circles" },
   { key: "reminder", label: "Reminders" },
   { key: "contact", label: "Contacts" },
 ];

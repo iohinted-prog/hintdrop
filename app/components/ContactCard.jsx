@@ -95,22 +95,24 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onE
           )}
         </div>
       </div>
-      {/* Desktop: larger square hint previews */}
+      {/* Desktop: smaller hint preview tiles, more of them now the card spans full width */}
       {previewHints.length > 0 && (
-        <div className="hidden md:grid grid-cols-3 gap-2 mt-3 cursor-pointer" onClick={isClickable ? handleClick : undefined}>
-          {previewHints.slice(0, 3).map((h, i) => (
-            <div key={h.id} className="relative overflow-hidden rounded-[14px] bg-[#fffaf7] border border-[#f0dfd6]" style={{ aspectRatio: "1/1" }}>
+        <div className="hidden md:grid grid-cols-6 gap-2 mt-3 cursor-pointer" onClick={isClickable ? handleClick : undefined}>
+          {previewHints.slice(0, 6).map((h, i) => (
+            <div key={h.id} className="relative overflow-hidden rounded-[10px] bg-[#fffaf7] border border-[#f0dfd6]" style={{ aspectRatio: "1/1" }}>
               {h.image_url
                 ? <img src={h.image_url} alt={h.title} className="absolute inset-0 h-full w-full object-cover" />
-                : <div className={`absolute inset-0 bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]} flex items-center justify-center text-2xl opacity-80`}>🎁</div>
+                : <div className={`absolute inset-0 bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]} flex items-center justify-center text-lg opacity-80`}>🎁</div>
               }
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.7)_0%,rgba(255,255,255,0)_50%)]" />
-              <p className="absolute inset-x-0 bottom-0 p-2 text-[10px] font-semibold text-white leading-tight line-clamp-2">{h.title}</p>
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.55)_0%,rgba(255,255,255,0)_55%)]" />
+              <p className="absolute inset-x-0 bottom-0 p-1.5 text-[9px] font-semibold text-white leading-tight line-clamp-2">{h.title}</p>
             </div>
           ))}
-          {previewHints.slice(0, 3).length < 3 && Array.from({ length: 3 - previewHints.slice(0, 3).length }).map((_, i) => (
-            <div key={`empty-${i}`} className="rounded-[14px] bg-[#fdf5f0] border border-[#f0dfd6]" style={{ aspectRatio: "1/1" }} />
-          ))}
+          {previewHints.length > 6 && (
+            <div className="relative overflow-hidden rounded-[10px] bg-[#fdf5f0] border border-[#f0dfd6] flex items-center justify-center" style={{ aspectRatio: "1/1" }}>
+              <p className="text-[13px] font-bold text-[#df7b59]">+{previewHints.length - 6}</p>
+            </div>
+          )}
         </div>
       )}
       {isClickable && previewHints.length === 0 && (
