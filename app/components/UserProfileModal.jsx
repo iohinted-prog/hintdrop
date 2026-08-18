@@ -34,7 +34,7 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
 
   useEffect(() => {
     if (!userId) return;
-    recordProfileVisit({ userId, name, avatarUrl, initials });
+    recordProfileVisit(supabase, currentUserId, userId);
     async function load() {
       setLoading(true);
       const [{ data: profileData }, { data: hintsData }] = await Promise.all([

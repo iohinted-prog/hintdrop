@@ -2214,8 +2214,9 @@ export default function FeedClient() {
 
   const [recentProfiles, setRecentProfiles] = useState([]);
   useEffect(() => {
-    setRecentProfiles(getRecentProfiles());
-  }, [profileModal]);
+    if (!sessionUser?.id) return;
+    getRecentProfiles(supabase, sessionUser.id).then(setRecentProfiles);
+  }, [profileModal, sessionUser?.id]);
 
   const shortReminderFeedItems = useMemo(() => {
     return (calendarEvents || [])
