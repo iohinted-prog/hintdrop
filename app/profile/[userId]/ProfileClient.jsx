@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "../../../lib/supabase/client";
 import Link from "next/link";
 import GroupHintModal from "../../components/GroupHintModal";
+import { trackRetailerClick } from "../../../lib/trackRetailerClick";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -268,6 +269,7 @@ export default function ProfileClient({ userId }) {
               <div className="mt-4 flex gap-3">
                 {selectedHint.url && (
                   <a href={selectedHint.url} target="_blank" rel="noopener noreferrer"
+                    onClick={() => trackRetailerClick(supabase, { userId: currentUser?.id, hintId: selectedHint.id, url: selectedHint.url, retailer: selectedHint.retailer, source: "public_profile" })}
                     className="flex-1 h-11 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-lg">
                     Open →
                   </a>

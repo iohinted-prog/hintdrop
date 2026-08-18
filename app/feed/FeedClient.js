@@ -4,6 +4,7 @@ import ContactCard from "../components/ContactCard";
 import Link from "next/link";
 import { getRecentProfiles } from "../../lib/recentProfiles";
 import { getRecentHints, recordHintView } from "../../lib/recentHints";
+import { trackRetailerClick } from "../../lib/trackRetailerClick";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import UserProfileModal from "../components/UserProfileModal";
 import { createClient } from "../../lib/supabase/client";
@@ -2636,6 +2637,7 @@ export default function FeedClient() {
               {feedHintDetail.retailer && <p className="text-[13px] text-slate-400 mt-1">{feedHintDetail.retailer}</p>}
               {feedHintDetail.url && (
                 <a href={feedHintDetail.url} target="_blank" rel="noopener noreferrer"
+                  onClick={() => trackRetailerClick(supabase, { userId: sessionUser?.id, hintId: feedHintDetail.id, url: feedHintDetail.url, retailer: feedHintDetail.retailer, source: "feed" })}
                   className="mt-4 h-11 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-lg">
                   Open
                 </a>

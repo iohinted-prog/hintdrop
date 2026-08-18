@@ -5,6 +5,7 @@ import Link from "next/link";
 import GroupHintModal from "./GroupHintModal";
 import { recordProfileVisit } from "../../lib/recentProfiles";
 import { recordHintView } from "../../lib/recentHints";
+import { trackRetailerClick } from "../../lib/trackRetailerClick";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -200,6 +201,7 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
               <div className="mt-4 flex gap-3">
                 {selectedHint.url && (
                   <a href={selectedHint.url} target="_blank" rel="noopener noreferrer"
+                    onClick={() => trackRetailerClick(supabase, { userId: currentUserId, hintId: selectedHint.id, url: selectedHint.url, retailer: selectedHint.retailer, source: "profile_view" })}
                     className="flex-1 h-11 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-lg">
                     Open
                   </a>

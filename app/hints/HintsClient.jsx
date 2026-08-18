@@ -23,6 +23,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "../../lib/supabase/client";
+import { trackRetailerClick } from "../../lib/trackRetailerClick";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 import { usePreferences } from "../providers/PreferencesProvider";
 import AvatarMenu from "../components/AvatarMenu";
@@ -1015,6 +1016,12 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
                 </button>
                 {hint.url && (
                   <a href={hint.url} target="_blank" rel="noopener noreferrer"
+                    onClick={() => {
+                      const supabase = createClient();
+                      supabase.auth.getUser().then(({ data }) => {
+                        trackRetailerClick(supabase, { userId: data?.user?.id, hintId: hint.id, url: hint.url, retailer: hint.retailer, source: "hints_page" });
+                      });
+                    }}
                     className="flex-1 h-11 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white flex items-center justify-center shadow-lg">
                     Open →
                   </a>
@@ -1181,6 +1188,12 @@ function HintCard({
               href={hint.url}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => {
+                const supabase = createClient();
+                supabase.auth.getUser().then(({ data }) => {
+                  trackRetailerClick(supabase, { userId: data?.user?.id, hintId: hint.id, url: hint.url, retailer: hint.retailer, source: "hints_page" });
+                });
+              }}
               className="rounded-full border border-white/45 bg-white/76 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-md hover:bg-white"
             >
               Open

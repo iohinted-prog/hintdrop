@@ -4,6 +4,8 @@ import Link from "next/link";
 import PublicShell from "../components/PublicShell";
 import AuthModal from "../components/AuthModal";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
+import { createClient } from "../../lib/supabase/client";
+import { trackRetailerClick } from "../../lib/trackRetailerClick";
 
 const CATEGORIES = [
   "Home", "Food", "Beauty", "Tech", "Travel", "Wellness",
@@ -60,7 +62,8 @@ function GiftCard({ product, formatCurrency, onImageError, onRequestSignIn }) {
             </div>
           )}
           <div className="flex gap-2">
-            <a href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              onClick={(e) => { e.stopPropagation(); trackRetailerClick(createClient(), { hintId: null, url, retailer: product.retailer, source: "gift_shop" }); }}
               className="flex-1 h-9 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[12px] font-semibold text-white">
               View item
             </a>
@@ -112,6 +115,7 @@ function GiftCard({ product, formatCurrency, onImageError, onRequestSignIn }) {
               )}
               <div className="flex gap-3">
                 <a href={url} target="_blank" rel="noopener noreferrer"
+                  onClick={() => trackRetailerClick(createClient(), { hintId: null, url, retailer: product.retailer, source: "gift_shop" })}
                   className="flex-1 h-11 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white flex items-center justify-center shadow-lg">
                   View item →
                 </a>
