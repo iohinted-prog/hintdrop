@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
 import GroupChatWindow from "./GroupChatWindow";
+import HintImage from "./HintImage";
 
 function LogoMark() {
   return (
@@ -517,8 +518,8 @@ export default function AppShell({ children }) {
                           <div className="flex items-center gap-3">
                             <div className="flex -space-x-2 shrink-0">
                               {others.slice(0, 2).map(m => (
-                                <div key={m.user_id} className="h-9 w-9 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[10px] font-bold text-white overflow-hidden border-2 border-white">
-                                  {m.profiles?.avatar_url ? <img src={m.profiles.avatar_url} className="h-full w-full object-cover" alt="" /> : (m.profiles?.full_name?.[0] || "?")}
+                                <div key={m.user_id} className="relative h-9 w-9 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[10px] font-bold text-white overflow-hidden border-2 border-white">
+                                  {m.profiles?.avatar_url ? <HintImage src={m.profiles.avatar_url} fill className="object-cover" sizes="36px" alt="" fallbackClassName="hidden" /> : (m.profiles?.full_name?.[0] || "?")}
                                 </div>
                               ))}
                             </div>
@@ -581,9 +582,9 @@ export default function AppShell({ children }) {
         return (
         <div key={notif.id} className="rounded-[18px] border border-[#e6ddd7] bg-white p-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
               {notif.data?.actor_avatar_url
-                ? <img src={notif.data.actor_avatar_url} className="h-full w-full object-cover" alt="" />
+                ? <HintImage src={notif.data.actor_avatar_url} fill className="object-cover" sizes="36px" alt="" fallbackClassName="hidden" />
                 : (notif.data?.actor_name || "?")[0]?.toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
@@ -595,9 +596,11 @@ export default function AppShell({ children }) {
             </span>
           </div>
           {hintImage && (
-            <img
+            <HintImage
               src={hintImage}
               alt={notif.body}
+              width={400}
+              height={96}
               className="w-full h-24 object-cover rounded-[12px] mb-2 cursor-pointer"
               onClick={() => { if (recipientId) { window.location.href = `/profile/${recipientId}`; } setNotifOpen(false); }}
             />
@@ -620,9 +623,9 @@ export default function AppShell({ children }) {
       {activityNotifs.filter(n => n.type === "birthday_reminder").slice(0, 3).map(notif => (
         <div key={notif.id} className="rounded-[18px] border border-[#e6ddd7] bg-white p-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
               {notif.data?.actor_avatar_url
-                ? <img src={notif.data.actor_avatar_url} className="h-full w-full object-cover" alt="" />
+                ? <HintImage src={notif.data.actor_avatar_url} fill className="object-cover" sizes="36px" alt="" fallbackClassName="hidden" />
                 : (notif.data?.actor_name || "?")[0]?.toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
@@ -645,9 +648,9 @@ export default function AppShell({ children }) {
       {activityNotifs.filter(n => n.type !== "group_hint_response" && n.type !== "birthday_reminder").slice(0, 5).map(notif => (
         <div key={notif.id} className="rounded-[18px] border border-[#e6ddd7] bg-white p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
               {notif.data?.actor_avatar_url
-                ? <img src={notif.data.actor_avatar_url} className="h-full w-full object-cover" alt="" />
+                ? <HintImage src={notif.data.actor_avatar_url} fill className="object-cover" sizes="36px" alt="" fallbackClassName="hidden" />
                 : (notif.data?.actor_name || "?")[0]?.toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
@@ -692,9 +695,9 @@ export default function AppShell({ children }) {
                     ) : invites.map(invite => (
                       <div key={invite.id} className={`rounded-[18px] border p-4 ${invite.source === "contact" ? "border-[#e6ddd7] bg-white" : "border-[#dce8d8] bg-[#f7fbf5]"}`}>
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#8aa587] to-[#4e684d] text-[11px] font-bold text-white overflow-hidden">
+                          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#8aa587] to-[#4e684d] text-[11px] font-bold text-white overflow-hidden">
                             {invite.inviter?.avatar_url
-                              ? <img src={invite.inviter.avatar_url} className="h-full w-full object-cover" alt="" />
+                              ? <HintImage src={invite.inviter.avatar_url} fill className="object-cover" sizes="36px" alt="" fallbackClassName="hidden" />
                               : (invite.inviter?.full_name || invite.invite_name || "?").split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase()}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -728,17 +731,20 @@ export default function AppShell({ children }) {
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
                 onClick={() => setMenuOpen((prev) => !prev)}
-                className={`flex h-11 w-11 items-center justify-center overflow-hidden rounded-full shadow-sm transition ${
+                className={`relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full shadow-sm transition ${
                   avatarUrl
                     ? "border border-[#ead8ce] bg-white hover:bg-[#fff5f0]"
                     : "bg-gradient-to-b from-[#ff966f] to-[#ff7e54] hover:opacity-90"
                 }`}
               >
                 {avatarUrl ? (
-                  <img
+                  <HintImage
                     src={avatarUrl}
                     alt="Your profile"
-                    className="h-full w-full object-cover"
+                    fill
+                    sizes="44px"
+                    className="object-cover"
+                    fallbackClassName="hidden"
                   />
                 ) : (
                   <span className="text-[12px] font-bold text-white">
