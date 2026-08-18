@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import HintImage from "./HintImage";
 
 function getStarSign(birthday) {
   if (!birthday) return null;
@@ -60,9 +61,9 @@ export default function ContactsManagerModal({ open, onClose, contacts, onAdd, o
           ) : (
             contacts.filter(c => !c.isDemo).map(contact => (
               <div key={contact.id} className={"flex items-center gap-3 rounded-[18px] border border-[#f0dfd6] bg-white px-4 py-3 transition " + (contact.profileId ? "cursor-pointer hover:border-[#e8c9bc] hover:shadow-sm" : "")} onClick={() => { if (contact.profileId && onOpenProfile) onOpenProfile({ userId: contact.profileId, name: contact.name, avatarUrl: contact.avatarUrl, initials: contact.initials }); }}>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[12px] font-bold text-white overflow-hidden">
+                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[12px] font-bold text-white overflow-hidden">
                   {contact.avatarUrl ? (
-                    <img src={contact.avatarUrl} alt={contact.name} className="h-full w-full object-cover" />
+                    <HintImage src={contact.avatarUrl} alt={contact.name} fill sizes="40px" className="object-cover" fallbackClassName="hidden" />
                   ) : (
                     <span>{contact.initials}</span>
                   )}

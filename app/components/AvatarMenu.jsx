@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import HintImage from "./HintImage";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "../../lib/supabase/client";
 
@@ -72,16 +73,19 @@ export default function AvatarMenu() {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-neutral-200"
+        className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-neutral-200"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Open account menu"
       >
         {avatarUrl ? (
-          <img
+          <HintImage
             src={avatarUrl}
             alt={fullName || "User avatar"}
-            className="h-full w-full object-cover"
+            fill
+            sizes="40px"
+            className="object-cover"
+            fallbackClassName="hidden"
           />
         ) : (
           <span className="text-sm font-medium">{initials}</span>
