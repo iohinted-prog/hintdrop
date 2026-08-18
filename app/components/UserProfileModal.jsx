@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "../../lib/supabase/client";
 import Link from "next/link";
 import GroupHintModal from "./GroupHintModal";
+import { recordProfileVisit } from "../../lib/recentProfiles";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -33,6 +34,7 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
 
   useEffect(() => {
     if (!userId) return;
+    recordProfileVisit({ userId, name, avatarUrl, initials });
     async function load() {
       setLoading(true);
       const [{ data: profileData }, { data: hintsData }] = await Promise.all([
