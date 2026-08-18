@@ -2437,7 +2437,7 @@ export default function FeedClient() {
                   className="flex-1 h-10 inline-flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-sm font-semibold text-white shadow-lg">
                   Add contact
                 </button>
-                <Link href="/circles"
+                <Link href="/circle"
                   className="flex-1 h-10 inline-flex items-center justify-center rounded-full border border-[#f0a384] bg-white px-4 text-sm font-semibold text-[#df7b59] hover:bg-[#fff4ee]">
                   View circle
                 </Link>

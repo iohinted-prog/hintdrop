@@ -53,5 +53,5 @@ export async function GET(request) {
     </body></html>`, { status: 200, headers: { "Content-Type": "text/html" } });
   }
 
-  return NextResponse.redirect(new URL("/circles", request.url));
+  return NextResponse.redirect(new URL("/circles-legacy", request.url));
 }

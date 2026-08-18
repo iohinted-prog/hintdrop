@@ -7,7 +7,7 @@ export default function robots() {
         disallow: [
           "/feed",
           "/hints",
-          "/circles",
+          "/circle",
           "/account",
           "/settings",
           "/onboarding",
