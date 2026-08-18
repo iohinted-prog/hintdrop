@@ -1507,7 +1507,7 @@ export default function HintsClient() {
     if (!currentUser) return;
     const supabase = createClient();
     // Single upsert instead of N individual updates
-    await supabase.from("hints").upsert(
+    const { error } = await supabase.from("hints").upsert(
       nextHints.map((hint, index) => ({
         id: hint.id,
         user_id: currentUser.id,
@@ -1515,6 +1515,9 @@ export default function HintsClient() {
       })),
       { onConflict: "id" }
     );
+    if (error) {
+      console.error("persistOrder failed:", error);
+    }
   }
 
   function rebuildFromColumns(nextColumns) {
