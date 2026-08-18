@@ -423,12 +423,41 @@ export default function AppShell({ children }) {
           </Link>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            <nav className="hidden md:flex items-center justify-center gap-1">
+            <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-1">
               {navItems.map((item) => {
                 const isActive =
                   pathname === item.href || pathname.startsWith(`${item.href}/`);
 
-                const icons = { "/feed": "🏠", "/hints": "🎁", "/circles": "⭕", "/people": "⭕", "/calendar": "📅", "/shop": "🛍️" };
+                const icons = {
+                  "/feed": (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4h4v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9" />
+                    </svg>
+                  ),
+                  "/circles": (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="9" cy="8" r="3" /><path d="M3 20v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1" />
+                      <circle cx="17" cy="8" r="2.6" opacity="0.65" /><path d="M16 14.2a4.3 4.3 0 0 1 5 4.3v1.5" opacity="0.65" />
+                    </svg>
+                  ),
+                  "/people": (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="9" cy="8" r="3" /><path d="M3 20v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1" />
+                      <circle cx="17" cy="8" r="2.6" opacity="0.65" /><path d="M16 14.2a4.3 4.3 0 0 1 5 4.3v1.5" opacity="0.65" />
+                    </svg>
+                  ),
+                  "/calendar": (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3.5" y="5" width="17" height="16" rx="2.5" /><path d="M8 3v4M16 3v4M3.5 10h17" />
+                    </svg>
+                  ),
+                  "/shop": (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 8h12l1 12.5a1.5 1.5 0 0 1-1.5 1.5H6.5A1.5 1.5 0 0 1 5 20.5z" />
+                      <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+                    </svg>
+                  ),
+                };
 
                 if (item.href === "/hints") {
                   return (
@@ -440,7 +469,7 @@ export default function AppShell({ children }) {
                       }`}
                       title={item.label}
                     >
-                      <span>{icons[item.href]}</span>
+                      <span>🎁</span>
                     </Link>
                   );
                 }
