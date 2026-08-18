@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
@@ -128,10 +129,13 @@ function AvatarFallback({ name = "", email = "", src = "", alt = "Profile" }) {
 
   if (showImage) {
     return (
-      <img
+      <Image
         src={src}
         alt={alt}
-        className="h-14 w-14 rounded-full object-cover"
+        width={56}
+        height={56}
+        className="rounded-full object-cover"
+        referrerPolicy="no-referrer"
         onError={() => setImageFailed(true)}
       />
     );
