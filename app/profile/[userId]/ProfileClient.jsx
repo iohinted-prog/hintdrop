@@ -5,6 +5,7 @@ import { createClient } from "../../../lib/supabase/client";
 import Link from "next/link";
 import GroupHintModal from "../../components/GroupHintModal";
 import { trackRetailerClick } from "../../../lib/trackRetailerClick";
+import HintImage from "../../components/HintImage";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -156,7 +157,7 @@ export default function ProfileClient({ userId }) {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </button>
           {profile?.avatar_url
-            ? <img src={profile.avatar_url} alt={displayName} className="h-14 w-14 rounded-full object-cover border-2 border-[#f0dfd6] shrink-0" />
+            ? <HintImage src={profile.avatar_url} alt={displayName} width={56} height={56} className="rounded-full object-cover border-2 border-[#f0dfd6] shrink-0" fallbackClassName="hidden" />
             : <div className="h-14 w-14 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[16px] font-bold text-white shrink-0">{getInitials(displayName)}</div>
           }
           <div className="flex-1 min-w-0">
@@ -213,10 +214,9 @@ export default function ProfileClient({ userId }) {
               const gradient = GRADIENTS[idx % GRADIENTS.length];
               return (
                 <div key={hint.id} className="mb-4 break-inside-avoid cursor-pointer" onClick={() => setSelectedHint(hint)}>
-                  <article className="relative overflow-hidden rounded-[22px] shadow-sm">
+                  <article className="relative overflow-hidden rounded-[22px] shadow-sm" style={hint.image_url ? (imageRatios[hint.id] ? { aspectRatio: String(imageRatios[hint.id]) } : { aspectRatio: "3/4" }) : undefined}>
                     {hint.image_url
-                      ? <img src={hint.image_url} alt={hint.title} className="w-full object-cover"
-                          style={imageRatios[hint.id] ? { aspectRatio: String(imageRatios[hint.id]) } : { aspectRatio: "3/4" }} />
+                      ? <HintImage src={hint.image_url} alt={hint.title} fill className="object-cover" sizes="(max-width: 768px) 50vw, 33vw" fallbackClassName="hidden" />
                       : <div className={`w-full bg-gradient-to-br ${gradient} flex items-center justify-center text-4xl`} style={{ aspectRatio: "3/4", minHeight: "220px" }}>🎁</div>
                     }
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
@@ -244,7 +244,7 @@ export default function ProfileClient({ userId }) {
               <button type="button" onClick={() => setSelectedHint(null)} className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400">✕</button>
             </div>
             {selectedHint.image_url
-              ? <img src={selectedHint.image_url} alt={selectedHint.title} className="w-full object-contain" style={{ maxHeight: "280px" }} />
+              ? <HintImage src={selectedHint.image_url} alt={selectedHint.title} width={480} height={280} className="w-full h-auto" style={{ maxHeight: "280px", objectFit: "contain" }} />
               : <div className="w-full bg-gradient-to-br from-[#ead8ca] to-[#c4a17f] flex items-center justify-center text-6xl" style={{ height: "200px" }}>🎁</div>
             }
             <div className="p-5">
