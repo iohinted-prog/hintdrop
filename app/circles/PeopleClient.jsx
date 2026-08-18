@@ -194,7 +194,7 @@ export default function PeopleClient() {
               className="mt-4 h-10 px-6 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-sm font-semibold text-white shadow-lg">Add your first contact</button>
           </div>
         ) : (
-          <div className="space-y-2 md:grid md:grid-cols-3 md:gap-4 md:space-y-0">
+          <div className="space-y-3">
             {filtered.map(contact => (
               <ContactCard key={contact.id} contact={contact} onOpenProfile={setProfileModal}
                 onEditClick={setEditingContact} onDeleteClick={handleDelete}
