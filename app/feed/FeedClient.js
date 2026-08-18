@@ -1538,6 +1538,29 @@ export default function FeedClient() {
 
     setContacts(mapped);
     setContactsLoading(false);
+
+    // Fetch a small hint preview for contacts linked to a real HintDrop profile
+    const profileIds = [...new Set(mapped.map(c => c.profileId).filter(Boolean))];
+    if (profileIds.length) {
+      const { data: hintsData } = await supabase
+        .from("hints")
+        .select("id, user_id, title, image_url, position")
+        .in("user_id", profileIds)
+        .eq("is_private", false)
+        .order("position", { ascending: true });
+
+      const hintsByUser = {};
+      (hintsData || []).forEach(h => {
+        if (!hintsByUser[h.user_id]) hintsByUser[h.user_id] = [];
+        hintsByUser[h.user_id].push(h);
+      });
+
+      setContacts(prev => prev.map(c =>
+        c.profileId && hintsByUser[c.profileId]
+          ? { ...c, previewHints: hintsByUser[c.profileId].slice(0, 3) }
+          : c
+      ));
+    }
     return mapped;
   }, []);
 
@@ -2355,6 +2378,7 @@ export default function FeedClient() {
                     <ContactCard
                       key={contact.id}
                       contact={contact}
+                      previewHints={contact.previewHints || []}
                       onDeleteClick={openDeleteContactModal}
                       onOpenProfile={setProfileModal}
                     />
