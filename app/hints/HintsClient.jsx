@@ -394,18 +394,10 @@ function shortenTitle(title = "", retailer = "") {
   return result.charAt(0).toUpperCase() + result.slice(1);
 }
 
-function splitIntoColumns(items, columnCount = 3, imageRatios = {}) {
+function splitIntoColumns(items, columnCount = 3) {
   const columns = Array.from({ length: columnCount }, () => []);
-  const heights = Array.from({ length: columnCount }, () => 0);
-  items.forEach((item) => {
-    const ratio = getCardAspectRatio(item, imageRatios);
-    const estimatedHeight = ratio > 0 ? 1 / ratio : 1;
-    let shortest = 0;
-    for (let i = 1; i < columnCount; i++) {
-      if (heights[i] < heights[shortest]) shortest = i;
-    }
-    columns[shortest].push(item);
-    heights[shortest] += estimatedHeight;
+  items.forEach((item, index) => {
+    columns[index % columnCount].push(item);
   });
   return columns;
 }
@@ -1468,8 +1460,8 @@ export default function HintsClient() {
 
   const visibleHints = hints;
   const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
-  const columns = useMemo(() => splitIntoColumns(visibleHints, 3, imageRatios), [visibleHints, imageRatios]);
-  const mobileColumns = useMemo(() => splitIntoColumns(visibleHints, 2, imageRatios), [visibleHints, imageRatios]);
+  const columns = useMemo(() => splitIntoColumns(visibleHints, 3), [visibleHints]);
+  const mobileColumns = useMemo(() => splitIntoColumns(visibleHints, 2), [visibleHints]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1522,7 +1514,18 @@ export default function HintsClient() {
   }
 
   function rebuildFromColumns(nextColumns) {
-    return nextColumns.flat().map((hint, index) => ({ ...hint, position: index }));
+    // Interleave row-major (col0-item0, col1-item0, col2-item0, col0-item1, ...)
+    // rather than flattening column-by-column — this is the order round-robin
+    // column assignment expects, so re-splitting this exact array reproduces
+    // the same column layout instead of scrambling it on the next render.
+    const maxLen = Math.max(0, ...nextColumns.map((col) => col.length));
+    const interleaved = [];
+    for (let row = 0; row < maxLen; row++) {
+      for (let col = 0; col < nextColumns.length; col++) {
+        if (nextColumns[col][row]) interleaved.push(nextColumns[col][row]);
+      }
+    }
+    return interleaved.map((hint, index) => ({ ...hint, position: index }));
   }
 
   function openEditModal(hint) {
@@ -1968,7 +1971,7 @@ export default function HintsClient() {
 
     if (!over || active.id === over.id || hints.length === 0) return;
 
-    const nextColumns = splitIntoColumns(hints, 3, imageRatios);
+    const nextColumns = splitIntoColumns(hints, 3);
     const fromColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === active.id));
     const toColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === over.id));
 
@@ -2005,7 +2008,7 @@ export default function HintsClient() {
 
     if (!over || active.id === over.id || hints.length === 0) return;
 
-    const nextColumns = splitIntoColumns(hints, 2, imageRatios);
+    const nextColumns = splitIntoColumns(hints, 2);
     const fromColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === active.id));
     const toColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === over.id));
 
