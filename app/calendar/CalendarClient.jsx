@@ -135,6 +135,12 @@ export default function CalendarClient() {
     setSaving(false);
   }
 
+  async function handleDeleteEvent(eventId) {
+    if (!confirm("Delete this event?")) return;
+    await supabase.from("calendar_events").delete().eq("id", eventId);
+    setEvents(prev => prev.filter(e => e.id !== eventId));
+  }
+
   function openDate(d) {
     const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     setSelectedDate(key);
@@ -262,12 +268,19 @@ export default function CalendarClient() {
 
                 {selectedEvents.map(e => {
                   const c = eventColor(e);
+                  const isDeletable = e.source !== "contact";
                   return (
                     <div key={e.id} className={"rounded-[16px] border bg-white p-4 " + c.border}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className={"h-2 w-2 rounded-full shrink-0 " + c.dot} />
-                        <span className={"text-[11px] font-semibold rounded-full px-2 py-0.5 " + c.badge}>{e.type || "Event"}</span>
-                        {e.recurrence && <span className="text-[11px] text-slate-400">↻ {e.recurrence}</span>}
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className={"h-2 w-2 rounded-full shrink-0 " + c.dot} />
+                          <span className={"text-[11px] font-semibold rounded-full px-2 py-0.5 " + c.badge}>{e.type || "Event"}</span>
+                          {e.recurrence && <span className="text-[11px] text-slate-400">↻ {e.recurrence}</span>}
+                        </div>
+                        {isDeletable && (
+                          <button type="button" onClick={() => handleDeleteEvent(e.id)}
+                            className="h-6 w-6 flex items-center justify-center rounded-full text-slate-300 hover:bg-[#fff0f0] hover:text-[#b14f43] text-xs">✕</button>
+                        )}
                       </div>
                       <p className="text-[15px] font-semibold text-slate-900">{e.title}</p>
                       {e.body && <p className="text-[13px] text-slate-500 mt-1">{e.body}</p>}
@@ -339,12 +352,19 @@ export default function CalendarClient() {
 
               {selectedEvents.map(e => {
                 const c = eventColor(e);
+                const isDeletable = e.source !== "contact";
                 return (
                   <div key={e.id} className={"rounded-[16px] border bg-white p-4 " + c.border}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={"h-2 w-2 rounded-full shrink-0 " + c.dot} />
-                      <span className={"text-[11px] font-semibold rounded-full px-2 py-0.5 " + c.badge}>{e.type || "Event"}</span>
-                      {e.recurrence && <span className="text-[11px] text-slate-400">↻ {e.recurrence}</span>}
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className={"h-2 w-2 rounded-full shrink-0 " + c.dot} />
+                        <span className={"text-[11px] font-semibold rounded-full px-2 py-0.5 " + c.badge}>{e.type || "Event"}</span>
+                        {e.recurrence && <span className="text-[11px] text-slate-400">↻ {e.recurrence}</span>}
+                      </div>
+                      {isDeletable && (
+                        <button type="button" onClick={() => handleDeleteEvent(e.id)}
+                          className="h-6 w-6 flex items-center justify-center rounded-full text-slate-300 hover:bg-[#fff0f0] hover:text-[#b14f43] text-xs">✕</button>
+                      )}
                     </div>
                     <p className="text-[15px] font-semibold text-slate-900">{e.title}</p>
                     {e.body && <p className="text-[13px] text-slate-500 mt-1">{e.body}</p>}
