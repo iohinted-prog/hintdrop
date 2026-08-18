@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Script from "next/script";
 import { createClient } from "../../lib/supabase/client";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
+import HintImage from "../components/HintImage";
 
 const CARD_MIN_HEIGHT = "220px";
 
@@ -204,12 +205,13 @@ function ShopCard({
       >
         <div className="absolute inset-0">
           {product.image_url ? (
-            <img
+            <HintImage
               src={product.image_url}
               alt={product.title || "Gift idea"}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-              loading="lazy"
-              referrerPolicy="no-referrer"
+              fill
+              sizes="(max-width: 768px) 100vw, 33vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              fallbackClassName="hidden"
               onError={() => onImageError?.(product.id)}
             />
           ) : (
@@ -293,7 +295,7 @@ function ShopCard({
             </div>
             <div className="relative">
               {product.image_url ? (
-                <img src={product.image_url} alt={product.title || "Gift idea"} className="w-full object-contain" referrerPolicy="no-referrer" />
+                <HintImage src={product.image_url} alt={product.title || "Gift idea"} width={480} height={360} className="w-full h-auto" style={{ objectFit: "contain" }} />
               ) : (
                 <div className="w-full bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f] flex items-center justify-center text-6xl" style={{ height: "200px" }}>🎁</div>
               )}
