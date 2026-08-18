@@ -11,7 +11,7 @@ export default function robots() {
           "/account",
           "/settings",
           "/onboarding",
-          "/people",
+          "/circles-legacy",
           "/calendar",
           "/shop",
           "/invite",

@@ -171,7 +171,7 @@ export default function AppShell({ children }) {
 
   const navItems = [
     { href: "/feed", label: "Feed" },
-    { href: "/people", label: "Circle" },
+    { href: "/circles", label: "Circle" },
     { href: "/hints", label: "Hints" },
     { href: "/calendar", label: "Calendar" },
     { href: "/shop", label: "Shop" },
@@ -435,12 +435,6 @@ export default function AppShell({ children }) {
                     </svg>
                   ),
                   "/circles": (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="9" cy="8" r="3" /><path d="M3 20v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1" />
-                      <circle cx="17" cy="8" r="2.6" opacity="0.65" /><path d="M16 14.2a4.3 4.3 0 0 1 5 4.3v1.5" opacity="0.65" />
-                    </svg>
-                  ),
-                  "/people": (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="9" cy="8" r="3" /><path d="M3 20v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1" />
                       <circle cx="17" cy="8" r="2.6" opacity="0.65" /><path d="M16 14.2a4.3 4.3 0 0 1 5 4.3v1.5" opacity="0.65" />
