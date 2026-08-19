@@ -37,8 +37,13 @@ async function scrapeImage(url) {
     if (!res.ok) {
       throw new Error(data?.error || data?.message || `LinkPreview failed with status ${res.status}`);
     }
-    const image = String(data?.image || "").trim();
-    if (image.startsWith("//")) return "https:" + image;
+    let image = String(data?.image || "").trim();
+    if (image.startsWith("//")) image = "https:" + image;
+    // John Lewis's Scene7-based image CDN needs fmt=auto to actually
+    // return a usable image — LinkPreview.net's URL omits it
+    if (image.includes("media.johnlewiscontent.com") && image.includes("?$")) {
+      image = image.replace("?$", "?fmt=auto&$background-off-white$&$");
+    }
     return image;
   } finally {
     clearTimeout(timeout);
