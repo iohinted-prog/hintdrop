@@ -22,17 +22,22 @@ function getSupabase() {
 }
 
 async function scrapeImage(url) {
-  const res = await fetch(url, { headers: HTML_HEADERS, redirect: "follow" });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const html = await res.text();
-  const $ = cheerio.load(html);
-  const image =
-    $('meta[property="og:image"]').attr("content") ||
-    $('meta[name="twitter:image"]').attr("content") ||
-    "";
-  // Normalise protocol-relative URLs (//media...)
-  if (image.startsWith("//")) return "https:" + image;
-  return image;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(url, { headers: HTML_HEADERS, redirect: "follow", signal: controller.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const image =
+      $('meta[property="og:image"]').attr("content") ||
+      $('meta[name="twitter:image"]').attr("content") ||
+      "";
+    if (image.startsWith("//")) return "https:" + image;
+    return image;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 // One-off maintenance endpoint — requires a secret to run, since it writes
@@ -44,7 +49,7 @@ export async function POST(req) {
   if (!secret || secret !== process.env.ADMIN_BACKFILL_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const batchSize = Math.min(Number(limit) || 15, 25);
+  const batchSize = Math.min(Number(limit) || 6, 8);
 
   const supabase = getSupabase();
   const { data: products, error } = await supabase
@@ -70,7 +75,6 @@ export async function POST(req) {
     } catch (err) {
       results.failed.push({ id: product.id, reason: err?.message || "fetch failed" });
     }
-    await new Promise((r) => setTimeout(r, 150));
   }
 
   const { count: remaining } = await supabase
