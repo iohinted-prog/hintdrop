@@ -25,6 +25,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { createClient } from "../../lib/supabase/client";
 import { trackRetailerClick } from "../../lib/trackRetailerClick";
 import HintImage from "../components/HintImage";
+import ShareButton from "../components/ShareButton";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 import { usePreferences } from "../providers/PreferencesProvider";
 import AvatarMenu from "../components/AvatarMenu";
@@ -1005,6 +1006,20 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
                   {hint.starred ? "★ Top pick" : "☆ Star"}
                 </button>
               </div>
+              {!hint.private && (
+                <div className="mb-3">
+                  <ShareButton
+                    supabase={createClient()}
+                    subjectType="hint"
+                    subjectId={hint.id}
+                    path={`/h/${hint.id}`}
+                    title={hint.title}
+                    icon="↗"
+                    label="Share this hint"
+                    className="w-full h-11 rounded-full border border-[#ead8ce] bg-white text-[13px] font-semibold text-slate-700 flex items-center justify-center gap-1.5 hover:bg-[#fff5f0]"
+                  />
+                </div>
+              )}
               <div className="flex gap-3">
                 <button type="button" onClick={() => { setShowModal(false); onEdit(hint); }}
                   className="flex-1 h-11 rounded-full border border-[#ead8ce] bg-white text-[13px] font-semibold text-slate-700">
