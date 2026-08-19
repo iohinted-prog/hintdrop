@@ -183,20 +183,23 @@ function ShopCard({
   onImageError,
 }) {
   const [showModal, setShowModal] = useState(false);
-  const ratio = getCardAspectRatio(product, imageRatios);
   const interestTags = getTagArray(product.interest_tags);
   const occasionTags = getTagArray(product.occasion_tags);
   const displayTags = [...interestTags.slice(0, 1), ...occasionTags.slice(0, 1)].slice(0, 2);
   const displayPrice = getDisplayPrice(product, formatCurrency);
   const retailerLabel = product.retailer || normaliseRetailer(getOutboundUrl(product));
 
+  const rawRatio = imageRatios[product.id];
+  const cardAspectRatio = rawRatio && Number.isFinite(rawRatio) ? Math.min(1, rawRatio) : 1;
+
   return (
     <>
       <article
-        className="group relative w-full overflow-hidden rounded-[22px] border border-[#f0dfd6] bg-white cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+        className="group relative flex w-full flex-col overflow-hidden rounded-[22px] border border-[#f0dfd6] bg-white cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+        style={{ aspectRatio: cardAspectRatio }}
         onClick={() => setShowModal(true)}
       >
-        <div className="relative w-full aspect-[3/4] overflow-hidden bg-[#fdf5f0]">
+        <div className="relative w-full flex-1 overflow-hidden bg-[#fdf5f0]">
           {product.image_url ? (
             <HintImage
               src={product.image_url}
@@ -212,7 +215,7 @@ function ShopCard({
           )}
         </div>
 
-        <div className="p-3">
+        <div className="shrink-0 p-3">
           <h3 className="text-[13px] font-semibold tracking-[-0.02em] text-slate-900 leading-tight line-clamp-1">
             {product.title || "Gift idea"}
           </h3>
