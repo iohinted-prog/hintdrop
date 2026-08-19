@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Script from "next/script";
 import { createClient } from "../../lib/supabase/client";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
@@ -175,18 +175,6 @@ function loadImageAspectRatio(src) {
     img.onerror = () => resolve(null);
     img.src = src;
   });
-}
-
-function getCardAspectRatio(product, imageRatios) {
-  const ratio = imageRatios[product.id];
-
-  if (ratio && Number.isFinite(ratio)) {
-    if (ratio > 1.35) return 1.12;
-    if (ratio < 0.78) return 0.78;
-    return 0.9;
-  }
-
-  return product?.image_url ? 0.9 : 1;
 }
 
 function getDisplayPrice(product, formatCurrency) {
@@ -527,15 +515,21 @@ export default function ShopPage() {
     };
   }, [supabase]);
 
+  const measuredIdsRef = useRef(new Set());
+
   useEffect(() => {
     let cancelled = false;
 
     async function measureRatios() {
       const itemsWithImages = products.filter(
-        (product) => product.image_url && !imageRatios[product.id]
+        (product) => product.image_url && !measuredIdsRef.current.has(product.id)
       );
 
       if (!itemsWithImages.length) return;
+
+      for (const product of itemsWithImages) {
+        measuredIdsRef.current.add(product.id);
+      }
 
       const nextEntries = await Promise.all(
         itemsWithImages.map(async (product) => {
@@ -562,7 +556,7 @@ export default function ShopPage() {
     return () => {
       cancelled = true;
     };
-  }, [products, imageRatios]);
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
