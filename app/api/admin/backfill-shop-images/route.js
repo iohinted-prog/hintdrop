@@ -1,18 +1,9 @@
 import { NextResponse } from "next/server";
-import * as cheerio from "cheerio";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
-
-const HTML_HEADERS = {
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-  Accept:
-    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-  "Accept-Language": "en-GB,en;q=0.9",
-};
 
 function getSupabase() {
   return createClient(
@@ -22,26 +13,40 @@ function getSupabase() {
 }
 
 async function scrapeImage(url) {
+  const apiKey = process.env.LINKPREVIEW_API_KEY;
+  if (!apiKey) throw new Error("Missing LINKPREVIEW_API_KEY");
+
+  const apiUrl = new URL("https://api.linkpreview.net/");
+  apiUrl.searchParams.set("q", url);
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8500);
   try {
-    const res = await fetch(url, { headers: HTML_HEADERS, redirect: "follow", signal: controller.signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const html = await res.text();
-    const $ = cheerio.load(html);
-    const image =
-      $('meta[property="og:image"]').attr("content") ||
-      $('meta[name="twitter:image"]').attr("content") ||
-      "";
-    if (image.startsWith("//")) return "https:" + image;
-    return image;
+    const res = await fetch(apiUrl.toString(), {
+      method: "GET",
+      headers: { Accept: "application/json", "X-Linkpreview-Api-Key": apiKey },
+      signal: controller.signal,
+    });
+    const raw = await res.text();
+    let data = null;
+    try {
+      data = raw ? JSON.parse(raw) : null;
+    } catch {
+      throw new Error("LinkPreview returned invalid JSON");
+    }
+    if (!res.ok) {
+      throw new Error(data?.error || data?.message || `LinkPreview failed with status ${res.status}`);
+    }
+    return String(data?.image || "").trim();
   } finally {
     clearTimeout(timeout);
   }
 }
 
 // One-off maintenance endpoint — requires a secret to run, since it writes
-// to the database. Processes a batch at a time (default 15) to stay safely
+// to the database. Uses the same LinkPreview.net service the Hints feature
+// itself relies on, rather than a raw fetch, so it isn't blocked by
+// retailer bot-protection. Processes a batch at a time to stay safely
 // within Vercel's function timeout — call repeatedly until "remaining" is 0.
 // Delete or leave dormant once the backfill is fully done.
 export async function POST(req) {
@@ -49,7 +54,7 @@ export async function POST(req) {
   if (!secret || secret !== process.env.ADMIN_BACKFILL_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const batchSize = Math.min(Number(limit) || 1, 2);
+  const batchSize = Math.min(Number(limit) || 8, 10);
 
   const supabase = getSupabase();
   const { data: products, error } = await supabase
