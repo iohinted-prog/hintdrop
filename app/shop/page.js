@@ -736,6 +736,10 @@ export default function ShopPage() {
                   Curated around the people and occasions that matter most. When you find something right, open it on the retailer's site or save it straight to your hints for later.
                 </p>
 
+                <p className="mt-2 text-[12px] text-slate-400">
+                  Some links may be affiliate links. If you buy through them, HintDrop may earn a commission at no extra cost to you.
+                </p>
+
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                   <input
                     type="text"

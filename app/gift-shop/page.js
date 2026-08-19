@@ -71,7 +71,7 @@ function GiftCard({ product, formatCurrency, onImageError, onRequestSignIn }) {
             </a>
             <button type="button" onClick={(e) => { e.stopPropagation(); onRequestSignIn(); }}
               className="flex-1 h-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-[12px] font-semibold text-slate-600 hover:bg-[#fff5f0]">
-              Save to hints
+              Sign in to save
             </button>
           </div>
         </div>
@@ -123,7 +123,7 @@ function GiftCard({ product, formatCurrency, onImageError, onRequestSignIn }) {
                 </a>
                 <button type="button" onClick={() => onRequestSignIn()}
                   className="flex-1 h-11 rounded-full border border-[#ead8ce] bg-white text-[13px] font-semibold text-slate-700 flex items-center justify-center">
-                  Save to hints
+                  Sign in to save
                 </button>
               </div>
             </div>
@@ -176,7 +176,7 @@ export default function GiftShopPage() {
     return list;
   }, [workingProducts, activeCategory, search]);
 
-  const featured = useMemo(() => workingProducts.slice(0, 4), [workingProducts]);
+  const featured = useMemo(() => workingProducts.filter(p => p.featured).slice(0, 4), [workingProducts]);
 
   return (
     <PublicShell>
@@ -188,6 +188,9 @@ export default function GiftShopPage() {
           </h1>
           <p className="text-[15px] text-slate-500 max-w-[480px] mx-auto">
             Curated gifts for everyone. Save your favourites to your HintDrop wishlist.
+          </p>
+          <p className="mt-3 text-[12px] text-slate-400 max-w-[540px] mx-auto">
+            Some links may be affiliate links. If you buy through them, HintDrop may earn a commission at no extra cost to you.
           </p>
         </div>
 
