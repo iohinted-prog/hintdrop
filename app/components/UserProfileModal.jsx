@@ -7,6 +7,7 @@ import { recordProfileVisit } from "../../lib/recentProfiles";
 import { recordHintView } from "../../lib/recentHints";
 import { trackRetailerClick } from "../../lib/trackRetailerClick";
 import HintImage from "./HintImage";
+import ShareButton from "./ShareButton";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -200,7 +201,20 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
                   {selectedHint.occasions.map(o => <span key={o} className="rounded-full bg-[#fff4ee] px-2.5 py-0.5 text-[11px] font-semibold text-[#df7b59]">{o}</span>)}
                 </div>
               )}
-              <div className="mt-4 flex gap-3">
+              <div className="mt-4 mb-3">
+                <ShareButton
+                  supabase={supabase}
+                  subjectType="hint"
+                  subjectId={selectedHint.id}
+                  path={`/h/${selectedHint.id}`}
+                  title={selectedHint.title}
+                  currentUserId={currentUserId}
+                  icon="↗"
+                  label="Share this hint"
+                  className="w-full h-11 rounded-full border border-[#ead8ce] bg-white text-[13px] font-semibold text-slate-700 flex items-center justify-center gap-1.5 hover:bg-[#fff5f0]"
+                />
+              </div>
+              <div className="flex gap-3">
                 {selectedHint.url && (
                   <a href={selectedHint.url} target="_blank" rel="noopener noreferrer"
                     onClick={() => trackRetailerClick(supabase, { userId: currentUserId, hintId: selectedHint.id, url: selectedHint.url, retailer: selectedHint.retailer, source: "profile_view" })}
