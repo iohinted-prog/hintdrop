@@ -27,13 +27,43 @@ const INTEREST_OPTIONS = [
 
 const OCCASION_OPTIONS = [
   "Birthday",
+  "Christmas",
   "Anniversary",
+  "Valentine's Day",
+  "Mother's Day",
+  "Father's Day",
   "Thank you",
   "New baby",
   "Housewarming",
   "Wedding",
   "Graduation",
   "Just because",
+];
+
+const RELATIONSHIP_OPTIONS = [
+  "Partner",
+  "Boyfriend",
+  "Girlfriend",
+  "Father",
+  "Mother",
+  "Parent",
+  "Friend",
+  "Colleague",
+  "Sibling",
+  "Child",
+  "Family",
+  "For him",
+  "For her",
+];
+
+const PRICE_BAND_OPTIONS = [
+  { label: "Up to £25", max: 25 },
+  { label: "Up to £50", max: 50 },
+  { label: "Up to £100", max: 100 },
+  { label: "Up to £250", max: 250 },
+  { label: "Up to £500", max: 500 },
+  { label: "Up to £1000", max: 1000 },
+  { label: "£1000+", max: Infinity, min: 1000 },
 ];
 
 function errorToMessage(value) {
@@ -423,6 +453,8 @@ export default function ShopPage() {
   const [openingLinkId, setOpeningLinkId] = useState("");
   const [selectedOccasion, setSelectedOccasion] = useState("");
   const [selectedInterests, setSelectedInterests] = useState([]);
+  const [selectedRelationship, setSelectedRelationship] = useState("");
+  const [selectedPriceBand, setSelectedPriceBand] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [imageRatios, setImageRatios] = useState({});
   const [brokenImageIds, setBrokenImageIds] = useState(() => new Set());
@@ -539,12 +571,28 @@ export default function ShopPage() {
       .filter((product) => {
         const interestTags = getTagArray(product.interest_tags);
         const occasionTags = getTagArray(product.occasion_tags);
+        const relationshipTags = getTagArray(product.relationship_tags);
 
         const matchesInterest =
           selectedInterests.length === 0 ||
           selectedInterests.some((interest) => interestTags.includes(interest));
 
         const matchesOccasion = !selectedOccasion || occasionTags.includes(selectedOccasion);
+
+        const matchesRelationship =
+          !selectedRelationship || relationshipTags.includes(selectedRelationship);
+
+        const productPrice =
+          typeof product.numeric_price === "number"
+            ? product.numeric_price
+            : extractNumericPrice(product.price_text);
+
+        const priceBand = PRICE_BAND_OPTIONS.find((band) => band.label === selectedPriceBand);
+        const matchesPrice =
+          !priceBand ||
+          (typeof productPrice === "number" &&
+            productPrice <= priceBand.max &&
+            (priceBand.min === undefined || productPrice > priceBand.min));
 
         const searchable = [
           product.title,
@@ -554,6 +602,7 @@ export default function ShopPage() {
           product.subcategory,
           ...interestTags,
           ...occasionTags,
+          ...relationshipTags,
         ]
           .filter(Boolean)
           .join(" ")
@@ -561,7 +610,7 @@ export default function ShopPage() {
 
         const matchesQuery = !query || searchable.includes(query);
 
-        return matchesInterest && matchesOccasion && matchesQuery;
+        return matchesInterest && matchesOccasion && matchesRelationship && matchesPrice && matchesQuery;
       })
       .sort((a, b) => {
         const priceA =
@@ -585,7 +634,7 @@ export default function ShopPage() {
         if (interestCountA !== interestCountB) return interestCountB - interestCountA;
         return priceA - priceB;
       });
-  }, [products, searchQuery, selectedInterests, selectedOccasion]);
+  }, [products, searchQuery, selectedInterests, selectedOccasion, selectedRelationship, selectedPriceBand]);
 
   const visibleProducts = useMemo(
     () => filteredProducts.filter((product) => !brokenImageIds.has(product.id)),
@@ -605,6 +654,8 @@ export default function ShopPage() {
   function clearFilters() {
     setSelectedInterests([]);
     setSelectedOccasion("");
+    setSelectedRelationship("");
+    setSelectedPriceBand("");
     setSearchQuery("");
   }
 
@@ -740,6 +791,32 @@ export default function ShopPage() {
                     {OCCASION_OPTIONS.map((occasion) => (
                       <option key={occasion} value={occasion}>
                         {occasion}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedRelationship}
+                    onChange={(event) => setSelectedRelationship(event.target.value)}
+                    className="h-12 min-w-[190px] rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                  >
+                    <option value="">Who's it for?</option>
+                    {RELATIONSHIP_OPTIONS.map((relationship) => (
+                      <option key={relationship} value={relationship}>
+                        {relationship}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedPriceBand}
+                    onChange={(event) => setSelectedPriceBand(event.target.value)}
+                    className="h-12 min-w-[150px] rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                  >
+                    <option value="">Any price</option>
+                    {PRICE_BAND_OPTIONS.map((band) => (
+                      <option key={band.label} value={band.label}>
+                        {band.label}
                       </option>
                     ))}
                   </select>
