@@ -196,14 +196,14 @@ function ShopCard({
         className="group relative w-full overflow-hidden rounded-[22px] border border-[#f0dfd6] bg-white cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
         onClick={() => setShowModal(true)}
       >
-        <div className="relative w-full aspect-[4/3] overflow-hidden bg-[#fdf5f0]">
+        <div className="relative w-full aspect-[3/4] overflow-hidden bg-[#fdf5f0]">
           {product.image_url ? (
             <HintImage
               src={product.image_url}
               alt={product.title || "Gift idea"}
               fill
               sizes="(max-width: 768px) 100vw, 33vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              className="object-contain transition-transform duration-500 group-hover:scale-[1.03]"
               fallbackClassName="hidden"
               onError={() => onImageError?.(product.id)}
             />
@@ -212,19 +212,19 @@ function ShopCard({
           )}
         </div>
 
-        <div className="p-4 sm:p-5">
-          <h3 className="text-[15px] font-semibold tracking-[-0.02em] text-slate-900 leading-tight line-clamp-2">
+        <div className="p-3">
+          <h3 className="text-[13px] font-semibold tracking-[-0.02em] text-slate-900 leading-tight line-clamp-1">
             {product.title || "Gift idea"}
           </h3>
 
-          <div className="mt-1.5 flex items-center justify-between gap-3">
-            <p className="min-w-0 truncate text-[12px] text-slate-400">{retailerLabel}</p>
-            <div className="shrink-0 rounded-full border border-[#f0a384] bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
+          <div className="mt-1 flex items-center justify-between gap-2">
+            <p className="min-w-0 truncate text-[11px] text-slate-400">{retailerLabel}</p>
+            <div className="shrink-0 rounded-full border border-[#f0a384] bg-[#fff4ee] px-2.5 py-0.5 text-[10px] font-semibold text-[#df7b59]">
               {displayPrice}
             </div>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <button
               type="button"
               onClick={(e) => {
@@ -232,7 +232,7 @@ function ShopCard({
                 onAddToHints(product);
               }}
               disabled={isSavingHint}
-              className="flex-1 h-9 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-3 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex-1 h-8 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-2 text-[11px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSavingHint ? "Adding..." : "Add to hints"}
             </button>
@@ -244,7 +244,7 @@ function ShopCard({
                 onViewItem(product);
               }}
               disabled={isOpeningLink}
-              className="flex-1 h-9 rounded-full border border-[#ead8ce] px-3 text-[12px] font-semibold text-slate-600 hover:bg-[#fff5f0] disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex-1 h-8 rounded-full border border-[#ead8ce] px-2 text-[11px] font-semibold text-slate-600 hover:bg-[#fff5f0] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isOpeningLink ? "Opening..." : "View item"}
             </button>
