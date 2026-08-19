@@ -3,6 +3,7 @@ import ContactCard from "../components/ContactCard";
 
 import Link from "next/link";
 import HintImage from "../components/HintImage";
+import ShareButton from "../components/ShareButton";
 import { getRecentProfiles } from "../../lib/recentProfiles";
 import { getRecentHints, recordHintView } from "../../lib/recentHints";
 import { trackRetailerClick } from "../../lib/trackRetailerClick";
@@ -2638,10 +2639,23 @@ export default function FeedClient() {
             <div className="p-5">
               <p className="text-[18px] font-semibold text-slate-900 leading-tight">{feedHintDetail.title || "Hint"}</p>
               {feedHintDetail.retailer && <p className="text-[13px] text-slate-400 mt-1">{feedHintDetail.retailer}</p>}
+              <div className="mt-4">
+                <ShareButton
+                  supabase={supabase}
+                  subjectType="hint"
+                  subjectId={feedHintDetail.id}
+                  path={`/h/${feedHintDetail.id}`}
+                  title={feedHintDetail.title}
+                  currentUserId={sessionUser?.id}
+                  icon="↗"
+                  label="Share this hint"
+                  className="w-full h-11 rounded-full border border-[#ead8ce] bg-white text-[13px] font-semibold text-slate-700 flex items-center justify-center gap-1.5 hover:bg-[#fff5f0]"
+                />
+              </div>
               {feedHintDetail.url && (
                 <a href={feedHintDetail.url} target="_blank" rel="noopener noreferrer"
                   onClick={() => trackRetailerClick(supabase, { userId: sessionUser?.id, hintId: feedHintDetail.id, url: feedHintDetail.url, retailer: feedHintDetail.retailer, source: "feed" })}
-                  className="mt-4 h-11 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-lg">
+                  className="mt-3 h-11 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-lg">
                   Open
                 </a>
               )}
