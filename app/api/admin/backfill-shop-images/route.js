@@ -23,7 +23,7 @@ function getSupabase() {
 
 async function scrapeImage(url) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  const timeout = setTimeout(() => controller.abort(), 4000);
   try {
     const res = await fetch(url, { headers: HTML_HEADERS, redirect: "follow", signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -49,7 +49,7 @@ export async function POST(req) {
   if (!secret || secret !== process.env.ADMIN_BACKFILL_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const batchSize = Math.min(Number(limit) || 6, 8);
+  const batchSize = Math.min(Number(limit) || 2, 3);
 
   const supabase = getSupabase();
   const { data: products, error } = await supabase
