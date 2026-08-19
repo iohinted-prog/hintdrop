@@ -193,17 +193,10 @@ function ShopCard({
   return (
     <>
       <article
-        className="group relative w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.60)] cursor-pointer transition-all duration-300 hover:-translate-y-1"
-        style={{
-          aspectRatio: ratio,
-          minHeight: CARD_MIN_HEIGHT,
-          maxHeight: "min(540px, 68vh)",
-          boxShadow:
-            "0 10px 30px rgba(176,118,86,0.10), inset 0 1px 0 rgba(255,255,255,0.24)",
-        }}
+        className="group relative w-full overflow-hidden rounded-[22px] border border-[#f0dfd6] bg-white cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
         onClick={() => setShowModal(true)}
       >
-        <div className="absolute inset-0">
+        <div className="relative w-full aspect-[4/3] overflow-hidden bg-[#fdf5f0]">
           {product.image_url ? (
             <HintImage
               src={product.image_url}
@@ -217,35 +210,21 @@ function ShopCard({
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]" />
           )}
-
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.84)_0%,rgba(16,12,10,0.40)_30%,rgba(16,12,10,0.10)_55%,rgba(255,255,255,0)_100%)]" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(22,18,16,0.72)] via-[rgba(22,18,16,0.18)] to-transparent" />
         </div>
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-4 sm:p-5">
-          <div className="min-w-0">
-            <h3
-              className="overflow-hidden text-[22px] font-semibold tracking-[-0.05em] text-white"
-              style={{
-                display: "-webkit-box",
-                WebkitBoxOrient: "vertical",
-                WebkitLineClamp: 2,
-                lineClamp: 2,
-                textShadow: "0 1px 2px rgba(0,0,0,0.24)",
-              }}
-            >
-              {product.title || "Gift idea"}
-            </h3>
+        <div className="p-4 sm:p-5">
+          <h3 className="text-[15px] font-semibold tracking-[-0.02em] text-slate-900 leading-tight line-clamp-2">
+            {product.title || "Gift idea"}
+          </h3>
 
-            <div className="mt-1 flex items-center justify-between gap-3">
-              <p className="min-w-0 truncate text-[13px] text-white/80">{retailerLabel}</p>
-              <div className="shrink-0 rounded-full border border-[#ffd8c9] bg-[#fff2ea] px-3 py-1 text-[11px] font-semibold text-[#e27956]">
-                {displayPrice}
-              </div>
+          <div className="mt-1.5 flex items-center justify-between gap-3">
+            <p className="min-w-0 truncate text-[12px] text-slate-400">{retailerLabel}</p>
+            <div className="shrink-0 rounded-full border border-[#f0a384] bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold text-[#df7b59]">
+              {displayPrice}
             </div>
           </div>
 
-          <div className="pointer-events-auto mt-4 flex flex-wrap items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={(e) => {
@@ -253,7 +232,7 @@ function ShopCard({
                 onAddToHints(product);
               }}
               disabled={isSavingHint}
-              className="rounded-full border border-[#ffb38f] bg-[#ff875d] px-3 py-1.5 text-[12px] font-medium text-white backdrop-blur-md hover:bg-[#f47145] disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex-1 h-9 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-3 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSavingHint ? "Adding..." : "Add to hints"}
             </button>
@@ -265,7 +244,7 @@ function ShopCard({
                 onViewItem(product);
               }}
               disabled={isOpeningLink}
-              className="rounded-full border border-white/45 bg-white/76 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-md hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex-1 h-9 rounded-full border border-[#ead8ce] px-3 text-[12px] font-semibold text-slate-600 hover:bg-[#fff5f0] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isOpeningLink ? "Opening..." : "View item"}
             </button>
