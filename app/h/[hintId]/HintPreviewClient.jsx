@@ -4,7 +4,7 @@ import Link from "next/link";
 import PublicShell from "../../components/PublicShell";
 import HintImage from "../../components/HintImage";
 import { createClient } from "../../../lib/supabase/client";
-import { trackShareEvent } from "../../../lib/share";
+import { trackShareEvent, recordShareContext } from "../../../lib/share";
 import { trackRetailerClick } from "../../../lib/trackRetailerClick";
 
 export default function HintPreviewClient({ hintId }) {
@@ -15,6 +15,7 @@ export default function HintPreviewClient({ hintId }) {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    recordShareContext("hint", hintId);
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);

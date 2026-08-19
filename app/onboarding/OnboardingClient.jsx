@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
+import { consumeShareContext, trackShareEvent } from "../../lib/share";
 
 const steps = [
   { id: 1, label: "Birthday" },
@@ -233,7 +234,7 @@ export default function OnboardingPage() {
 
       const { data: existingProfile, error: profileError } = await supabase
         .from("profiles")
-        .select("full_name, avatar_url, birthday, interests, other_interest, onboarding_completed")
+        .select("full_name, avatar_url, birthday, interests, other_interest, onboarding_completed, signup_source")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -246,6 +247,24 @@ export default function OnboardingPage() {
         router.refresh();
       router.replace("/feed");
         return;
+      }
+
+      if (!existingProfile?.signup_source) {
+        const shareContext = consumeShareContext();
+        if (shareContext?.subjectType === "hint") {
+          await supabase.from("profiles").update({
+            signup_source: "share",
+            signup_share_hint_id: shareContext.subjectId,
+          }).eq("id", user.id);
+          trackShareEvent(supabase, {
+            eventType: "signup_from_share",
+            subjectType: "hint",
+            subjectId: shareContext.subjectId,
+            viewerUserId: user.id,
+          });
+        } else {
+          await supabase.from("profiles").update({ signup_source: "direct" }).eq("id", user.id);
+        }
       }
 
       const existingName = existingProfile?.full_name || "";
