@@ -88,9 +88,15 @@ export async function POST(req) {
       }
     } catch (err) {
       const reason = err?.message || "fetch failed";
-      await supabase.from("shop_products").update({ raw_payload: { backfill_failed: reason } }).eq("id", product.id);
-      results.failed.push({ id: product.id, reason });
+      const isRateLimit = reason.includes("429");
+      // Rate limits are transient — don't permanently mark these as failed,
+      // leave them eligible to be retried on the next call instead
+      if (!isRateLimit) {
+        await supabase.from("shop_products").update({ raw_payload: { backfill_failed: reason } }).eq("id", product.id);
+      }
+      results.failed.push({ id: product.id, reason, retryable: isRateLimit });
     }
+    await new Promise((r) => setTimeout(r, 400));
   }
 
   const { count: remaining } = await supabase
