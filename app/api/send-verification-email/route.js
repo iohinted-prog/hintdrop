@@ -57,10 +57,14 @@ export async function POST(req) {
                 Just confirming this is really your email address, so we can make sure you never miss a reminder or a shared gift idea.
               </p>
               <div style="text-align:center;">
-                <a href="${verifyUrl}" style="display:inline-block;background:linear-gradient(180deg,#ff966f,#ff7e54);color:#ffffff;font-weight:600;font-size:14px;padding:14px 32px;border-radius:999px;text-decoration:none;">
+                <a href="${verifyUrl}" style="display:inline-block;background-color:#ff8a5c;color:#ffffff;font-weight:600;font-size:14px;padding:14px 32px;border-radius:999px;text-decoration:none;-webkit-text-size-adjust:none;">
                   Confirm my email
                 </a>
               </div>
+              <p style="font-size:12px;color:#9b8b82;text-align:center;margin:20px 0 0;word-break:break-all;">
+                Or paste this link into your browser:<br />
+                <a href="${verifyUrl}" style="color:#c9633f;">${verifyUrl}</a>
+              </p>
               <p style="font-size:12px;color:#9b8b82;text-align:center;margin:24px 0 0;">
                 If you didn't sign up for HintDrop, you can ignore this email.
               </p>

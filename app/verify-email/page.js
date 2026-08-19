@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import PublicShell from "../components/PublicShell";
@@ -7,15 +7,11 @@ import PublicShell from "../components/PublicShell";
 function VerifyEmailInner() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
-  const [status, setStatus] = useState("checking"); // checking | success | error
-  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState(token ? "ready" : "error"); // ready | verifying | success | error
+  const [message, setMessage] = useState(token ? "" : "This link is missing its verification code.");
 
-  useEffect(() => {
-    if (!token) {
-      setStatus("error");
-      setMessage("This link is missing its verification code.");
-      return;
-    }
+  function handleConfirm() {
+    setStatus("verifying");
     fetch("/api/verify-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -34,12 +30,23 @@ function VerifyEmailInner() {
         setStatus("error");
         setMessage("Something went wrong. Please try again.");
       });
-  }, [token]);
+  }
 
   return (
     <PublicShell>
       <div className="mx-auto max-w-[420px] px-4 py-16 text-center">
-        {status === "checking" && (
+        {status === "ready" && (
+          <>
+            <p className="text-4xl mb-4">🎁</p>
+            <h1 className="text-[20px] font-semibold text-slate-900">Confirm your email</h1>
+            <p className="mt-2 text-sm text-slate-500">Tap below to confirm this is really your address.</p>
+            <button type="button" onClick={handleConfirm}
+              className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-6 text-sm font-semibold text-white shadow-lg">
+              Confirm my email
+            </button>
+          </>
+        )}
+        {status === "verifying" && (
           <>
             <p className="text-4xl mb-4">🎁</p>
             <p className="text-sm text-slate-400">Confirming your email...</p>
