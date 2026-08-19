@@ -37,7 +37,9 @@ async function scrapeImage(url) {
     if (!res.ok) {
       throw new Error(data?.error || data?.message || `LinkPreview failed with status ${res.status}`);
     }
-    return String(data?.image || "").trim();
+    const image = String(data?.image || "").trim();
+    if (image.startsWith("//")) return "https:" + image;
+    return image;
   } finally {
     clearTimeout(timeout);
   }
