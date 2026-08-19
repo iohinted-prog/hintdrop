@@ -606,7 +606,7 @@ export default function ShopPage() {
   }, [products, searchQuery, selectedInterests, selectedOccasion]);
 
   const visibleProducts = useMemo(
-    () => filteredProducts.filter((product) => product.image_url && !brokenImageIds.has(product.id)),
+    () => filteredProducts.filter((product) => !brokenImageIds.has(product.id)),
     [filteredProducts, brokenImageIds]
   );
 
