@@ -42,7 +42,8 @@ async function scrapeImage(url) {
     // John Lewis's Scene7-based image CDN needs fmt=auto to actually
     // return a usable image — LinkPreview.net's URL omits it
     if (image.includes("media.johnlewiscontent.com") && image.includes("?$")) {
-      image = image.replace("?$", "?fmt=auto&$background-off-white$&$");
+      const idx = image.indexOf("?$");
+      image = image.slice(0, idx) + "?fmt=auto&$background-off-white$&" + image.slice(idx + 1);
     }
     return image;
   } finally {
