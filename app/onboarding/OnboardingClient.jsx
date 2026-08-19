@@ -265,6 +265,17 @@ export default function OnboardingPage() {
         } else {
           await supabase.from("profiles").update({ signup_source: "direct" }).eq("id", user.id);
         }
+
+        // Email/password signups need their address confirmed since we
+        // don't block signup on it — Google/Microsoft accounts already
+        // have a verified email from that provider, so skip those.
+        if (getProviderLabel(user) === "your account") {
+          fetch("/api/send-verification-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: user.id }),
+          }).catch(() => {});
+        }
       }
 
       const existingName = existingProfile?.full_name || "";
