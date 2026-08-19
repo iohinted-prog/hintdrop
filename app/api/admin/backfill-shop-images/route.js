@@ -57,6 +57,7 @@ export async function POST(req) {
     .select("id, product_url")
     .eq("network", "manual")
     .or("image_url.is.null,image_url.eq.")
+    .is("raw_payload", null)
     .limit(batchSize);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -70,10 +71,13 @@ export async function POST(req) {
         await supabase.from("shop_products").update({ image_url: image }).eq("id", product.id);
         results.updated += 1;
       } else {
+        await supabase.from("shop_products").update({ raw_payload: { backfill_failed: "no og:image found" } }).eq("id", product.id);
         results.failed.push({ id: product.id, reason: "no og:image found" });
       }
     } catch (err) {
-      results.failed.push({ id: product.id, reason: err?.message || "fetch failed" });
+      const reason = err?.message || "fetch failed";
+      await supabase.from("shop_products").update({ raw_payload: { backfill_failed: reason } }).eq("id", product.id);
+      results.failed.push({ id: product.id, reason });
     }
   }
 
@@ -81,7 +85,8 @@ export async function POST(req) {
     .from("shop_products")
     .select("id", { count: "exact", head: true })
     .eq("network", "manual")
-    .or("image_url.is.null,image_url.eq.");
+    .or("image_url.is.null,image_url.eq.")
+    .is("raw_payload", null);
 
   return NextResponse.json({ ...results, remaining: remaining || 0 });
 }
