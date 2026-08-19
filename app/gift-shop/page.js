@@ -43,7 +43,7 @@ function GiftCard({ product, formatCurrency, onImageError, onRequestSignIn }) {
               src={product.image_url}
               alt={product.title}
               fill
-              className="object-contain"
+              className="object-cover"
               sizes="(max-width: 768px) 50vw, 300px"
               fallbackClassName="hidden"
               onError={() => onImageError?.(product.id)}

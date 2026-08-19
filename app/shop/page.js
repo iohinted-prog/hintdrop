@@ -190,7 +190,7 @@ function ShopCard({
   const retailerLabel = product.retailer || normaliseRetailer(getOutboundUrl(product));
 
   const rawRatio = imageRatios[product.id];
-  const cardAspectRatio = rawRatio && Number.isFinite(rawRatio) ? Math.min(1, rawRatio) : 1;
+  const cardAspectRatio = rawRatio && Number.isFinite(rawRatio) ? Math.min(0.85, rawRatio) : 0.85;
 
   return (
     <>
@@ -206,7 +206,7 @@ function ShopCard({
               alt={product.title || "Gift idea"}
               fill
               sizes="(max-width: 768px) 100vw, 33vw"
-              className="object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+              className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               fallbackClassName="hidden"
               onError={() => onImageError?.(product.id)}
             />
