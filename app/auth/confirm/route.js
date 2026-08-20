@@ -67,6 +67,16 @@ export async function GET(request) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Mirror the confirmation onto profiles.email_verified_at so existing UI
+  // (the verified badge in Settings/Account) keeps working unchanged, now
+  // driven by this robust flow instead of the old custom token system.
+  if (user && (type === "signup" || type === "email" || type === "email_change")) {
+    await supabase
+      .from("profiles")
+      .update({ email_verified_at: new Date().toISOString() })
+      .eq("id", user.id);
+  }
+
   let destination = next || "/";
 
   if (user && !next) {

@@ -414,7 +414,7 @@ export default function AccountPageClient() {
     if (!userId || resendingVerification) return;
     setResendingVerification(true);
     try {
-      await fetch("/api/send-verification-email", {
+      await fetch("/api/resend-confirmation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId }),
