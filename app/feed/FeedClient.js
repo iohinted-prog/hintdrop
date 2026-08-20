@@ -2042,14 +2042,18 @@ export default function FeedClient() {
       });
       if (error) throw new Error(normalizeSupabaseError(error, "Could not save comment."));
       if (item.owner_user_id && item.owner_user_id !== sessionUser.id) {
-        supabase.from("notifications").insert({
-          user_id: item.owner_user_id,
-          actor_user_id: sessionUser.id,
-          type: "comment",
-          entity_id: item.id,
-          title: (sessionUser.user_metadata?.full_name || "Someone") + " commented on your hint",
-          body: trimmed.slice(0, 80),
-          data: { feed_item_id: item.id, actor_name: sessionUser.user_metadata?.full_name || "", actor_avatar_url: sessionUser.user_metadata?.avatar_url || "" },
+        fetch("/api/notifications/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: item.owner_user_id,
+            actor_user_id: sessionUser.id,
+            type: "comment",
+            entity_id: item.id,
+            title: (sessionUser.user_metadata?.full_name || "Someone") + " commented on your hint",
+            notifBody: trimmed.slice(0, 80),
+            data: { feed_item_id: item.id, actor_name: sessionUser.user_metadata?.full_name || "", actor_avatar_url: sessionUser.user_metadata?.avatar_url || "" },
+          }),
         }).catch(() => {});
       }
 
@@ -2102,14 +2106,18 @@ export default function FeedClient() {
       const { data, error } = await supabase.from("feed_reactions").insert({ feed_item_id: item.id, user_id: sessionUser.id, emoji }).select().single();
       // Notify feed item owner if it's not their own reaction
       if (!error && item.owner_user_id && item.owner_user_id !== sessionUser.id) {
-        supabase.from("notifications").insert({
-          user_id: item.owner_user_id,
-          actor_user_id: sessionUser.id,
-          type: "reaction",
-          entity_id: item.id,
-          title: `${sessionUser.user_metadata?.full_name || "Someone"} reacted to your hint`,
-          body: emoji,
-          data: { feed_item_id: item.id, emoji, actor_name: sessionUser.user_metadata?.full_name || "", actor_avatar_url: sessionUser.user_metadata?.avatar_url || "" },
+        fetch("/api/notifications/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: item.owner_user_id,
+            actor_user_id: sessionUser.id,
+            type: "reaction",
+            entity_id: item.id,
+            title: `${sessionUser.user_metadata?.full_name || "Someone"} reacted to your hint`,
+            notifBody: emoji,
+            data: { feed_item_id: item.id, emoji, actor_name: sessionUser.user_metadata?.full_name || "", actor_avatar_url: sessionUser.user_metadata?.avatar_url || "" },
+          }),
         }).catch(() => {});
       }
       if (error) {
