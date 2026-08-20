@@ -992,8 +992,8 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
         </div>
       </article>
       {showModal && createPortal(
-        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/40 backdrop-blur-sm" style={{ animation: "fadeIn 0.15s ease" }} onClick={() => setShowModal(false)}>
-          <div className="w-full max-w-[480px] rounded-t-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto" style={{ maxHeight: "92dvh", animation: "slideUp 0.2s ease" }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center sm:px-4" style={{ animation: "fadeIn 0.15s ease" }} onClick={() => setShowModal(false)}>
+          <div className="w-full max-w-[480px] rounded-t-[28px] sm:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto" style={{ maxHeight: "92dvh", animation: "slideUp 0.2s ease" }} onClick={e => e.stopPropagation()}>
               <div className="flex justify-end px-4 pt-3"><button type="button" onClick={() => setShowModal(false)} className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400 text-lg">✕</button></div>
             <div className="relative">
               {hint.image && !imgError
