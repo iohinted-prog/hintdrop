@@ -6,6 +6,7 @@ import EditContactModal from "../components/EditContactModal";
 import ContactCard from "../components/ContactCard";
 import GroupChatWindow from "../components/GroupChatWindow";
 import UserProfileModal from "../components/UserProfileModal";
+import HintDetailModal from "../components/HintDetailModal";
 import HintImage from "../components/HintImage";
 
 function getInitials(name) {
@@ -86,6 +87,7 @@ export default function PeopleClient() {
   const [addKey, setAddKey] = useState(0);
   const [editingContact, setEditingContact] = useState(null);
   const [profileModal, setProfileModal] = useState(null);
+  const [hintDetail, setHintDetail] = useState(null);
   const [search, setSearch] = useState("");
 
   const [sessionUser, setSessionUser] = useState(null);
@@ -199,7 +201,7 @@ export default function PeopleClient() {
             {filtered.map(contact => (
               <ContactCard key={contact.id} contact={contact} onOpenProfile={setProfileModal}
                 onEditClick={setEditingContact} onDeleteClick={handleDelete}
-                onMessageClick={handleMessageContact}
+                onMessageClick={handleMessageContact} onOpenHintDetail={setHintDetail}
                 previewHints={contactHints[contact.profileId] || []} />
             ))}
           </div>
@@ -231,6 +233,15 @@ export default function PeopleClient() {
           conversation={activeChat}
           currentUserId={sessionUser?.id}
           onClose={() => setActiveChat(null)}
+        />
+      )}
+      {hintDetail && (
+        <HintDetailModal
+          hint={hintDetail}
+          onClose={() => setHintDetail(null)}
+          supabase={supabase}
+          currentUserId={sessionUser?.id}
+          source="circle"
         />
       )}
     </main>

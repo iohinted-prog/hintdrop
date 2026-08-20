@@ -31,7 +31,7 @@ const GRADIENTS = [
   "from-[#d5dbee] via-[#b3c0df] to-[#8f9fc9]",
   "from-[#eadce8] via-[#d8bfd1] to-[#bb9ab6]",
 ];
-export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onEditClick, onMessageClick, previewHints = [] }) {
+export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onEditClick, onMessageClick, onOpenHintDetail, previewHints = [] }) {
   const profileId = contact.profileId || contact.matchedProfileId || null;
   const isClickable = Boolean(profileId && !contact.isDemo && onOpenProfile);
   function handleClick() {
@@ -96,24 +96,40 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onE
           )}
         </div>
       </div>
-      {/* Desktop: smaller hint preview tiles, more of them now the card spans full width */}
+      {/* Desktop: fixed-size hint preview tiles (was stretching to fill the
+          full card width via grid-cols, making them oversized on wide
+          layouts) — overflow beyond 6 now overlays a badge on the 6th tile
+          instead of adding a separate 7th block. Each tile opens that
+          hint's own detail on click (was falling through to the card's
+          profile-open handler since there was no per-tile handler at all). */}
       {previewHints.length > 0 && (
-        <div className="hidden md:grid grid-cols-6 gap-2 mt-3 cursor-pointer" onClick={isClickable ? handleClick : undefined}>
-          {previewHints.slice(0, 6).map((h, i) => (
-            <div key={h.id} className="relative overflow-hidden rounded-[10px] bg-[#fffaf7] border border-[#f0dfd6]" style={{ aspectRatio: "1/1" }}>
-              {h.image_url
-                ? <HintImage src={h.image_url} alt={h.title} fill className="object-cover" sizes="100px" fallbackClassName="text-lg" />
-                : <div className={`absolute inset-0 bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]} flex items-center justify-center text-lg opacity-80`}>🎁</div>
-              }
-              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.55)_0%,rgba(255,255,255,0)_55%)]" />
-              <p className="absolute inset-x-0 bottom-0 p-1.5 text-[9px] font-semibold text-white leading-tight line-clamp-2">{h.title}</p>
-            </div>
-          ))}
-          {previewHints.length > 6 && (
-            <div className="relative overflow-hidden rounded-[10px] bg-[#fdf5f0] border border-[#f0dfd6] flex items-center justify-center" style={{ aspectRatio: "1/1" }}>
-              <p className="text-[13px] font-bold text-[#df7b59]">+{previewHints.length - 6}</p>
-            </div>
-          )}
+        <div className="hidden md:flex gap-2 mt-3">
+          {previewHints.slice(0, 6).map((h, i) => {
+            const overflowCount = previewHints.length - 6;
+            const showOverflowBadge = i === 5 && overflowCount > 0;
+            return (
+              <div
+                key={h.id}
+                className="relative h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-[10px] border border-[#f0dfd6] bg-[#fffaf7]"
+                onClick={(e) => { e.stopPropagation(); if (onOpenHintDetail) onOpenHintDetail(h); else handleClick(); }}
+              >
+                {h.image_url
+                  ? <HintImage src={h.image_url} alt={h.title} fill className="object-cover" sizes="56px" fallbackClassName="text-base" />
+                  : <div className={`absolute inset-0 bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]} flex items-center justify-center text-base opacity-80`}>🎁</div>
+                }
+                {showOverflowBadge ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/55">
+                    <p className="text-[13px] font-bold text-white">+{overflowCount}</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.55)_0%,rgba(255,255,255,0)_55%)]" />
+                    <p className="absolute inset-x-0 bottom-0 p-1 text-[8px] font-semibold text-white leading-tight line-clamp-2">{h.title}</p>
+                  </>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
       {isClickable && previewHints.length === 0 && (

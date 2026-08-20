@@ -4,6 +4,7 @@ import ContactCard from "../components/ContactCard";
 import Link from "next/link";
 import HintImage from "../components/HintImage";
 import ShareButton from "../components/ShareButton";
+import HintDetailModal from "../components/HintDetailModal";
 import { getRecentProfiles } from "../../lib/recentProfiles";
 import { getRecentHints, recordHintView } from "../../lib/recentHints";
 import { trackRetailerClick } from "../../lib/trackRetailerClick";
@@ -2627,41 +2628,13 @@ export default function FeedClient() {
         errorMessage={deleteContactError}
       />
       {feedHintDetail && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center sm:px-4" onClick={() => setFeedHintDetail(null)}>
-          <div className="w-full max-w-[480px] rounded-t-[28px] sm:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto" style={{ maxHeight: "88dvh" }} onClick={e => e.stopPropagation()}>
-            <div className="flex justify-end px-4 pt-3">
-              <button type="button" onClick={() => setFeedHintDetail(null)} className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400">✕</button>
-            </div>
-            {feedHintDetail.image_url
-              ? <HintImage src={feedHintDetail.image_url} alt={feedHintDetail.title} width={480} height={280} className="w-full h-auto" style={{ maxHeight: "280px", objectFit: "contain" }} />
-              : <div className="w-full bg-gradient-to-br from-[#ead8ca] to-[#c4a17f] flex items-center justify-center text-6xl" style={{ height: "200px" }}>🎁</div>
-            }
-            <div className="p-5">
-              <p className="text-[18px] font-semibold text-slate-900 leading-tight">{feedHintDetail.title || "Hint"}</p>
-              {feedHintDetail.retailer && <p className="text-[13px] text-slate-400 mt-1">{feedHintDetail.retailer}</p>}
-              <div className="mt-4">
-                <ShareButton
-                  supabase={supabase}
-                  subjectType="hint"
-                  subjectId={feedHintDetail.id}
-                  path={`/h/${feedHintDetail.id}`}
-                  title={feedHintDetail.title}
-                  currentUserId={sessionUser?.id}
-                  icon="↗"
-                  label="Share this hint"
-                  className="w-full h-11 rounded-full border border-[#ead8ce] bg-white text-[13px] font-semibold text-slate-700 flex items-center justify-center gap-1.5 hover:bg-[#fff5f0]"
-                />
-              </div>
-              {feedHintDetail.url && (
-                <a href={feedHintDetail.url} target="_blank" rel="noopener noreferrer"
-                  onClick={() => trackRetailerClick(supabase, { userId: sessionUser?.id, hintId: feedHintDetail.id, url: feedHintDetail.url, retailer: feedHintDetail.retailer, source: "feed" })}
-                  className="mt-3 h-11 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-lg">
-                  Open
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
+        <HintDetailModal
+          hint={feedHintDetail}
+          onClose={() => setFeedHintDetail(null)}
+          supabase={supabase}
+          currentUserId={sessionUser?.id}
+          source="feed"
+        />
       )}
       {profileModal && (
         <UserProfileModal
