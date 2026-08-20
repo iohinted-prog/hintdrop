@@ -25,7 +25,7 @@ export default function PublicShell({ children }) {
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/gift-shop" className="hidden md:flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold text-slate-600 border border-[#ead8ce] hover:bg-[#fff5f0] transition">
-              🛍️ Gift Shop
+              Gift Shop
             </Link>
             <button
               type="button"

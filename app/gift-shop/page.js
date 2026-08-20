@@ -13,6 +13,32 @@ const CATEGORIES = [
   "Books", "Fashion", "Experiences", "Music", "Gaming", "Kids", "Hobbies",
 ];
 
+const RELATIONSHIP_OPTIONS = [
+  "Partner",
+  "Boyfriend",
+  "Girlfriend",
+  "Father",
+  "Mother",
+  "Parent",
+  "Friend",
+  "Colleague",
+  "Sibling",
+  "Child",
+  "Family",
+  "For him",
+  "For her",
+];
+
+const PRICE_BAND_OPTIONS = [
+  { label: "Up to £25", max: 25 },
+  { label: "Up to £50", max: 50 },
+  { label: "Up to £100", max: 100 },
+  { label: "Up to £250", max: 250 },
+  { label: "Up to £500", max: 500 },
+  { label: "Up to £1000", max: 1000 },
+  { label: "£1000+", max: Infinity, min: 1000 },
+];
+
 function getTagArray(value) {
   if (Array.isArray(value)) return value.filter(Boolean);
   if (typeof value === "string" && value.trim()) return value.split(",").map(s => s.trim()).filter(Boolean);
@@ -141,6 +167,8 @@ export default function GiftShopPage() {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState(null);
   const [search, setSearch] = useState("");
+  const [selectedRelationship, setSelectedRelationship] = useState("");
+  const [selectedPriceBand, setSelectedPriceBand] = useState("");
   const [brokenImageIds, setBrokenImageIds] = useState(() => new Set());
 
   const handleImageError = useCallback((productId) => {
@@ -169,12 +197,24 @@ export default function GiftShopPage() {
     if (activeCategory) {
       list = list.filter(p => getTagArray(p.interest_tags).includes(activeCategory) || getTagArray(p.occasion_tags).includes(activeCategory));
     }
+    if (selectedRelationship) {
+      list = list.filter(p => getTagArray(p.relationship_tags).includes(selectedRelationship));
+    }
+    if (selectedPriceBand) {
+      const band = PRICE_BAND_OPTIONS.find(b => b.label === selectedPriceBand);
+      if (band) {
+        list = list.filter(p => {
+          const price = typeof p.numeric_price === "number" ? p.numeric_price : null;
+          return price != null && price <= band.max && (band.min === undefined || price > band.min);
+        });
+      }
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(p => p.title?.toLowerCase().includes(q) || p.retailer?.toLowerCase().includes(q));
     }
     return list;
-  }, [workingProducts, activeCategory, search]);
+  }, [workingProducts, activeCategory, selectedRelationship, selectedPriceBand, search]);
 
   const featured = useMemo(() => workingProducts.filter(p => p.featured).slice(0, 4), [workingProducts]);
 
@@ -204,8 +244,8 @@ export default function GiftShopPage() {
           </div>
         )}
 
-        {/* Search */}
-        <div className="mb-4">
+        {/* Search + filters */}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row">
           <input
             type="text"
             placeholder="Search gifts..."
@@ -213,6 +253,26 @@ export default function GiftShopPage() {
             onChange={e => setSearch(e.target.value)}
             className="w-full h-11 rounded-full border border-[#ead8ce] px-5 text-[14px] bg-white outline-none focus:border-[#ff875d]"
           />
+          <select
+            value={selectedRelationship}
+            onChange={e => setSelectedRelationship(e.target.value)}
+            className="h-11 sm:min-w-[170px] rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] text-slate-700 outline-none focus:border-[#ff875d]"
+          >
+            <option value="">Who's it for?</option>
+            {RELATIONSHIP_OPTIONS.map(r => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+          <select
+            value={selectedPriceBand}
+            onChange={e => setSelectedPriceBand(e.target.value)}
+            className="h-11 sm:min-w-[140px] rounded-full border border-[#ead8ce] bg-white px-4 text-[14px] text-slate-700 outline-none focus:border-[#ff875d]"
+          >
+            <option value="">Any price</option>
+            {PRICE_BAND_OPTIONS.map(band => (
+              <option key={band.label} value={band.label}>{band.label}</option>
+            ))}
+          </select>
         </div>
 
         {/* Category pills */}
