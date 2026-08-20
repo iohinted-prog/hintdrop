@@ -34,7 +34,7 @@ export default function EditContactModal({ contact, onClose, onSave }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(42,26,20,0.38)] px-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[rgba(42,26,20,0.38)] px-4 backdrop-blur-sm" onClick={onClose}>
       <div className="w-full max-w-[480px] rounded-[28px] border border-[#eddacf] bg-[#fffaf7] shadow-[0_24px_80px_rgba(88,46,31,0.22)] flex flex-col max-h-[90dvh] overflow-hidden" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#efe0d7]">
           <h2 className="text-[22px] font-semibold tracking-[-0.03em] text-slate-900">Edit contact</h2>

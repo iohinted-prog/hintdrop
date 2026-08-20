@@ -509,7 +509,7 @@ function ModalShell({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(42,26,20,0.38)] px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[rgba(42,26,20,0.38)] px-4 py-6 backdrop-blur-sm">
       <div
         className={`max-h-[92vh] w-full overflow-hidden rounded-[34px] border border-[#eddacf] bg-[#fffaf7] shadow-[0_24px_80px_rgba(88,46,31,0.22)] ${maxWidth}`}
       >
@@ -1253,7 +1253,7 @@ function MiniCalendar({
         Open calendar
       </button>
       {isCalendarModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(42,26,20,0.38)] px-4 py-6 backdrop-blur-sm" onClick={() => setIsCalendarModalOpen(false)}>
+        <div className="fixed inset-0 z-[110] overflow-y-auto bg-[rgba(42,26,20,0.38)] px-4 py-6 backdrop-blur-sm" onClick={() => setIsCalendarModalOpen(false)}>
           <div className="mx-auto w-full max-w-[900px] rounded-[28px] border border-[#efdcd2] bg-[#fffaf7] p-6 shadow-[0_24px_80px_rgba(88,46,31,0.22)] my-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -1305,7 +1305,7 @@ function MiniCalendar({
         </div>
       )}
       {eventToDelete ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(42,26,20,0.38)] px-4 py-6 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[rgba(42,26,20,0.38)] px-4 py-6 backdrop-blur-sm">
           <div className="w-full max-w-[520px] rounded-[30px] border border-[#eddacf] bg-[#fffaf7] p-6 shadow-[0_24px_80px_rgba(88,46,31,0.22)] max-h-[90dvh] overflow-y-auto">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#df7b59]">
               Delete event

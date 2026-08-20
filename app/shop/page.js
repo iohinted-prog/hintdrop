@@ -280,7 +280,7 @@ function ShopCard({
 
       {showModal && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
+          className="fixed inset-0 z-[110] flex items-end justify-center bg-black/40 backdrop-blur-sm"
           style={{ animation: "fadeIn 0.15s ease" }}
           onClick={() => setShowModal(false)}
         >

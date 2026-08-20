@@ -595,7 +595,7 @@ function ModalShell({ isOpen, onClose, eyebrow, title, children, footer }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(33,24,20,0.42)] px-4 py-4 backdrop-blur-sm sm:px-6 sm:py-6">
+    <div className="fixed inset-0 z-[110] overflow-y-auto bg-[rgba(33,24,20,0.42)] px-4 py-4 backdrop-blur-sm sm:px-6 sm:py-6">
       <div className="flex min-h-full items-start justify-center">
         <div className="flex w-full max-w-[620px] flex-col overflow-hidden rounded-[30px] border border-[#efdcd2] bg-white shadow-[0_28px_80px_rgba(75,45,30,0.18)] max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3rem)]">
           <div className="shrink-0 border-b border-[#f2e5de] bg-white px-6 py-5 sm:px-7">
@@ -992,7 +992,7 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
         </div>
       </article>
       {showModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm" style={{ animation: "fadeIn 0.15s ease" }} onClick={() => setShowModal(false)}>
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/40 backdrop-blur-sm" style={{ animation: "fadeIn 0.15s ease" }} onClick={() => setShowModal(false)}>
           <div className="w-full max-w-[480px] rounded-t-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto" style={{ maxHeight: "92dvh", animation: "slideUp 0.2s ease" }} onClick={e => e.stopPropagation()}>
               <div className="flex justify-end px-4 pt-3"><button type="button" onClick={() => setShowModal(false)} className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400 text-lg">✕</button></div>
             <div className="relative">

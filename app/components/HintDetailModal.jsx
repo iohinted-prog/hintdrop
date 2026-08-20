@@ -15,7 +15,7 @@ export default function HintDetailModal({ hint, onClose, supabase, currentUserId
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center sm:px-4"
+      className="fixed inset-0 z-[110] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center sm:px-4"
       onClick={onClose}
     >
       <div

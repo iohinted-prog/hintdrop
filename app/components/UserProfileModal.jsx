@@ -87,7 +87,7 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
   const isViewingOther = currentUserId && currentUserId !== userId;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(33,24,20,0.42)] backdrop-blur-sm sm:items-center sm:px-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[rgba(33,24,20,0.42)] backdrop-blur-sm sm:items-center sm:px-4" onClick={onClose}>
       <div className="flex w-full max-w-[640px] flex-col overflow-hidden rounded-t-[32px] border border-[#efdcd2] bg-white shadow-[0_28px_80px_rgba(75,45,30,0.18)] sm:rounded-[32px]"
         style={{ maxHeight: "90dvh" }} onClick={(e) => e.stopPropagation()}>
         <div className="shrink-0 border-b border-[#f2e5de] px-6 py-5">

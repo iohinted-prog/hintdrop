@@ -889,7 +889,7 @@ export default function OnboardingPage() {
       </main>
 
       {saving ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#fffaf7]/90 px-6 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#fffaf7]/90 px-6 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-[30px] border border-[#efd8ce] bg-white p-8 text-center shadow-[0_25px_80px_rgba(173,101,72,0.14)]">
             <div className="mx-auto h-14 w-14 rounded-full bg-[#fff1ea] p-3">
               <div className="h-full w-full animate-spin rounded-full border-2 border-[#f6d8ca] border-t-[#f36f64]" />

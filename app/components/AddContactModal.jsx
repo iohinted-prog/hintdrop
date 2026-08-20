@@ -107,7 +107,7 @@ export default function AddContactModal({ open, onClose, onSave, modalKey }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(42,26,20,0.38)] px-4 py-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[110] overflow-y-auto bg-[rgba(42,26,20,0.38)] px-4 py-4 backdrop-blur-sm">
       <div className="flex min-h-full items-center justify-center">
       <div className="max-h-[92vh] w-full max-w-[760px] overflow-hidden rounded-[34px] border border-[#eddacf] bg-[#fffaf7] shadow-[0_24px_80px_rgba(88,46,31,0.22)] flex flex-col">
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#efe0d7]">

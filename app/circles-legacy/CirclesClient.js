@@ -636,7 +636,7 @@ function ModalShell({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[rgba(42,26,20,0.38)] px-4 py-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[110] overflow-y-auto bg-[rgba(42,26,20,0.38)] px-4 py-4 backdrop-blur-sm">
       <div className="flex min-h-full items-center justify-center">
         <div
           className={`flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-[34px] border border-[#eddacf] bg-[#fffaf7] shadow-[0_24px_80px_rgba(88,46,31,0.22)] ${maxWidth}`}
@@ -1019,7 +1019,7 @@ function CircleCard({
   return (
     <article className="rounded-[30px] border border-[#f0dfd6] bg-white p-5 shadow-sm sm:p-6">
       {showAllMembers && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(42,26,20,0.38)] px-4 backdrop-blur-sm" onClick={() => setShowAllMembers(false)}>
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[rgba(42,26,20,0.38)] px-4 backdrop-blur-sm" onClick={() => setShowAllMembers(false)}>
           <div className="w-full max-w-[480px] rounded-[28px] border border-[#efdcd2] bg-[#fffaf7] shadow-[0_24px_80px_rgba(88,46,31,0.22)] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-5 border-b border-[#efe0d7]">
               <div>

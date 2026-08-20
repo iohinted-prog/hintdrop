@@ -421,7 +421,7 @@ export default function CalendarClient() {
 
       {/* Bottom sheet for selected date — mobile only */}
       {selectedDate && (
-        <div className="md:hidden fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setSelectedDate(null); setShowAdd(false); }}>
+        <div className="md:hidden fixed inset-0 z-[110] flex items-end justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setSelectedDate(null); setShowAdd(false); }}>
           <div className="w-full max-w-[640px] rounded-t-[28px] bg-[#fffaf7] border-t border-[#efdcd2] shadow-xl max-h-[80dvh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#f2e5de] shrink-0">
               <p className="text-[15px] font-semibold text-slate-900">
