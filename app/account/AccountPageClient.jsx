@@ -85,10 +85,6 @@ export default function AccountPageClient() {
 
   const [userId, setUserId] = useState("");
   const [email, setEmail] = useState("");
-  const [emailVerifiedAt, setEmailVerifiedAt] = useState(null);
-  const [isPasswordAccount, setIsPasswordAccount] = useState(false);
-  const [resendingVerification, setResendingVerification] = useState(false);
-  const [verificationSent, setVerificationSent] = useState(false);
   const [memberSince, setMemberSince] = useState("");
 
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -131,7 +127,7 @@ export default function AccountPageClient() {
 
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("full_name, avatar_url, birthday, phone, bio, marketing_opt_in, email_verified_at")
+          .select("full_name, avatar_url, birthday, phone, bio, marketing_opt_in")
           .eq("id", user.id)
           .maybeSingle();
 
@@ -150,10 +146,6 @@ export default function AccountPageClient() {
 
         setUserId(user.id);
         setEmail(user.email || "");
-        setEmailVerifiedAt(profile?.email_verified_at || null);
-        const providers = Array.isArray(user?.app_metadata?.providers) ? user.app_metadata.providers : [];
-        const provider = user?.identities?.[0]?.provider || user?.app_metadata?.provider || "";
-        setIsPasswordAccount(!providers.includes("google") && provider !== "google");
         setMemberSince(formatMemberSince(user.created_at));
         setAvatarUrl(savedAvatar);
         setPhotoPreview(savedAvatar);
@@ -410,23 +402,6 @@ export default function AccountPageClient() {
     }
   }
 
-  async function handleResendVerification() {
-    if (!userId || resendingVerification) return;
-    setResendingVerification(true);
-    try {
-      await fetch("/api/resend-confirmation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-      setVerificationSent(true);
-    } catch {
-      // best-effort — the button staying enabled lets them just try again
-    } finally {
-      setResendingVerification(false);
-    }
-  }
-
   async function handleSignOut() {
     if (saving || uploadingPhoto || signingOut || deletingAccount) {
       return;
@@ -541,27 +516,6 @@ export default function AccountPageClient() {
             person, details, and photo when planning something thoughtful.
           </p>
         </div>
-
-        {isPasswordAccount && !emailVerifiedAt && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-[#f4cdbd] bg-[#fff6f1] px-5 py-4">
-            <div>
-              <p className="text-[14px] font-semibold text-[#9b553d]">Please confirm your email</p>
-              <p className="mt-0.5 text-[13px] text-[#b17b62]">
-                {verificationSent
-                  ? `We've sent a link to ${email} — check your inbox.`
-                  : `We haven't confirmed ${email} yet, in case it was mistyped at signup.`}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleResendVerification}
-              disabled={resendingVerification}
-              className="shrink-0 h-10 rounded-full border border-[#f0b394] bg-white px-4 text-[13px] font-semibold text-[#c9633f] hover:bg-[#fff4ee] disabled:opacity-60"
-            >
-              {resendingVerification ? "Sending..." : verificationSent ? "Resend" : "Send confirmation"}
-            </button>
-          </div>
-        )}
 
         <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="rounded-[28px] border border-[#eddacf] bg-white p-5 shadow-sm">

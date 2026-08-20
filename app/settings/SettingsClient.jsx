@@ -42,10 +42,6 @@ export default function SettingsPage() {
   const [otherInterest, setOtherInterest] = useState("");
   const [userId, setUserId] = useState("");
   const [userEmail, setUserEmail] = useState("");
-  const [emailVerifiedAt, setEmailVerifiedAt] = useState(null);
-  const [isPasswordAccount, setIsPasswordAccount] = useState(false);
-  const [resendingVerification, setResendingVerification] = useState(false);
-  const [verificationSent, setVerificationSent] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,7 +59,7 @@ export default function SettingsPage() {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "email_reminders, personalized_offers, hint_sale_alerts, product_updates, circle_reminders, weekly_digest, default_reminder_days, currency, interests, other_interest, email_verified_at"
+          "email_reminders, personalized_offers, hint_sale_alerts, product_updates, circle_reminders, weekly_digest, default_reminder_days, currency, interests, other_interest"
         )
         .eq("id", user.id)
         .single();
@@ -80,10 +76,6 @@ export default function SettingsPage() {
 
       setUserId(user.id);
       setUserEmail(user.email || "");
-      setEmailVerifiedAt(data?.email_verified_at || null);
-      const providers = Array.isArray(user?.app_metadata?.providers) ? user.app_metadata.providers : [];
-      const provider = user?.identities?.[0]?.provider || user?.app_metadata?.provider || "";
-      setIsPasswordAccount(!providers.includes("google") && provider !== "google");
 
       setEmailReminders(data?.email_reminders ?? true);
       setPersonalizedOffers(data?.personalized_offers ?? true);
@@ -108,23 +100,6 @@ export default function SettingsPage() {
       cancelled = true;
     };
   }, [supabase]);
-
-  async function handleResendVerification() {
-    if (!userId || resendingVerification) return;
-    setResendingVerification(true);
-    try {
-      await fetch("/api/resend-confirmation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-      setVerificationSent(true);
-    } catch {
-      // best-effort — button stays enabled so they can just try again
-    } finally {
-      setResendingVerification(false);
-    }
-  }
 
   function toggleInterest(interest) {
     setError("");
@@ -216,27 +191,6 @@ export default function SettingsPage() {
             we use to personalise your experience, and the currency shown across the app.
           </p>
         </div>
-
-        {isPasswordAccount && !emailVerifiedAt && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-[#f4cdbd] bg-[#fff6f1] px-5 py-4">
-            <div>
-              <p className="text-[14px] font-semibold text-[#9b553d]">Please confirm your email</p>
-              <p className="mt-0.5 text-[13px] text-[#b17b62]">
-                {verificationSent
-                  ? `We've sent a link to ${userEmail} — check your inbox.`
-                  : `We haven't confirmed ${userEmail} yet, in case it was mistyped at signup.`}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleResendVerification}
-              disabled={resendingVerification}
-              className="shrink-0 h-10 rounded-full border border-[#f0b394] bg-white px-4 text-[13px] font-semibold text-[#c9633f] hover:bg-[#fff4ee] disabled:opacity-60"
-            >
-              {resendingVerification ? "Sending..." : verificationSent ? "Resend" : "Send confirmation"}
-            </button>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <section className="rounded-[28px] border border-[#eddacf] bg-white p-6 shadow-sm">

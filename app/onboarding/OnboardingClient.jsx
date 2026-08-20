@@ -266,16 +266,10 @@ export default function OnboardingPage() {
           await supabase.from("profiles").update({ signup_source: "direct" }).eq("id", user.id);
         }
 
-        // Email/password signups need their address confirmed since we
-        // don't block signup on it — Google/Microsoft accounts already
-        // have a verified email from that provider, so skip those.
-        if (getProviderLabel(user) === "your account") {
-          fetch("/api/resend-confirmation", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: user.id }),
-          }).catch(() => {});
-        }
+        // No confirmation email trigger needed here anymore — reaching
+        // onboarding at all now implies the account is already confirmed,
+        // since sign-up blocks on email confirmation before a session (and
+        // therefore access to onboarding) is issued at all.
       }
 
       const existingName = existingProfile?.full_name || "";

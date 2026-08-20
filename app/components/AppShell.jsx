@@ -86,7 +86,6 @@ export default function AppShell({ children }) {
     pathname === "/gift-shop" ||
     pathname === "/onboarding" ||
     pathname === "/auth/reset-password" ||
-    pathname === "/verify-email" ||
     pathname.startsWith("/gift-shop/") ||
     pathname.startsWith("/h/");
 

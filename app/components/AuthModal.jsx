@@ -31,16 +31,37 @@ export default function AuthModal({ open, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
 
   if (!open) return null;
 
   function reset() {
-    setEmail(""); setPassword(""); setConfirmPassword(""); setError(""); setMessage(""); setLoading(false); setMode("signin");
+    setEmail(""); setPassword(""); setConfirmPassword(""); setError(""); setMessage(""); setLoading(false); setMode("signin"); setResendSent(false);
   }
 
   function handleClose() {
     reset();
     onClose?.();
+  }
+
+  async function handleResendConfirmation() {
+    if (resendLoading || !email.trim()) return;
+    setResendLoading(true);
+    setResendSent(false);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email.trim().toLowerCase(),
+        options: { emailRedirectTo: `${getBaseUrl()}/auth/confirm` },
+      });
+      if (error) throw error;
+      setResendSent(true);
+    } catch (err) {
+      setError(getErrorMessage(err, "Couldn't resend the confirmation email."));
+    } finally {
+      setResendLoading(false);
+    }
   }
 
   async function handleGoogleSignIn() {
@@ -103,7 +124,7 @@ export default function AuthModal({ open, onClose }) {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim().toLowerCase(),
           password,
-          options: { emailRedirectTo: `${getBaseUrl()}/auth/callback` },
+          options: { emailRedirectTo: `${getBaseUrl()}/auth/confirm` },
         });
         if (error) throw error;
         if (data?.session) {
@@ -116,7 +137,7 @@ export default function AuthModal({ open, onClose }) {
           // is accepting that UX tradeoff deliberately.
           setError("That email is already in use. Try signing in instead.");
         } else {
-          setMessage("Check your email to confirm your account, then come back and sign in.");
+          setMessage("Almost there — check your email and confirm your account to continue. That link will take you straight into HintDrop.");
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -269,9 +290,19 @@ export default function AuthModal({ open, onClose }) {
             </p>
           )}
           {message && (
-            <p className="rounded-[14px] border border-[#cfe8d8] bg-[#f1faf4] px-4 py-2.5 text-[13px] text-[#3a7d55]">
-              {message}
-            </p>
+            <div className="rounded-[14px] border border-[#cfe8d8] bg-[#f1faf4] px-4 py-2.5 text-[13px] text-[#3a7d55]">
+              <p>{message}</p>
+              {mode === "signup" && (
+                <button
+                  type="button"
+                  onClick={handleResendConfirmation}
+                  disabled={resendLoading}
+                  className="mt-2 font-semibold underline underline-offset-2 disabled:opacity-60"
+                >
+                  {resendLoading ? "Sending..." : resendSent ? "Sent — check your email" : "Didn't get it? Resend"}
+                </button>
+              )}
+            </div>
           )}
 
           <button
