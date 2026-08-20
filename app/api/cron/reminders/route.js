@@ -214,7 +214,12 @@ export async function GET(request) {
         const daysUntil = Math.round((nextBday - today) / (1000 * 60 * 60 * 24))
         const reminderDays = owner.default_reminder_days || 7
 
-        if (daysUntil !== reminderDays && daysUntil !== 3 && daysUntil !== 1) continue
+        // Was checked against a weekly-only cron before, so the exact-day
+        // matches below almost never actually landed on the right day —
+        // now that this runs daily, 10 and 3 are the two fixed gift-timing
+        // checkpoints (plus the user's own configurable reminderDays, and a
+        // final 1-day nudge).
+        if (daysUntil !== reminderDays && daysUntil !== 10 && daysUntil !== 3 && daysUntil !== 1) continue
 
         let hints = []
         if (contact.profile_id) {
