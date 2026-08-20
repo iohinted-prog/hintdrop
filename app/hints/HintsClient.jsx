@@ -59,6 +59,9 @@ const EMPTY_EDIT_FORM = {
   uploadedImage: null,
   priceInput: "",
   occasions: ["Birthday", "Christmas"],
+  size: "",
+  size_type: "",
+  colour: "",
 };
 
 const demoHints = [
@@ -786,6 +789,12 @@ function HintFormFields({
                 <option value="Other">Other</option>
               </select>
             </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Colour (optional)</label>
+              <input type="text" value={form.colour || ""} onChange={e => setForm(f => ({ ...f, colour: e.target.value }))}
+                placeholder="e.g. Navy, Rose gold"
+                className="h-11 w-full rounded-[14px] border border-[#eadcd3] bg-[#fcfaf8] px-4 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50" />
+            </div>
           </div>
     </div>
   );
@@ -1447,7 +1456,7 @@ export default function HintsClient() {
 
       const { data, error } = await supabase
         .from("hints")
-        .select("id, title, url, image_url, retailer, price_text, numeric_price, currency, starred, is_private, position, created_at, occasions")
+        .select("id, title, url, image_url, retailer, price_text, numeric_price, currency, starred, is_private, position, created_at, occasions, size, size_type, colour")
         .eq("user_id", user.id)
         .order("position", { ascending: true })
         .order("created_at", { ascending: false });
@@ -1470,6 +1479,9 @@ export default function HintsClient() {
           rawPrice: row.price_text || "",
           currency: row.currency || detectCurrency(row.price_text) || BASE_CURRENCY,
           occasions: row.occasions || [],
+          size: row.size || "",
+          sizeType: row.size_type || "",
+          colour: row.colour || "",
           image: row.image_url || "",
           fallbackGradient: buildFallbackGradient(index),
           starred: Boolean(row.starred),
@@ -1567,6 +1579,9 @@ export default function HintsClient() {
       uploadedImage: null,
       priceInput: hint.numericPrice != null ? String(hint.numericPrice) : "",
       occasions: hint.occasions || [],
+      size: hint.size || "",
+      size_type: hint.sizeType || "",
+      colour: hint.colour || "",
     });
   }
 
@@ -1614,6 +1629,7 @@ export default function HintsClient() {
           occasions: editForm.occasions || [],
         size: editForm.size || null,
         size_type: editForm.size_type || null,
+        colour: editForm.colour || null,
         })
         .eq("id", editingHintId);
 
@@ -1644,8 +1660,9 @@ export default function HintsClient() {
                 numericPrice: priceMeta.numericPrice,
                 currency: priceMeta.originalCurrency || BASE_CURRENCY,
                 occasions: editForm.occasions || [],
-        size: editForm.size || null,
-        size_type: editForm.size_type || null,
+        size: editForm.size || "",
+        sizeType: editForm.size_type || "",
+        colour: editForm.colour || "",
                 needsReview: false,
               }
             : hint
@@ -1906,6 +1923,7 @@ export default function HintsClient() {
         occasions: newHintForm.occasions || [],
         size: newHintForm.size || null,
         size_type: newHintForm.size_type || null,
+        colour: newHintForm.colour || null,
       });
 
       if (error) throw new Error(errorToMessage(error));
