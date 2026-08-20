@@ -674,7 +674,11 @@ export default function ShopPage() {
 
       if (error) throw error;
 
-      setSuccessMessage("Added to hints.");
+      setSuccessMessage(`Added "${product.title || "item"}" to your hints.`);
+      // Toast, not a persistent banner — clear it on its own so it doesn't
+      // just sit there forever waiting for some other action to clear it
+      window.clearTimeout(handleAddToHints._toastTimer);
+      handleAddToHints._toastTimer = window.setTimeout(() => setSuccessMessage(""), 3200);
     } catch (error) {
       setPageError(errorToMessage(error));
     } finally {
@@ -748,8 +752,14 @@ export default function ShopPage() {
         ) : null}
 
         {successMessage ? (
-          <div className="mb-5 rounded-[22px] border border-[#d8e8d3] bg-[#f3fbf1] px-4 py-3 text-sm text-[#4a7a3a]">
-            {successMessage}
+          <div
+            className="fixed inset-x-0 bottom-6 z-[120] flex justify-center px-4"
+            style={{ animation: "slideUp 0.2s ease" }}
+          >
+            <div className="flex items-center gap-2 rounded-full border border-[#d8e8d3] bg-[#f3fbf1] px-5 py-3 text-sm font-semibold text-[#3a7d55] shadow-[0_12px_32px_rgba(58,125,85,0.2)]">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#4a7a3a] text-[11px] text-white">✓</span>
+              {successMessage}
+            </div>
           </div>
         ) : null}
 

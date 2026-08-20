@@ -41,3 +41,17 @@ body {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Used by every bottom-sheet/centered modal and toast across the app
+   (inline style={{ animation: "fadeIn ..." }} / "slideUp ...") — these were
+   referenced everywhere but never actually defined, so every one of those
+   animations was silently a no-op until now. */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
