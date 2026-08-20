@@ -35,7 +35,9 @@ async function scrapeImage(url) {
       throw new Error("LinkPreview returned invalid JSON");
     }
     if (!res.ok) {
-      throw new Error(data?.error || data?.message || `LinkPreview failed with status ${res.status}`);
+      const err = new Error(data?.error || data?.message || `LinkPreview failed with status ${res.status}`);
+      err.status = res.status;
+      throw err;
     }
     let image = String(data?.image || "").trim();
     if (image.startsWith("//")) image = "https:" + image;
@@ -50,6 +52,11 @@ async function scrapeImage(url) {
     clearTimeout(timeout);
   }
 }
+
+// Statuses that indicate a transient/rate-limit condition on LinkPreview's
+// side rather than a genuine, permanent problem with the target URL. These
+// should be retried later, never permanently marked as failed.
+const TRANSIENT_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
 
 // One-off maintenance endpoint — requires a secret to run, since it writes
 // to the database. Uses the same LinkPreview.net service the Hints feature
@@ -89,13 +96,15 @@ export async function POST(req) {
       }
     } catch (err) {
       const reason = err?.message || "fetch failed";
-      const isRateLimit = reason.includes("429");
-      // Rate limits are transient — don't permanently mark these as failed,
-      // leave them eligible to be retried on the next call instead
-      if (!isRateLimit) {
+      const isTransient = TRANSIENT_STATUSES.has(err?.status) || reason.includes("429") || reason.includes("aborted");
+      // Transient failures (rate limits, gateway hiccups, timeouts) aren't
+      // permanently marked as failed, so they stay eligible for retry on
+      // the next call — only a genuine, stable failure (bad URL, no image
+      // found, etc.) gets written to raw_payload and excluded going forward
+      if (!isTransient) {
         await supabase.from("shop_products").update({ raw_payload: { backfill_failed: reason } }).eq("id", product.id);
       }
-      results.failed.push({ id: product.id, reason, retryable: isRateLimit });
+      results.failed.push({ id: product.id, reason, retryable: isTransient });
     }
     await new Promise((r) => setTimeout(r, 400));
   }
