@@ -17,8 +17,8 @@ const OCCASION_OPTIONS = [
 ];
 
 const RELATIONSHIP_OPTIONS = [
-  "Partner", "Boyfriend", "Girlfriend", "Father", "Mother", "Parent",
-  "Friend", "Colleague", "Sibling", "Child", "Family", "For him", "For her",
+  "Partner", "Boyfriend", "Girlfriend", "Husband", "Wife", "Father", "Mother", "Parent",
+  "Brother", "Sister", "Sibling", "Son", "Child", "Friend", "Colleague", "Family", "For him", "For her",
 ];
 
 const PRICE_BAND_OPTIONS = [
