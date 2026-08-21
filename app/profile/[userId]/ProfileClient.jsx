@@ -44,7 +44,7 @@ export default function ProfileClient({ userId }) {
   const [filter, setFilter] = useState("default");
   const [occasionFilter, setOccasionFilter] = useState("");
   const [claimingId, setClaimingId] = useState(null);
-  const [isContact, setIsContact] = useState(false);
+  const [contactState, setContactState] = useState("none"); // "none" | "pending" | "active"
   const [selectedHint, setSelectedHint] = useState(null);
   const [groupHint, setGroupHint] = useState(null);
 
@@ -56,7 +56,7 @@ export default function ProfileClient({ userId }) {
       const [{ data: profileData }, { data: hintsData }] = await Promise.all([
         supabase.from("profiles").select("full_name, avatar_url, interests").eq("id", userId).maybeSingle(),
         supabase.from("hints")
-          .select("id, title, image_url, numeric_price, currency, retailer, url, starred, occasions, position, size, size_type")
+          .select("id, title, image_url, numeric_price, currency, retailer, url, starred, occasions, position, size, size_type, colour")
           .eq("user_id", userId).or("is_private.is.null,is_private.eq.false")
           .order("position", { ascending: true }).order("created_at", { ascending: false }).limit(100),
       ]);
@@ -69,8 +69,8 @@ export default function ProfileClient({ userId }) {
           .in("hint_id", hintsList.map(h => h.id));
         setClaims(claimsData || []);
         const { data: contactData } = await supabase.from("contacts")
-          .select("id").eq("user_id", user.id).eq("profile_id", userId).maybeSingle();
-        setIsContact(!!contactData);
+          .select("id, status").eq("user_id", user.id).eq("profile_id", userId).maybeSingle();
+        setContactState(contactData ? (contactData.status === "active" ? "active" : "pending") : "none");
       }
       setLoading(false);
       const ratios = {};
@@ -116,19 +116,25 @@ export default function ProfileClient({ userId }) {
     });
 
   const [addingContact, setAddingContact] = useState(false);
-  const [addedContact, setAddedContact] = useState(false);
+  const [addContactError, setAddContactError] = useState("");
 
   async function handleAddToCircle() {
     if (!currentUser) return;
     setAddingContact(true);
-    await supabase.from("contacts").insert({
-      user_id: currentUser.id,
-      name: profile?.full_name || "Contact",
-      profile_id: userId,
-      status: "active",
+    setAddContactError("");
+    // Goes through the same request/accept flow as every other way of
+    // adding a contact — send-contact-invite already supports target_user_id
+    // directly (no email needed since we already know who this is), and
+    // accepting creates the contact on BOTH sides plus syncs birthdays to
+    // both calendars. A raw insert here would have skipped all of that.
+    const { error } = await supabase.functions.invoke("send-contact-invite", {
+      body: { target_user_id: userId, name: profile?.full_name || "" },
     });
-    setIsContact(true);
-    setAddedContact(true);
+    if (error) {
+      setAddContactError("Could not send the request. Try again.");
+    } else {
+      setContactState("pending");
+    }
     setAddingContact(false);
   }
 
@@ -161,12 +167,17 @@ export default function ProfileClient({ userId }) {
           <div className="flex-1 min-w-0">
             <h1 className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900">{displayName}'s Hints</h1>
             {!isOwnProfile && currentUser && (
-              <button type="button" onClick={isContact ? undefined : handleAddToCircle}
-                disabled={addingContact}
-                className={`mt-2 text-[12px] font-semibold px-3 py-1 rounded-full border transition ${isContact ? "border-[#c3e0c3] bg-[#f0faf0] text-[#3a7a3a] cursor-default" : "border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d]"}`}>
-                {isContact ? "✓ In your circle" : addingContact ? "Adding..." : "+ Add to circle"}
+              <button type="button" onClick={contactState === "none" ? handleAddToCircle : undefined}
+                disabled={addingContact || contactState !== "none"}
+                className={`mt-2 text-[12px] font-semibold px-3 py-1 rounded-full border transition ${
+                  contactState === "active" ? "border-[#c3e0c3] bg-[#f0faf0] text-[#3a7a3a] cursor-default"
+                  : contactState === "pending" ? "border-[#f0dfc9] bg-[#fff8ee] text-[#a87d3a] cursor-default"
+                  : "border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d]"
+                }`}>
+                {contactState === "active" ? "✓ In your circle" : contactState === "pending" ? "Request sent" : addingContact ? "Sending..." : "+ Add to circle"}
               </button>
             )}
+            {addContactError && <p className="mt-1 text-[11px] text-[#b14f43]">{addContactError}</p>}
             {interests.length > 0 && (
               <div className="mt-1 flex flex-wrap gap-1">
                 {interests.slice(0, 6).map(i => <span key={i} className="rounded-full bg-[#fff4ee] px-2.5 py-0.5 text-[11px] font-semibold text-[#df7b59]">{i}</span>)}
