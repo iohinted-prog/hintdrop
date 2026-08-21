@@ -2031,7 +2031,7 @@ export default function HintsClient({ boardId }) {
               headline: buildDropHeadline(sessionHints.length, newHint.title),
               body: newHint.retailer || "",
               cta_label: "See new Hints",
-              cta_href: "/hints",
+              cta_href: `/hints/${boardId}`,
               visibility: "contacts",
               occurred_at: new Date().toISOString(),
               metadata: {

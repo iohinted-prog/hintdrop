@@ -57,6 +57,7 @@ export default function HintsMenuClient() {
   const [error, setError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [newBoardTitle, setNewBoardTitle] = useState("");
+  const [newBoardPrivate, setNewBoardPrivate] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isSavingBoard, setIsSavingBoard] = useState(false);
 
@@ -137,10 +138,33 @@ export default function HintsMenuClient() {
       const supabase = createClient();
       const { data, error: createError } = await supabase
         .from("hint_boards")
-        .insert({ user_id: currentUser.id, title, is_default: false })
+        .insert({ user_id: currentUser.id, title, is_default: false, is_private: newBoardPrivate })
         .select("id")
         .single();
       if (createError) throw createError;
+
+      // Public lists let your circle know, same as saving a hint does —
+      // private ones stay quiet since nobody else can see them anyway
+      if (!newBoardPrivate) {
+        supabase.from("feed_items").insert({
+          owner_user_id: currentUser.id,
+          actor_user_id: currentUser.id,
+          family: "hint",
+          item_type: "board_created",
+          headline: `${currentUser.user_metadata?.full_name || "Someone"} started a new Hints list: ${title}`,
+          body: "",
+          cta_label: "See the list",
+          cta_href: `/hints/${data.id}`,
+          visibility: "contacts",
+          occurred_at: new Date().toISOString(),
+          metadata: {
+            actor_name: currentUser.user_metadata?.full_name || currentUser.email || "You",
+            actor_avatar_url: currentUser.user_metadata?.avatar_url || null,
+            board_title: title,
+          },
+        }).then(r => { if (r.error) console.error("feed insert error:", r.error.message); });
+      }
+
       router.push(`/hints/${data.id}`);
     } catch (err) {
       setError(errorToMessage(err));
@@ -198,10 +222,31 @@ export default function HintsMenuClient() {
                     placeholder="e.g. Mum's Christmas List"
                     className="h-11 w-full rounded-full border border-[#ead8ce] bg-white px-4 text-center text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
                   />
+                  <div className="flex w-full gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setNewBoardPrivate(false)}
+                      className={`flex-1 h-10 rounded-full text-[12px] font-semibold transition ${!newBoardPrivate ? "bg-[#2f3b2d] text-white" : "border border-[#ead8ce] bg-white text-slate-600"}`}
+                    >
+                      🔓 Public
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewBoardPrivate(true)}
+                      className={`flex-1 h-10 rounded-full text-[12px] font-semibold transition ${newBoardPrivate ? "bg-[#2f3b2d] text-white" : "border border-[#ead8ce] bg-white text-slate-600"}`}
+                    >
+                      🔒 Private
+                    </button>
+                  </div>
+                  <p className="text-[11px] leading-4 text-slate-400 text-center">
+                    {newBoardPrivate
+                      ? "Only you can see this. Anyone with a direct link can still view it."
+                      : "Your circle will see you started this list."}
+                  </p>
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => { setShowCreateForm(false); setNewBoardTitle(""); }}
+                      onClick={() => { setShowCreateForm(false); setNewBoardTitle(""); setNewBoardPrivate(false); }}
                       className="h-10 rounded-full border border-[#ead8ce] bg-white px-4 text-[13px] font-semibold text-slate-600"
                     >
                       Cancel
