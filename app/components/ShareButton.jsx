@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { buildShareUrl, whatsappShareUrl, nativeShare, copyToClipboard, trackShareEvent, randomSharePhrase } from "../../lib/share";
+import { buildShareUrl, whatsappShareUrl, facebookShareUrl, twitterShareUrl, emailShareUrl, nativeShare, copyToClipboard, trackShareEvent, randomSharePhrase } from "../../lib/share";
 
 export default function ShareButton({
   supabase,
@@ -39,6 +39,27 @@ export default function ShareButton({
     setOpen(false);
   }
 
+  function handleFacebook(e) {
+    e.stopPropagation();
+    const { url } = startShare();
+    window.open(facebookShareUrl(url), "_blank", "width=580,height=520");
+    setOpen(false);
+  }
+
+  function handleTwitter(e) {
+    e.stopPropagation();
+    const { url } = startShare();
+    window.open(twitterShareUrl(url, randomSharePhrase()), "_blank", "width=580,height=520");
+    setOpen(false);
+  }
+
+  function handleEmail(e) {
+    e.stopPropagation();
+    const { url } = startShare();
+    window.location.href = emailShareUrl(url, randomSharePhrase(), title);
+    setOpen(false);
+  }
+
   function handleSMS(e) {
     e.stopPropagation();
     const { url } = startShare();
@@ -64,15 +85,42 @@ export default function ShareButton({
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpen(false); }} />
-          <div className="absolute z-50 mt-2 right-0 w-52 rounded-[18px] border border-[#efdcd2] bg-white shadow-lg p-1.5">
-            <button type="button" onClick={handleWhatsApp} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[12px] text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]">
-              <span className="text-[17px]">💬</span> WhatsApp
+          <div className="absolute z-50 mt-2 right-0 w-64 rounded-[20px] border border-[#efdcd2] bg-white shadow-[0_18px_50px_rgba(173,101,72,0.18)] p-3">
+            {title && (
+              <p className="px-1 pb-2 text-[12px] font-semibold text-slate-400">
+                Share{title ? ` "${title}"` : ""}
+              </p>
+            )}
+
+            {/* WhatsApp first and visually distinct — the dominant channel
+                for this audience, so it earns the strongest visual weight
+                rather than sitting in a plain list with everything else */}
+            <button
+              type="button"
+              onClick={handleWhatsApp}
+              className="w-full flex items-center gap-2.5 rounded-[14px] bg-[#25D366] px-3.5 py-3 text-sm font-bold text-white shadow-sm hover:brightness-105"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-[16px]">💬</span>
+              Share on WhatsApp
             </button>
-            <button type="button" onClick={handleSMS} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[12px] text-sm font-medium text-slate-700 hover:bg-[#fff5f0]">
-              <span className="text-[17px]">✉️</span> Messages
-            </button>
-            <button type="button" onClick={handleCopy} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[12px] text-sm font-medium text-slate-700 hover:bg-[#fff5f0]">
-              <span className="text-[17px]">🔗</span> {copied ? "Copied!" : "Copy link"}
+
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              <button type="button" onClick={handleFacebook} className="flex items-center gap-2 rounded-[12px] px-2.5 py-2.5 text-[13px] font-semibold text-slate-700 hover:bg-[#fff5f0]">
+                <span className="text-[16px]">📘</span> Facebook
+              </button>
+              <button type="button" onClick={handleTwitter} className="flex items-center gap-2 rounded-[12px] px-2.5 py-2.5 text-[13px] font-semibold text-slate-700 hover:bg-[#fff5f0]">
+                <span className="text-[16px]">𝕏</span> X
+              </button>
+              <button type="button" onClick={handleSMS} className="flex items-center gap-2 rounded-[12px] px-2.5 py-2.5 text-[13px] font-semibold text-slate-700 hover:bg-[#fff5f0]">
+                <span className="text-[16px]">✉️</span> Messages
+              </button>
+              <button type="button" onClick={handleEmail} className="flex items-center gap-2 rounded-[12px] px-2.5 py-2.5 text-[13px] font-semibold text-slate-700 hover:bg-[#fff5f0]">
+                <span className="text-[16px]">📧</span> Email
+              </button>
+            </div>
+
+            <button type="button" onClick={handleCopy} className="mt-1.5 w-full flex items-center gap-2.5 rounded-[12px] border border-[#f0dfd6] px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]">
+              <span className="text-[16px]">🔗</span> {copied ? "Copied!" : "Copy link"}
             </button>
           </div>
         </>
