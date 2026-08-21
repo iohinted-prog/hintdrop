@@ -6,7 +6,8 @@ import HintImage from "../components/HintImage";
 import ShareButton from "../components/ShareButton";
 import HintDetailModal from "../components/HintDetailModal";
 import { getRecentProfiles } from "../../lib/recentProfiles";
-import { getRecentHints, recordHintView } from "../../lib/recentHints";
+import { getRecentHints } from "../../lib/recentHints";
+import { getRecentBoards } from "../../lib/recentActivity";
 import { trackRetailerClick } from "../../lib/trackRetailerClick";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import UserProfileModal from "../components/UserProfileModal";
@@ -2229,11 +2230,29 @@ export default function FeedClient() {
 
   const [recentProfiles, setRecentProfiles] = useState([]);
   const [recentHints, setRecentHints] = useState([]);
+  const [recentBoards, setRecentBoards] = useState([]);
   useEffect(() => {
     if (!sessionUser?.id) return;
     getRecentProfiles(supabase, sessionUser.id).then(setRecentProfiles);
     getRecentHints(supabase, sessionUser.id).then(setRecentHints);
+    getRecentBoards(supabase, sessionUser.id).then(setRecentBoards);
   }, [profileModal, feedHintDetail, sessionUser?.id]);
+
+  // "Jump back in" merges all three recency signals — profiles, individual
+  // hints, and whole Hints lists — into one chronological list rather than
+  // three separate sections, so it reads as a single "pick up where you
+  // left off" rail instead of the person having to scan multiple lists.
+  const jumpBackInItems = useMemo(() => {
+    const items = [
+      ...recentProfiles.map((p) => ({ type: "profile", key: `profile-${p.userId}`, at: p.visitedAt, data: p })),
+      ...recentHints.map((h) => ({ type: "hint", key: `hint-${h.id}`, at: h.viewedAt, data: h })),
+      ...recentBoards.map((b) => ({ type: "board", key: `board-${b.boardId}`, at: b.visitedAt, data: b })),
+    ];
+    return items
+      .filter((item) => item.at)
+      .sort((a, b) => new Date(b.at) - new Date(a.at))
+      .slice(0, 5);
+  }, [recentProfiles, recentHints, recentBoards]);
 
   const shortReminderFeedItems = useMemo(() => {
     return (calendarEvents || [])
@@ -2418,30 +2437,71 @@ export default function FeedClient() {
                 Jump back in
               </h2>
 
-              {recentProfiles.length > 0 ? (
+              {jumpBackInItems.length > 0 ? (
                 <div className="mt-4 space-y-3">
-                  {recentProfiles.map((profile) => (
-                    <div key={profile.userId}
-                      className="flex items-center gap-3 rounded-[18px] border border-[#ecd9cf] bg-[#fcf8f5] p-3 cursor-pointer hover:bg-[#fff5f0]"
-                      onClick={() => setProfileModal({ userId: profile.userId, name: profile.name, avatarUrl: profile.avatarUrl, initials: profile.initials })}>
-                      <div className="relative h-10 w-10 shrink-0 rounded-full overflow-hidden flex items-center justify-center">
-                        {profile.avatarUrl
-                          ? <HintImage src={profile.avatarUrl} alt={profile.name} fill sizes="40px" className="object-cover" fallbackClassName="hidden" />
-                          : <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white">{profile.initials}</div>
-                        }
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-semibold text-slate-900 truncate">{profile.name}</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">Recently visited</p>
-                      </div>
-                    </div>
-                  ))}
+                  {jumpBackInItems.map((item) => {
+                    if (item.type === "profile") {
+                      const profile = item.data;
+                      return (
+                        <div key={item.key}
+                          className="flex items-center gap-3 rounded-[18px] border border-[#ecd9cf] bg-[#fcf8f5] p-3 cursor-pointer hover:bg-[#fff5f0]"
+                          onClick={() => setProfileModal({ userId: profile.userId, name: profile.name, avatarUrl: profile.avatarUrl, initials: profile.initials })}>
+                          <div className="relative h-10 w-10 shrink-0 rounded-full overflow-hidden flex items-center justify-center">
+                            {profile.avatarUrl
+                              ? <HintImage src={profile.avatarUrl} alt={profile.name} fill sizes="40px" className="object-cover" fallbackClassName="hidden" />
+                              : <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white">{profile.initials}</div>
+                            }
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] font-semibold text-slate-900 truncate">{profile.name}</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">Recently visited</p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    if (item.type === "hint") {
+                      const hint = item.data;
+                      return (
+                        <div key={item.key}
+                          className="flex items-center gap-3 rounded-[18px] border border-[#ecd9cf] bg-[#fcf8f5] p-3 cursor-pointer hover:bg-[#fff5f0]"
+                          onClick={() => setFeedHintDetail(hint)}>
+                          <div className="relative h-10 w-10 shrink-0 rounded-[12px] overflow-hidden bg-[#fffaf7] border border-[#f0dfd6]">
+                            {hint.imageUrl
+                              ? <HintImage src={hint.imageUrl} alt={hint.title} fill sizes="40px" className="object-cover" fallbackClassName="hidden" />
+                              : <div className="h-full w-full flex items-center justify-center text-lg">🎁</div>
+                            }
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] font-semibold text-slate-900 truncate">{hint.title}</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                              {hint.ownerName ? `${hint.ownerName.split(" ")[0]}'s hint` : hint.retailer || "Hint"}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    // board
+                    const board = item.data;
+                    return (
+                      <Link key={item.key}
+                        href={board.ownerUserId ? `/profile/${board.ownerUserId}?board=${board.boardId}` : "#"}
+                        className="flex items-center gap-3 rounded-[18px] border border-[#ecd9cf] bg-[#fcf8f5] p-3 cursor-pointer hover:bg-[#fff5f0]">
+                        <div className="h-10 w-10 shrink-0 rounded-[12px] bg-[#fff4ee] flex items-center justify-center text-lg">📋</div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[13px] font-semibold text-slate-900 truncate">{board.title}</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                            {board.isDefault ? "Hints list" : "A Hints list"}
+                          </p>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="mt-4 rounded-[22px] border border-dashed border-[#ecd9cf] bg-[#fcf8f5] px-4 py-5">
                   <p className="text-sm font-medium text-slate-700">No recent visits yet.</p>
                   <p className="mt-1 text-sm leading-6 text-slate-500">
-                    Profiles you check out will show up here.
+                    Profiles, hints, and Hints lists you check out will show up here.
                   </p>
                 </div>
               )}
@@ -2458,34 +2518,6 @@ export default function FeedClient() {
               </div>
             </section>
 
-            {recentHints.length > 0 && (
-              <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Recently viewed</p>
-                <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.03em] text-slate-900">
-                  Hints you've seen
-                </h2>
-                <div className="mt-4 space-y-3">
-                  {recentHints.map((hint) => (
-                    <div key={hint.id}
-                      className="flex items-center gap-3 rounded-[18px] border border-[#ecd9cf] bg-[#fcf8f5] p-3 cursor-pointer hover:bg-[#fff5f0]"
-                      onClick={() => setFeedHintDetail(hint)}>
-                      <div className="relative h-11 w-11 shrink-0 rounded-[12px] overflow-hidden bg-[#fffaf7] border border-[#f0dfd6]">
-                        {hint.imageUrl
-                          ? <HintImage src={hint.imageUrl} alt={hint.title} fill sizes="44px" className="object-cover" fallbackClassName="hidden" />
-                          : <div className="h-full w-full flex items-center justify-center text-lg">🎁</div>
-                        }
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-semibold text-slate-900 truncate">{hint.title}</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                          {hint.ownerName ? `${hint.ownerName.split(" ")[0]}'s hint` : hint.retailer || "Hint"}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
 
           </aside>
 
@@ -2545,7 +2577,7 @@ export default function FeedClient() {
                           demoReactionsState={demoReactionsByFeedId[item.id]}
                           onToggleDemoReaction={handleToggleDemoReaction}
                           onOpenProfile={setProfileModal}
-                          onOpenHintDetail={(hint) => { setFeedHintDetail(hint); recordHintView(supabase, sessionUser?.id, hint.id); }}
+                          onOpenHintDetail={(hint) => setFeedHintDetail(hint)}
                           sessionUser={sessionUser}
                           reactions={reactionsByFeedId[item.id] || []}
                           onToggleReaction={handleToggleReaction}

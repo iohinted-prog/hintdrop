@@ -1,6 +1,7 @@
 "use client";
 import PublicShell from "../../components/PublicShell";
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "../../../lib/supabase/client";
 import Link from "next/link";
 import GroupHintModal from "../../components/GroupHintModal";
@@ -8,6 +9,8 @@ import { trackRetailerClick } from "../../../lib/trackRetailerClick";
 import HintImage from "../../components/HintImage";
 import ShareButton from "../../components/ShareButton";
 import { recordShareContext } from "../../../lib/share";
+import { recordBoardVisit } from "../../../lib/recentActivity";
+import { recordHintView } from "../../../lib/recentHints";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -49,6 +52,7 @@ const GRADIENTS = [
 
 export default function ProfileClient({ userId }) {
   const supabase = createClient();
+  const searchParams = useSearchParams();
   const [profile, setProfile] = useState(null);
   const [boards, setBoards] = useState(null); // null = not loaded yet
   const [selectedBoardId, setSelectedBoardId] = useState(null);
@@ -107,10 +111,18 @@ export default function ProfileClient({ userId }) {
 
       setLoading(false);
 
-      // A single-board profile (everyone's default state before they make
-      // any extra lists) can skip straight to that board instead of
-      // showing a one-item menu with nothing else to click
-      if (boardsWithPreviews.length === 1) {
+      // A ?board= link (e.g. from Feed's "Jump back in") should land
+      // directly in that specific list, not the menu — falls through to
+      // the single-board shortcut below if the param is missing or points
+      // at a board that isn't actually in this person's public list.
+      const requestedBoardId = searchParams.get("board");
+      const requestedBoardValid = requestedBoardId && boardsWithPreviews.some((b) => b.id === requestedBoardId);
+      if (requestedBoardValid) {
+        setSelectedBoardId(requestedBoardId);
+      } else if (boardsWithPreviews.length === 1) {
+        // A single-board profile (everyone's default state before they
+        // make any extra lists) can skip straight to that board instead
+        // of showing a one-item menu with nothing else to click
         setSelectedBoardId(boardsWithPreviews[0].id);
       }
     }
@@ -122,6 +134,7 @@ export default function ProfileClient({ userId }) {
     let cancelled = false;
     async function loadBoardHints() {
       setBoardHintsLoading(true);
+      if (currentUser?.id) recordBoardVisit(supabase, currentUser.id, selectedBoardId);
       const { data: hintsData } = await supabase
         .from("hints")
         .select("id, title, image_url, numeric_price, currency, retailer, url, starred, occasions, position, size, size_type, colour")
@@ -367,7 +380,7 @@ export default function ProfileClient({ userId }) {
             {filteredHints.map((hint, idx) => {
               const gradient = GRADIENTS[idx % GRADIENTS.length];
               return (
-                <div key={hint.id} className="mb-4 break-inside-avoid cursor-pointer" onClick={() => setSelectedHint(hint)}>
+                <div key={hint.id} className="mb-4 break-inside-avoid cursor-pointer" onClick={() => { setSelectedHint(hint); if (currentUser?.id) recordHintView(supabase, currentUser.id, hint.id); }}>
                   <article className="relative overflow-hidden rounded-[22px] shadow-sm" style={hint.image_url ? (imageRatios[hint.id] ? { aspectRatio: String(imageRatios[hint.id]) } : { aspectRatio: "3/4" }) : undefined}>
                     {hint.image_url
                       ? <HintImage src={hint.image_url} alt={hint.title} fill className="object-cover" sizes="(max-width: 768px) 50vw, 33vw" fallbackClassName="hidden" />
