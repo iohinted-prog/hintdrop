@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { buildShareUrl, whatsappShareUrl, facebookShareUrl, twitterShareUrl, emailShareUrl, nativeShare, copyToClipboard, trackShareEvent, randomSharePhrase } from "../../lib/share";
+import { buildShareUrl, whatsappShareUrl, facebookShareUrl, twitterShareUrl, emailShareUrl, nativeShare, copyToClipboard, trackShareEvent, buildShareText } from "../../lib/share";
 
 export default function ShareButton({
   supabase,
@@ -8,6 +8,8 @@ export default function ShareButton({
   subjectId,
   path,
   title,
+  sharerName,
+  text,
   currentUserId,
   className = "inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-5 text-[13px] font-semibold text-white shadow-md transition hover:brightness-105",
   label = "Share",
@@ -15,6 +17,10 @@ export default function ShareButton({
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  // An explicit text prop always wins — for cases that aren't really "a
+  // hint" (an invite link, say), the default "X's hint" template doesn't
+  // fit and the caller needs to say something else entirely
+  const shareText = text || buildShareText({ sharerName, title });
 
   function startShare() {
     const { url, token } = buildShareUrl(path);
@@ -26,7 +32,7 @@ export default function ShareButton({
     e.stopPropagation();
     if (typeof navigator !== "undefined" && navigator.share) {
       const { url } = startShare();
-      await nativeShare({ title, text: randomSharePhrase(), url });
+      await nativeShare({ title, text: shareText, url });
       return;
     }
     setOpen((v) => !v);
@@ -35,7 +41,7 @@ export default function ShareButton({
   function handleWhatsApp(e) {
     e.stopPropagation();
     const { url } = startShare();
-    window.open(whatsappShareUrl(url, randomSharePhrase()), "_blank");
+    window.open(whatsappShareUrl(url, shareText), "_blank");
     setOpen(false);
   }
 
@@ -49,21 +55,21 @@ export default function ShareButton({
   function handleTwitter(e) {
     e.stopPropagation();
     const { url } = startShare();
-    window.open(twitterShareUrl(url, randomSharePhrase()), "_blank", "width=580,height=520");
+    window.open(twitterShareUrl(url, shareText), "_blank", "width=580,height=520");
     setOpen(false);
   }
 
   function handleEmail(e) {
     e.stopPropagation();
     const { url } = startShare();
-    window.location.href = emailShareUrl(url, randomSharePhrase(), title);
+    window.location.href = emailShareUrl(url, shareText, title);
     setOpen(false);
   }
 
   function handleSMS(e) {
     e.stopPropagation();
     const { url } = startShare();
-    window.location.href = `sms:?&body=${encodeURIComponent(`${randomSharePhrase()} ${url}`)}`;
+    window.location.href = `sms:?&body=${encodeURIComponent(`${shareText} ${url}`)}`;
     setOpen(false);
   }
 

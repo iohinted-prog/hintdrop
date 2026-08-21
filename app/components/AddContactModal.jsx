@@ -15,6 +15,7 @@ function isValidEmail(value) {
 export default function AddContactModal({ open, onClose, onSave, modalKey }) {
   const supabase = createClient();
   const [currentUserId, setCurrentUserId] = useState("");
+  const [currentUserName, setCurrentUserName] = useState("");
   const [contactSearch, setContactSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [contactResults, setContactResults] = useState([]);
@@ -34,7 +35,10 @@ export default function AddContactModal({ open, onClose, onSave, modalKey }) {
   }, [open]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id || ""));
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentUserId(user?.id || "");
+      setCurrentUserName(user?.user_metadata?.full_name || "");
+    });
   }, []);
 
   useEffect(() => {
@@ -138,6 +142,7 @@ export default function AddContactModal({ open, onClose, onSave, modalKey }) {
                   subjectId={currentUserId}
                   path={`/profile/${currentUserId}`}
                   title="Add me on HintDrop"
+                  text={currentUserName ? `Join ${currentUserName}'s Circle on HintDrop` : "Join my Circle on HintDrop"}
                   currentUserId={currentUserId}
                   label="Share invite link"
                   className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-5 text-[13px] font-semibold text-white shadow-md hover:brightness-105"

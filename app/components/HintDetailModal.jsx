@@ -93,6 +93,7 @@ export default function HintDetailModal({ hint, onClose, supabase, currentUserId
               subjectId={hint.id}
               path={`/h/${hint.id}`}
               title={hint.title}
+              sharerName={hint.ownerName}
               currentUserId={currentUserId}
               label="Share this hint"
               className="w-full h-11 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white flex items-center justify-center gap-1.5 shadow-md hover:brightness-105"

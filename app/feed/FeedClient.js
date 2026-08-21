@@ -2577,7 +2577,7 @@ export default function FeedClient() {
                           demoReactionsState={demoReactionsByFeedId[item.id]}
                           onToggleDemoReaction={handleToggleDemoReaction}
                           onOpenProfile={setProfileModal}
-                          onOpenHintDetail={(hint) => setFeedHintDetail(hint)}
+                          onOpenHintDetail={(hint) => setFeedHintDetail({ ...hint, ownerName: hint.ownerName || item.metadata?.actor_name || item.actor_name || null })}
                           sessionUser={sessionUser}
                           reactions={reactionsByFeedId[item.id] || []}
                           onToggleReaction={handleToggleReaction}

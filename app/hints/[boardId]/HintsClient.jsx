@@ -941,7 +941,7 @@ function EditHintModal({
 }
 
 
-function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePrivate, formatCurrency }) {
+function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePrivate, formatCurrency, sharerName }) {
   const [imgError, setImgError] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const pointerDownRef = useRef(null);
@@ -1032,6 +1032,7 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
                     subjectId={hint.id}
                     path={`/h/${hint.id}`}
                     title={hint.title}
+                    sharerName={sharerName}
                     label="Share this hint"
                     className="w-full h-11 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white flex items-center justify-center gap-1.5 shadow-md hover:brightness-105"
                   />
@@ -1286,6 +1287,7 @@ function SortableMobileHintCard({
   onToggleStarred,
   onTogglePrivate,
   formatCurrency,
+  sharerName,
 }) {
   const animateLayoutChanges = (args) => {
     if (args.isSorting || args.wasDragging) return defaultAnimateLayoutChanges(args);
@@ -1317,6 +1319,7 @@ function SortableMobileHintCard({
         onEdit={onEdit}
         onToggleStarred={onToggleStarred}
         onTogglePrivate={onTogglePrivate}
+        sharerName={sharerName}
         formatCurrency={formatCurrency}
       />
     </div>
@@ -2201,7 +2204,8 @@ export default function HintsClient({ boardId }) {
                   subjectType="board"
                   subjectId={boardId}
                   path={`/b/${boardId}`}
-                  title={board.title}
+                  title={board.is_default ? null : board.title}
+                  sharerName={currentUser.user_metadata?.full_name}
                   currentUserId={currentUser.id}
                   label={board.is_default ? "Share my Hints" : `Share "${board.title}"`}
                   className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 py-2 text-[13px] font-semibold text-white shadow-md hover:brightness-105"
@@ -2360,6 +2364,7 @@ export default function HintsClient({ boardId }) {
                             onToggleStarred={toggleStarred}
                             onTogglePrivate={togglePrivate}
                             formatCurrency={formatCurrency}
+                            sharerName={currentUser?.user_metadata?.full_name}
                           />
                         ))}
                       </div>
