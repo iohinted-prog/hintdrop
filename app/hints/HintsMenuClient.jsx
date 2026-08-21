@@ -35,7 +35,10 @@ function BoardCard({ board }) {
       </div>
       <div className="flex items-center justify-between gap-3 p-4">
         <div className="min-w-0">
-          <p className="truncate text-[15px] font-semibold text-slate-900">{board.title}</p>
+          <p className="truncate text-[15px] font-semibold text-slate-900">
+            {board.is_private && <span className="mr-1" title="Private">🔒</span>}
+            {board.title}
+          </p>
           <p className="mt-0.5 text-[12px] text-slate-400">
             {board.is_default ? "Personal" : "Hints for someone else"} · {board.hintCount} Hint{board.hintCount === 1 ? "" : "s"}
           </p>
@@ -75,7 +78,7 @@ export default function HintsMenuClient() {
 
       let { data: boardRows, error: boardsError } = await supabase
         .from("hint_boards")
-        .select("id, title, is_default, created_at")
+        .select("id, title, is_default, is_private, created_at")
         .eq("user_id", user.id)
         .order("is_default", { ascending: false })
         .order("created_at", { ascending: true });
@@ -93,7 +96,7 @@ export default function HintsMenuClient() {
         const { data: created, error: createError } = await supabase
           .from("hint_boards")
           .insert({ user_id: user.id, title: "My Hints", is_default: true })
-          .select("id, title, is_default, created_at")
+          .select("id, title, is_default, is_private, created_at")
           .single();
         if (cancelled) return;
         if (createError) {

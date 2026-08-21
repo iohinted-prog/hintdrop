@@ -1355,6 +1355,7 @@ export default function HintsClient({ boardId }) {
   const { currency: userCurrency } = usePreferences();
   const [board, setBoard] = useState(null);
   const [boardLoading, setBoardLoading] = useState(true);
+  const [togglingBoardPrivacy, setTogglingBoardPrivacy] = useState(false);
 
   const [hints, setHints] = useState([]);
   const [link, setLink] = useState("");
@@ -1762,6 +1763,27 @@ export default function HintsClient({ boardId }) {
     }
   }
 
+  async function toggleBoardPrivate() {
+    if (!currentUser || !board || togglingBoardPrivacy) return;
+    setTogglingBoardPrivacy(true);
+    const newPrivate = !board.is_private;
+    const supabase = createClient();
+
+    setBoard((current) => ({ ...current, is_private: newPrivate }));
+
+    const { error } = await supabase
+      .from("hint_boards")
+      .update({ is_private: newPrivate })
+      .eq("id", boardId)
+      .eq("user_id", currentUser.id);
+
+    if (error) {
+      setBoard((current) => ({ ...current, is_private: !newPrivate }));
+      setError(errorToMessage(error));
+    }
+    setTogglingBoardPrivacy(false);
+  }
+
   async function refreshHintFromLink() {
     const trimmed = editForm.url.trim();
 
@@ -2146,16 +2168,31 @@ export default function HintsClient({ boardId }) {
               Drop a Hint here...
             </h1>
             {boardId && !boardLoading && board && currentUser && (
-              <ShareButton
-                supabase={createClient()}
-                subjectType="board"
-                subjectId={boardId}
-                path={`/b/${boardId}`}
-                title={board.title}
-                currentUserId={currentUser.id}
-                label={board.is_default ? "Share my Hints" : `Share "${board.title}"`}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 py-2 text-[13px] font-semibold text-white shadow-md hover:brightness-105"
-              />
+              <div className="flex items-center gap-2">
+                <ShareButton
+                  supabase={createClient()}
+                  subjectType="board"
+                  subjectId={boardId}
+                  path={`/b/${boardId}`}
+                  title={board.title}
+                  currentUserId={currentUser.id}
+                  label={board.is_default ? "Share my Hints" : `Share "${board.title}"`}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 py-2 text-[13px] font-semibold text-white shadow-md hover:brightness-105"
+                />
+                <button
+                  type="button"
+                  onClick={toggleBoardPrivate}
+                  disabled={togglingBoardPrivacy}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-4 py-2 text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0] disabled:opacity-60"
+                >
+                  {board.is_private ? "🔒 Private" : "🔓 Public"}
+                </button>
+              </div>
+            )}
+            {boardId && !boardLoading && board?.is_private && (
+              <p className="max-w-[36ch] text-[12px] leading-5 text-slate-400">
+                Only you can see this in your Hints menu. Anyone with the direct share link can still view it.
+              </p>
             )}
           </div>
 
