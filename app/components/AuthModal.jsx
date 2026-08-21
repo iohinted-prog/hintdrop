@@ -178,11 +178,11 @@ export default function AuthModal({ open, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-[200] flex items-end justify-center bg-black/40 backdrop-blur-sm min-[480px]:items-center"
       onClick={handleClose}
     >
       <div
-        className="w-full max-w-[400px] rounded-t-[28px] sm:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl p-6"
+        className="w-full max-w-[400px] rounded-t-[28px] min-[480px]:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">

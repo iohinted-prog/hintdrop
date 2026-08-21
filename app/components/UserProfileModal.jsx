@@ -87,8 +87,8 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
   const isViewingOther = currentUserId && currentUserId !== userId;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[rgba(33,24,20,0.42)] backdrop-blur-sm sm:items-center sm:px-4" onClick={onClose}>
-      <div className="flex w-full max-w-[640px] flex-col overflow-hidden rounded-t-[32px] border border-[#efdcd2] bg-white shadow-[0_28px_80px_rgba(75,45,30,0.18)] sm:rounded-[32px]"
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[rgba(33,24,20,0.42)] backdrop-blur-sm min-[480px]:items-center min-[480px]:px-4" onClick={onClose}>
+      <div className="flex w-full max-w-[640px] flex-col overflow-hidden rounded-t-[32px] border border-[#efdcd2] bg-white shadow-[0_28px_80px_rgba(75,45,30,0.18)] min-[480px]:rounded-[32px]"
         style={{ maxHeight: "90dvh" }} onClick={(e) => e.stopPropagation()}>
         <div className="shrink-0 border-b border-[#f2e5de] px-6 py-5">
           <div className="flex items-center justify-between gap-4">
@@ -175,8 +175,8 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
         </div>
       </div>
       {selectedHint && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center sm:px-4" onClick={() => setSelectedHint(null)}>
-          <div className="w-full max-w-[480px] rounded-t-[28px] sm:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto" style={{ maxHeight: "88dvh" }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 backdrop-blur-sm min-[480px]:items-center min-[480px]:px-4" onClick={() => setSelectedHint(null)}>
+          <div className="w-full max-w-[480px] rounded-t-[28px] min-[480px]:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto" style={{ maxHeight: "88dvh" }} onClick={e => e.stopPropagation()}>
             <div className="flex justify-end px-4 pt-3">
               <button type="button" onClick={() => setSelectedHint(null)} className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400">X</button>
             </div>

@@ -279,12 +279,12 @@ function ShopCard({
 
       {showModal && (
         <div
-          className="fixed inset-0 z-[110] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center sm:px-4"
+          className="fixed inset-0 z-[110] flex items-end justify-center bg-black/40 backdrop-blur-sm min-[480px]:items-center min-[480px]:px-4"
           style={{ animation: "fadeIn 0.15s ease" }}
           onClick={() => setShowModal(false)}
         >
           <div
-            className="w-full max-w-[480px] rounded-t-[28px] sm:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto"
+            className="w-full max-w-[480px] rounded-t-[28px] min-[480px]:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto"
             style={{ maxHeight: "92dvh", animation: "slideUp 0.2s ease" }}
             onClick={(e) => e.stopPropagation()}
           >
