@@ -24,7 +24,7 @@ export default function HintPreviewClient({ hintId }) {
         .from("hints")
         .select("id, title, image_url, retailer, numeric_price, currency, url, occasions, user_id, profiles(full_name, avatar_url)")
         .eq("id", hintId)
-        .eq("is_private", false)
+        .or("is_private.is.null,is_private.eq.false")
         .maybeSingle();
       setHint(data);
       setLoading(false);

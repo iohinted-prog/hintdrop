@@ -87,7 +87,16 @@ export default function AppShell({ children }) {
     pathname === "/onboarding" ||
     pathname === "/auth/reset-password" ||
     pathname.startsWith("/gift-shop/") ||
-    pathname.startsWith("/h/");
+    pathname.startsWith("/h/") ||
+    pathname.startsWith("/b/") ||
+    // Profile pages render their own PublicShell header for signed-out
+    // visitors (a different, public-appropriate header with a real
+    // "Sign in" button) — without this, AppShell's own header rendered on
+    // top of it too, showing a placeholder "U" avatar for a user that
+    // isn't actually signed in, stacked above the correct one underneath.
+    // Only hide while genuinely signed out — a signed-in user browsing a
+    // profile should keep the normal app chrome.
+    (pathname.startsWith("/profile/") && !currentUserId);
 
   const showShell = !hideChrome;
 

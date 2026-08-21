@@ -26,7 +26,7 @@ export default function BoardPreviewClient({ boardId }) {
         .from("hint_boards")
         .select("id, title, user_id, is_private, profiles(full_name, avatar_url)")
         .eq("id", boardId)
-        .eq("is_private", false)
+        .or("is_private.is.null,is_private.eq.false")
         .maybeSingle();
 
       if (!boardRow) {
@@ -39,7 +39,7 @@ export default function BoardPreviewClient({ boardId }) {
         .from("hints")
         .select("id, title, image_url, retailer, numeric_price, currency, url, occasions")
         .eq("board_id", boardId)
-        .eq("is_private", false)
+        .or("is_private.is.null,is_private.eq.false")
         .order("position", { ascending: true });
 
       setBoard(boardRow);
