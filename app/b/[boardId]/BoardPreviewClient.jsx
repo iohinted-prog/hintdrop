@@ -6,6 +6,7 @@ import HintImage from "../../components/HintImage";
 import HintDetailModal from "../../components/HintDetailModal";
 import { createClient } from "../../../lib/supabase/client";
 import { trackShareEvent, recordShareContext } from "../../../lib/share";
+import { recordBoardVisit } from "../../../lib/recentActivity";
 
 export default function BoardPreviewClient({ boardId }) {
   const supabase = createClient();
@@ -43,6 +44,7 @@ export default function BoardPreviewClient({ boardId }) {
 
       setBoard(boardRow);
       setHints(hintRows || []);
+      if (user?.id) recordBoardVisit(supabase, user.id, boardId);
       setLoading(false);
 
       recordShareContext("board", boardId, boardRow.user_id);

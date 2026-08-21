@@ -1,9 +1,10 @@
 "use client";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import HintImage from "./HintImage";
 import ShareButton from "./ShareButton";
 import { createClient } from "../../lib/supabase/client";
 import { trackRetailerClick } from "../../lib/trackRetailerClick";
+import { recordHintView } from "../../lib/recentHints";
 
 // The one shared "view a single hint" modal. Any place that renders a hint
 // as a small tile — feed cards, contact hint previews, circle members, etc.
@@ -18,6 +19,11 @@ import { trackRetailerClick } from "../../lib/trackRetailerClick";
 // silently hiding the button whenever `supabase` is omitted.
 export default function HintDetailModal({ hint, onClose, supabase, currentUserId, source = "unknown" }) {
   const client = useMemo(() => supabase || createClient(), [supabase]);
+
+  useEffect(() => {
+    if (hint?.id && currentUserId) recordHintView(client, currentUserId, hint.id);
+  }, [hint?.id, currentUserId]);
+
   if (!hint) return null;
 
   return (

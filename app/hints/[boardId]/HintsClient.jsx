@@ -29,6 +29,7 @@ import ShareButton from "../../components/ShareButton";
 import { useCurrencyFormatter } from "../../../lib/useCurrencyFormatter";
 import { usePreferences } from "../../providers/PreferencesProvider";
 import AvatarMenu from "../../components/AvatarMenu";
+import { recordBoardVisit } from "../../../lib/recentActivity";
 
 const BASE_CURRENCY = "GBP";
 const PREVIEW_TIMEOUT_MS = 18000;
@@ -1482,6 +1483,7 @@ export default function HintsClient({ boardId }) {
           return;
         }
         setBoard(boardRow);
+        recordBoardVisit(supabase, user.id, boardId);
       }
       setBoardLoading(false);
 
