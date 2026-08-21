@@ -72,13 +72,19 @@ export default function ProfileClient({ userId }) {
       setCurrentUser(user);
       recordShareContext("profile", userId, userId);
 
-      const [{ data: profileData }, { data: boardRows }] = await Promise.all([
-        supabase.from("profiles").select("full_name, avatar_url, interests, birthday").eq("id", userId).maybeSingle(),
+      // Uses an RPC rather than a direct table select — birthday is only
+      // ever returned by this function when the caller has an active
+      // contact relationship with this profile, enforced at the database
+      // level (not just hidden in the UI, which a direct API call could
+      // bypass). Returns a single-row array since it's a table function.
+      const [{ data: profileRows }, { data: boardRows }] = await Promise.all([
+        supabase.rpc("get_public_profile", { target_id: userId }),
         supabase.from("hint_boards")
           .select("id, title, is_default")
           .eq("user_id", userId).or("is_private.is.null,is_private.eq.false")
           .order("is_default", { ascending: false }).order("created_at", { ascending: true }),
       ]);
+      const profileData = profileRows?.[0] || null;
       setProfile(profileData);
 
       const boardsWithPreviews = await Promise.all(
