@@ -2153,8 +2153,14 @@ export default function HintsClient({ boardId }) {
       <div className="mx-auto max-w-[1380px] px-5 py-10 md:px-8">
         <section className="text-center">
           {boardId && (
-            <Link href="/hints" className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-slate-400 hover:text-slate-600">
-              ← All Hints
+            <Link
+              href="/hints"
+              className="mb-4 inline-flex h-8 items-center gap-1 rounded-full pl-1.5 pr-3 text-[13px] font-semibold text-slate-400 transition hover:bg-[#fff1e9] hover:text-[#df7b59]"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+              All Hints
             </Link>
           )}
 
