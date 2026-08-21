@@ -26,7 +26,6 @@ export default function BoardPreviewClient({ boardId }) {
         .from("hint_boards")
         .select("id, title, user_id, is_private, profiles(full_name, avatar_url)")
         .eq("id", boardId)
-        .or("is_private.is.null,is_private.eq.false")
         .maybeSingle();
 
       if (!boardRow) {

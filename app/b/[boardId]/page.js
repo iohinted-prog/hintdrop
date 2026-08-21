@@ -8,7 +8,6 @@ export async function generateMetadata({ params }) {
     .from("hint_boards")
     .select("title, user_id, is_private, profiles(full_name)")
     .eq("id", boardId)
-    .or("is_private.is.null,is_private.eq.false")
     .maybeSingle();
 
   if (!board) {
