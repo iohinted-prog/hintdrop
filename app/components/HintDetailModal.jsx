@@ -63,14 +63,28 @@ export default function HintDetailModal({ hint, onClose, supabase, currentUserId
           </div>
         )}
         <div className="p-5">
+          {hint.starred && <p className="text-[11px] font-semibold text-[#ff875d] mb-1">⭐ Top pick</p>}
           <p className="text-[18px] font-semibold text-slate-900 leading-tight">{hint.title || "Hint"}</p>
+          {hint.ownerName && <p className="text-[12px] text-slate-500 mt-0.5">Added by {hint.ownerName}</p>}
           {hint.retailer && <p className="text-[13px] text-slate-400 mt-1">{hint.retailer}</p>}
+          {hint.numeric_price > 0 && (
+            <p className="text-[16px] font-bold text-[#df7b59] mt-2">
+              {new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numeric_price)}
+            </p>
+          )}
           {(hint.size || hint.colour) && (
             <p className="text-[13px] text-slate-600 mt-2">
               {hint.size && <>📏 Size: <strong>{hint.size}</strong>{hint.size_type ? ` (${hint.size_type})` : ""}</>}
               {hint.size && hint.colour && "  ·  "}
               {hint.colour && <>🎨 Colour: <strong>{hint.colour}</strong></>}
             </p>
+          )}
+          {hint.occasions?.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {hint.occasions.map((o) => (
+                <span key={o} className="rounded-full bg-[#fff4ee] px-2.5 py-0.5 text-[11px] font-semibold text-[#df7b59]">{o}</span>
+              ))}
+            </div>
           )}
           <div className="mt-4">
             <ShareButton
