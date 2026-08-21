@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "../../lib/supabase/client";
+import ShareButton from "./ShareButton";
 
 const relationshipOptions = [
   "Partner", "Spouse", "Family", "Friend", "Parent", "Child",
@@ -13,6 +14,7 @@ function isValidEmail(value) {
 
 export default function AddContactModal({ open, onClose, onSave, modalKey }) {
   const supabase = createClient();
+  const [currentUserId, setCurrentUserId] = useState("");
   const [contactSearch, setContactSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [contactResults, setContactResults] = useState([]);
@@ -30,6 +32,10 @@ export default function AddContactModal({ open, onClose, onSave, modalKey }) {
       setForm({ name: "", email: "" }); setSaving(false); setSaveError("");
     }
   }, [open]);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id || ""));
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -118,6 +124,28 @@ export default function AddContactModal({ open, onClose, onSave, modalKey }) {
           <button onClick={onClose} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white text-slate-500 hover:bg-[#fff2eb]" type="button">✕</button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+          {currentUserId && (
+            <div className="mb-5 rounded-[28px] border border-[#f0dfd6] bg-[#fff7f2] p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#df7b59]">Fastest way</p>
+              <h3 className="mt-2 text-[16px] font-semibold tracking-[-0.02em] text-slate-900">Share your invite link</h3>
+              <p className="mt-1.5 text-[13px] leading-6 text-slate-500">
+                Anyone with this link can add themselves to your Circle instantly — no email needed.
+              </p>
+              <div className="mt-4">
+                <ShareButton
+                  supabase={supabase}
+                  subjectType="profile"
+                  subjectId={currentUserId}
+                  path={`/profile/${currentUserId}`}
+                  title="Add me on HintDrop"
+                  currentUserId={currentUserId}
+                  label="Share invite link"
+                  className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-5 text-[13px] font-semibold text-white shadow-md hover:brightness-105"
+                />
+              </div>
+            </div>
+          )}
+
           <div className="rounded-[28px] border border-dashed border-[#e5d8cf] bg-[#fffdfa] p-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Search your email contacts</p>
             <h3 className="mt-3 text-[18px] font-semibold tracking-[-0.03em] text-slate-900">Find someone quickly</h3>
