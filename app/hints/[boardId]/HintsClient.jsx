@@ -1024,7 +1024,7 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
                   {hint.starred ? "★ Top pick" : "☆ Star"}
                 </button>
               </div>
-              {!hint.private && (
+              {!hint.private && !hint.id?.startsWith("demo-") && (
                 <div className="mb-3">
                   <ShareButton
                     supabase={createClient()}
@@ -1043,7 +1043,7 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
                   className="flex-1 h-11 rounded-full border border-[#ead8ce] bg-white text-[13px] font-semibold text-slate-700">
                   Edit
                 </button>
-                {hint.url && (
+                {hint.url && !hint.id?.startsWith("demo-") && (
                   <a href={hint.url} target="_blank" rel="noopener noreferrer"
                     onClick={() => {
                       const supabase = createClient();
@@ -1214,16 +1214,18 @@ function HintCard({
             </button>
 
             <a
-              href={hint.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => {
+              href={hint.id?.startsWith("demo-") ? undefined : hint.url}
+              target={hint.id?.startsWith("demo-") ? undefined : "_blank"}
+              rel={hint.id?.startsWith("demo-") ? undefined : "noopener noreferrer"}
+              aria-disabled={hint.id?.startsWith("demo-") || undefined}
+              onClick={(e) => {
+                if (hint.id?.startsWith("demo-")) { e.preventDefault(); return; }
                 const supabase = createClient();
                 supabase.auth.getUser().then(({ data }) => {
                   trackRetailerClick(supabase, { userId: data?.user?.id, hintId: hint.id, url: hint.url, retailer: hint.retailer, source: "hints_page" });
                 });
               }}
-              className="rounded-full border border-white/45 bg-white/76 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-md hover:bg-white"
+              className={`rounded-full border border-white/45 bg-white/76 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-md ${hint.id?.startsWith("demo-") ? "cursor-default opacity-50" : "hover:bg-white"}`}
             >
               Open
             </a>
