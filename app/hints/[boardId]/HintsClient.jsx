@@ -29,6 +29,7 @@ import ShareButton from "../../components/ShareButton";
 import { useCurrencyFormatter } from "../../../lib/useCurrencyFormatter";
 import { usePreferences } from "../../providers/PreferencesProvider";
 import AvatarMenu from "../../components/AvatarMenu";
+import BackLink from "../../components/BackLink";
 import { recordBoardVisit } from "../../../lib/recentActivity";
 
 const BASE_CURRENCY = "GBP";
@@ -2153,15 +2154,9 @@ export default function HintsClient({ boardId }) {
       <div className="mx-auto max-w-[1380px] px-5 py-10 md:px-8">
         <section className="text-center">
           {boardId && (
-            <Link
-              href="/hints"
-              className="mb-4 inline-flex h-8 items-center gap-1 rounded-full pl-1.5 pr-3 text-[13px] font-semibold text-slate-400 transition hover:bg-[#fff1e9] hover:text-[#df7b59]"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-              All Hints
-            </Link>
+            <div className="mb-4">
+              <BackLink href="/hints">All Hints</BackLink>
+            </div>
           )}
 
           <div className="flex flex-col items-center gap-3">

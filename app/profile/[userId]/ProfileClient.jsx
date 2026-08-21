@@ -8,6 +8,7 @@ import GroupHintModal from "../../components/GroupHintModal";
 import { trackRetailerClick } from "../../../lib/trackRetailerClick";
 import HintImage from "../../components/HintImage";
 import ShareButton from "../../components/ShareButton";
+import BackLink from "../../components/BackLink";
 import { recordShareContext } from "../../../lib/share";
 import { recordBoardVisit } from "../../../lib/recentActivity";
 import { recordHintView } from "../../../lib/recentHints";
@@ -277,10 +278,9 @@ export default function ProfileClient({ userId }) {
       {selectedBoardId && boards && boards.length > 1 && (
         <div className="border-b border-[#f0dfd6] bg-[#fff7f2] px-4 py-2.5 sm:px-8">
           <div className="mx-auto max-w-[1200px]">
-            <button type="button" onClick={() => setSelectedBoardId(null)}
-              className="text-[13px] font-semibold text-[#df7b59] hover:text-[#b14f43]">
-              ← All of {isOwnProfile ? "your" : `${displayName}'s`} Hints
-            </button>
+            <BackLink onClick={() => setSelectedBoardId(null)}>
+              All of {isOwnProfile ? "your" : `${displayName}'s`} Hints
+            </BackLink>
           </div>
         </div>
       )}
