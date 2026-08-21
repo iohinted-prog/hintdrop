@@ -72,7 +72,7 @@ export default function BoardPreviewClient({ boardId }) {
         ) : !board ? (
           <div className="text-center py-16">
             <p className="text-4xl mb-3">🎁</p>
-            <p className="text-[18px] font-semibold text-slate-900">This board isn't available</p>
+            <p className="text-[18px] font-semibold text-slate-900">These Hints aren't available</p>
             <p className="mt-1 text-sm text-slate-500">It may be private, or no longer exists.</p>
             <Link href="/" className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-6 text-sm font-semibold text-white shadow-lg">
               Explore HintDrop
@@ -107,7 +107,7 @@ export default function BoardPreviewClient({ boardId }) {
             </div>
 
             {hints.length === 0 ? (
-              <p className="mt-12 text-center text-sm text-slate-400">No hints on this board yet.</p>
+              <p className="mt-12 text-center text-sm text-slate-400">No Hints here yet.</p>
             ) : (
               <div className="mt-10 columns-2 gap-4 sm:columns-3">
                 {hints.map((hint) => (

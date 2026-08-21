@@ -12,12 +12,12 @@ export async function generateMetadata({ params }) {
     .maybeSingle();
 
   if (!board) {
-    return { title: "Hints board | HintDrop" };
+    return { title: "Hints | HintDrop" };
   }
 
   const ownerName = board.profiles?.full_name?.split(" ")[0] || "Someone";
   const title = `${board.title} — ${ownerName}'s Hints 👀 | HintDrop`;
-  const description = `Take a look at ${ownerName}'s "${board.title}" hints board on HintDrop.`;
+  const description = `Take a look at ${ownerName}'s "${board.title}" Hints on HintDrop.`;
 
   return {
     title,

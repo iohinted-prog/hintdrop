@@ -56,7 +56,7 @@ export default function ProfileClient({ userId }) {
         supabase.from("hints")
           .select("id, title, image_url, numeric_price, currency, retailer, url, starred, occasions, position, size, size_type")
           .eq("user_id", userId).or("is_private.is.null,is_private.eq.false")
-          .order("position", { ascending: true }).limit(100),
+          .order("position", { ascending: true }).order("created_at", { ascending: false }).limit(100),
       ]);
       setProfile(profileData);
       const hintsList = hintsData || [];

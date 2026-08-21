@@ -1999,7 +1999,7 @@ export default function HintsClient({ boardId }) {
               item_type: "hint_save_session",
               headline: buildDropHeadline(sessionHints.length, newHint.title),
               body: newHint.retailer || "",
-              cta_label: "See new hints",
+              cta_label: "See new Hints",
               cta_href: "/hints",
               visibility: "contacts",
               occurred_at: new Date().toISOString(),
@@ -2123,13 +2123,18 @@ export default function HintsClient({ boardId }) {
         <section className="text-center">
           {boardId && (
             <Link href="/hints" className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-slate-400 hover:text-slate-600">
-              ← All boards
+              ← All Hints
             </Link>
           )}
 
           <div className="flex flex-col items-center gap-3">
+            {boardId && !boardLoading && board && !board.is_default && (
+              <div className="inline-flex rounded-full bg-[#fff4ee] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.1em] text-[#e37b57]">
+                {board.title}
+              </div>
+            )}
             <h1 className="text-[32px] font-extrabold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
-              {boardId ? (boardLoading ? "\u00A0" : (board?.title || "Hints")) : "Drop a Hint here..."}
+              Drop a Hint here...
             </h1>
             {boardId && !boardLoading && board && currentUser && (
               <ShareButton
@@ -2139,7 +2144,7 @@ export default function HintsClient({ boardId }) {
                 path={`/b/${boardId}`}
                 title={board.title}
                 currentUserId={currentUser.id}
-                label={`Share "${board.title}"`}
+                label={board.is_default ? "Share my Hints" : `Share "${board.title}"`}
                 className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 py-2 text-[13px] font-semibold text-white shadow-md hover:brightness-105"
               />
             )}

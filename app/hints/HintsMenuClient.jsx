@@ -37,7 +37,7 @@ function BoardCard({ board }) {
         <div className="min-w-0">
           <p className="truncate text-[15px] font-semibold text-slate-900">{board.title}</p>
           <p className="mt-0.5 text-[12px] text-slate-400">
-            {board.is_default ? "Personal" : "Shared board"} · {board.hintCount} hint{board.hintCount === 1 ? "" : "s"}
+            {board.is_default ? "Personal" : "Hints for someone else"} · {board.hintCount} Hint{board.hintCount === 1 ? "" : "s"}
           </p>
         </div>
         <span className="shrink-0 text-slate-300 transition group-hover:text-[#df7b59]">→</span>
@@ -150,10 +150,10 @@ export default function HintsMenuClient() {
       <div className="mx-auto max-w-[1100px] px-5 py-10 md:px-8">
         <section className="text-center">
           <h1 className="text-[32px] font-extrabold tracking-[-0.06em] text-[#f19a78] sm:text-[44px]">
-            Your hints boards
+            Your Hints
           </h1>
           <p className="mx-auto mt-3 max-w-[52ch] text-[15px] leading-7 text-slate-500">
-            Your personal board is just for you. Make more boards for other people — a Pinterest-style list you build and share with anyone, for their birthday, Christmas, or anything else.
+            Your personal Hints are just for you. Make more for other people — build a list and share it with anyone, for their birthday, Christmas, or anything else.
           </p>
         </section>
 
@@ -208,7 +208,7 @@ export default function HintsMenuClient() {
                       disabled={!newBoardTitle.trim() || isSavingBoard}
                       className="h-10 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-5 text-[13px] font-semibold text-white shadow-md disabled:opacity-60"
                     >
-                      {isSavingBoard ? "Creating..." : "Create board"}
+                      {isSavingBoard ? "Creating..." : "Create Hints list"}
                     </button>
                   </div>
                 </form>
@@ -220,7 +220,7 @@ export default function HintsMenuClient() {
                   style={{ minHeight: "180px" }}
                 >
                   <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-current text-[20px]">+</span>
-                  <span className="text-[13px] font-semibold">New board</span>
+                  <span className="text-[13px] font-semibold">New Hints list</span>
                 </button>
               )}
             </div>
