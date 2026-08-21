@@ -262,8 +262,28 @@ export default function OnboardingPage() {
             subjectId: shareContext.subjectId,
             viewerUserId: user.id,
           });
+        } else if (shareContext?.subjectType === "board" || shareContext?.subjectType === "profile") {
+          await supabase.from("profiles").update({ signup_source: "share" }).eq("id", user.id);
+          trackShareEvent(supabase, {
+            eventType: "signup_from_share",
+            subjectType: shareContext.subjectType,
+            subjectId: shareContext.subjectId,
+            viewerUserId: user.id,
+          });
         } else {
           await supabase.from("profiles").update({ signup_source: "direct" }).eq("id", user.id);
+        }
+
+        // Signing up via a shared hint/board/profile link auto-sends a
+        // Circle request to whoever shared it — same request-needs-
+        // acceptance flow as clicking "Add to Circle" while signed in, just
+        // triggered automatically the moment signup completes rather than
+        // requiring a separate click. Fire-and-forget: this is a nice-to-
+        // have, never worth blocking or failing onboarding over.
+        if (shareContext?.ownerUserId && shareContext.ownerUserId !== user.id) {
+          supabase.functions.invoke("send-contact-invite", {
+            body: { target_user_id: shareContext.ownerUserId, name: "" },
+          }).catch(() => {});
         }
 
         // No confirmation email trigger needed here anymore — reaching

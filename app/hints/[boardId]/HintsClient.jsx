@@ -1004,6 +1004,13 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
             <div className="p-5">
               <p className="text-[18px] font-semibold text-slate-900 leading-tight mb-1">{hint.title || "Hint"}</p>
               {hint.retailer && <p className="text-[13px] text-slate-400 mb-1">{hint.retailer}</p>}
+              {(hint.size || hint.colour) && (
+                <p className="text-[13px] text-slate-600 mb-1">
+                  {hint.size && <>📏 Size: <strong>{hint.size}</strong>{hint.sizeType ? ` (${hint.sizeType})` : ""}</>}
+                  {hint.size && hint.colour && "  ·  "}
+                  {hint.colour && <>🎨 Colour: <strong>{hint.colour}</strong></>}
+                </p>
+              )}
               {hint.rawPrice && <p className="text-[15px] font-bold text-[#df7b59] mb-4">{hint.rawPrice}</p>}
               <div className="flex gap-3 mb-3">
                 <button type="button" onClick={() => { onTogglePrivate(hint); }}

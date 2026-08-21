@@ -36,7 +36,7 @@ export default function BoardPreviewClient({ boardId }) {
 
       const { data: hintRows } = await supabase
         .from("hints")
-        .select("id, title, image_url, retailer, numeric_price, currency, url, occasions")
+        .select("id, title, image_url, retailer, numeric_price, currency, url, occasions, size, size_type, colour")
         .eq("board_id", boardId)
         .or("is_private.is.null,is_private.eq.false")
         .order("position", { ascending: true });
@@ -45,17 +45,17 @@ export default function BoardPreviewClient({ boardId }) {
       setHints(hintRows || []);
       setLoading(false);
 
+      recordShareContext("board", boardId, boardRow.user_id);
       trackShareEvent(supabase, { eventType: "share_link_opened", subjectType: "board", subjectId: boardId, viewerUserId: user?.id });
     }
     load();
   }, [boardId]);
 
   async function handleSaveToCircle() {
-    if (!currentUser || !board?.user_id) return;
-    await supabase.from("contacts").insert({
-      owner_user_id: currentUser.id,
-      profile_id: board.user_id,
-      name: board.profiles?.full_name || "New contact",
+    if (!currentUser || !board?.user_id || saved) return;
+    setSaved("sending");
+    await supabase.functions.invoke("send-contact-invite", {
+      body: { target_user_id: board.user_id, name: board.profiles?.full_name || "" },
     });
     trackShareEvent(supabase, { eventType: "hint_saved_from_share", subjectType: "board", subjectId: boardId, viewerUserId: currentUser.id });
     setSaved(true);
@@ -93,13 +93,13 @@ export default function BoardPreviewClient({ boardId }) {
                   See {ownerName.split(" ")[0]}'s profile
                 </Link>
                 {currentUser ? (
-                  <button type="button" onClick={handleSaveToCircle} disabled={saved}
+                  <button type="button" onClick={handleSaveToCircle} disabled={Boolean(saved)}
                     className="h-11 flex items-center justify-center rounded-full border border-[#ead8ce] px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0] disabled:opacity-60">
-                    {saved ? "Saved to your Circle ✓" : `Save ${ownerName.split(" ")[0]} to your Circle`}
+                    {saved === "sending" ? "Sending request..." : saved ? "Request sent ✓" : `Add ${ownerName.split(" ")[0]} to your Circle`}
                   </button>
                 ) : (
                   <Link href="/" className="h-11 flex items-center justify-center rounded-full border border-[#ead8ce] px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]">
-                    Sign up to save to your Circle
+                    Sign up to join {ownerName.split(" ")[0]}'s Circle
                   </Link>
                 )}
               </div>

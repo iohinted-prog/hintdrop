@@ -59,6 +59,13 @@ export default function HintDetailModal({ hint, onClose, supabase, currentUserId
         <div className="p-5">
           <p className="text-[18px] font-semibold text-slate-900 leading-tight">{hint.title || "Hint"}</p>
           {hint.retailer && <p className="text-[13px] text-slate-400 mt-1">{hint.retailer}</p>}
+          {(hint.size || hint.colour) && (
+            <p className="text-[13px] text-slate-600 mt-2">
+              {hint.size && <>📏 Size: <strong>{hint.size}</strong>{hint.size_type ? ` (${hint.size_type})` : ""}</>}
+              {hint.size && hint.colour && "  ·  "}
+              {hint.colour && <>🎨 Colour: <strong>{hint.colour}</strong></>}
+            </p>
+          )}
           <div className="mt-4">
             <ShareButton
               supabase={client}

@@ -7,6 +7,7 @@ import GroupHintModal from "../../components/GroupHintModal";
 import { trackRetailerClick } from "../../../lib/trackRetailerClick";
 import HintImage from "../../components/HintImage";
 import ShareButton from "../../components/ShareButton";
+import { recordShareContext } from "../../../lib/share";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -51,6 +52,7 @@ export default function ProfileClient({ userId }) {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
+      recordShareContext("profile", userId, userId);
       const [{ data: profileData }, { data: hintsData }] = await Promise.all([
         supabase.from("profiles").select("full_name, avatar_url, interests").eq("id", userId).maybeSingle(),
         supabase.from("hints")

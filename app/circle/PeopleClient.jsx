@@ -51,8 +51,8 @@ function HintsPreview({ userId, supabase }) {
   useEffect(() => {
     if (!userId) return;
     supabase.from("hints")
-      .select("id, title, image_url, numeric_price, currency, retailer, url")
-      .eq("user_id", userId).eq("is_private", false)
+      .select("id, title, image_url, numeric_price, currency, retailer, url, size, size_type, colour")
+      .eq("user_id", userId).or("is_private.is.null,is_private.eq.false")
       .order("position", { ascending: true }).limit(20)
       .then(({ data }) => { setHints(data || []); setLoading(false); });
   }, [userId]);
@@ -133,9 +133,9 @@ export default function PeopleClient() {
     const withAccounts = mapped.filter(c => c.profileId);
     if (!withAccounts.length) return;
     const { data: hintsData } = await supabase.from("hints")
-      .select("id, title, image_url, user_id")
+      .select("id, title, image_url, user_id, retailer, numeric_price, currency, size, size_type, colour")
       .in("user_id", withAccounts.map(c => c.profileId))
-      .eq("is_private", false)
+      .or("is_private.is.null,is_private.eq.false")
       .order("starred", { ascending: false })
       .limit(100);
     if (!hintsData) return;

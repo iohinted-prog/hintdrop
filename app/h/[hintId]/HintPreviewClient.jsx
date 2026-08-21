@@ -29,6 +29,7 @@ export default function HintPreviewClient({ hintId }) {
       setLoading(false);
 
       if (data) {
+        recordShareContext("hint", hintId, data.user_id);
         trackShareEvent(supabase, { eventType: "share_link_opened", subjectType: "hint", subjectId: hintId, viewerUserId: user?.id });
       }
     }
@@ -36,13 +37,15 @@ export default function HintPreviewClient({ hintId }) {
   }, [hintId]);
 
   async function handleSaveToCircle() {
-    if (!currentUser || !hint?.user_id) return;
-    await supabase.from("contacts").insert({
-      owner_user_id: currentUser.id,
-      profile_id: hint.user_id,
-      name: hint.profiles?.full_name || "New contact",
+    if (!currentUser || !hint?.user_id || saved) return;
+    setSaved("sending");
+    const { error } = await supabase.functions.invoke("send-contact-invite", {
+      body: { target_user_id: hint.user_id, name: hint.profiles?.full_name || "" },
     });
     trackShareEvent(supabase, { eventType: "hint_saved_from_share", subjectType: "hint", subjectId: hintId, viewerUserId: currentUser.id });
+    // A 409 (already a contact, or already a pending invite) is a fine
+    // outcome here too — either way there's nothing left to send, so show
+    // the same success state rather than surfacing it as an error
     setSaved(true);
   }
 
@@ -106,13 +109,13 @@ export default function HintPreviewClient({ hintId }) {
                   See {ownerName.split(" ")[0]}'s other Hints
                 </Link>
                 {currentUser ? (
-                  <button type="button" onClick={handleSaveToCircle} disabled={saved}
+                  <button type="button" onClick={handleSaveToCircle} disabled={Boolean(saved)}
                     className="h-11 flex items-center justify-center rounded-full border border-[#ead8ce] text-sm font-semibold text-slate-700 hover:bg-[#fff5f0] disabled:opacity-60">
-                    {saved ? "Saved to your Circle ✓" : `Save ${ownerName.split(" ")[0]} to your Circle`}
+                    {saved === "sending" ? "Sending request..." : saved ? "Request sent ✓" : `Add ${ownerName.split(" ")[0]} to your Circle`}
                   </button>
                 ) : (
                   <Link href="/" className="h-11 flex items-center justify-center rounded-full border border-[#ead8ce] text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]">
-                    Sign up to save to your Circle
+                    Sign up to join {ownerName.split(" ")[0]}'s Circle
                   </Link>
                 )}
               </div>

@@ -43,8 +43,8 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
       setLoading(true);
       const [{ data: profileData }, { data: hintsData }] = await Promise.all([
         supabase.from("profiles").select("full_name, avatar_url, interests").eq("id", userId).maybeSingle(),
-        supabase.from("hints").select("id, title, image_url, numeric_price, currency, retailer, url, starred, occasions, size, size_type")
-          .eq("user_id", userId).eq("is_private", false).order("position", { ascending: true }),
+        supabase.from("hints").select("id, title, image_url, numeric_price, currency, retailer, url, starred, occasions, size, size_type, colour")
+          .eq("user_id", userId).or("is_private.is.null,is_private.eq.false").order("position", { ascending: true }),
       ]);
       setProfile(profileData);
       const hintsList = [...(hintsData || [])].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)).slice(0, 8);
@@ -195,6 +195,9 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
               )}
               {selectedHint.size && (
                 <p className="text-[13px] text-slate-600 mt-2">📏 Size: <strong>{selectedHint.size}</strong>{selectedHint.size_type ? " (" + selectedHint.size_type + ")" : ""}</p>
+              )}
+              {selectedHint.colour && (
+                <p className="text-[13px] text-slate-600 mt-1">🎨 Colour: <strong>{selectedHint.colour}</strong></p>
               )}
               {selectedHint.occasions && selectedHint.occasions.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">

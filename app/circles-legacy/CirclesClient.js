@@ -2065,7 +2065,7 @@ export default function CirclesClient() {
         .from("hints")
         .select("id, user_id, title, url, image_url, created_at, is_private, retailer, price_text, numeric_price, currency")
         .in("user_id", matchedProfileIds)
-        .eq("is_private", false)
+        .or("is_private.is.null,is_private.eq.false")
         .order("created_at", { ascending: false });
 
       if (error) {

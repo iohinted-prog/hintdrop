@@ -1554,7 +1554,7 @@ export default function FeedClient() {
         .from("hints")
         .select("id, user_id, title, image_url, position")
         .in("user_id", profileIds)
-        .eq("is_private", false)
+        .or("is_private.is.null,is_private.eq.false")
         .order("position", { ascending: true });
 
       const hintsByUser = {};
