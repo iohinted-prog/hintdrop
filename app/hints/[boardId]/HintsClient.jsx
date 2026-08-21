@@ -1023,9 +1023,8 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
                     subjectId={hint.id}
                     path={`/h/${hint.id}`}
                     title={hint.title}
-                    icon="↗"
                     label="Share this hint"
-                    className="w-full h-11 rounded-full border border-[#ead8ce] bg-white text-[13px] font-semibold text-slate-700 flex items-center justify-center gap-1.5 hover:bg-[#fff5f0]"
+                    className="w-full h-11 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white flex items-center justify-center gap-1.5 shadow-md hover:brightness-105"
                   />
                 </div>
               )}
@@ -2140,9 +2139,8 @@ export default function HintsClient({ boardId }) {
                 path={`/b/${boardId}`}
                 title={board.title}
                 currentUserId={currentUser.id}
-                icon="↗"
                 label={`Share "${board.title}"`}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-4 py-2 text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0]"
+                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 py-2 text-[13px] font-semibold text-white shadow-md hover:brightness-105"
               />
             )}
           </div>

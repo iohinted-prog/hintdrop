@@ -9,9 +9,9 @@ export default function ShareButton({
   path,
   title,
   currentUserId,
-  className = "",
+  className = "inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-5 text-[13px] font-semibold text-white shadow-md transition hover:brightness-105",
   label = "Share",
-  icon = "🔗",
+  icon = "",
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -80,7 +80,7 @@ export default function ShareButton({
   return (
     <div className="relative">
       <button type="button" onClick={handleMainClick} className={className}>
-        <span>{icon}</span> {label}
+        {icon && <span>{icon}</span>} {label}
       </button>
       {open && (
         <>

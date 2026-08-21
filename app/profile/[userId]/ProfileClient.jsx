@@ -55,7 +55,7 @@ export default function ProfileClient({ userId }) {
         supabase.from("profiles").select("full_name, avatar_url, interests").eq("id", userId).maybeSingle(),
         supabase.from("hints")
           .select("id, title, image_url, numeric_price, currency, retailer, url, starred, occasions, position, size, size_type")
-          .eq("user_id", userId).eq("is_private", false)
+          .eq("user_id", userId).or("is_private.is.null,is_private.eq.false")
           .order("position", { ascending: true }).limit(100),
       ]);
       setProfile(profileData);
@@ -148,9 +148,8 @@ export default function ProfileClient({ userId }) {
               path={`/profile/${userId}`}
               title={`${displayName}'s Hints`}
               currentUserId={currentUser?.id}
-              icon="↗"
               label="Share"
-              className="h-9 flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-3.5 text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0]"
+              className="h-9 flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-3.5 text-[13px] font-semibold text-white shadow-md hover:brightness-105"
             />
           </div>
           {profile?.avatar_url
@@ -271,9 +270,8 @@ export default function ProfileClient({ userId }) {
                   path={`/h/${selectedHint.id}`}
                   title={selectedHint.title}
                   currentUserId={currentUser?.id}
-                  icon="↗"
                   label="Share this hint"
-                  className="w-full h-11 rounded-full border border-[#ead8ce] bg-white text-[13px] font-semibold text-slate-700 flex items-center justify-center gap-1.5 hover:bg-[#fff5f0]"
+                  className="w-full h-11 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white flex items-center justify-center gap-1.5 shadow-md hover:brightness-105"
                 />
               </div>
               <div className="flex gap-3">
