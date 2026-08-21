@@ -1,10 +1,10 @@
-import HintsClient from "./HintsClient";
+import HintsMenuClient from "./HintsMenuClient";
 
 export const metadata = {
   title: "Hints",
-  description: "Collect, organise, and move gift ideas around a visual hints board.",
+  description: "Your hints boards — a personal one, plus any you've made for other people.",
 };
 
-export default function HintsPage() {
-  return <HintsClient />;
+export default function HintsMenuPage() {
+  return <HintsMenuClient />;
 }

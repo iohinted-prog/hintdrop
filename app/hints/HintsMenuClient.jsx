@@ -1,0 +1,232 @@
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "../../lib/supabase/client";
+import HintImage from "../components/HintImage";
+
+function errorToMessage(value) {
+  if (!value) return "Something went wrong.";
+  if (typeof value === "string") return value;
+  if (value instanceof Error) return value.message || "Something went wrong.";
+  if (typeof value === "object" && typeof value.message === "string") return value.message;
+  return String(value);
+}
+
+function BoardCard({ board }) {
+  return (
+    <Link
+      href={`/hints/${board.id}`}
+      className="group flex flex-col overflow-hidden rounded-[26px] border border-[#f0dfd6] bg-white transition hover:-translate-y-1 hover:shadow-md"
+    >
+      <div className="grid grid-cols-2 gap-0.5 bg-[#fdf5f0] p-0.5" style={{ aspectRatio: "16/9" }}>
+        {[0, 1, 2, 3].map((i) => {
+          const hint = board.previewHints?.[i];
+          return (
+            <div key={i} className="relative overflow-hidden bg-[#fdf5f0]">
+              {hint?.image_url ? (
+                <HintImage src={hint.image_url} alt="" fill className="object-cover" sizes="200px" fallbackClassName="hidden" />
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-[#ead8ca] to-[#dbc0a8]" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-center justify-between gap-3 p-4">
+        <div className="min-w-0">
+          <p className="truncate text-[15px] font-semibold text-slate-900">{board.title}</p>
+          <p className="mt-0.5 text-[12px] text-slate-400">
+            {board.is_default ? "Personal" : "Shared board"} · {board.hintCount} hint{board.hintCount === 1 ? "" : "s"}
+          </p>
+        </div>
+        <span className="shrink-0 text-slate-300 transition group-hover:text-[#df7b59]">→</span>
+      </div>
+    </Link>
+  );
+}
+
+export default function HintsMenuClient() {
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState(null);
+  const [boards, setBoards] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [newBoardTitle, setNewBoardTitle] = useState("");
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isSavingBoard, setIsSavingBoard] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelled = false;
+
+    async function load() {
+      setIsLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled) return;
+      setCurrentUser(user || null);
+
+      if (!user) {
+        setBoards([]);
+        setIsLoading(false);
+        return;
+      }
+
+      let { data: boardRows, error: boardsError } = await supabase
+        .from("hint_boards")
+        .select("id, title, is_default, created_at")
+        .eq("user_id", user.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: true });
+
+      if (cancelled) return;
+      if (boardsError) {
+        setError(errorToMessage(boardsError));
+        setIsLoading(false);
+        return;
+      }
+
+      // First-ever visit for this account — give them a default board
+      // rather than showing an empty menu with nothing to click into
+      if (!boardRows || boardRows.length === 0) {
+        const { data: created, error: createError } = await supabase
+          .from("hint_boards")
+          .insert({ user_id: user.id, title: "My Hints", is_default: true })
+          .select("id, title, is_default, created_at")
+          .single();
+        if (cancelled) return;
+        if (createError) {
+          setError(errorToMessage(createError));
+          setIsLoading(false);
+          return;
+        }
+        boardRows = [created];
+      }
+
+      const boardsWithPreviews = await Promise.all(
+        boardRows.map(async (board) => {
+          const [{ count }, { data: previewHints }] = await Promise.all([
+            supabase.from("hints").select("id", { count: "exact", head: true }).eq("board_id", board.id),
+            supabase.from("hints").select("image_url").eq("board_id", board.id).order("position", { ascending: true }).limit(4),
+          ]);
+          return { ...board, hintCount: count || 0, previewHints: previewHints || [] };
+        })
+      );
+
+      if (cancelled) return;
+      setBoards(boardsWithPreviews);
+      setIsLoading(false);
+    }
+
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  async function handleCreateBoard(e) {
+    e.preventDefault();
+    const title = newBoardTitle.trim();
+    if (!title || !currentUser?.id || isSavingBoard) return;
+
+    setIsSavingBoard(true);
+    setError("");
+    try {
+      const supabase = createClient();
+      const { data, error: createError } = await supabase
+        .from("hint_boards")
+        .insert({ user_id: currentUser.id, title, is_default: false })
+        .select("id")
+        .single();
+      if (createError) throw createError;
+      router.push(`/hints/${data.id}`);
+    } catch (err) {
+      setError(errorToMessage(err));
+      setIsSavingBoard(false);
+    }
+  }
+
+  return (
+    <main className="min-h-screen bg-[#fffaf7] text-slate-800">
+      <div className="mx-auto max-w-[1100px] px-5 py-10 md:px-8">
+        <section className="text-center">
+          <h1 className="text-[32px] font-extrabold tracking-[-0.06em] text-[#f19a78] sm:text-[44px]">
+            Your hints boards
+          </h1>
+          <p className="mx-auto mt-3 max-w-[52ch] text-[15px] leading-7 text-slate-500">
+            Your personal board is just for you. Make more boards for other people — a Pinterest-style list you build and share with anyone, for their birthday, Christmas, or anything else.
+          </p>
+        </section>
+
+        {error ? (
+          <div className="mt-6 rounded-[22px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">
+            {error}
+          </div>
+        ) : null}
+
+        <div className="mt-10">
+          {isLoading ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="overflow-hidden rounded-[26px] border border-[#f0dfd6] bg-[#f9f8f5]">
+                  <div className="animate-pulse bg-[#f2ebe5]" style={{ aspectRatio: "16/9" }} />
+                  <div className="p-4">
+                    <div className="h-4 w-2/3 animate-pulse rounded bg-[#f2ebe5]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {boards.map((board) => (
+                <BoardCard key={board.id} board={board} />
+              ))}
+
+              {showCreateForm ? (
+                <form
+                  onSubmit={handleCreateBoard}
+                  className="flex flex-col items-center justify-center gap-3 rounded-[26px] border-2 border-dashed border-[#f0a384] bg-[#fff7f2] p-6"
+                  style={{ minHeight: "180px" }}
+                >
+                  <input
+                    autoFocus
+                    type="text"
+                    value={newBoardTitle}
+                    onChange={(e) => setNewBoardTitle(e.target.value)}
+                    placeholder="e.g. Mum's Christmas List"
+                    className="h-11 w-full rounded-full border border-[#ead8ce] bg-white px-4 text-center text-sm text-slate-700 outline-none focus:ring-2 focus:ring-[#f19a78]/50"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setShowCreateForm(false); setNewBoardTitle(""); }}
+                      className="h-10 rounded-full border border-[#ead8ce] bg-white px-4 text-[13px] font-semibold text-slate-600"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!newBoardTitle.trim() || isSavingBoard}
+                      className="h-10 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-5 text-[13px] font-semibold text-white shadow-md disabled:opacity-60"
+                    >
+                      {isSavingBoard ? "Creating..." : "Create board"}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowCreateForm(true)}
+                  className="flex flex-col items-center justify-center gap-2 rounded-[26px] border-2 border-dashed border-[#ead8ce] bg-white text-slate-400 transition hover:border-[#f0a384] hover:text-[#df7b59]"
+                  style={{ minHeight: "180px" }}
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-current text-[20px]">+</span>
+                  <span className="text-[13px] font-semibold">New board</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}

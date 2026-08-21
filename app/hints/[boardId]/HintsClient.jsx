@@ -22,13 +22,13 @@ import {
   defaultAnimateLayoutChanges,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { createClient } from "../../lib/supabase/client";
-import { trackRetailerClick } from "../../lib/trackRetailerClick";
-import HintImage from "../components/HintImage";
-import ShareButton from "../components/ShareButton";
-import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
-import { usePreferences } from "../providers/PreferencesProvider";
-import AvatarMenu from "../components/AvatarMenu";
+import { createClient } from "../../../lib/supabase/client";
+import { trackRetailerClick } from "../../../lib/trackRetailerClick";
+import HintImage from "../../components/HintImage";
+import ShareButton from "../../components/ShareButton";
+import { useCurrencyFormatter } from "../../../lib/useCurrencyFormatter";
+import { usePreferences } from "../../providers/PreferencesProvider";
+import AvatarMenu from "../../components/AvatarMenu";
 
 const BASE_CURRENCY = "GBP";
 const PREVIEW_TIMEOUT_MS = 18000;
@@ -1343,9 +1343,11 @@ function LoadingHintCard({ ratio = "0.92" }) {
   );
 }
 
-export default function HintsClient() {
+export default function HintsClient({ boardId }) {
   const { formatCurrency } = useCurrencyFormatter();
   const { currency: userCurrency } = usePreferences();
+  const [board, setBoard] = useState(null);
+  const [boardLoading, setBoardLoading] = useState(true);
 
   const [hints, setHints] = useState([]);
   const [link, setLink] = useState("");
@@ -1443,6 +1445,7 @@ export default function HintsClient() {
 
     async function loadSessionAndHints() {
       setIsLoading(true);
+      setBoardLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (cancelled) return;
 
@@ -1451,13 +1454,37 @@ export default function HintsClient() {
       if (!user) {
         setHints([]);
         setIsLoading(false);
+        setBoardLoading(false);
         return;
       }
 
-      const { data, error } = await supabase
+      if (boardId) {
+        const { data: boardRow } = await supabase
+          .from("hint_boards")
+          .select("id, title, user_id, is_default, is_private")
+          .eq("id", boardId)
+          .maybeSingle();
+        if (cancelled) return;
+        // Boards are owner-only workspaces (sharing is via the separate
+        // public /b/[boardId] page) — if this board isn't ours, or doesn't
+        // exist, don't fall through to loading unscoped hints
+        if (!boardRow || boardRow.user_id !== user.id) {
+          setBoard(null);
+          setHints([]);
+          setIsLoading(false);
+          setBoardLoading(false);
+          return;
+        }
+        setBoard(boardRow);
+      }
+      setBoardLoading(false);
+
+      let hintsQuery = supabase
         .from("hints")
         .select("id, title, url, image_url, retailer, price_text, numeric_price, currency, starred, is_private, position, created_at, occasions, size, size_type, colour")
-        .eq("user_id", user.id)
+        .eq("user_id", user.id);
+      if (boardId) hintsQuery = hintsQuery.eq("board_id", boardId);
+      const { data, error } = await hintsQuery
         .order("position", { ascending: true })
         .order("created_at", { ascending: false });
 
@@ -1497,7 +1524,7 @@ export default function HintsClient() {
 
     loadSessionAndHints();
     return () => { cancelled = true; };
-  }, []);
+  }, [boardId]);
 
   const visibleHints = hints;
   const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
@@ -1909,6 +1936,7 @@ export default function HintsClient() {
       const { error } = await supabase.from("hints").insert({
         id: newHint.id,
         user_id: currentUser.id,
+        board_id: boardId || null,
         title: newHint.title,
         url: newHint.url,
         image_url: newHint.image,
@@ -2094,9 +2122,30 @@ export default function HintsClient() {
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
       <div className="mx-auto max-w-[1380px] px-5 py-10 md:px-8">
         <section className="text-center">
-          <h1 className="text-[32px] font-extrabold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
-            Drop a Hint here...
-          </h1>
+          {boardId && (
+            <Link href="/hints" className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-slate-400 hover:text-slate-600">
+              ← All boards
+            </Link>
+          )}
+
+          <div className="flex flex-col items-center gap-3">
+            <h1 className="text-[32px] font-extrabold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
+              {boardId ? (boardLoading ? "\u00A0" : (board?.title || "Hints")) : "Drop a Hint here..."}
+            </h1>
+            {boardId && !boardLoading && board && currentUser && (
+              <ShareButton
+                supabase={createClient()}
+                subjectType="board"
+                subjectId={boardId}
+                path={`/b/${boardId}`}
+                title={board.title}
+                currentUserId={currentUser.id}
+                icon="↗"
+                label={`Share "${board.title}"`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-4 py-2 text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0]"
+              />
+            )}
+          </div>
 
           <div className="mt-6">
             <div className="mx-auto flex w-full max-w-[980px] flex-col gap-3 sm:flex-row">
