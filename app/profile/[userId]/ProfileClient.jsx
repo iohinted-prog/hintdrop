@@ -132,20 +132,6 @@ export default function ProfileClient({ userId }) {
 
   const isOwnProfile = currentUser?.id === userId;
 
-  async function handleShare() {
-    const url = `https://hintdrop.app/profile/${userId}`;
-    const text = isOwnProfile
-      ? `Check out my hints on HintDrop 🎁`
-      : `Check out these hints on HintDrop 🎁`;
-    if (navigator.share) {
-      await navigator.share({ title: `${displayName}'s Hints`, text, url });
-    } else {
-      await navigator.clipboard.writeText(`${text} ${url}`);
-      alert("Link copied!");
-    }
-  }
-
-
   const displayName = profile?.full_name || "User";
   const interests = Array.isArray(profile?.interests) ? profile.interests : [];
 
@@ -154,9 +140,19 @@ export default function ProfileClient({ userId }) {
       <div className="border-b border-[#f0dfd6] bg-white px-4 py-4 sm:px-8">
         <div className="mx-auto max-w-[1200px] flex items-center gap-4">
           <Link href="/feed" className="h-9 w-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff5f0] shrink-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg></Link>
-          <button type="button" onClick={handleShare} className="h-9 w-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff5f0] shrink-0 ml-auto" aria-label="Share profile">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          </button>
+          <div className="ml-auto shrink-0">
+            <ShareButton
+              supabase={supabase}
+              subjectType="profile"
+              subjectId={userId}
+              path={`/profile/${userId}`}
+              title={`${displayName}'s Hints`}
+              currentUserId={currentUser?.id}
+              icon="↗"
+              label="Share"
+              className="h-9 flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-3.5 text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0]"
+            />
+          </div>
           {profile?.avatar_url
             ? <HintImage src={profile.avatar_url} alt={displayName} width={56} height={56} className="rounded-full object-cover border-2 border-[#f0dfd6] shrink-0" fallbackClassName="hidden" />
             : <div className="h-14 w-14 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[16px] font-bold text-white shrink-0">{getInitials(displayName)}</div>

@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono, Nunito } from "next/font/google";
+import Script from "next/script";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -40,6 +41,16 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} ${nunito.variable} antialiased`}>
+        {/* Auto-affiliate link rewriting (Skimlinks) — was only loaded on
+            /shop, meaning every outbound retailer link anywhere else in the
+            app (gift-shop, hints, hint detail modals, shared hint/board
+            previews) went straight to the retailer with zero monetization.
+            Loading it once here applies it consistently app-wide instead. */}
+        <Script
+          id="skimlinks-loader"
+          strategy="afterInteractive"
+          src="https://s.skimresources.com/js/305122X1793314.skimlinks.js"
+        />
         <PreferencesProvider>
           <AppShell>{children}</AppShell>
         </PreferencesProvider>

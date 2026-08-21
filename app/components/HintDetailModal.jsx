@@ -1,6 +1,8 @@
 "use client";
+import { useMemo } from "react";
 import HintImage from "./HintImage";
 import ShareButton from "./ShareButton";
+import { createClient } from "../../lib/supabase/client";
 import { trackRetailerClick } from "../../lib/trackRetailerClick";
 
 // The one shared "view a single hint" modal. Any place that renders a hint
@@ -10,7 +12,12 @@ import { trackRetailerClick } from "../../lib/trackRetailerClick";
 // might be). Originally this lived duplicated inline in FeedClient; pulled
 // out so every tile click site shares one implementation instead of each
 // one silently drifting from (or missing) the others.
+//
+// Share is always shown — every hint detail view is a share opportunity,
+// so this creates its own client if a caller doesn't pass one, rather than
+// silently hiding the button whenever `supabase` is omitted.
 export default function HintDetailModal({ hint, onClose, supabase, currentUserId, source = "unknown" }) {
+  const client = useMemo(() => supabase || createClient(), [supabase]);
   if (!hint) return null;
 
   return (

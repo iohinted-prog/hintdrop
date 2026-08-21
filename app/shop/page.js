@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Script from "next/script";
 import { createClient } from "../../lib/supabase/client";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 import HintImage from "../components/HintImage";
@@ -738,11 +737,6 @@ export default function ShopPage() {
 
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
-      <Script
-        id="skimlinks-loader"
-        strategy="afterInteractive"
-        src="https://s.skimresources.com/js/305122X1793314.skimlinks.js"
-      />
 
       <div className="mx-auto max-w-[1380px] px-5 py-8 md:px-8">
         {pageError ? (
