@@ -70,11 +70,12 @@ export async function POST(req) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const batchSize = Math.min(Number(limit) || 8, 10);
+  const MAX_ATTEMPTS = 5;
 
   const supabase = getSupabase();
   const { data: products, error } = await supabase
     .from("shop_products")
-    .select("id, product_url")
+    .select("id, product_url, backfill_attempts")
     .eq("network", "manual")
     .or("image_url.is.null,image_url.eq.")
     .is("raw_payload", null)
@@ -85,6 +86,7 @@ export async function POST(req) {
   const results = { updated: 0, failed: [] };
 
   for (const product of products || []) {
+    const attemptsSoFar = product.backfill_attempts || 0;
     try {
       const image = await scrapeImage(product.product_url);
       if (image) {
@@ -97,14 +99,24 @@ export async function POST(req) {
     } catch (err) {
       const reason = err?.message || "fetch failed";
       const isTransient = TRANSIENT_STATUSES.has(err?.status) || reason.includes("429") || reason.includes("aborted");
-      // Transient failures (rate limits, gateway hiccups, timeouts) aren't
-      // permanently marked as failed, so they stay eligible for retry on
-      // the next call — only a genuine, stable failure (bad URL, no image
-      // found, etc.) gets written to raw_payload and excluded going forward
-      if (!isTransient) {
-        await supabase.from("shop_products").update({ raw_payload: { backfill_failed: reason } }).eq("id", product.id);
+      const nextAttempts = attemptsSoFar + 1;
+      // A "transient" failure normally stays eligible for retry rather than
+      // being permanently marked as failed — but if the SAME item keeps
+      // failing attempt after attempt, that's not really transient in
+      // practice, it's a persistently broken URL. Without this cap, a
+      // handful of permanently-425ing items sit at the head of the query
+      // forever (no ORDER BY, so the same rows keep coming back first) and
+      // block every healthy item behind them from ever being reached.
+      const permanentlyStuck = nextAttempts >= MAX_ATTEMPTS;
+      if (!isTransient || permanentlyStuck) {
+        await supabase.from("shop_products").update({
+          raw_payload: { backfill_failed: permanentlyStuck ? `${reason} (gave up after ${nextAttempts} attempts)` : reason },
+          backfill_attempts: nextAttempts,
+        }).eq("id", product.id);
+      } else {
+        await supabase.from("shop_products").update({ backfill_attempts: nextAttempts }).eq("id", product.id);
       }
-      results.failed.push({ id: product.id, reason, retryable: isTransient });
+      results.failed.push({ id: product.id, reason, retryable: isTransient && !permanentlyStuck, attempts: nextAttempts });
     }
     await new Promise((r) => setTimeout(r, 400));
   }
