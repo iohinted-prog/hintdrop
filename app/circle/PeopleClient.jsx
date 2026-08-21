@@ -6,7 +6,6 @@ import EditContactModal from "../components/EditContactModal";
 import ContactCard from "../components/ContactCard";
 import GroupChatWindow from "../components/GroupChatWindow";
 import UserProfileModal from "../components/UserProfileModal";
-import HintDetailModal from "../components/HintDetailModal";
 import HintImage from "../components/HintImage";
 
 function getInitials(name) {
@@ -87,7 +86,6 @@ export default function PeopleClient() {
   const [addKey, setAddKey] = useState(0);
   const [editingContact, setEditingContact] = useState(null);
   const [profileModal, setProfileModal] = useState(null);
-  const [hintDetail, setHintDetail] = useState(null);
   const [search, setSearch] = useState("");
 
   const [sessionUser, setSessionUser] = useState(null);
@@ -129,20 +127,33 @@ export default function PeopleClient() {
     const mapped = (data || []).map(buildContact);
     setContacts(mapped);
     setLoading(false);
-    // Fetch hints for contacts with HintDrop accounts
+    // Fetch each contact's public Hints lists (folders), not individual
+    // hints — the circle page shows what lists someone has, same as their
+    // profile menu, rather than a flat pile of their top items
     const withAccounts = mapped.filter(c => c.profileId);
     if (!withAccounts.length) return;
-    const { data: hintsData } = await supabase.from("hints")
-      .select("id, title, image_url, user_id, retailer, numeric_price, currency, size, size_type, colour")
+    const { data: boardsData } = await supabase.from("hint_boards")
+      .select("id, title, user_id, is_default")
       .in("user_id", withAccounts.map(c => c.profileId))
       .or("is_private.is.null,is_private.eq.false")
-      .order("starred", { ascending: false })
-      .limit(100);
-    if (!hintsData) return;
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: true });
+    if (!boardsData || !boardsData.length) return;
+
+    const boardsWithPreviews = await Promise.all(
+      boardsData.map(async (board) => {
+        const [{ count }, { data: previewHints }] = await Promise.all([
+          supabase.from("hints").select("id", { count: "exact", head: true }).eq("board_id", board.id),
+          supabase.from("hints").select("image_url").eq("board_id", board.id).order("position", { ascending: true }).limit(1),
+        ]);
+        return { ...board, hintCount: count || 0, previewImage: previewHints?.[0]?.image_url || null };
+      })
+    );
+
     const byUser = {};
-    for (const h of hintsData) {
-      if (!byUser[h.user_id]) byUser[h.user_id] = [];
-      byUser[h.user_id].push(h);
+    for (const b of boardsWithPreviews) {
+      if (!byUser[b.user_id]) byUser[b.user_id] = [];
+      byUser[b.user_id].push(b);
     }
     setContactHints(byUser);
   }
@@ -201,8 +212,8 @@ export default function PeopleClient() {
             {filtered.map(contact => (
               <ContactCard key={contact.id} contact={contact} onOpenProfile={setProfileModal}
                 onEditClick={setEditingContact} onDeleteClick={handleDelete}
-                onMessageClick={handleMessageContact} onOpenHintDetail={setHintDetail}
-                previewHints={contactHints[contact.profileId] || []} />
+                onMessageClick={handleMessageContact}
+                previewBoards={contactHints[contact.profileId] || []} />
             ))}
           </div>
         )}
@@ -233,15 +244,6 @@ export default function PeopleClient() {
           conversation={activeChat}
           currentUserId={sessionUser?.id}
           onClose={() => setActiveChat(null)}
-        />
-      )}
-      {hintDetail && (
-        <HintDetailModal
-          hint={hintDetail}
-          onClose={() => setHintDetail(null)}
-          supabase={supabase}
-          currentUserId={sessionUser?.id}
-          source="circle"
         />
       )}
     </main>

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import HintImage from "./HintImage";
 export function getStarSign(birthday) {
   if (!birthday) return null;
@@ -31,7 +32,7 @@ const GRADIENTS = [
   "from-[#d5dbee] via-[#b3c0df] to-[#8f9fc9]",
   "from-[#eadce8] via-[#d8bfd1] to-[#bb9ab6]",
 ];
-export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onEditClick, onMessageClick, onOpenHintDetail, previewHints = [] }) {
+export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onEditClick, onMessageClick, previewBoards = [] }) {
   const profileId = contact.profileId || contact.matchedProfileId || null;
   const isClickable = Boolean(profileId && !contact.isDemo && onOpenProfile);
   function handleClick() {
@@ -63,18 +64,18 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onE
             </p>
           )}
           {isClickable && <p className="text-[11px] text-[#df7b59] mt-0.5">👁 See hints</p>}
-        {previewHints.length > 0 && (
+        {previewBoards.length > 0 && (
           <div className="mt-2 flex items-center gap-1.5 md:hidden">
-            {previewHints.slice(0, 2).map(h => (
-              <div key={h.id} className="relative h-9 w-9 rounded-[8px] overflow-hidden border border-[#f0dfd6] shrink-0 bg-[#fffaf7]">
-                {h.image_url
-                  ? <HintImage src={h.image_url} alt={h.title} fill className="object-cover" sizes="36px" fallbackClassName="text-sm" />
-                  : <div className="h-full w-full flex items-center justify-center text-sm bg-gradient-to-br from-[#ead8ca] to-[#c4a17f]">🎁</div>
+            {previewBoards.slice(0, 2).map(b => (
+              <div key={b.id} className="relative h-9 w-9 rounded-[8px] overflow-hidden border border-[#f0dfd6] shrink-0 bg-[#fffaf7]">
+                {b.previewImage
+                  ? <HintImage src={b.previewImage} alt={b.title} fill className="object-cover" sizes="36px" fallbackClassName="text-sm" />
+                  : <div className="h-full w-full flex items-center justify-center text-sm bg-gradient-to-br from-[#ead8ca] to-[#c4a17f]">📋</div>
                 }
               </div>
             ))}
-            {previewHints.length > 2 && (
-              <span className="text-[11px] font-semibold text-slate-400">+{previewHints.length - 2}</span>
+            {previewBoards.length > 2 && (
+              <span className="text-[11px] font-semibold text-slate-400">+{previewBoards.length - 2}</span>
             )}
           </div>
         )}
@@ -96,26 +97,28 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onE
           )}
         </div>
       </div>
-      {/* Desktop: fixed-size hint preview tiles (was stretching to fill the
-          full card width via grid-cols, making them oversized on wide
-          layouts) — overflow beyond 6 now overlays a badge on the 6th tile
-          instead of adding a separate 7th block. Each tile opens that
-          hint's own detail on click (was falling through to the card's
-          profile-open handler since there was no per-tile handler at all). */}
-      {previewHints.length > 0 && (
+      {/* Desktop: folder-style tiles for this contact's public Hints
+          lists, not individual hints — clicking one navigates straight
+          to that specific list on their profile (deep-linked via
+          ?board=), rather than opening a single item's detail. Fixed-size
+          tiles (was stretching to fill the full card width via
+          grid-cols, oversized on wide layouts) — overflow beyond 6 now
+          overlays a badge on the 6th tile instead of adding a 7th block. */}
+      {previewBoards.length > 0 && (
         <div className="hidden md:flex gap-2 mt-3">
-          {previewHints.slice(0, 6).map((h, i) => {
-            const overflowCount = previewHints.length - 6;
+          {previewBoards.slice(0, 6).map((b, i) => {
+            const overflowCount = previewBoards.length - 6;
             const showOverflowBadge = i === 5 && overflowCount > 0;
             return (
-              <div
-                key={h.id}
-                className="relative h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-[10px] border border-[#f0dfd6] bg-[#fffaf7]"
-                onClick={(e) => { e.stopPropagation(); if (onOpenHintDetail) onOpenHintDetail(h); else handleClick(); }}
+              <Link
+                key={b.id}
+                href={profileId ? `/profile/${profileId}?board=${b.id}` : "#"}
+                onClick={(e) => e.stopPropagation()}
+                className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[10px] border border-[#f0dfd6] bg-[#fffaf7]"
               >
-                {h.image_url
-                  ? <HintImage src={h.image_url} alt={h.title} fill className="object-cover" sizes="56px" fallbackClassName="text-base" />
-                  : <div className={`absolute inset-0 bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]} flex items-center justify-center text-base opacity-80`}>🎁</div>
+                {b.previewImage
+                  ? <HintImage src={b.previewImage} alt={b.title} fill className="object-cover" sizes="56px" fallbackClassName="text-base" />
+                  : <div className={`absolute inset-0 bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]} flex items-center justify-center text-base opacity-80`}>📋</div>
                 }
                 {showOverflowBadge ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/55">
@@ -124,15 +127,15 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onE
                 ) : (
                   <>
                     <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.55)_0%,rgba(255,255,255,0)_55%)]" />
-                    <p className="absolute inset-x-0 bottom-0 p-1 text-[8px] font-semibold text-white leading-tight line-clamp-2">{h.title}</p>
+                    <p className="absolute inset-x-0 bottom-0 p-1 text-[8px] font-semibold text-white leading-tight line-clamp-2">{b.title}</p>
                   </>
                 )}
-              </div>
+              </Link>
             );
           })}
         </div>
       )}
-      {isClickable && previewHints.length === 0 && (
+      {isClickable && previewBoards.length === 0 && (
         <div className="hidden md:flex mt-3 rounded-[14px] bg-[#fdf5f0] border border-[#f0dfd6] items-center justify-center py-6 text-[11px] text-slate-400 cursor-pointer" onClick={handleClick}>
           No hints yet
         </div>
