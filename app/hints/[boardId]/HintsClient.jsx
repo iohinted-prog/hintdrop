@@ -1729,7 +1729,20 @@ export default function HintsClient({ boardId }) {
     setHints((current) => current.filter((hint) => hint.id !== editingHintId));
       const remainingHints = hints.filter(h => h.id !== editingHintId);
       const publicHints = remainingHints.filter(h => !h.private);
-      const previewHints = publicHints.slice(0, 2).map(h => ({ id: h.id, title: h.title, image_url: h.image || "", retailer: h.retailer || "" }));
+      const previewHints = publicHints.slice(0, 2).map(h => ({
+        id: h.id,
+        title: h.title,
+        image_url: h.image || "",
+        retailer: h.retailer || "",
+        url: h.url || "",
+        numeric_price: h.numericPrice,
+        currency: h.currency,
+        starred: h.starred,
+        occasions: h.occasions || [],
+        size: h.size || null,
+        size_type: h.sizeType || null,
+        colour: h.colour || null,
+      }));
       supabase.from("feed_items").select("id").eq("owner_user_id", currentUser.id).eq("item_type", "hint_save_session").order("occurred_at", { ascending: false }).limit(1).then(({ data }) => { if (data && data[0]) supabase.from("feed_items").update({ metadata: { actor_name: currentUser.user_metadata?.full_name || "", actor_avatar_url: currentUser.user_metadata?.avatar_url || null, hint_count: publicHints.length, preview_hints: previewHints, social_enabled: true } }).eq("id", data[0].id).catch(() => {}); }).catch(() => {});
     closeEditModal();
   }
@@ -1990,7 +2003,20 @@ export default function HintsClient({ boardId }) {
       // Only show the newly added hint in the session preview
       // Feed insert
       if (currentUser) {
-      const sessionHints = newHint.private ? [] : [{ id: newHint.id, title: newHint.title, image_url: newHint.image || "", retailer: newHint.retailer || "", url: newHint.url || "" }];
+      const sessionHints = newHint.private ? [] : [{
+        id: newHint.id,
+        title: newHint.title,
+        image_url: newHint.image || "",
+        retailer: newHint.retailer || "",
+        url: newHint.url || "",
+        numeric_price: newHint.numericPrice,
+        currency: newHint.currency,
+        starred: newHint.starred,
+        occasions: newHintForm.occasions || [],
+        size: newHintForm.size || null,
+        size_type: newHintForm.size_type || null,
+        colour: newHintForm.colour || null,
+      }];
       const allHints = [newHint, ...hints];
       const publicHints = allHints.filter(h => !h.private);
       const previewHints = sessionHints;
