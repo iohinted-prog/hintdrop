@@ -9,6 +9,7 @@ import { trackRetailerClick } from "../../../lib/trackRetailerClick";
 import HintImage from "../../components/HintImage";
 import ShareButton from "../../components/ShareButton";
 import BackLink from "../../components/BackLink";
+import AuthModal from "../../components/AuthModal";
 import { recordShareContext } from "../../../lib/share";
 import { recordBoardVisit } from "../../../lib/recentActivity";
 import { recordHintView } from "../../../lib/recentHints";
@@ -196,6 +197,7 @@ export default function ProfileClient({ userId }) {
 
   const [addingContact, setAddingContact] = useState(false);
   const [addContactError, setAddContactError] = useState("");
+  const [signUpOpen, setSignUpOpen] = useState(false);
 
   async function handleAddToCircle() {
     if (!currentUser) return;
@@ -258,9 +260,9 @@ export default function ProfileClient({ userId }) {
               </button>
             )}
             {!isOwnProfile && !currentUser && (
-              <Link href="/" className="mt-2 inline-flex text-[12px] font-semibold px-3 py-1 rounded-full border border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d] transition">
+              <button type="button" onClick={() => setSignUpOpen(true)} className="mt-2 inline-flex text-[12px] font-semibold px-3 py-1 rounded-full border border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d] transition">
                 Sign up to join {displayName.split(" ")[0]}'s Circle
-              </Link>
+              </button>
             )}
             {addContactError && <p className="mt-1 text-[11px] text-[#b14f43]">{addContactError}</p>}
             {contactState === "active" && (() => {
@@ -500,6 +502,7 @@ export default function ProfileClient({ userId }) {
           onClose={() => setGroupHint(null)}
         />
       )}
+      <AuthModal open={signUpOpen} onClose={() => setSignUpOpen(false)} initialMode="signup" />
     </main>
   );
   if (!currentUser) return <PublicShell>{inner}</PublicShell>;

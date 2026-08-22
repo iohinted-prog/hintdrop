@@ -40,9 +40,9 @@ function getErrorMessage(err, fallback) {
   return fallback;
 }
 
-export default function AuthModal({ open, onClose }) {
+export default function AuthModal({ open, onClose, initialMode = "signin" }) {
   const supabase = createClient();
-  const [mode, setMode] = useState("signin"); // "signin" | "signup" | "forgot"
+  const [mode, setMode] = useState(initialMode); // "signin" | "signup" | "forgot"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

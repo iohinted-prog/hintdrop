@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import PublicShell from "../../components/PublicShell";
+import AuthModal from "../../components/AuthModal";
 import HintImage from "../../components/HintImage";
 import { createClient } from "../../../lib/supabase/client";
 import { trackShareEvent, recordShareContext } from "../../../lib/share";
@@ -12,6 +13,7 @@ export default function HintPreviewClient({ hintId }) {
   const [hint, setHint] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [signUpOpen, setSignUpOpen] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -114,15 +116,16 @@ export default function HintPreviewClient({ hintId }) {
                     {saved === "sending" ? "Sending request..." : saved ? "Request sent ✓" : `Add ${ownerName.split(" ")[0]} to your Circle`}
                   </button>
                 ) : (
-                  <Link href="/" className="h-11 flex items-center justify-center rounded-full border border-[#ead8ce] text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]">
+                  <button type="button" onClick={() => setSignUpOpen(true)} className="h-11 flex items-center justify-center rounded-full border border-[#ead8ce] text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]">
                     Sign up to join {ownerName.split(" ")[0]}'s Circle
-                  </Link>
+                  </button>
                 )}
               </div>
             </div>
           </div>
         )}
       </div>
+      <AuthModal open={signUpOpen} onClose={() => setSignUpOpen(false)} initialMode="signup" />
     </PublicShell>
   );
 }
