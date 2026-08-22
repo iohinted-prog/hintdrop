@@ -27,8 +27,9 @@ export default async function Image({ params }) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#fffaf7",
-          backgroundImage: "radial-gradient(circle at 25% 25%, #ffe8dc 0%, #fffaf7 55%)",
+          // A clearly peach background throughout, not just a subtle
+          // corner accent on an off-white base
+          background: "linear-gradient(160deg, #ffe4d3 0%, #ffd9c2 55%, #ffcdae 100%)",
         }}
       >
         <div
@@ -38,11 +39,12 @@ export default async function Image({ params }) {
             height: 160,
             borderRadius: "50%",
             marginBottom: 36,
-            border: "6px solid #f0dfd6",
+            border: "6px solid #ffffff",
             overflow: "hidden",
             alignItems: "center",
             justifyContent: "center",
             background: owner?.avatar_url ? "transparent" : "linear-gradient(160deg, #efcdbf, #bb8168)",
+            boxShadow: "0 12px 32px rgba(173, 101, 72, 0.18)",
           }}
         >
           {owner?.avatar_url ? (
@@ -60,7 +62,7 @@ export default async function Image({ params }) {
             fontWeight: 700,
             letterSpacing: 4,
             textTransform: "uppercase",
-            color: "#e37b57",
+            color: "#c9633f",
             marginBottom: 20,
           }}
         >
@@ -72,8 +74,8 @@ export default async function Image({ params }) {
             display: "flex",
             fontSize: 68,
             fontWeight: 800,
-            letterSpacing: -2,
-            color: "#2d2d2d",
+            letterSpacing: -3.4,
+            color: "#0f172a",
             textAlign: "center",
             maxWidth: 1000,
           }}
@@ -81,28 +83,15 @@ export default async function Image({ params }) {
           Join {ownerName}'s Circle
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 44 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: "linear-gradient(160deg, #ffb899, #ff8f6b)",
-              fontSize: 24,
-            }}
-          >
-            🎁
-          </div>
-          <div style={{ display: "flex", fontSize: 32, fontWeight: 800, letterSpacing: -1 }}>
-            <span style={{ color: "#2d2d2d" }}>Hint</span>
-            <span style={{ color: "#ff8060" }}>Drop</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 44 }}>
+          <div style={{ display: "flex", fontSize: 40 }}>🎁</div>
+          <div style={{ display: "flex", fontSize: 32, fontWeight: 800, letterSpacing: -1.6 }}>
+            <span style={{ color: "#0f172a" }}>Hint</span>
+            <span style={{ color: "#ff875d" }}>Drop</span>
           </div>
         </div>
       </div>
     ),
-    { ...size }
+    { ...size, emoji: "twemoji" }
   );
 }

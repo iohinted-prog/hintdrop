@@ -15,28 +15,14 @@ export default async function Image() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#fffaf7",
-          backgroundImage: "radial-gradient(circle at 25% 25%, #ffe8dc 0%, #fffaf7 55%)",
+          background: "linear-gradient(160deg, #ffe4d3 0%, #ffd9c2 55%, #ffcdae 100%)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 40 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 120,
-              height: 120,
-              borderRadius: 32,
-              background: "linear-gradient(160deg, #ffb899, #ff8f6b)",
-              fontSize: 68,
-            }}
-          >
-            🎁
-          </div>
-          <div style={{ display: "flex", fontSize: 96, fontWeight: 800, letterSpacing: -3 }}>
-            <span style={{ color: "#2d2d2d" }}>Hint</span>
-            <span style={{ color: "#ff8060" }}>Drop</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 40 }}>
+          <div style={{ display: "flex", fontSize: 96 }}>🎁</div>
+          <div style={{ display: "flex", fontSize: 96, fontWeight: 800, letterSpacing: -4.8 }}>
+            <span style={{ color: "#0f172a" }}>Hint</span>
+            <span style={{ color: "#ff875d" }}>Drop</span>
           </div>
         </div>
         <div
@@ -53,6 +39,6 @@ export default async function Image() {
         </div>
       </div>
     ),
-    { ...size }
+    { ...size, emoji: "twemoji" }
   );
 }
