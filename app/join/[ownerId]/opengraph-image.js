@@ -84,7 +84,20 @@ export default async function Image({ params }) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 44 }}>
-          <div style={{ display: "flex", fontSize: 40 }}>🎁</div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 48,
+              height: 48,
+              borderRadius: 14,
+              background: "linear-gradient(180deg, #ffa47f, #ff875d)",
+              boxShadow: "0 6px 16px rgba(255, 135, 93, 0.35)",
+            }}
+          >
+            <div style={{ display: "flex", fontSize: 26 }}>🎁</div>
+          </div>
           <div style={{ display: "flex", fontSize: 32, fontWeight: 800, letterSpacing: -1.6 }}>
             <span style={{ color: "#0f172a" }}>Hint</span>
             <span style={{ color: "#ff875d" }}>Drop</span>
