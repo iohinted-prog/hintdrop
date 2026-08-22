@@ -251,6 +251,15 @@ export default function OnboardingPage() {
 
       if (!existingProfile?.signup_source) {
         const shareContext = consumeShareContext();
+        // The URL param is the more reliable source specifically for the
+        // "join their Circle" case — it was embedded directly into the
+        // email confirmation link at signup time (see AuthModal), so it
+        // survives confirming in a different browser/app than the one
+        // signup started in, which localStorage alone can't. Other share
+        // types (a specific hint or board) aren't carried this way since
+        // they don't go through email confirmation the same way, so
+        // localStorage remains the only source for those.
+        const circleOwnerFromUrl = searchParams.get("circle_owner");
         if (shareContext?.subjectType === "hint") {
           await supabase.from("profiles").update({
             signup_source: "share",
@@ -270,6 +279,8 @@ export default function OnboardingPage() {
             subjectId: shareContext.subjectId,
             viewerUserId: user.id,
           });
+        } else if (circleOwnerFromUrl) {
+          await supabase.from("profiles").update({ signup_source: "share" }).eq("id", user.id);
         } else {
           await supabase.from("profiles").update({ signup_source: "direct" }).eq("id", user.id);
         }
@@ -280,9 +291,10 @@ export default function OnboardingPage() {
         // triggered automatically the moment signup completes rather than
         // requiring a separate click. Fire-and-forget: this is a nice-to-
         // have, never worth blocking or failing onboarding over.
-        if (shareContext?.ownerUserId && shareContext.ownerUserId !== user.id) {
+        const circleOwnerId = shareContext?.ownerUserId || circleOwnerFromUrl;
+        if (circleOwnerId && circleOwnerId !== user.id) {
           supabase.functions.invoke("send-contact-invite", {
-            body: { target_user_id: shareContext.ownerUserId, name: "" },
+            body: { target_user_id: circleOwnerId, name: "" },
           }).catch(() => {});
         }
 

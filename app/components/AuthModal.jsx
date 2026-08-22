@@ -1,12 +1,30 @@
 "use client";
 import { useState } from "react";
 import { createClient } from "../../lib/supabase/client";
+import { peekShareContext } from "../../lib/share";
 
 function getBaseUrl() {
   if (typeof window !== "undefined" && window.location?.origin) {
     return window.location.origin;
   }
   return process.env.NEXT_PUBLIC_SITE_URL || "";
+}
+
+// Embeds any pending "join their Circle" context into the confirmation
+// redirect URL itself, not just localStorage — localStorage alone breaks
+// the moment someone opens the confirmation link in a different browser
+// or app than where they started (very common: WhatsApp browser to sign
+// up, Mail app to actually click confirm). This survives that gap;
+// OnboardingClient checks the URL param first and falls back to
+// localStorage for other share types (a specific hint or board) that
+// aren't affected by this same failure mode.
+function buildEmailRedirectUrl() {
+  const url = new URL(`${getBaseUrl()}/auth/confirm`);
+  const context = peekShareContext();
+  if (context?.subjectType === "profile" && context?.ownerUserId) {
+    url.searchParams.set("circle_owner", context.ownerUserId);
+  }
+  return url.toString();
 }
 
 function isValidEmail(value) {
@@ -53,7 +71,7 @@ export default function AuthModal({ open, onClose }) {
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: email.trim().toLowerCase(),
-        options: { emailRedirectTo: `${getBaseUrl()}/auth/confirm` },
+        options: { emailRedirectTo: buildEmailRedirectUrl() },
       });
       if (error) throw error;
       setResendSent(true);
@@ -124,7 +142,7 @@ export default function AuthModal({ open, onClose }) {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim().toLowerCase(),
           password,
-          options: { emailRedirectTo: `${getBaseUrl()}/auth/confirm` },
+          options: { emailRedirectTo: buildEmailRedirectUrl() },
         });
         if (error) throw error;
         if (data?.session) {

@@ -26,6 +26,7 @@ export async function GET(request) {
   const type = requestUrl.searchParams.get("type");
   const inviteToken = requestUrl.searchParams.get("invite_token");
   const inviteType = requestUrl.searchParams.get("invite_type");
+  const circleOwner = requestUrl.searchParams.get("circle_owner");
   const next = requestUrl.searchParams.get("next");
 
   if (!tokenHash || !type) {
@@ -95,6 +96,10 @@ export async function GET(request) {
       );
       joinUrl.searchParams.set("invite_token", inviteToken);
       joinUrl.searchParams.set("invite_type", inviteType);
+      destination = `${joinUrl.pathname}${joinUrl.search}`;
+    } else if (circleOwner && !onboardingComplete) {
+      const joinUrl = new URL("/onboarding", requestUrl.origin);
+      joinUrl.searchParams.set("circle_owner", circleOwner);
       destination = `${joinUrl.pathname}${joinUrl.search}`;
     } else {
       destination = onboardingComplete ? "/feed" : "/onboarding";

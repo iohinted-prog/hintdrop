@@ -257,6 +257,11 @@ export default function ProfileClient({ userId }) {
                 {contactState === "active" ? `✓ In your circle since ${formatMonthYear(contactSince)}` : contactState === "pending" ? "Request sent — we'll let you know once accepted" : addingContact ? "Sending..." : "+ Add to circle"}
               </button>
             )}
+            {!isOwnProfile && !currentUser && (
+              <Link href="/" className="mt-2 inline-flex text-[12px] font-semibold px-3 py-1 rounded-full border border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d] transition">
+                Sign up to join {displayName.split(" ")[0]}'s Circle
+              </Link>
+            )}
             {addContactError && <p className="mt-1 text-[11px] text-[#b14f43]">{addContactError}</p>}
             {contactState === "active" && (() => {
               const days = daysUntilBirthday(profile?.birthday);
