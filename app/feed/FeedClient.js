@@ -2577,7 +2577,11 @@ export default function FeedClient() {
                           demoReactionsState={demoReactionsByFeedId[item.id]}
                           onToggleDemoReaction={handleToggleDemoReaction}
                           onOpenProfile={setProfileModal}
-                          onOpenHintDetail={(hint) => setFeedHintDetail({ ...hint, ownerName: hint.ownerName || item.metadata?.actor_name || item.actor_name || null })}
+                          onOpenHintDetail={(hint) => setFeedHintDetail({
+                            ...hint,
+                            ownerName: hint.ownerName || item.metadata?.actor_name || item.actor_name || null,
+                            ownerAvatarUrl: hint.ownerAvatarUrl || item.metadata?.actor_avatar_url || item.actor_avatar_url || null,
+                          })}
                           sessionUser={sessionUser}
                           reactions={reactionsByFeedId[item.id] || []}
                           onToggleReaction={handleToggleReaction}

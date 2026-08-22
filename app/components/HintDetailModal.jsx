@@ -65,7 +65,20 @@ export default function HintDetailModal({ hint, onClose, supabase, currentUserId
         <div className="p-5">
           {hint.starred && <p className="text-[11px] font-semibold text-[#ff875d] mb-1">⭐ Top pick</p>}
           <p className="text-[18px] font-semibold text-slate-900 leading-tight">{hint.title || "Hint"}</p>
-          {hint.ownerName && <p className="text-[12px] text-slate-500 mt-0.5">Added by {hint.ownerName}</p>}
+          {hint.ownerName && (
+            <div className="flex items-center gap-1.5 mt-1">
+              {hint.ownerAvatarUrl ? (
+                <div className="relative h-5 w-5 shrink-0 rounded-full overflow-hidden">
+                  <HintImage src={hint.ownerAvatarUrl} alt={hint.ownerName} fill sizes="20px" className="object-cover" fallbackClassName="hidden" />
+                </div>
+              ) : (
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[9px] font-bold text-white">
+                  {hint.ownerName.trim().charAt(0).toUpperCase()}
+                </div>
+              )}
+              <p className="text-[12px] text-slate-500">Added by {hint.ownerName}</p>
+            </div>
+          )}
           {hint.retailer && <p className="text-[13px] text-slate-400 mt-1">{hint.retailer}</p>}
           {hint.numeric_price > 0 && (
             <p className="text-[16px] font-bold text-[#df7b59] mt-2">

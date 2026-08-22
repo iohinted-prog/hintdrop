@@ -39,13 +39,22 @@ export default function BoardPreviewClient({ boardId }) {
 
       const { data: hintRows } = await supabase
         .from("hints")
-        .select("id, title, image_url, retailer, numeric_price, currency, url, occasions, size, size_type, colour")
+        .select("id, title, image_url, retailer, numeric_price, currency, url, occasions, size, size_type, colour, starred")
         .eq("board_id", boardId)
         .or("is_private.is.null,is_private.eq.false")
         .order("position", { ascending: true });
 
+      // Every hint here belongs to the same board owner — attach their
+      // name/avatar once rather than needing a per-hint lookup, so the
+      // detail modal can show who it's from
+      const enrichedHints = (hintRows || []).map((h) => ({
+        ...h,
+        ownerName: boardRow.profiles?.full_name || null,
+        ownerAvatarUrl: boardRow.profiles?.avatar_url || null,
+      }));
+
       setBoard(boardRow);
-      setHints(hintRows || []);
+      setHints(enrichedHints);
       if (user?.id) recordBoardVisit(supabase, user.id, boardId);
       setLoading(false);
 
