@@ -83,14 +83,27 @@ export default function ProfileClient({ userId }) {
       // contact relationship with this profile, enforced at the database
       // level (not just hidden in the UI, which a direct API call could
       // bypass). Returns a single-row array since it's a table function.
-      const [{ data: profileRows }, { data: boardRows }] = await Promise.all([
+      const [{ data: profileRows, error: profileRpcError }, { data: boardRows }] = await Promise.all([
         supabase.rpc("get_public_profile", { target_id: userId }),
         supabase.from("hint_boards")
           .select("id, title, is_default")
           .eq("user_id", userId).or("is_private.is.null,is_private.eq.false")
           .order("is_default", { ascending: false }).order("created_at", { ascending: true }),
       ]);
-      const profileData = profileRows?.[0] || null;
+      let profileData = profileRows?.[0] || null;
+      // Fall back to a direct select if the RPC itself isn't available yet
+      // (e.g. the migration creating it hasn't been run) — better to show
+      // the right name/avatar without the birthday-privacy enforcement
+      // than to silently show neither at all.
+      if (!profileData && profileRpcError) {
+        console.error("get_public_profile RPC failed, falling back to direct select:", profileRpcError.message);
+        const { data: fallbackProfile } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url, interests")
+          .eq("id", userId)
+          .maybeSingle();
+        profileData = fallbackProfile;
+      }
       setProfile(profileData);
 
       const boardsWithPreviews = await Promise.all(
@@ -220,6 +233,10 @@ export default function ProfileClient({ userId }) {
   }
 
   const isOwnProfile = currentUser?.id === userId;
+  // A dedicated "just sign up" landing, not the full browsable profile —
+  // used specifically by the Add Contact share-invite-link flow, which
+  // was previously (wrongly) sending people to the full page
+  const isInviteMode = searchParams.get("invite") === "1" && !isOwnProfile;
 
   const displayName = profile?.full_name || "User";
   const interests = Array.isArray(profile?.interests) ? profile.interests : [];
@@ -283,6 +300,16 @@ export default function ProfileClient({ userId }) {
         </div>
       </div>
 
+      {isInviteMode && (
+        <div className="mx-auto max-w-[560px] px-4 py-16 text-center sm:px-8">
+          <p className="text-[15px] leading-7 text-slate-500">
+            {displayName} uses HintDrop to keep track of gift ideas for the people who matter — join their Circle and you'll show up there too.
+          </p>
+        </div>
+      )}
+
+      {!isInviteMode && (
+      <>
       {selectedBoardId && boards && boards.length > 1 && (
         <div className="border-b border-[#f0dfd6] bg-[#fff7f2] px-4 py-2.5 sm:px-8">
           <div className="mx-auto max-w-[1200px]">
@@ -411,6 +438,8 @@ export default function ProfileClient({ userId }) {
           </div>
         )}
       </div>
+      )}
+      </>
       )}
 
       {selectedHint && (

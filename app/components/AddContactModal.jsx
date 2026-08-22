@@ -140,7 +140,7 @@ export default function AddContactModal({ open, onClose, onSave, modalKey }) {
                   supabase={supabase}
                   subjectType="profile"
                   subjectId={currentUserId}
-                  path={`/profile/${currentUserId}`}
+                  path={`/profile/${currentUserId}?invite=1`}
                   title="Add me on HintDrop"
                   text={currentUserName ? `Join ${currentUserName}'s Circle on HintDrop` : "Join my Circle on HintDrop"}
                   currentUserId={currentUserId}
