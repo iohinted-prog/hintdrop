@@ -155,6 +155,22 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
           // is accepting that UX tradeoff deliberately.
           setError("That email is already in use. Try signing in instead.");
         } else {
+          // Create any pending circle invite right now, while still
+          // guaranteed to be in the same browser the share link was
+          // opened in — see /api/circle/invite-from-signup for why this
+          // happens here rather than relying on the confirmation redirect,
+          // which can't be trusted to survive a different browser/app
+          // confirming the email later.
+          if (data?.user?.id) {
+            const context = peekShareContext();
+            if (context?.subjectType === "profile" && context?.ownerUserId) {
+              fetch("/api/circle/invite-from-signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ newUserId: data.user.id, ownerUserId: context.ownerUserId }),
+              }).catch(() => {});
+            }
+          }
           setMessage("Almost there — check your email and confirm your account to continue. That link will take you straight into HintDrop.");
         }
       } else {
