@@ -11,17 +11,21 @@ function getBaseUrl() {
 }
 
 // Embeds any pending "join their Circle" context into the confirmation
-// redirect URL itself, not just localStorage — localStorage alone breaks
-// the moment someone opens the confirmation link in a different browser
-// or app than where they started (very common: WhatsApp browser to sign
-// up, Mail app to actually click confirm). This survives that gap;
-// OnboardingClient checks the URL param first and falls back to
-// localStorage for other share types (a specific hint or board) that
-// aren't affected by this same failure mode.
+// redirect URL, for whenever the "Confirm signup" email template gets
+// updated to actually forward {{ .RedirectTo }} into the link it sends —
+// it currently doesn't (still the basic hardcoded token_hash/type version),
+// so this has no effect in practice today. Left in as a harmless no-op
+// rather than removed, since it'd start working for free the moment that
+// template changes, with no code change needed here. The invite itself is
+// NOT relying on this surviving — see handleEmailSubmit below, which
+// creates the pending invite immediately at signup time instead, while
+// still guaranteed to be in the original browser, so it isn't exposed to
+// the cross-browser confirmation gap this comment used to describe as the
+// primary fix.
 function buildEmailRedirectUrl() {
   const url = new URL(`${getBaseUrl()}/auth/confirm`);
   const context = peekShareContext();
-  if (context?.subjectType === "profile" && context?.ownerUserId) {
+  if (context?.ownerUserId) {
     url.searchParams.set("circle_owner", context.ownerUserId);
   }
   return url.toString();
@@ -163,7 +167,7 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
           // confirming the email later.
           if (data?.user?.id) {
             const context = peekShareContext();
-            if (context?.subjectType === "profile" && context?.ownerUserId) {
+            if (context?.ownerUserId) {
               fetch("/api/circle/invite-from-signup", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
