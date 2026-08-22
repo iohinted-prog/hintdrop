@@ -89,6 +89,7 @@ export default function AppShell({ children }) {
     pathname.startsWith("/gift-shop/") ||
     pathname.startsWith("/h/") ||
     pathname.startsWith("/b/") ||
+    pathname.startsWith("/join/") ||
     // Profile pages render their own PublicShell header for signed-out
     // visitors (a different, public-appropriate header with a real
     // "Sign in" button) — without this, AppShell's own header rendered on

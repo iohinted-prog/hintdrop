@@ -233,10 +233,6 @@ export default function ProfileClient({ userId }) {
   }
 
   const isOwnProfile = currentUser?.id === userId;
-  // A dedicated "just sign up" landing, not the full browsable profile —
-  // used specifically by the Add Contact share-invite-link flow, which
-  // was previously (wrongly) sending people to the full page
-  const isInviteMode = searchParams.get("invite") === "1" && !isOwnProfile;
 
   const displayName = profile?.full_name || "User";
   const interests = Array.isArray(profile?.interests) ? profile.interests : [];
@@ -300,16 +296,6 @@ export default function ProfileClient({ userId }) {
         </div>
       </div>
 
-      {isInviteMode && (
-        <div className="mx-auto max-w-[560px] px-4 py-16 text-center sm:px-8">
-          <p className="text-[15px] leading-7 text-slate-500">
-            {displayName} uses HintDrop to keep track of gift ideas for the people who matter — join their Circle and you'll show up there too.
-          </p>
-        </div>
-      )}
-
-      {!isInviteMode && (
-      <>
       {selectedBoardId && boards && boards.length > 1 && (
         <div className="border-b border-[#f0dfd6] bg-[#fff7f2] px-4 py-2.5 sm:px-8">
           <div className="mx-auto max-w-[1200px]">
@@ -438,8 +424,6 @@ export default function ProfileClient({ userId }) {
           </div>
         )}
       </div>
-      )}
-      </>
       )}
 
       {selectedHint && (
