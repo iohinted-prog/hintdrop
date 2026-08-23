@@ -54,7 +54,7 @@ export default async function Image({ params }) {
         { name: "Arimo", data: bold, weight: 800, style: "normal" },
       ]
     : undefined;
-  const iconUrl = "https://hintdrop.app/apple-touch-icon.png";
+  const iconUrl = "https://hintdrop.app/favicon.png";
 
   return new ImageResponse(
     (
@@ -67,7 +67,8 @@ export default async function Image({ params }) {
           alignItems: "center",
           justifyContent: "center",
           fontFamily: "Arimo",
-          background: "linear-gradient(160deg, #ffe4d3 0%, #ffd9c2 55%, #ffcdae 100%)",
+          // A darker, more saturated peach throughout
+          background: "linear-gradient(160deg, #ffd4b8 0%, #ffc19b 55%, #ffaf7e 100%)",
         }}
       >
         <div
@@ -152,7 +153,10 @@ export default async function Image({ params }) {
           </div>
           <div style={{ display: "flex", fontSize: 32, fontWeight: 800, letterSpacing: -1.6 }}>
             <span style={{ color: "#0f172a" }}>Hint</span>
-            <span style={{ color: "#ff875d" }}>Drop</span>
+            {/* Deepened from the site's usual #ff875d — that reads fine on
+                a white/near-white surface, but sits too close in hue and
+                lightness to this darker peach background to stay readable */}
+            <span style={{ color: "#b8532f" }}>Drop</span>
           </div>
         </div>
       </div>
