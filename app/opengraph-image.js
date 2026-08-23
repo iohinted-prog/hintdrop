@@ -41,7 +41,6 @@ export default async function Image() {
         { name: "Arimo", data: bold, weight: 800, style: "normal" },
       ]
     : undefined;
-  const iconUrl = "https://hintdrop.app/favicon.png";
 
   return new ImageResponse(
     (
@@ -67,17 +66,19 @@ export default async function Image() {
               width: 110,
               height: 110,
               borderRadius: 28,
-              overflow: "hidden",
               background: "linear-gradient(180deg, #ffa47f, #ff875d)",
               boxShadow: "0 10px 28px rgba(255, 135, 93, 0.35)",
             }}
           >
-            {/* The actual site icon file, not a text emoji character —
-                guaranteed pixel-identical to the rest of the site since
-                it's literally the same file, rather than depending on an
-                external emoji CDN fetch succeeding at render time. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={iconUrl} width={110} height={110} style={{ objectFit: "cover" }} />
+            {/* A text emoji character rendered via Satori's own native
+                emoji pipeline (emoji: "twemoji" below), not a remotely-
+                fetched PNG — favicon.png IS genuinely transparent (checked
+                directly), but Satori appears to flatten a remote image's
+                alpha channel onto white during compositing regardless,
+                which is what was actually causing the white square. This
+                sidesteps that by never fetching a raster image for the
+                icon at all. */}
+            <div style={{ display: "flex", fontSize: 60 }}>🎁</div>
           </div>
           <div style={{ display: "flex", fontSize: 96, fontWeight: 800, letterSpacing: -4.8 }}>
             <span style={{ color: "#0f172a" }}>Hint</span>
@@ -101,6 +102,6 @@ export default async function Image() {
         </div>
       </div>
     ),
-    { ...size, fonts }
+    { ...size, fonts, emoji: "twemoji" }
   );
 }
