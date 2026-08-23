@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "../../../lib/supabase/server";
+import { BRAND_ICON_DATA_URI } from "../../../lib/brandIcon";
 
 export const alt = "You're invited to join a Circle on HintDrop";
 export const size = { width: 1200, height: 630 };
@@ -138,19 +139,16 @@ export default async function Image({ params }) {
               width: 48,
               height: 48,
               borderRadius: 14,
-              background: "linear-gradient(180deg, #ffa47f, #ff875d)",
+              overflow: "hidden",
               boxShadow: "0 6px 16px rgba(255, 135, 93, 0.35)",
             }}
           >
-            {/* A text emoji character rendered via Satori's own native
-                emoji pipeline (emoji: "twemoji" below), not a remotely-
-                fetched PNG — favicon.png IS genuinely transparent (checked
-                directly), but Satori appears to flatten a remote image's
-                alpha channel onto white during compositing regardless,
-                which is what was actually causing the white square. This
-                sidesteps that by never fetching a raster image for the
-                icon at all. */}
-            <div style={{ display: "flex", fontSize: 26 }}>🎁</div>
+            {/* The actual icon file, embedded as a data URI (see
+                lib/brandIcon.js) — already has the peach gradient and
+                emoji baked in together as one image, so no separate
+                colored badge background is needed here anymore. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={BRAND_ICON_DATA_URI} width={48} height={48} style={{ objectFit: "cover" }} />
           </div>
           <div style={{ display: "flex", fontSize: 32, fontWeight: 800, letterSpacing: -1.6 }}>
             <span style={{ color: "#0f172a" }}>Hint</span>
@@ -165,7 +163,6 @@ export default async function Image({ params }) {
     {
       ...size,
       fonts,
-      emoji: "twemoji",
     }
   );
 }

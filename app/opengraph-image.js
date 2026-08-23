@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { BRAND_ICON_DATA_URI } from "../lib/brandIcon";
 
 export const alt = "HintDrop — Never forget. Always thoughtful.";
 export const size = { width: 1200, height: 630 };
@@ -66,19 +67,16 @@ export default async function Image() {
               width: 110,
               height: 110,
               borderRadius: 28,
-              background: "linear-gradient(180deg, #ffa47f, #ff875d)",
+              overflow: "hidden",
               boxShadow: "0 10px 28px rgba(255, 135, 93, 0.35)",
             }}
           >
-            {/* A text emoji character rendered via Satori's own native
-                emoji pipeline (emoji: "twemoji" below), not a remotely-
-                fetched PNG — favicon.png IS genuinely transparent (checked
-                directly), but Satori appears to flatten a remote image's
-                alpha channel onto white during compositing regardless,
-                which is what was actually causing the white square. This
-                sidesteps that by never fetching a raster image for the
-                icon at all. */}
-            <div style={{ display: "flex", fontSize: 60 }}>🎁</div>
+            {/* The actual icon file, embedded as a data URI (see
+                lib/brandIcon.js) — already has the peach gradient and
+                emoji baked in together as one image, so no separate
+                colored badge background is needed here anymore. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={BRAND_ICON_DATA_URI} width={110} height={110} style={{ objectFit: "cover" }} />
           </div>
           <div style={{ display: "flex", fontSize: 96, fontWeight: 800, letterSpacing: -4.8 }}>
             <span style={{ color: "#0f172a" }}>Hint</span>
@@ -102,6 +100,6 @@ export default async function Image() {
         </div>
       </div>
     ),
-    { ...size, fonts, emoji: "twemoji" }
+    { ...size, fonts }
   );
 }
