@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "../../lib/supabase/client";
-import HintImage from "../components/HintImage";
+import BoardPreviewGrid from "../components/BoardPreviewGrid";
 
 function errorToMessage(value) {
   if (!value) return "Something went wrong.";
@@ -19,19 +19,8 @@ function BoardCard({ board }) {
       href={`/hints/${board.id}`}
       className="group flex flex-col overflow-hidden rounded-[26px] border border-[#f0dfd6] bg-white transition hover:-translate-y-1 hover:shadow-md"
     >
-      <div className="grid grid-cols-2 gap-0.5 bg-[#fdf5f0] p-0.5" style={{ aspectRatio: "16/9" }}>
-        {[0, 1, 2, 3].map((i) => {
-          const hint = board.previewHints?.[i];
-          return (
-            <div key={i} className="relative overflow-hidden bg-[#fdf5f0]">
-              {hint?.image_url ? (
-                <HintImage src={hint.image_url} alt="" fill className="object-cover" sizes="200px" fallbackClassName="hidden" />
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-[#ead8ca] to-[#dbc0a8]" />
-              )}
-            </div>
-          );
-        })}
+      <div className="bg-[#fdf5f0] p-0.5" style={{ aspectRatio: "16/9" }}>
+        <BoardPreviewGrid previewHints={board.previewHints} />
       </div>
       <div className="flex items-center justify-between gap-3 p-4">
         <div className="min-w-0">
