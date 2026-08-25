@@ -25,11 +25,15 @@ export default function BoardPreviewClient({ boardId }) {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
 
-      const { data: boardRow } = await supabase
+      const { data: boardRow, error: boardError } = await supabase
         .from("hint_boards")
         .select("id, title, user_id, is_private, profiles(full_name, avatar_url)")
         .eq("id", boardId)
         .maybeSingle();
+
+      if (boardError) {
+        console.error("Board fetch failed:", boardError.message);
+      }
 
       if (!boardRow) {
         setBoard(null);

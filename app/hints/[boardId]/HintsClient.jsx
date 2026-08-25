@@ -1372,6 +1372,7 @@ export default function HintsClient({ boardId }) {
   const [isRefreshingEdit, setIsRefreshingEdit] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [currentUserName, setCurrentUserName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [activeId, setActiveId] = useState(null);
   const [imageRatios, setImageRatios] = useState({});
@@ -1471,6 +1472,14 @@ export default function HintsClient({ boardId }) {
         setBoardLoading(false);
         return;
       }
+
+      // The name set during onboarding is saved to profiles.full_name, not
+      // to auth user_metadata — that field only gets auto-populated for
+      // Google-authenticated accounts (from the OAuth profile), so relying
+      // on it alone silently showed "Someone" for anyone who signed up
+      // with email/password and set their name during onboarding instead.
+      supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle()
+        .then(({ data }) => setCurrentUserName(data?.full_name || user.user_metadata?.full_name || ""));
 
       if (boardId) {
         const { data: boardRow } = await supabase
@@ -2207,7 +2216,7 @@ export default function HintsClient({ boardId }) {
                   subjectId={boardId}
                   path={`/b/${boardId}`}
                   title={board.is_default ? null : board.title}
-                  sharerName={currentUser.user_metadata?.full_name}
+                  sharerName={currentUserName}
                   currentUserId={currentUser.id}
                   label={board.is_default ? "Share my Hints" : `Share "${board.title}"`}
                   className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 py-2 text-[13px] font-semibold text-white shadow-md hover:brightness-105"
@@ -2366,7 +2375,7 @@ export default function HintsClient({ boardId }) {
                             onToggleStarred={toggleStarred}
                             onTogglePrivate={togglePrivate}
                             formatCurrency={formatCurrency}
-                            sharerName={currentUser?.user_metadata?.full_name}
+                            sharerName={currentUserName}
                           />
                         ))}
                       </div>

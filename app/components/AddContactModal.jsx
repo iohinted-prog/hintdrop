@@ -35,9 +35,15 @@ export default function AddContactModal({ open, onClose, onSave, modalKey }) {
   }, [open]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       setCurrentUserId(user?.id || "");
-      setCurrentUserName(user?.user_metadata?.full_name || "");
+      if (!user) return;
+      // The name set during onboarding is saved to profiles.full_name, not
+      // to auth user_metadata — that field only auto-populates for
+      // Google-authenticated accounts, so relying on it alone silently
+      // showed no name for anyone who signed up with email/password.
+      const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+      setCurrentUserName(profile?.full_name || user.user_metadata?.full_name || "");
     });
   }, []);
 
