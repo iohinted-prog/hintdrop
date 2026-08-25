@@ -9,10 +9,20 @@ import { createClient } from "../../../lib/supabase/client";
 import { trackShareEvent, recordShareContext } from "../../../lib/share";
 import { recordBoardVisit } from "../../../lib/recentActivity";
 
+function loadRatio(src) {
+  return new Promise(res => {
+    const img = new window.Image();
+    img.onload = () => res(img.naturalWidth / img.naturalHeight);
+    img.onerror = () => res(null);
+    img.src = src;
+  });
+}
+
 export default function BoardPreviewClient({ boardId }) {
   const supabase = createClient();
   const [board, setBoard] = useState(null);
   const [hints, setHints] = useState([]);
+  const [imageRatios, setImageRatios] = useState({});
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [signUpOpen, setSignUpOpen] = useState(false);
@@ -64,6 +74,13 @@ export default function BoardPreviewClient({ boardId }) {
 
       recordShareContext("board", boardId, boardRow.user_id);
       trackShareEvent(supabase, { eventType: "share_link_opened", subjectType: "board", subjectId: boardId, viewerUserId: user?.id });
+
+      const ratios = {};
+      await Promise.all(enrichedHints.filter(h => h.image_url).map(async h => {
+        const r = await loadRatio(h.image_url).catch(() => null);
+        if (r) ratios[h.id] = r;
+      }));
+      setImageRatios(ratios);
     }
     load();
   }, [boardId]);
@@ -133,7 +150,7 @@ export default function BoardPreviewClient({ boardId }) {
                     onClick={() => setSelectedHint(hint)}
                     className="mb-4 block w-full break-inside-avoid overflow-hidden rounded-[20px] border border-[#f0dfd6] bg-white text-left transition hover:-translate-y-1 hover:shadow-md"
                   >
-                    <div className="relative w-full bg-[#fdf5f0]" style={{ aspectRatio: "4/3" }}>
+                    <div className="relative w-full bg-[#fdf5f0]" style={hint.image_url ? (imageRatios[hint.id] ? { aspectRatio: String(imageRatios[hint.id]) } : { aspectRatio: "3/4" }) : { aspectRatio: "4/3" }}>
                       <HintImage src={hint.image_url} alt={hint.title} fill className="object-cover" sizes="300px" fallbackClassName="text-3xl" />
                     </div>
                     <div className="p-3">
