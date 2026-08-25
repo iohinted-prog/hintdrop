@@ -5,9 +5,22 @@ import PublicShell from "../../components/PublicShell";
 import AuthModal from "../../components/AuthModal";
 import HintImage from "../../components/HintImage";
 import HintDetailModal from "../../components/HintDetailModal";
+import ShareButton from "../../components/ShareButton";
 import { createClient } from "../../../lib/supabase/client";
 import { trackShareEvent, recordShareContext } from "../../../lib/share";
 import { recordBoardVisit } from "../../../lib/recentActivity";
+
+function getInitials(name) {
+  const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function formatMonthYear(dateStr) {
+  if (!dateStr) return "";
+  return new Date(dateStr).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+}
 
 function loadRatio(src) {
   return new Promise(res => {
@@ -26,7 +39,10 @@ export default function BoardPreviewClient({ boardId }) {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [signUpOpen, setSignUpOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [contactState, setContactState] = useState("none"); // "none" | "pending" | "active"
+  const [contactSince, setContactSince] = useState(null);
+  const [addingContact, setAddingContact] = useState(false);
+  const [addContactError, setAddContactError] = useState("");
   const [selectedHint, setSelectedHint] = useState(null);
 
   useEffect(() => {
@@ -69,6 +85,14 @@ export default function BoardPreviewClient({ boardId }) {
 
       setBoard(boardRow);
       setHints(enrichedHints);
+
+      if (user && user.id !== boardRow.user_id) {
+        const { data: contactData } = await supabase.from("contacts")
+          .select("id, status, created_at").eq("user_id", user.id).eq("profile_id", boardRow.user_id).maybeSingle();
+        setContactState(contactData ? (contactData.status === "active" ? "active" : "pending") : "none");
+        setContactSince(contactData?.created_at || null);
+      }
+
       if (user?.id) recordBoardVisit(supabase, user.id, boardId);
       setLoading(false);
 
@@ -85,20 +109,80 @@ export default function BoardPreviewClient({ boardId }) {
     load();
   }, [boardId]);
 
-  async function handleSaveToCircle() {
-    if (!currentUser || !board?.user_id || saved) return;
-    setSaved("sending");
-    await supabase.functions.invoke("send-contact-invite", {
+  async function handleAddToCircle() {
+    if (!currentUser || !board?.user_id) return;
+    setAddingContact(true);
+    setAddContactError("");
+    // Same request/accept flow as every other way of adding a contact —
+    // creates the contact on both sides plus syncs birthdays to both
+    // calendars once accepted, rather than a one-sided instant add.
+    const { error } = await supabase.functions.invoke("send-contact-invite", {
       body: { target_user_id: board.user_id, name: board.profiles?.full_name || "" },
     });
-    trackShareEvent(supabase, { eventType: "hint_saved_from_share", subjectType: "board", subjectId: boardId, viewerUserId: currentUser.id });
-    setSaved(true);
+    if (error) {
+      setAddContactError("Could not send the request. Try again.");
+    } else {
+      setContactState("pending");
+      trackShareEvent(supabase, { eventType: "hint_saved_from_share", subjectType: "board", subjectId: boardId, viewerUserId: currentUser.id });
+    }
+    setAddingContact(false);
   }
 
   const ownerName = board?.profiles?.full_name || "Someone";
+  const isOwnBoard = currentUser?.id === board?.user_id;
 
   return (
     <PublicShell>
+      {!loading && board && (
+        <div className="border-b border-[#f0dfd6] bg-white px-4 py-4 sm:px-8">
+          <div className="mx-auto max-w-[1200px] flex items-center gap-4">
+            <Link href="/feed" className="h-9 w-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff5f0] shrink-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg></Link>
+            <div className="ml-auto shrink-0">
+              <ShareButton
+                supabase={supabase}
+                subjectType="board"
+                subjectId={boardId}
+                path={`/b/${boardId}`}
+                title={board.title}
+                sharerName={ownerName}
+                currentUserId={currentUser?.id}
+                label="Share"
+                className="h-9 flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-3.5 text-[13px] font-semibold text-white shadow-md hover:brightness-105"
+              />
+            </div>
+            <Link href={`/profile/${board.user_id}`} className="shrink-0">
+              {board.profiles?.avatar_url
+                ? <HintImage src={board.profiles.avatar_url} alt={ownerName} width={56} height={56} className="rounded-full object-cover border-2 border-[#f0dfd6]" fallbackClassName="hidden" />
+                : <div className="h-14 w-14 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[16px] font-bold text-white">{getInitials(ownerName)}</div>
+              }
+            </Link>
+            <div className="flex-1 min-w-0">
+              <Link href={`/profile/${board.user_id}`} className="hover:underline">
+                <h1 className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900">{board.title}</h1>
+              </Link>
+              <p className="text-[12px] text-slate-400 mt-0.5">By {ownerName}</p>
+              {!isOwnBoard && currentUser && (
+                <button type="button" onClick={contactState === "none" ? handleAddToCircle : undefined}
+                  disabled={addingContact || contactState !== "none"}
+                  className={`mt-2 text-[12px] font-semibold px-3 py-1 rounded-full border transition ${
+                    contactState === "active" ? "border-[#c3e0c3] bg-[#f0faf0] text-[#3a7a3a] cursor-default"
+                    : contactState === "pending" ? "border-[#f0dfc9] bg-[#fff8ee] text-[#a87d3a] cursor-default"
+                    : "border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d]"
+                  }`}>
+                  {contactState === "active" ? `✓ In your circle since ${formatMonthYear(contactSince)}` : contactState === "pending" ? "Request sent — we'll let you know once accepted" : addingContact ? "Sending..." : "+ Add to circle"}
+                </button>
+              )}
+              {!isOwnBoard && !currentUser && (
+                <button type="button" onClick={() => setSignUpOpen(true)} className="mt-2 inline-flex text-[12px] font-semibold px-3 py-1 rounded-full border border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d] transition">
+                  Sign up to join {ownerName.split(" ")[0]}'s Circle
+                </button>
+              )}
+              {addContactError && <p className="mt-1 text-[11px] text-[#b14f43]">{addContactError}</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto max-w-[900px] px-4 py-10">
         {loading ? (
           <p className="text-center text-sm text-slate-400 py-16">Loading...</p>
@@ -113,36 +197,10 @@ export default function BoardPreviewClient({ boardId }) {
           </div>
         ) : (
           <>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-3">
-                <div className="relative h-8 w-8 rounded-full overflow-hidden shrink-0">
-                  <HintImage src={board.profiles?.avatar_url} alt={ownerName} fill sizes="32px" className="object-cover" fallbackClassName="text-sm" />
-                </div>
-                <p className="text-[13px] text-slate-500">Made by <span className="font-semibold text-slate-700">{ownerName}</span></p>
-              </div>
-              <h1 className="text-[28px] font-semibold tracking-[-0.03em] text-slate-900">{board.title}</h1>
-
-              <div className="mt-5 flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center">
-                <Link href={"/profile/" + board.user_id} className="h-11 flex items-center justify-center rounded-full border border-[#ead8ce] px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]">
-                  See {ownerName.split(" ")[0]}'s profile
-                </Link>
-                {currentUser ? (
-                  <button type="button" onClick={handleSaveToCircle} disabled={Boolean(saved)}
-                    className="h-11 flex items-center justify-center rounded-full border border-[#ead8ce] px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0] disabled:opacity-60">
-                    {saved === "sending" ? "Sending request..." : saved ? "Request sent ✓" : `Add ${ownerName.split(" ")[0]} to your Circle`}
-                  </button>
-                ) : (
-                  <button type="button" onClick={() => setSignUpOpen(true)} className="h-11 flex items-center justify-center rounded-full border border-[#ead8ce] px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]">
-                    Sign up to join {ownerName.split(" ")[0]}'s Circle
-                  </button>
-                )}
-              </div>
-            </div>
-
             {hints.length === 0 ? (
-              <p className="mt-12 text-center text-sm text-slate-400">No Hints here yet.</p>
+              <p className="mt-2 text-center text-sm text-slate-400">No Hints here yet.</p>
             ) : (
-              <div className="mt-10 columns-2 gap-4 sm:columns-3">
+              <div className="mt-2 columns-2 gap-4 sm:columns-3">
                 {hints.map((hint) => (
                   <button
                     type="button"
@@ -178,3 +236,4 @@ export default function BoardPreviewClient({ boardId }) {
     </PublicShell>
   );
 }
+
