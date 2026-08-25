@@ -9,8 +9,8 @@ import HintImage from "./HintImage";
 
 function LogoMark() {
   return (
-    <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg">
-      <span className="text-lg">🎁</span>
+    <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg overflow-hidden">
+      <img src="/brand-icon.png" alt="" width={32} height={32} className="object-contain" />
     </div>
   );
 }
@@ -475,7 +475,7 @@ export default function AppShell({ children }) {
                       }`}
                       title={item.label}
                     >
-                      <span>🎁</span>
+                      <img src="/brand-icon.png" alt="" width={18} height={18} className="object-contain" />
                     </Link>
                   );
                 }
@@ -839,8 +839,8 @@ export default function AppShell({ children }) {
           <span className="text-[10px] font-semibold">Circle</span>
         </a>
         <a href="/hints" className="flex flex-col items-center gap-0.5 px-2 -mt-3">
-          <div className={`flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] shadow-lg shadow-[#ff7e54]/40 text-2xl ${pathname === "/hints" || pathname.startsWith("/hints/") ? "ring-2 ring-[#ff875d] ring-offset-2" : ""}`}>
-            🎁
+          <div className={`flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] shadow-lg shadow-[#ff7e54]/40 ${pathname === "/hints" || pathname.startsWith("/hints/") ? "ring-2 ring-[#ff875d] ring-offset-2" : ""}`}>
+            <img src="/brand-icon.png" alt="" width={30} height={30} className="object-contain" />
           </div>
           <span className={`text-[10px] font-semibold mt-0.5 ${pathname === "/hints" || pathname.startsWith("/hints/") ? "text-[#ff875d]" : "text-slate-400"}`}>Hints</span>
         </a>

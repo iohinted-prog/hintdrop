@@ -5,8 +5,8 @@ import AuthModal from "./AuthModal";
 
 function LogoMark() {
   return (
-    <div className="relative flex h-9 w-9 items-center justify-center rounded-[12px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-md">
-      <span className="text-[18px]">🎁</span>
+    <div className="relative flex h-9 w-9 items-center justify-center rounded-[12px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-md overflow-hidden">
+      <img src="/brand-icon.png" alt="" width={26} height={26} className="object-contain" />
     </div>
   );
 }
