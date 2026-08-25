@@ -2185,7 +2185,7 @@ export default function HintsClient({ boardId }) {
       <div className="mx-auto max-w-[1380px] px-5 py-10 md:px-8">
         <section className="text-center">
           {boardId && (
-            <div className="mb-4">
+            <div className="mb-4 text-left">
               <BackLink href="/hints">All Hints</BackLink>
             </div>
           )}
