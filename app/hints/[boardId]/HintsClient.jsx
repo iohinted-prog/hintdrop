@@ -1085,7 +1085,7 @@ function HintCard({
 
   return (
     <article
-      className={`group relative w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.60)] transition-all duration-300 ${
+      className={`group relative w-full overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.60)] transition-transform duration-300 ${
         isDragging ? "scale-[1.02]" : "hover:-translate-y-1"
       }`}
       style={{
@@ -1128,7 +1128,7 @@ function HintCard({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="pointer-events-auto hidden sm:flex min-h-[40px] cursor-grab items-center gap-1 rounded-full border border-white/45 bg-white/72 px-3 py-2 text-[11px] font-semibold text-slate-700 backdrop-blur-md active:cursor-grabbing"
+            className="pointer-events-auto hidden sm:flex min-h-[40px] cursor-grab items-center gap-1 rounded-full border border-white/45 bg-white/90 px-3 py-2 text-[11px] font-semibold text-slate-700 active:cursor-grabbing"
             {...dragHandleAttributes}
             {...dragHandleListeners}
           >
@@ -1142,7 +1142,7 @@ function HintCard({
           )}
 
           {hint.private && (
-            <div className="rounded-full border border-white/45 bg-white/72 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur-md">
+            <div className="rounded-full border border-white/45 bg-white/90 px-3 py-1 text-[11px] font-semibold text-slate-700">
               Private
             </div>
           )}
@@ -1158,7 +1158,7 @@ function HintCard({
           <button
             type="button"
             onClick={() => onEdit(hint)}
-            className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/72 text-[15px] text-slate-500 backdrop-blur-md hover:text-slate-800"
+            className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/90 text-[15px] text-slate-500 hover:text-slate-800"
             aria-label="Edit hint"
           >
             ✎
@@ -1166,7 +1166,7 @@ function HintCard({
 
           <button
             onClick={() => onToggleStarred(hint)}
-            className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/72 text-[16px] backdrop-blur-md"
+            className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-white/90 text-[16px]"
             aria-label={hint.starred ? "Unhighlight hint" : "Highlight hint"}
             type="button"
           >
@@ -1197,7 +1197,7 @@ function HintCard({
                 {displayPrice}
               </span>
               {(hint.occasions || []).slice(0, 2).map(occasion => (
-                <span key={occasion} className="inline-flex rounded-full border border-white/45 bg-white/72 px-2 py-0.5 text-[10px] font-semibold text-slate-700 backdrop-blur-md">
+                <span key={occasion} className="inline-flex rounded-full border border-white/45 bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
                   {occasion}
                 </span>
               ))}
@@ -1208,7 +1208,7 @@ function HintCard({
             <button
               type="button"
               onClick={() => onTogglePrivate(hint)}
-              className="rounded-full border border-white/45 bg-white/76 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-md hover:bg-white"
+              className="rounded-full border border-white/45 bg-white/92 px-3 py-1.5 text-[12px] font-medium text-slate-700 hover:bg-white"
             >
               {hint.private ? "🔒" : ""}
             </button>
@@ -1225,7 +1225,7 @@ function HintCard({
                   trackRetailerClick(supabase, { userId: data?.user?.id, hintId: hint.id, url: hint.url, retailer: hint.retailer, source: "hints_page" });
                 });
               }}
-              className={`rounded-full border border-white/45 bg-white/76 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-md ${hint.id?.startsWith("demo-") ? "cursor-default opacity-50" : "hover:bg-white"}`}
+              className={`rounded-full border border-white/45 bg-white/92 px-3 py-1.5 text-[12px] font-medium text-slate-700 ${hint.id?.startsWith("demo-") ? "cursor-default opacity-50" : "hover:bg-white"}`}
             >
               Open
             </a>
