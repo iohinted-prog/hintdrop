@@ -60,7 +60,16 @@ export default async function Page() {
         "@type": "Organization",
         name: "HintDrop",
         url: "https://hintdrop.app",
-        logo: "https://hintdrop.app/favicon.png",
+        // Was pointing at the 64x64 favicon — using the new 192x192
+        // icon instead, since Google's Organization/Logo guidance wants
+        // a reasonably large square image (112x112 minimum).
+        logo: "https://hintdrop.app/icon-192.png",
+        // sameAs: [] — add real profile URLs here once they exist
+        // (Twitter/X, Instagram, LinkedIn, Crunchbase, etc.). This is
+        // one of the strongest signals for a Knowledge Panel, but only
+        // works with real, live, consistent profiles — leaving it out
+        // entirely for now rather than guessing at URLs that don't
+        // exist yet.
       },
       {
         "@type": "WebSite",

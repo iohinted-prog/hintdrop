@@ -22,9 +22,21 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   icons: {
+    // app/favicon.ico (Next.js's own file-convention icon, auto-served
+    // at /favicon.ico and auto-linked in every page's <head>) was left
+    // as the literal unedited default create-next-app scaffold file —
+    // the Vercel triangle logo — the whole time, completely separate
+    // from this config. That's almost certainly what Google's crawler
+    // and various browsers were actually picking up, regardless of what
+    // was declared here. Now replaced with a real multi-resolution
+    // HintDrop icon (16/32/48/64/128/256px). Also added a 192x192 PNG
+    // option here — Google's guidance wants a size that's a multiple of
+    // 48px among the available options, and the old declared set
+    // topped out at 32x32.
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/favicon.png", type: "image/png", sizes: "32x32" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
     ],
     apple: "/apple-touch-icon.png",
     shortcut: "/favicon.png",
