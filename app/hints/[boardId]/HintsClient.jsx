@@ -7,6 +7,7 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  TouchSensor,
   KeyboardSensor,
   closestCenter,
   MeasuringStrategy,
@@ -1396,7 +1397,14 @@ export default function HintsClient({ boardId }) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
   const mobileSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    // TouchSensor (not PointerSensor) specifically for mobile — it
+    // listens on native touchmove events, which support preventDefault()
+    // to actually block the browser's own gesture handling (like pull-
+    // to-refresh) once the activation delay is met. PointerSensor uses
+    // the Pointer Events API instead, which doesn't suppress native touch
+    // gestures the same way — that gap was very likely why the
+    // overscroll-behavior CSS fix alone wasn't fully reliable.
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
