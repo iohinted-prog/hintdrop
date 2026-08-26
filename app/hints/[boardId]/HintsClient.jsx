@@ -768,7 +768,7 @@ function HintFormFields({
                 : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
             }`}
           >
-            {form.private ? "🔒 Private" : "🔓 Public"}
+            {form.private ? "🔒 Private" : "Public"}
           </button>
         </div>
       ) : null}
@@ -1017,7 +1017,7 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
               <div className="flex gap-3 mb-3">
                 <button type="button" onClick={() => { onTogglePrivate(hint); }}
                   className="flex-1 h-10 rounded-full border border-[#ead8ce] bg-white text-[13px] font-semibold text-slate-600">
-                  {hint.private ? "🔒 Private" : "🔓 Public"}
+                  {hint.private ? "🔒 Private" : "Public"}
                 </button>
                 <button type="button" onClick={() => { onToggleStarred(hint); }}
                   className={`flex-1 h-10 rounded-full border text-[13px] font-semibold ${hint.starred ? "border-[#ffd8c9] bg-[#fff2ea] text-[#e27956]" : "border-[#ead8ce] bg-white text-slate-600"}`}>
@@ -1210,7 +1210,7 @@ function HintCard({
               onClick={() => onTogglePrivate(hint)}
               className="rounded-full border border-white/45 bg-white/76 px-3 py-1.5 text-[12px] font-medium text-slate-700 backdrop-blur-md hover:bg-white"
             >
-              {hint.private ? "🔒" : "🔓"}
+              {hint.private ? "🔒" : ""}
             </button>
 
             <a
@@ -2227,7 +2227,7 @@ export default function HintsClient({ boardId }) {
                   disabled={togglingBoardPrivacy}
                   className="inline-flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-4 py-2 text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0] disabled:opacity-60"
                 >
-                  {board.is_private ? "🔒 Private" : "🔓 Public"}
+                  {board.is_private ? "🔒 Private" : "Public"}
                 </button>
               </div>
             )}

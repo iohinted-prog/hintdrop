@@ -217,7 +217,7 @@ export default function HintsMenuClient() {
                       onClick={() => setNewBoardPrivate(false)}
                       className={`flex-1 h-10 rounded-full text-[12px] font-semibold transition ${!newBoardPrivate ? "bg-[#2f3b2d] text-white" : "border border-[#ead8ce] bg-white text-slate-600"}`}
                     >
-                      🔓 Public
+                      Public
                     </button>
                     <button
                       type="button"
