@@ -44,7 +44,7 @@ export default function PublicShell({ children }) {
           <Link href="/privacy" className="hover:text-slate-600 transition">Privacy</Link>
           <Link href="/contact" className="hover:text-slate-600 transition">Contact</Link>
           <Link href="/for-brands" className="hover:text-slate-600 transition">For Brands</Link>
-          <span>© {new Date().getFullYear()} HintDrop</span>
+          <span>© {new Date().getFullYear()} HintDrop™ LTD</span>
         </div>
       </footer>
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />

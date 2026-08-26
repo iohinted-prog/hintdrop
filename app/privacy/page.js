@@ -35,15 +35,16 @@ export default async function PrivacyPage() {
             <p className="mt-4 text-base leading-8 text-slate-600">
               Effective date: June 17, 2026
               <br />
-              Last updated: July 15, 2026
+              Last updated: August 26, 2026
             </p>
           </div>
 
           <div className="space-y-6 rounded-[28px] border border-[#eadfd4] bg-white/80 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)] sm:p-10">
             <p className="text-[17px] leading-8 text-slate-700">
               HintDrop (&quot;HintDrop&quot;, &quot;we&quot;, &quot;our&quot;, or
-              &quot;us&quot;) helps people organise gift ideas, reminders,
-              contacts, circles, important dates, and related planning. This
+              &quot;us&quot;), a product operated by HintDrop LTD, helps people
+              organise gift ideas, reminders, contacts, circles, important dates,
+              and related planning. This
               Privacy Policy explains what information we collect, how we use
               it, when we share it, how we protect it, and the choices you have
               in relation to your information.
@@ -378,7 +379,8 @@ export default async function PrivacyPage() {
                 >
                   hello@hintdrop.app
                 </a>
-                .
+                . HintDrop LTD is the data controller responsible for your
+                personal information under this Privacy Policy.
               </p>
             </section>
           </div>

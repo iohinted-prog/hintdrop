@@ -35,14 +35,16 @@ export default async function TermsPage() {
             <p className="mt-4 text-base leading-8 text-slate-600">
               Effective date: June 17, 2026
               <br />
-              Last updated: July 15, 2026
+              Last updated: August 26, 2026
             </p>
           </div>
 
           <div className="space-y-6 rounded-[28px] border border-[#eadfd4] bg-white/80 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)] sm:p-10">
             <p className="text-[17px] leading-8 text-slate-700">
               These Terms of Service (&quot;Terms&quot;) govern your access to
-              and use of HintDrop, including our website, applications, and
+              and use of HintDrop, a product operated by HintDrop LTD
+              (&quot;HintDrop&quot;, &quot;we&quot;, &quot;us&quot;, or
+              &quot;our&quot;), including our website, applications, and
               related services (together, the &quot;Service&quot;). By accessing
               or using HintDrop, you agree to these Terms. If you do not agree,
               you may not use the Service.
@@ -198,8 +200,9 @@ export default async function TermsPage() {
               <p className="text-[17px] leading-8 text-slate-700">
                 The Service, including its software, branding, designs, text,
                 graphics, logos, and other content provided by HintDrop, is owned
-                by or licensed to HintDrop and is protected by applicable
-                intellectual property laws. Except as expressly allowed in these
+                by or licensed to HintDrop LTD and is protected by applicable
+                intellectual property laws, including trademark rights in the
+                HintDrop™ name and logo. Except as expressly allowed in these
                 Terms, you may not copy, modify, distribute, sell, or reverse
                 engineer any part of the Service.
               </p>
