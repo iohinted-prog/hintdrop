@@ -106,6 +106,7 @@ function getDisplayPrice(product, formatCurrency) {
 
 function GiftCard({ product, imageRatios, onViewItem, isOpeningLink, formatCurrency, onImageError, onRequestSignIn }) {
   const [showModal, setShowModal] = useState(false);
+  const [justShared, setJustShared] = useState(false);
   const interestTags = getTagArray(product.interest_tags);
   const occasionTags = getTagArray(product.occasion_tags);
   const displayTags = [...interestTags.slice(0, 1), ...occasionTags.slice(0, 1)].slice(0, 2);
@@ -114,6 +115,23 @@ function GiftCard({ product, imageRatios, onViewItem, isOpeningLink, formatCurre
 
   const rawRatio = imageRatios[product.id];
   const cardAspectRatio = rawRatio && Number.isFinite(rawRatio) ? Math.min(0.85, rawRatio) : 0.85;
+
+  async function handleShare(e) {
+    e.stopPropagation();
+    const url = getOutboundUrl(product);
+    const shareData = { title: product.title || "Gift idea", text: displayPrice ? `${product.title} — ${displayPrice}` : product.title, url };
+    if (navigator.share) {
+      try { await navigator.share(shareData); } catch {}
+      return;
+    }
+    if (navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(url);
+        setJustShared(true);
+        setTimeout(() => setJustShared(false), 1500);
+      } catch {}
+    }
+  }
 
   return (
     <>
@@ -136,6 +154,22 @@ function GiftCard({ product, imageRatios, onViewItem, isOpeningLink, formatCurre
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]" />
           )}
+          <button
+            type="button"
+            onClick={handleShare}
+            aria-label="Share"
+            title="Share"
+            className="absolute top-2 right-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-slate-600 shadow-sm backdrop-blur-md transition hover:bg-white"
+          >
+            {justShared ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+            )}
+          </button>
         </div>
 
         <div className="shrink-0 p-3">
