@@ -3,7 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+// Was 30s. Per-item worst case (3s same-domain wait + up to 8.5s
+// LinkPreview timeout + 0.6s delay) is ~12.1s, so even the old batch
+// cap of 6 could take up to ~72.6s — comfortably over 30s, which is
+// almost certainly what was causing the 504s. Raised to 60s (Vercel's
+// ceiling on both Hobby and Pro as of writing) and paired with a lower
+// batch cap below so the true worst case now fits with real headroom.
+export const maxDuration = 60;
 
 function getSupabase() {
   return createClient(
@@ -69,12 +75,12 @@ export async function POST(req) {
   if (!secret || secret !== process.env.ADMIN_BACKFILL_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  // Lowered from 10 — the same-domain delay below can add up to 3s per
-  // consecutive same-domain item on top of each scrape's own up-to-8.5s
-  // timeout, and this route has a fixed 30s function timeout. A worst-case
-  // batch (several consecutive slow, same-domain items) could have
-  // exceeded that with the old cap; this leaves real headroom instead.
-  const batchSize = Math.min(Number(limit) || 6, 6);
+  // Lowered from 6 — even 6 was still capable of exceeding the (now 60s)
+  // function timeout in the worst case: 3s same-domain wait + up to 8.5s
+  // LinkPreview timeout + 0.6s delay ≈ 12.1s per item, so 6 items could
+  // reach ~72.6s. Capped at 4 instead: 4 × 12.1s ≈ 48.4s, leaving ~12s of
+  // real headroom under the 60s limit even in the worst case.
+  const batchSize = Math.min(Number(limit) || 4, 4);
   const MAX_ATTEMPTS = 5;
 
   const supabase = getSupabase();
