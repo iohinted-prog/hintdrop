@@ -2214,7 +2214,7 @@ export default function HintsClient({ boardId }) {
                   supabase={createClient()}
                   subjectType="board"
                   subjectId={boardId}
-                  path={`/b/${boardId}`}
+                  path={board.is_default ? `/profile/${currentUser.id}` : `/profile/${currentUser.id}?board=${boardId}`}
                   title={board.is_default ? null : board.title}
                   sharerName={currentUserName}
                   currentUserId={currentUser.id}

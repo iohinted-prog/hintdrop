@@ -1,5 +1,5 @@
+import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
-import BoardPreviewClient from "./BoardPreviewClient";
 
 export async function generateMetadata({ params }) {
   const { boardId } = await params;
@@ -26,7 +26,24 @@ export async function generateMetadata({ params }) {
   };
 }
 
+// /b/[boardId] no longer has its own page — every board lives on its
+// owner's profile now (deep-linked via ?board=), so this just forwards
+// old and new links there rather than maintaining a second, near-
+// identical page. generateMetadata above still runs for this URL first,
+// so a shared /b/... link still gets a proper preview card before the
+// redirect happens.
 export default async function BoardPreviewPage({ params }) {
   const { boardId } = await params;
-  return <BoardPreviewClient boardId={boardId} />;
+  const supabase = await createClient();
+  const { data: board } = await supabase
+    .from("hint_boards")
+    .select("user_id")
+    .eq("id", boardId)
+    .maybeSingle();
+
+  if (!board) {
+    redirect("/");
+  }
+  redirect(`/profile/${board.user_id}?board=${boardId}`);
 }
+

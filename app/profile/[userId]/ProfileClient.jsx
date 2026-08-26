@@ -127,19 +127,15 @@ export default function ProfileClient({ userId }) {
 
       setLoading(false);
 
-      // A ?board= link (e.g. from Feed's "Jump back in") should land
-      // directly in that specific list, not the menu — falls through to
-      // the single-board shortcut below if the param is missing or points
-      // at a board that isn't actually in this person's public list.
+      // A ?board= link (e.g. from Feed's "Jump back in", or the new /b/
+      // redirect) should land directly in that specific list — anything
+      // else always shows the menu first, even for a single-board
+      // profile, so "see profile" consistently means the same thing
+      // rather than sometimes skipping straight past it.
       const requestedBoardId = searchParams.get("board");
       const requestedBoardValid = requestedBoardId && boardsWithPreviews.some((b) => b.id === requestedBoardId);
       if (requestedBoardValid) {
         setSelectedBoardId(requestedBoardId);
-      } else if (boardsWithPreviews.length === 1) {
-        // A single-board profile (everyone's default state before they
-        // make any extra lists) can skip straight to that board instead
-        // of showing a one-item menu with nothing else to click
-        setSelectedBoardId(boardsWithPreviews[0].id);
       }
     }
     load();
@@ -246,11 +242,13 @@ export default function ProfileClient({ userId }) {
           <div className="ml-auto shrink-0">
             <ShareButton
               supabase={supabase}
-              subjectType="profile"
-              subjectId={userId}
-              path={`/profile/${userId}`}
-              title={`${displayName}'s Hints`}
-              text={`Check out ${displayName}'s Hints on HintDrop`}
+              subjectType={selectedBoardId ? "board" : "profile"}
+              subjectId={selectedBoardId || userId}
+              path={selectedBoardId ? `/profile/${userId}?board=${selectedBoardId}` : `/profile/${userId}`}
+              title={selectedBoardId ? boards?.find(b => b.id === selectedBoardId)?.title : `${displayName}'s Hints`}
+              text={selectedBoardId
+                ? `${displayName}'s hint: "${boards?.find(b => b.id === selectedBoardId)?.title}"`
+                : `Check out ${displayName}'s Hints on HintDrop`}
               currentUserId={currentUser?.id}
               label="Share"
               className="h-9 flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-3.5 text-[13px] font-semibold text-white shadow-md hover:brightness-105"
