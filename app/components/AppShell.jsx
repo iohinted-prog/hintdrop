@@ -80,32 +80,40 @@ export default function AppShell({ children }) {
 
   const initials = useMemo(() => getInitials(fullName, email), [fullName, email]);
 
-  const hideChrome =
+  // Paths that never show app chrome, regardless of auth state — the
+  // profile-fetch effect below can safely skip these entirely.
+  const alwaysHideChrome =
     pathname === "/" ||
     pathname === "/home" ||
     pathname === "/gift-shop" ||
     pathname === "/onboarding" ||
     pathname === "/auth/reset-password" ||
-    pathname.startsWith("/gift-shop/") ||
-    // These render their own PublicShell header for signed-out visitors (a
-    // different, public-appropriate header with a real "Sign in" button)
-    // — without this condition, AppShell's own header rendered on top of
-    // it too, showing a placeholder "U" avatar for a user that isn't
-    // actually signed in, stacked above the correct one underneath. Only
-    // hide while genuinely signed out — a signed-in visitor should keep
-    // the normal app chrome (reflecting their real account), not a page
-    // that looks logged-out regardless of their actual state, which is
-    // exactly what unconditionally hiding these regardless of auth state
-    // used to cause.
-    (pathname.startsWith("/h/") && !currentUserId) ||
-    (pathname.startsWith("/b/") && !currentUserId) ||
-    (pathname.startsWith("/join/") && !currentUserId) ||
-    (pathname.startsWith("/profile/") && !currentUserId);
+    pathname.startsWith("/gift-shop/");
+
+  // These render their own PublicShell header for signed-out visitors (a
+  // different, public-appropriate header with a real "Sign in" button),
+  // but should show the normal app chrome for a signed-in visitor
+  // instead. Whether that's the case depends on currentUserId, which this
+  // same profile-fetch effect is responsible for setting — so the effect
+  // must run on these paths unconditionally (see alwaysHideChrome above,
+  // not hideChrome/showShell below, in its guard), or the fetch that
+  // would reveal a signed-in visitor never runs in the first place: with
+  // currentUserId starting null, hideChrome evaluates true, showShell
+  // false, and gating the fetch on showShell being true meant it could
+  // never run to set currentUserId to begin with — permanently stuck
+  // hidden no matter who's actually signed in.
+  const conditionallyHiddenPath =
+    pathname.startsWith("/h/") ||
+    pathname.startsWith("/b/") ||
+    pathname.startsWith("/join/") ||
+    pathname.startsWith("/profile/");
+
+  const hideChrome = alwaysHideChrome || (conditionallyHiddenPath && !currentUserId);
 
   const showShell = !hideChrome;
 
   useEffect(() => {
-    if (!showShell) {
+    if (alwaysHideChrome) {
       return;
     }
 

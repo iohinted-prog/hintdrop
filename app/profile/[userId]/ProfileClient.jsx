@@ -9,7 +9,6 @@ import { trackRetailerClick } from "../../../lib/trackRetailerClick";
 import HintImage from "../../components/HintImage";
 import BoardPreviewGrid from "../../components/BoardPreviewGrid";
 import ShareButton from "../../components/ShareButton";
-import BackLink from "../../components/BackLink";
 import AuthModal from "../../components/AuthModal";
 import { recordShareContext } from "../../../lib/share";
 import { recordBoardVisit } from "../../../lib/recentActivity";
@@ -249,23 +248,21 @@ export default function ProfileClient({ userId }) {
   const inner = (
     <main className="min-h-screen bg-[#fffaf7]">
       <div className="border-b border-[#f0dfd6] bg-white px-4 py-4 sm:px-8">
-        <div className="mx-auto max-w-[1200px] flex items-center gap-4">
+        <div className="mx-auto max-w-[1200px] flex items-center gap-4 flex-wrap gap-y-3">
           <Link href="/feed" className="h-9 w-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff5f0] shrink-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg></Link>
-          <div className="ml-auto shrink-0">
-            <ShareButton
-              supabase={supabase}
-              subjectType={selectedBoardId ? "board" : "profile"}
-              subjectId={selectedBoardId || userId}
-              path={selectedBoardId ? `/profile/${userId}?board=${selectedBoardId}` : `/profile/${userId}`}
-              title={selectedBoardId ? boards?.find(b => b.id === selectedBoardId)?.title : `${displayName}'s Hints`}
-              text={selectedBoardId
-                ? `${displayName}'s hint: "${boards?.find(b => b.id === selectedBoardId)?.title}"`
-                : `Check out ${displayName}'s Hints on HintDrop`}
-              currentUserId={currentUser?.id}
-              label="Share"
-              className="h-9 flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-3.5 text-[13px] font-semibold text-white shadow-md hover:brightness-105"
-            />
-          </div>
+          <ShareButton
+            supabase={supabase}
+            subjectType={selectedBoardId ? "board" : "profile"}
+            subjectId={selectedBoardId || userId}
+            path={selectedBoardId ? `/profile/${userId}?board=${selectedBoardId}` : `/profile/${userId}`}
+            title={selectedBoardId ? boards?.find(b => b.id === selectedBoardId)?.title : `${displayName}'s Hints`}
+            text={selectedBoardId
+              ? `${displayName}'s hint: "${boards?.find(b => b.id === selectedBoardId)?.title}"`
+              : `Check out ${displayName}'s Hints on HintDrop`}
+            currentUserId={currentUser?.id}
+            label="Share"
+            className="h-9 flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-3.5 text-[13px] font-semibold text-white shadow-md hover:brightness-105 shrink-0"
+          />
           {profile?.avatar_url
             ? <button type="button" onClick={goToMenu} className={selectedBoardId ? "cursor-pointer" : "cursor-default"}>
                 <HintImage src={profile.avatar_url} alt={displayName} width={56} height={56} className="rounded-full object-cover border-2 border-[#f0dfd6] shrink-0" fallbackClassName="hidden" />
@@ -273,7 +270,7 @@ export default function ProfileClient({ userId }) {
             : <button type="button" onClick={goToMenu} className={`h-14 w-14 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[16px] font-bold text-white shrink-0 ${selectedBoardId ? "cursor-pointer" : "cursor-default"}`}>{getInitials(displayName)}</button>
           }
           <div className="flex-1 min-w-0">
-            <button type="button" onClick={goToMenu} className={`text-left ${selectedBoardId ? "cursor-pointer hover:underline" : "cursor-default"}`}>
+            <button type="button" onClick={goToMenu} className={`block text-left ${selectedBoardId ? "cursor-pointer hover:underline" : "cursor-default"}`}>
               <h1 className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900">{displayName}'s Hints</h1>
             </button>
             {!isOwnProfile && currentUser && (
@@ -308,17 +305,8 @@ export default function ProfileClient({ userId }) {
               </div>
             )}
           </div>
-        </div>
-      </div>
 
-      {selectedBoardId && (
-        <div className="border-b border-[#f0dfd6] bg-white px-4 py-3 sm:px-8">
-          <div className="mx-auto max-w-[1200px] flex items-center gap-3 flex-wrap">
-            {boards && boards.length > 1 && (
-              <BackLink onClick={goToMenu}>
-                All of {isOwnProfile ? "your" : `${displayName}'s`} Hints
-              </BackLink>
-            )}
+          {selectedBoardId && (
             <div className="flex items-center gap-2 ml-auto overflow-x-auto">
               <div className="flex gap-2">
                 {["default","starred","price_low","price_high"].map(f => (
@@ -336,9 +324,9 @@ export default function ProfileClient({ userId }) {
                 </select>
               )}
             </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       {loading && (
         <div className="mx-auto max-w-[1200px] px-4 py-6 sm:px-8">
