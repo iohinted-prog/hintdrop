@@ -1364,6 +1364,12 @@ export default function HintsClient({ boardId }) {
   const [togglingBoardPrivacy, setTogglingBoardPrivacy] = useState(false);
 
   const [hints, setHints] = useState([]);
+  // Caps how many hints actually render into the DOM at once — with no
+  // limit, a board with a large number of hints meant every card (each
+  // with its own set of overlay buttons) rendered simultaneously
+  // regardless of count, which compounds into real scroll jank. 60 covers
+  // the vast majority of boards without ever showing "Load more" at all.
+  const [visibleCount, setVisibleCount] = useState(60);
   const [link, setLink] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState("");
@@ -1461,6 +1467,7 @@ export default function HintsClient({ boardId }) {
     async function loadSessionAndHints() {
       setIsLoading(true);
       setBoardLoading(true);
+      setVisibleCount(60);
       const { data: { user } } = await supabase.auth.getUser();
       if (cancelled) return;
 
@@ -1550,10 +1557,21 @@ export default function HintsClient({ boardId }) {
     return () => { cancelled = true; };
   }, [boardId]);
 
-  const visibleHints = hints;
+  const visibleHints = hints.slice(0, visibleCount);
   const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
   const columns = useMemo(() => splitIntoColumns(visibleHints, 3), [visibleHints]);
   const mobileColumns = useMemo(() => splitIntoColumns(visibleHints, 2), [visibleHints]);
+  // Live column arrangement during an active drag — null when not
+  // dragging. Each column has its own separate SortableContext, so
+  // dnd-kit only auto-previews reordering within one column on its own;
+  // moving an item's id into a different column's array here (via
+  // onDragOver, below) is what makes dragging across columns preview
+  // live too, instead of only resolving at drop.
+  const [dragColumns, setDragColumns] = useState(null);
+  // Same idea as dragColumns above, but for the 2-column mobile grid,
+  // which is a fully separate DndContext/SortableContext set from
+  // desktop's 3-column one and needs its own live cross-column state
+  const [mobileDragColumns, setMobileDragColumns] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -2109,74 +2127,124 @@ export default function HintsClient({ boardId }) {
 
   function handleDragStart(event) {
     setActiveId(event.active.id);
+    setDragColumns(splitIntoColumns(visibleHints, 3));
+  }
+
+  function handleDragOver(event) {
+    const { active, over } = event;
+    if (!over || !dragColumns || active.id === over.id) return;
+
+    const fromColumnIndex = dragColumns.findIndex((col) => col.some((item) => item.id === active.id));
+    const toColumnIndex = dragColumns.findIndex((col) => col.some((item) => item.id === over.id));
+
+    // Same-column hovers are already previewed live by SortableContext
+    // itself — this only needs to act when the item has actually crossed
+    // into a different column's territory
+    if (fromColumnIndex === -1 || toColumnIndex === -1 || fromColumnIndex === toColumnIndex) return;
+
+    setDragColumns((prev) => {
+      const next = prev.map((col) => [...col]);
+      const fromItems = next[fromColumnIndex];
+      const toItems = next[toColumnIndex];
+      const oldIndex = fromItems.findIndex((item) => item.id === active.id);
+      const overIndex = toItems.findIndex((item) => item.id === over.id);
+      if (oldIndex === -1 || overIndex === -1) return prev;
+      const [moved] = fromItems.splice(oldIndex, 1);
+      toItems.splice(overIndex, 0, moved);
+      return next;
+    });
   }
 
   async function handleDragEnd(event) {
     const { active, over } = event;
     setActiveId(null);
 
-    if (!over || active.id === over.id || hints.length === 0) return;
+    if (!dragColumns) return;
+    const workingColumns = dragColumns.map((col) => [...col]);
+    setDragColumns(null);
 
-    const nextColumns = splitIntoColumns(hints, 3);
-    const fromColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === active.id));
-    const toColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === over.id));
-
-    if (fromColumnIndex === -1 || toColumnIndex === -1) return;
-
-    const fromItems = [...nextColumns[fromColumnIndex]];
-    const toItems = fromColumnIndex === toColumnIndex ? fromItems : [...nextColumns[toColumnIndex]];
-    const oldIndex = fromItems.findIndex((item) => item.id === active.id);
-    const newIndex = toItems.findIndex((item) => item.id === over.id);
-
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    if (fromColumnIndex === toColumnIndex) {
-      nextColumns[fromColumnIndex] = arrayMove(fromItems, oldIndex, newIndex);
-    } else {
-      const [moved] = fromItems.splice(oldIndex, 1);
-      toItems.splice(newIndex, 0, moved);
-      nextColumns[fromColumnIndex] = fromItems;
-      nextColumns[toColumnIndex] = toItems;
+    // Any cross-column move already happened live via onDragOver above —
+    // this only needs to resolve a final within-column reorder based on
+    // exactly where it was dropped, since same-column position isn't
+    // tracked in state during the drag (SortableContext previews that on
+    // its own without needing it to be)
+    if (over && active.id !== over.id) {
+      const colIndex = workingColumns.findIndex((col) => col.some((item) => item.id === active.id));
+      const overColIndex = workingColumns.findIndex((col) => col.some((item) => item.id === over.id));
+      if (colIndex !== -1 && colIndex === overColIndex) {
+        const items = workingColumns[colIndex];
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+          workingColumns[colIndex] = arrayMove(items, oldIndex, newIndex);
+        }
+      }
     }
 
-    const nextHints = rebuildFromColumns(nextColumns);
+    const reorderedVisible = rebuildFromColumns(workingColumns);
+    const hiddenRemainder = hints.slice(visibleCount);
+    const nextHints = [...reorderedVisible, ...hiddenRemainder].map((h, i) => ({ ...h, position: i }));
     setHints(nextHints);
     await persistOrder(nextHints);
   }
 
   function handleDragCancel() {
     setActiveId(null);
+    setDragColumns(null);
+    setMobileDragColumns(null);
+  }
+
+  function handleMobileDragStart(event) {
+    setActiveId(event.active.id);
+    setMobileDragColumns(splitIntoColumns(visibleHints, 2));
+  }
+
+  function handleMobileDragOver(event) {
+    const { active, over } = event;
+    if (!over || !mobileDragColumns || active.id === over.id) return;
+
+    const fromColumnIndex = mobileDragColumns.findIndex((col) => col.some((item) => item.id === active.id));
+    const toColumnIndex = mobileDragColumns.findIndex((col) => col.some((item) => item.id === over.id));
+
+    if (fromColumnIndex === -1 || toColumnIndex === -1 || fromColumnIndex === toColumnIndex) return;
+
+    setMobileDragColumns((prev) => {
+      const next = prev.map((col) => [...col]);
+      const fromItems = next[fromColumnIndex];
+      const toItems = next[toColumnIndex];
+      const oldIndex = fromItems.findIndex((item) => item.id === active.id);
+      const overIndex = toItems.findIndex((item) => item.id === over.id);
+      if (oldIndex === -1 || overIndex === -1) return prev;
+      const [moved] = fromItems.splice(oldIndex, 1);
+      toItems.splice(overIndex, 0, moved);
+      return next;
+    });
   }
 
   async function handleMobileDragEnd(event) {
     const { active, over } = event;
     setActiveId(null);
 
-    if (!over || active.id === over.id || hints.length === 0) return;
+    if (!mobileDragColumns) return;
+    const workingColumns = mobileDragColumns.map((col) => [...col]);
+    setMobileDragColumns(null);
 
-    const nextColumns = splitIntoColumns(hints, 2);
-    const fromColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === active.id));
-    const toColumnIndex = nextColumns.findIndex((col) => col.some((item) => item.id === over.id));
-
-    if (fromColumnIndex === -1 || toColumnIndex === -1) return;
-
-    const fromItems = [...nextColumns[fromColumnIndex]];
-    const toItems = fromColumnIndex === toColumnIndex ? fromItems : [...nextColumns[toColumnIndex]];
-    const oldIndex = fromItems.findIndex((item) => item.id === active.id);
-    const newIndex = toItems.findIndex((item) => item.id === over.id);
-
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    if (fromColumnIndex === toColumnIndex) {
-      nextColumns[fromColumnIndex] = arrayMove(fromItems, oldIndex, newIndex);
-    } else {
-      const [moved] = fromItems.splice(oldIndex, 1);
-      toItems.splice(newIndex, 0, moved);
-      nextColumns[fromColumnIndex] = fromItems;
-      nextColumns[toColumnIndex] = toItems;
+    if (over && active.id !== over.id) {
+      const colIndex = workingColumns.findIndex((col) => col.some((item) => item.id === active.id));
+      const overColIndex = workingColumns.findIndex((col) => col.some((item) => item.id === over.id));
+      if (colIndex !== -1 && colIndex === overColIndex) {
+        const items = workingColumns[colIndex];
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+          workingColumns[colIndex] = arrayMove(items, oldIndex, newIndex);
+        }
+      }
     }
 
-    const nextHints = rebuildFromColumns(nextColumns);
+    const reorderedVisible = rebuildFromColumns(workingColumns);
+    const hiddenRemainder = hints.slice(visibleCount);
+    const nextHints = [...reorderedVisible, ...hiddenRemainder].map((h, i) => ({ ...h, position: i }));
     setHints(nextHints);
     await persistOrder(nextHints);
   }
@@ -2307,11 +2375,12 @@ export default function HintsClient({ boardId }) {
                 collisionDetection={closestCenter}
                 measuring={measuring}
                 onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
                 onDragCancel={handleDragCancel}
               >
                 <div className="hidden md:grid md:grid-cols-3 md:gap-6">
-                  {columns.map((columnHints, columnIndex) => (
+                  {(dragColumns || columns).map((columnHints, columnIndex) => (
                     <SortableContext
                       key={`column-${columnIndex}`}
                       items={columnHints.map((hint) => hint.id)}
@@ -2354,12 +2423,13 @@ export default function HintsClient({ boardId }) {
                 sensors={mobileSensors}
                 collisionDetection={closestCenter}
                 measuring={measuring}
-                onDragStart={handleDragStart}
+                onDragStart={handleMobileDragStart}
+                onDragOver={handleMobileDragOver}
                 onDragEnd={handleMobileDragEnd}
                 onDragCancel={handleDragCancel}
               >
                 <div className="grid grid-cols-2 gap-3 md:hidden">
-                  {mobileColumns.map((col, colIndex) => (
+                  {(mobileDragColumns || mobileColumns).map((col, colIndex) => (
                     <SortableContext
                       key={`mobile-column-${colIndex}`}
                       items={col.map((hint) => hint.id)}
@@ -2397,6 +2467,18 @@ export default function HintsClient({ boardId }) {
                   ) : null}
                 </DragOverlay>
               </DndContext>
+
+              {hints.length > visibleCount && (
+                <div className="mt-8 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((c) => c + 60)}
+                    className="h-11 rounded-full border border-[#ead8ce] bg-white px-6 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0]"
+                  >
+                    Load more ({hints.length - visibleCount} remaining)
+                  </button>
+                </div>
+              )}
               </>
             ) : (
               <>
