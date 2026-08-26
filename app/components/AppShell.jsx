@@ -503,7 +503,7 @@ export default function AppShell({ children }) {
                       }`}
                       title={item.label}
                     >
-                      <img src="/brand-icon.png" alt="" width={18} height={18} className="object-contain" />
+                      <img src="/brand-icon.png" alt="" width={24} height={24} className="object-contain" />
                     </Link>
                   );
                 }

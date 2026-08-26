@@ -2402,25 +2402,6 @@ export default function FeedClient() {
               </div>
             </section>
 
-            <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Your people</p>
-              <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.03em] text-slate-900">
-                Your Circle
-              </h2>
-
-              <div className="mt-4 flex gap-2">
-                <button type="button" onClick={() => setIsAddContactOpen(true)}
-                  className="flex-1 h-10 inline-flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-sm font-semibold text-white shadow-lg">
-                  Add contact
-                </button>
-                <Link href="/circle"
-                  className="flex-1 h-10 inline-flex items-center justify-center rounded-full border border-[#f0a384] bg-white px-4 text-sm font-semibold text-[#df7b59] hover:bg-[#fff4ee]">
-                  View circle
-                </Link>
-              </div>
-            </section>
-
-
           </aside>
 
           <section className={`min-w-0 ${mobileTab !== "home" ? "hidden xl:block" : ""}`}>

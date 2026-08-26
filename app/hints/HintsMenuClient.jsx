@@ -25,7 +25,7 @@ function BoardCard({ board }) {
       <div className="flex items-center justify-between gap-3 p-4">
         <div className="min-w-0">
           <p className="truncate text-[15px] font-semibold text-slate-900">
-            {board.is_private && <span className="mr-1" title="Private">🔒</span>}
+            {Boolean(board.is_private) && <span className="mr-1" title="Private">🔒</span>}
             {board.title}
           </p>
           <p className="mt-0.5 text-[12px] text-slate-400">

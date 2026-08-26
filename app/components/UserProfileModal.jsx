@@ -2,12 +2,9 @@
 import { useState, useEffect } from "react";
 import { createClient } from "../../lib/supabase/client";
 import Link from "next/link";
-import GroupHintModal from "./GroupHintModal";
 import { recordProfileVisit } from "../../lib/recentProfiles";
-import { recordHintView } from "../../lib/recentHints";
-import { trackRetailerClick } from "../../lib/trackRetailerClick";
 import HintImage from "./HintImage";
-import ShareButton from "./ShareButton";
+import BoardPreviewGrid from "./BoardPreviewGrid";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -16,69 +13,43 @@ function getInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function loadImageAspectRatio(src) {
-  return new Promise((resolve) => {
-    const img = new window.Image();
-    img.onload = () => resolve(img.naturalWidth / img.naturalHeight);
-    img.onerror = () => resolve(null);
-    img.src = src;
-  });
-}
-
 export default function UserProfileModal({ userId, name, avatarUrl, initials, onClose, currentUserId, isContact, onAddContact }) {
   const supabase = createClient();
-  const [hints, setHints] = useState([]);
+  const [boards, setBoards] = useState([]);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [claims, setClaims] = useState([]);
-  const [claimingId, setClaimingId] = useState(null);
-  const [imageRatios, setImageRatios] = useState({});
-  const [selectedHint, setSelectedHint] = useState(null);
-  const [groupHint, setGroupHint] = useState(null);
 
   useEffect(() => {
     if (!userId) return;
     recordProfileVisit(supabase, currentUserId, userId);
     async function load() {
       setLoading(true);
-      const [{ data: profileData }, { data: hintsData }] = await Promise.all([
+      const [{ data: profileData }, { data: boardRows }] = await Promise.all([
         supabase.from("profiles").select("full_name, avatar_url, interests").eq("id", userId).maybeSingle(),
-        supabase.from("hints").select("id, title, image_url, numeric_price, currency, retailer, url, starred, occasions, size, size_type, colour")
-          .eq("user_id", userId).or("is_private.is.null,is_private.eq.false").order("position", { ascending: true }),
+        supabase.from("hint_boards").select("id, title, is_default")
+          .eq("user_id", userId).or("is_private.is.null,is_private.eq.false")
+          .order("is_default", { ascending: false }).order("created_at", { ascending: true }),
       ]);
       setProfile(profileData);
-      const hintsList = [...(hintsData || [])].sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)).slice(0, 8);
-      setHints(hintsList);
-      if (hintsList.length && currentUserId && currentUserId !== userId) {
-        const { data: claimsData } = await supabase.from("hint_claims")
-          .select("id, hint_id, claimed_by, claim_type")
-          .in("hint_id", hintsList.map(h => h.id));
-        setClaims(claimsData || []);
-      }
-      setLoading(false);
-      const ratios = {};
-      await Promise.all(hintsList.filter(h => h.image_url).map(async h => {
-        const r = await loadImageAspectRatio(h.image_url).catch(() => null);
-        if (r) ratios[h.id] = r;
+
+      // Same pattern as HintsMenuClient's board menu — a count plus a
+      // handful of preview images per board, not the full hint list
+      const boardsWithPreviews = await Promise.all((boardRows || []).map(async (board) => {
+        const [{ count }, { data: previewHints }] = await Promise.all([
+          supabase.from("hints").select("id", { count: "exact", head: true })
+            .eq("board_id", board.id).or("is_private.is.null,is_private.eq.false"),
+          supabase.from("hints").select("id, image_url")
+            .eq("board_id", board.id).or("is_private.is.null,is_private.eq.false")
+            .order("position", { ascending: true }).limit(4),
+        ]);
+        return { ...board, hintCount: count || 0, previewHints: previewHints || [] };
       }));
-      setImageRatios(ratios);
+
+      setBoards(boardsWithPreviews);
+      setLoading(false);
     }
     load();
   }, [userId, currentUserId]);
-
-  async function handleToggleClaim(hint) {
-    if (!currentUserId || currentUserId === userId) return;
-    const myClaim = claims.find(c => c.hint_id === hint.id && c.claimed_by === currentUserId);
-    if (myClaim) {
-      setClaims(prev => prev.filter(c => c.id !== myClaim.id));
-      await supabase.from("hint_claims").delete().eq("id", myClaim.id);
-    } else {
-      const tempId = crypto.randomUUID();
-      setClaims(prev => [...prev, { id: tempId, hint_id: hint.id, claimed_by: currentUserId, claim_type: "solo" }]);
-      const { error } = await supabase.from("hint_claims").insert({ hint_id: hint.id, claimed_by: currentUserId, claim_type: "solo" });
-      if (error) setClaims(prev => prev.filter(c => c.id !== tempId));
-    }
-  }
 
   const displayName = profile?.full_name || name || "User";
   const displayAvatar = profile?.avatar_url || avatarUrl || null;
@@ -113,57 +84,35 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           {loading ? (
-            <div className="py-8 text-center text-sm text-slate-400">Loading hints...</div>
+            <div className="py-8 text-center text-sm text-slate-400">Loading...</div>
           ) : !isContact && isViewingOther ? (
             <div className="relative">
-              <div className="columns-2 gap-3 blur-sm pointer-events-none select-none">
-                {[1,2,3,4].map(i => <div key={i} className="mb-3 h-40 rounded-[20px] bg-[#f0e4dd]" />)}
+              <div className="grid grid-cols-2 gap-3 blur-sm pointer-events-none select-none">
+                {[1,2,3,4].map(i => <div key={i} className="h-32 rounded-[20px] bg-[#f0e4dd]" />)}
               </div>
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                <p className="text-sm font-semibold text-slate-700">Add as a contact to see their hints</p>
+                <p className="text-sm font-semibold text-slate-700">Add as a contact to see their Hints</p>
                 <button type="button" onClick={onAddContact} className="inline-flex h-10 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-6 text-sm font-semibold text-white shadow-lg">Add contact</button>
               </div>
             </div>
-          ) : hints.length === 0 ? (
-            <div className="py-8 text-center text-sm text-slate-400">No public hints yet.</div>
+          ) : boards.length === 0 ? (
+            <div className="py-8 text-center text-sm text-slate-400">No public Hints lists yet.</div>
           ) : (
-            <div className="columns-2 gap-3">
-              {hints.map((hint) => {
-                const myClaim = claims.find(c => c.hint_id === hint.id && c.claimed_by === currentUserId);
-                const otherClaim = claims.find(c => c.hint_id === hint.id && c.claimed_by !== currentUserId);
-                return (
-                  <div key={hint.id} className="mb-3 break-inside-avoid">
-                    <div className="overflow-hidden rounded-[20px] border border-[#f0dfd6] bg-[#fffaf7] hover:border-[#e8c9bc] transition-colors cursor-pointer" onClick={() => { setSelectedHint(hint); recordHintView(supabase, currentUserId, hint.id); }}>
-                      {hint.image_url
-                        ? <div className="relative w-full" style={imageRatios[hint.id] ? { aspectRatio: String(imageRatios[hint.id]) } : { aspectRatio: "3/4" }}>
-                            <HintImage src={hint.image_url} alt={hint.title} fill className="object-cover" sizes="(max-width: 640px) 50vw, 300px" fallbackClassName="hidden" />
-                          </div>
-                        : <div className="w-full bg-gradient-to-br from-[#f3d5cc] to-[#d98c76] flex items-center justify-center text-2xl" style={{ aspectRatio: "3/4" }}>🎁</div>
-                      }
-                      <div className="p-3">
-                        {hint.starred && <p className="text-[11px] font-semibold text-[#ff875d] mb-0.5">⭐ Top pick</p>}
-                        <p className="text-[13px] font-semibold text-slate-900 line-clamp-2">{hint.title}</p>
-                        {hint.retailer && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{hint.retailer}</p>}
-                        {hint.numeric_price > 0 && (
-                          <p className="text-[12px] font-bold text-[#df7b59] mt-1">
-                            {new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numeric_price)}
-                          </p>
-                        )}
-                        {isViewingOther && (
-                          <div className="mt-2 flex items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
-                            {otherClaim && !myClaim ? <span className="text-[11px] text-slate-400">Someone is on it</span> : <span />}
-                            <button type="button" disabled={claimingId === hint.id}
-                              onClick={() => { setClaimingId(hint.id); handleToggleClaim(hint).finally(() => setClaimingId(null)); }}
-                              className={"ml-auto text-[11px] font-semibold rounded-full px-3 py-1 border transition " + (myClaim ? "bg-[#edf6eb] text-[#4a7a3a] border-[#c5dfc0]" : otherClaim ? "bg-[#fff8ee] text-[#b87a2a] border-[#f0d9a0] hover:bg-[#fff0d6]" : "bg-[#fff4ee] text-[#df7b59] border-[#f0c9b5] hover:bg-[#ffe9db]")}>
-                              {myClaim ? "I am on it" : otherClaim ? "Buy anyway?" : "I am getting this"}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {boards.map((board) => (
+                <Link key={board.id} href={`/profile/${userId}?board=${board.id}`} onClick={onClose}
+                  className="group flex flex-col overflow-hidden rounded-[20px] border border-[#f0dfd6] bg-white transition hover:-translate-y-0.5 hover:shadow-md">
+                  <div className="bg-[#fdf5f0] p-0.5" style={{ aspectRatio: "16/9" }}>
+                    <BoardPreviewGrid previewHints={board.previewHints} />
                   </div>
-                );
-              })}
+                  <div className="p-3">
+                    <p className="text-[13px] font-semibold text-slate-900 truncate">{board.title}</p>
+                    <p className="mt-0.5 text-[11px] text-slate-400">
+                      {board.is_default ? "Personal" : "Hints for someone else"} · {board.hintCount} Hint{board.hintCount === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
         </div>
@@ -174,88 +123,6 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
           </Link>
         </div>
       </div>
-      {selectedHint && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 backdrop-blur-sm min-[480px]:items-center min-[480px]:px-4" onClick={() => setSelectedHint(null)}>
-          <div className="w-full max-w-[480px] rounded-t-[28px] min-[480px]:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-y-auto" style={{ maxHeight: "88dvh" }} onClick={e => e.stopPropagation()}>
-            <div className="flex justify-end px-4 pt-3">
-              <button type="button" onClick={() => setSelectedHint(null)} className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400">X</button>
-            </div>
-            {selectedHint.image_url
-              ? <HintImage src={selectedHint.image_url} alt={selectedHint.title} width={480} height={280} className="w-full h-auto" style={{ maxHeight: "280px", objectFit: "contain" }} />
-              : <div className="w-full bg-gradient-to-br from-[#ead8ca] to-[#c4a17f] flex items-center justify-center text-6xl" style={{ height: "200px" }}>🎁</div>
-            }
-            <div className="p-5">
-              {selectedHint.starred && <p className="text-[11px] font-semibold text-[#ff875d] mb-1">⭐ Top pick</p>}
-              <p className="text-[18px] font-semibold text-slate-900 leading-tight">{selectedHint.title || "Hint"}</p>
-              {selectedHint.retailer && <p className="text-[13px] text-slate-400 mt-1">{selectedHint.retailer}</p>}
-              {selectedHint.numeric_price > 0 && (
-                <p className="text-[16px] font-bold text-[#df7b59] mt-2">
-                  {new Intl.NumberFormat("en-GB", { style: "currency", currency: selectedHint.currency || "GBP" }).format(selectedHint.numeric_price)}
-                </p>
-              )}
-              {selectedHint.size && (
-                <p className="text-[13px] text-slate-600 mt-2">📏 Size: <strong>{selectedHint.size}</strong>{selectedHint.size_type ? " (" + selectedHint.size_type + ")" : ""}</p>
-              )}
-              {selectedHint.colour && (
-                <p className="text-[13px] text-slate-600 mt-1">🎨 Colour: <strong>{selectedHint.colour}</strong></p>
-              )}
-              {selectedHint.occasions && selectedHint.occasions.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {selectedHint.occasions.map(o => <span key={o} className="rounded-full bg-[#fff4ee] px-2.5 py-0.5 text-[11px] font-semibold text-[#df7b59]">{o}</span>)}
-                </div>
-              )}
-              <div className="mt-4 mb-3">
-                <ShareButton
-                  supabase={supabase}
-                  subjectType="hint"
-                  subjectId={selectedHint.id}
-                  path={`/h/${selectedHint.id}`}
-                  title={selectedHint.title}
-                  sharerName={displayName}
-                  currentUserId={currentUserId}
-                  label="Share this hint"
-                  className="w-full h-11 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white flex items-center justify-center gap-1.5 shadow-md hover:brightness-105"
-                />
-              </div>
-              <div className="flex gap-3">
-                {selectedHint.url && (
-                  <a href={selectedHint.url} target="_blank" rel="noopener noreferrer"
-                    onClick={() => trackRetailerClick(supabase, { userId: currentUserId, hintId: selectedHint.id, url: selectedHint.url, retailer: selectedHint.retailer, source: "profile_view" })}
-                    className="flex-1 h-11 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-lg">
-                    Open
-                  </a>
-                )}
-                {isViewingOther && (
-                  <button type="button" onClick={() => setGroupHint(selectedHint)}
-                    className="flex-1 h-11 rounded-full border border-[#ead8ce] text-[13px] font-semibold text-slate-600">
-                    Get group together
-                  </button>
-                )}
-                {isViewingOther && (() => {
-                  const myClaim = claims.find(c => c.hint_id === selectedHint.id && c.claimed_by === currentUserId);
-                  const otherClaim = claims.find(c => c.hint_id === selectedHint.id && c.claimed_by !== currentUserId);
-                  return (
-                    <button type="button" disabled={claimingId === selectedHint.id}
-                      onClick={() => { setClaimingId(selectedHint.id); handleToggleClaim(selectedHint).finally(() => setClaimingId(null)); }}
-                      className={"flex-1 h-11 rounded-full text-[13px] font-semibold border transition " + (myClaim ? "bg-[#edf6eb] text-[#4a7a3a] border-[#c5dfc0]" : otherClaim ? "bg-[#fff8ee] text-[#b87a2a] border-[#f0d9a0]" : "bg-[#fff4ee] text-[#df7b59] border-[#f0c9b5] hover:bg-[#ffe9db]")}>
-                      {myClaim ? "I am on it" : otherClaim ? "Buy anyway?" : "I am getting this"}
-                    </button>
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    {groupHint && (
-        <GroupHintModal
-          hint={groupHint}
-          recipientUserId={userId}
-          recipientName={displayName}
-          currentUserId={currentUserId}
-          onClose={() => setGroupHint(null)}
-        />
-      )}
     </div>
   );
 }
