@@ -120,6 +120,23 @@ export default function AppShell({ children }) {
     let activeListener = true;
 
     async function loadHeaderProfile() {
+      // getSession() reads from local storage and resolves almost
+      // instantly — getUser() re-validates the session against Supabase's
+      // auth server over the network, which is the right call for
+      // anything security-sensitive but far too slow for "should the
+      // header show as signed in," where the visible delay was read as a
+      // glitch. Set currentUserId from the fast local check first so the
+      // correct chrome appears immediately, then fill in the fuller
+      // profile details (name, avatar) once they're actually needed.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user && activeListener) {
+        setCurrentUserId(session.user.id);
+        setEmail(session.user.email || "");
+        const metadata = session.user.user_metadata || {};
+        setFullName(getMetadataName(metadata));
+        setAvatarUrl(getMetadataAvatar(metadata));
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser();

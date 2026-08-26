@@ -75,6 +75,16 @@ export default function ProfileClient({ userId }) {
 
   useEffect(() => {
     async function load() {
+      // getSession() reads from local storage and resolves almost
+      // instantly — getUser() re-validates against Supabase's auth server
+      // over the network, which matters for anything security-sensitive
+      // but was the reason this page's signed-in-vs-signed-out chrome
+      // decision visibly flickered on load. Set the fast local read first
+      // so the correct header renders immediately, then confirm/replace
+      // with the authoritative check once it resolves.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) setCurrentUser(session.user);
+
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
       recordShareContext("profile", userId, userId);

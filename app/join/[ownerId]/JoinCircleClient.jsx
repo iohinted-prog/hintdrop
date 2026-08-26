@@ -24,6 +24,13 @@ export default function JoinCircleClient({ ownerId }) {
   useEffect(() => {
     async function load() {
       recordShareContext("profile", ownerId, ownerId);
+      // getSession() reads local storage and resolves almost instantly —
+      // getUser() re-validates against Supabase's server over the
+      // network, which is why relying on it alone caused a visible
+      // flicker before the correct signed-in chrome appeared.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) setCurrentUser(session.user);
+
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
 
