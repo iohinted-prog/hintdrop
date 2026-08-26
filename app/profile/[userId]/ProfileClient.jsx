@@ -1,7 +1,7 @@
 "use client";
 import PublicShell from "../../components/PublicShell";
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabase/client";
 import Link from "next/link";
 import GroupHintModal from "../../components/GroupHintModal";
@@ -56,6 +56,7 @@ const GRADIENTS = [
 export default function ProfileClient({ userId }) {
   const supabase = createClient();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [profile, setProfile] = useState(null);
   const [boards, setBoards] = useState(null); // null = not loaded yet
   const [selectedBoardId, setSelectedBoardId] = useState(null);
@@ -209,6 +210,17 @@ export default function ProfileClient({ userId }) {
   const [addContactError, setAddContactError] = useState("");
   const [signUpOpen, setSignUpOpen] = useState(false);
 
+  // Clears both the board-selection state and the ?board= URL param
+  // together — the existing back-link only ever cleared the state,
+  // leaving the URL out of sync with what was on screen (harmless until
+  // someone refreshes or re-shares from that exact moment, at which point
+  // it would silently jump back into the board that was just left).
+  function goToMenu() {
+    if (!selectedBoardId) return;
+    setSelectedBoardId(null);
+    router.push(`/profile/${userId}`, { scroll: false });
+  }
+
   async function handleAddToCircle() {
     if (!currentUser) return;
     setAddingContact(true);
@@ -255,11 +267,15 @@ export default function ProfileClient({ userId }) {
             />
           </div>
           {profile?.avatar_url
-            ? <HintImage src={profile.avatar_url} alt={displayName} width={56} height={56} className="rounded-full object-cover border-2 border-[#f0dfd6] shrink-0" fallbackClassName="hidden" />
-            : <div className="h-14 w-14 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[16px] font-bold text-white shrink-0">{getInitials(displayName)}</div>
+            ? <button type="button" onClick={goToMenu} className={selectedBoardId ? "cursor-pointer" : "cursor-default"}>
+                <HintImage src={profile.avatar_url} alt={displayName} width={56} height={56} className="rounded-full object-cover border-2 border-[#f0dfd6] shrink-0" fallbackClassName="hidden" />
+              </button>
+            : <button type="button" onClick={goToMenu} className={`h-14 w-14 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[16px] font-bold text-white shrink-0 ${selectedBoardId ? "cursor-pointer" : "cursor-default"}`}>{getInitials(displayName)}</button>
           }
           <div className="flex-1 min-w-0">
-            <h1 className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900">{displayName}'s Hints</h1>
+            <button type="button" onClick={goToMenu} className={`text-left ${selectedBoardId ? "cursor-pointer hover:underline" : "cursor-default"}`}>
+              <h1 className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900">{displayName}'s Hints</h1>
+            </button>
             {!isOwnProfile && currentUser && (
               <button type="button" onClick={contactState === "none" ? handleAddToCircle : undefined}
                 disabled={addingContact || contactState !== "none"}
@@ -299,7 +315,7 @@ export default function ProfileClient({ userId }) {
         <div className="border-b border-[#f0dfd6] bg-white px-4 py-3 sm:px-8">
           <div className="mx-auto max-w-[1200px] flex items-center gap-3 flex-wrap">
             {boards && boards.length > 1 && (
-              <BackLink onClick={() => setSelectedBoardId(null)}>
+              <BackLink onClick={goToMenu}>
                 All of {isOwnProfile ? "your" : `${displayName}'s`} Hints
               </BackLink>
             )}
