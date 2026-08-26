@@ -14,12 +14,25 @@
 
 html {
   scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /* Prevents the browser's native pull-to-refresh gesture from firing.
+     This app has no built-in pull-to-refresh anywhere, so that gesture is
+     never intentional — the real problem it was causing: dnd-kit's touch
+     sensor waits ~250ms before claiming a touch as a drag (so a normal
+     scroll isn't mistaken for one), and during that window the touch is
+     still "up for grabs." If a finger drifts down even slightly while
+     holding to start a drag, the browser's own pull-to-refresh gesture
+     recognizer can win that window instead, reloading the whole page —
+     exactly the "holding an item too long triggers a loading page" bug.
+     contain (not none) still allows normal scroll bounce within the
+     page, just stops the gesture from escaping to the browser itself. */
+  overscroll-behavior-y: contain;
 }
 
 @keyframes calFadeIn {
