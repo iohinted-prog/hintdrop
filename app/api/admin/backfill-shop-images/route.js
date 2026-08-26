@@ -113,7 +113,12 @@ export async function POST(req) {
         await supabase.from("shop_products").update({ image_url: image }).eq("id", product.id);
         results.updated += 1;
       } else {
-        await supabase.from("shop_products").update({ raw_payload: { backfill_failed: "no og:image found" } }).eq("id", product.id);
+        // No permanent-failure path was ever wired to is_active — a
+        // product with no og:image tag at all would sit here indefinitely,
+        // visible on the shop page showing the gradient placeholder,
+        // exactly like the batch that needed a manual cleanup. Deactivate
+        // immediately rather than waiting for that to happen again.
+        await supabase.from("shop_products").update({ raw_payload: { backfill_failed: "no og:image found" }, is_active: false }).eq("id", product.id);
         results.failed.push({ id: product.id, reason: "no og:image found" });
       }
     } catch (err) {
@@ -129,9 +134,16 @@ export async function POST(req) {
       // block every healthy item behind them from ever being reached.
       const permanentlyStuck = nextAttempts >= MAX_ATTEMPTS;
       if (!isTransient || permanentlyStuck) {
+        // Same reasoning as the no-og:image case above — once a product
+        // is confirmed permanently unfixable (whether that's an
+        // immediate non-transient error like a 403, or exhausting every
+        // retry), deactivate it right then rather than leaving it
+        // active-but-imageless until someone happens to notice and
+        // cleans it up manually.
         await supabase.from("shop_products").update({
           raw_payload: { backfill_failed: permanentlyStuck ? `${reason} (gave up after ${nextAttempts} attempts)` : reason },
           backfill_attempts: nextAttempts,
+          is_active: false,
         }).eq("id", product.id);
       } else {
         await supabase.from("shop_products").update({ backfill_attempts: nextAttempts }).eq("id", product.id);
