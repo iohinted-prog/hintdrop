@@ -69,7 +69,12 @@ export async function POST(req) {
   if (!secret || secret !== process.env.ADMIN_BACKFILL_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const batchSize = Math.min(Number(limit) || 8, 10);
+  // Lowered from 10 — the same-domain delay below can add up to 3s per
+  // consecutive same-domain item on top of each scrape's own up-to-8.5s
+  // timeout, and this route has a fixed 30s function timeout. A worst-case
+  // batch (several consecutive slow, same-domain items) could have
+  // exceeded that with the old cap; this leaves real headroom instead.
+  const batchSize = Math.min(Number(limit) || 6, 6);
   const MAX_ATTEMPTS = 5;
 
   const supabase = getSupabase();
@@ -85,8 +90,23 @@ export async function POST(req) {
 
   const results = { updated: 0, failed: [] };
 
+  // Sonos and Urban Outfitters items all failed with 425/429 — rate-limit
+  // shaped codes — and retrying didn't help, which points at a domain-
+  // level rate limit rather than a one-off blip. The query has no ORDER
+  // BY, so items from the same retailer can end up processed back-to-back
+  // in the same batch; a flat inter-request delay doesn't account for
+  // that. Waiting noticeably longer specifically when two consecutive
+  // items share a domain gives that domain's rate limit more room to
+  // reset, without slowing down the common case of unrelated domains.
+  let lastDomain = null;
   for (const product of products || []) {
     const attemptsSoFar = product.backfill_attempts || 0;
+    const domain = (() => { try { return new URL(product.product_url).hostname; } catch { return null; } })();
+    if (domain && domain === lastDomain) {
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+    lastDomain = domain;
+
     try {
       const image = await scrapeImage(product.product_url);
       if (image) {
@@ -118,7 +138,7 @@ export async function POST(req) {
       }
       results.failed.push({ id: product.id, reason, retryable: isTransient && !permanentlyStuck, attempts: nextAttempts });
     }
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 600));
   }
 
   const { count: remaining } = await supabase
