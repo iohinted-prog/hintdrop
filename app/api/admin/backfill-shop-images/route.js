@@ -90,6 +90,18 @@ export async function POST(req) {
     .eq("network", "manual")
     .or("image_url.is.null,image_url.eq.")
     .is("raw_payload", null)
+    // No ordering meant the same handful of persistently-stuck items
+    // (Sonos, Urban Outfitters — domain-level blocks that never clear,
+    // not a real rate limit) sat at the head of every batch and kept
+    // getting retried ahead of untried items. Since run_backfill.sh
+    // counts a batch as a stall if ANY item in it is retryable, those
+    // few items were poisoning almost every batch and tripping the
+    // 5-stall give-up fast, even while plenty of healthy items sat
+    // untouched behind them. Ordering by fewest attempts first means
+    // never-tried items get priority; already-failing items only get
+    // their turn once nothing better is available, still accumulating
+    // toward their 5-attempt cap and eventual auto-deactivation.
+    .order("backfill_attempts", { ascending: true })
     .limit(batchSize);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
