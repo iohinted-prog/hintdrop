@@ -4,7 +4,7 @@ import { createClient } from "../../lib/supabase/client";
 import AddContactModal from "../components/AddContactModal";
 import EditContactModal from "../components/EditContactModal";
 import ContactCard from "../components/ContactCard";
-import GroupChatWindow from "../components/GroupChatWindow";
+import { useChatWindows } from "../components/ChatWindowsProvider";
 import UserProfileModal from "../components/UserProfileModal";
 import HintImage from "../components/HintImage";
 
@@ -91,7 +91,7 @@ export default function PeopleClient() {
   const [sessionUser, setSessionUser] = useState(null);
 
   const [contactHints, setContactHints] = useState({});
-  const [activeChat, setActiveChat] = useState(null);
+  const { openThread } = useChatWindows();
 
   async function handleMessageContact(contact) {
     if (!sessionUser || !contact.profileId) return;
@@ -112,10 +112,10 @@ export default function PeopleClient() {
       convId = newId;
     }
 
-    // Load full conversation for GroupChatWindow
+    // Load full conversation to open via the shared chat windows system
     const { data: convsData } = await supabase.from("conversations").select("id, type").eq("id", convId).maybeSingle();
     const { data: members } = await supabase.from("conversation_members").select("user_id, profiles(full_name, avatar_url)").eq("conversation_id", convId);
-    setActiveChat({ ...convsData, conversation_members: members || [], group_hints: null });
+    openThread({ ...convsData, conversation_members: members || [], group_hints: null });
   }
 
   async function loadContacts() {
@@ -237,13 +237,6 @@ export default function PeopleClient() {
             await handleSaveContact({ name: profileModal.name, email: "" });
             setProfileModal(null);
           }}
-        />
-      )}
-      {activeChat && (
-        <GroupChatWindow
-          conversation={activeChat}
-          currentUserId={sessionUser?.id}
-          onClose={() => setActiveChat(null)}
         />
       )}
     </main>

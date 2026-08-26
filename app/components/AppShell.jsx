@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
 import GroupChatWindow from "./GroupChatWindow";
+import { ChatWindowsContext } from "./ChatWindowsProvider";
 import HintImage from "./HintImage";
 
 function LogoMark() {
@@ -402,7 +403,21 @@ export default function AppShell({ children }) {
   }, []);
 
   if (!showShell) {
-    return <>{children}</>;
+    return (
+      <ChatWindowsContext.Provider value={{ activeThreads, openThread, closeThread }}>
+        {children}
+        {activeThreads.map((thread, index) => (
+          <GroupChatWindow
+            key={thread.id}
+            conversation={thread}
+            currentUserId={currentUserId}
+            onClose={() => closeThread(thread.id)}
+            offsetIndex={index}
+            isTopmost={index === activeThreads.length - 1}
+          />
+        ))}
+      </ChatWindowsContext.Provider>
+    );
   }
 
 
@@ -468,6 +483,7 @@ export default function AppShell({ children }) {
   }
 
   return (
+    <ChatWindowsContext.Provider value={{ activeThreads, openThread, closeThread }}>
     <div className="min-h-screen bg-[#fffaf7] text-slate-800">
       {!isLoggedIn && ["/terms", "/privacy", "/about", "/for-brands", "/contact"].includes(pathname) ? null : (
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur relative z-[100]">
@@ -911,5 +927,6 @@ export default function AppShell({ children }) {
         />
       ))}
     </div>
+    </ChatWindowsContext.Provider>
   );
 }
