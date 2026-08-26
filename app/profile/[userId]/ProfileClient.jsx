@@ -295,34 +295,31 @@ export default function ProfileClient({ userId }) {
         </div>
       </div>
 
-      {selectedBoardId && boards && boards.length > 1 && (
-        <div className="border-b border-[#f0dfd6] bg-[#fff7f2] px-4 py-2.5 sm:px-8">
-          <div className="mx-auto max-w-[1200px]">
-            <BackLink onClick={() => setSelectedBoardId(null)}>
-              All of {isOwnProfile ? "your" : `${displayName}'s`} Hints
-            </BackLink>
-          </div>
-        </div>
-      )}
-
       {selectedBoardId && (
         <div className="border-b border-[#f0dfd6] bg-white px-4 py-3 sm:px-8">
           <div className="mx-auto max-w-[1200px] flex items-center gap-3 flex-wrap">
-            <div className="flex gap-2 overflow-x-auto">
-              {["default","starred","price_low","price_high"].map(f => (
-                <button key={f} type="button" onClick={() => { setFilter(f); setOccasionFilter(""); }}
-                  className={`shrink-0 h-9 px-4 rounded-full text-[12px] font-semibold transition ${filter === f && !occasionFilter ? "bg-[#ff875d] text-white" : "border border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0]"}`}>
-                  {f === "default" ? "All" : f === "starred" ? "⭐ Favourites" : f === "price_low" ? "Price ↑" : "Price ↓"}
-                </button>
-              ))}
-            </div>
-            {allOccasions.length > 0 && (
-              <select value={occasionFilter} onChange={e => { setOccasionFilter(e.target.value); setFilter("default"); }}
-                className="h-9 rounded-full border border-[#ead8ce] bg-white px-3 text-[12px] font-semibold text-slate-600 outline-none">
-                <option value="">All occasions</option>
-                {allOccasions.map(o => <option key={o} value={o}>{o}</option>)}
-              </select>
+            {boards && boards.length > 1 && (
+              <BackLink onClick={() => setSelectedBoardId(null)}>
+                All of {isOwnProfile ? "your" : `${displayName}'s`} Hints
+              </BackLink>
             )}
+            <div className="flex items-center gap-2 ml-auto overflow-x-auto">
+              <div className="flex gap-2">
+                {["default","starred","price_low","price_high"].map(f => (
+                  <button key={f} type="button" onClick={() => { setFilter(f); setOccasionFilter(""); }}
+                    className={`shrink-0 h-9 px-4 rounded-full text-[12px] font-semibold transition ${filter === f && !occasionFilter ? "bg-[#ff875d] text-white" : "border border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0]"}`}>
+                    {f === "default" ? "All" : f === "starred" ? "⭐ Favourites" : f === "price_low" ? "Price ↑" : "Price ↓"}
+                  </button>
+                ))}
+              </div>
+              {allOccasions.length > 0 && (
+                <select value={occasionFilter} onChange={e => { setOccasionFilter(e.target.value); setFilter("default"); }}
+                  className="h-9 rounded-full border border-[#ead8ce] bg-white px-3 text-[12px] font-semibold text-slate-600 outline-none shrink-0">
+                  <option value="">All occasions</option>
+                  {allOccasions.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              )}
+            </div>
           </div>
         </div>
       )}
