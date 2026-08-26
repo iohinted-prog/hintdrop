@@ -21,7 +21,7 @@ function Avatar({ profile, size = "h-7 w-7" }) {
   );
 }
 
-export default function GroupChatWindow({ conversation, currentUserId, onClose }) {
+export default function GroupChatWindow({ conversation, currentUserId, onClose, offsetIndex = 0, isTopmost = true }) {
   const supabase = createClient();
   const [messages, setMessages] = useState([]);
   const [pinnedHints, setPinnedHints] = useState([]);
@@ -146,8 +146,21 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose }
     }).catch(console.error);
   }
 
+  // Each open window sits at its own horizontal offset on desktop, side by
+  // side (window width + gap apart), like Messenger's stacked chat heads —
+  // expressed as a CSS variable since Tailwind can't express an arbitrary
+  // per-instance offset directly, only reference one. On mobile, where
+  // there's no room for more than one at a time, only the most recently
+  // opened window actually shows (full-screen, as before) — older ones
+  // stay mounted (so their state/scroll position isn't lost) but hidden,
+  // and reappear if the topmost one is closed.
+  const desktopRightOffset = 16 + offsetIndex * 396;
+
   return (
-    <div className="fixed inset-0 z-[110] md:inset-auto md:bottom-4 md:right-4 md:w-[380px] md:h-[580px] flex flex-col bg-[#fffaf7] md:rounded-[22px] border border-[#efdcd2] shadow-2xl overflow-hidden">
+    <div
+      className={`${isTopmost ? "fixed inset-0 flex" : "hidden"} z-[110] md:flex md:inset-auto md:bottom-4 md:right-[var(--chat-right-offset)] md:w-[380px] md:h-[580px] flex-col bg-[#fffaf7] md:rounded-[22px] border border-[#efdcd2] shadow-2xl overflow-hidden`}
+      style={{ "--chat-right-offset": `${desktopRightOffset}px` }}
+    >
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-[#f0e4dd] shrink-0">
         <div className="flex -space-x-2 shrink-0">

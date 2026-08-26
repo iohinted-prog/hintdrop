@@ -226,7 +226,24 @@ export default function AppShell({ children }) {
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [groupMessages, setGroupMessages] = useState([]);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
-  const [activeThread, setActiveThread] = useState(null);
+  const [activeThreads, setActiveThreads] = useState([]);
+  const MAX_OPEN_THREADS = 3;
+
+  function openThread(conv) {
+    setActiveThreads((prev) => {
+      const withoutThisOne = prev.filter((t) => t.id !== conv.id);
+      // Newest goes last (rendered closest to the right edge, matching
+      // where the click came from) — if already at the cap, the oldest
+      // (front of the array) gets bumped to make room, same as Messenger
+      // collapsing its longest-idle chat head when a new one opens.
+      const next = [...withoutThisOne, conv];
+      return next.length > MAX_OPEN_THREADS ? next.slice(next.length - MAX_OPEN_THREADS) : next;
+    });
+  }
+
+  function closeThread(id) {
+    setActiveThreads((prev) => prev.filter((t) => t.id !== id));
+  }
   const [inviteActionId, setInviteActionId] = useState(null);
   const [notifActionId, setNotifActionId] = useState(null);
   const notifRef = useRef(null);
@@ -553,7 +570,7 @@ export default function AppShell({ children }) {
                       const title = others.length === 0 ? "Just you" : others.length === 1 ? others[0].profiles?.full_name || "Someone" : others.map(m => m.profiles?.full_name?.split(" ")[0] || "?").join(", ");
                       return (
                         <div key={conv.id} className="rounded-[18px] border border-[#f0dfd6] bg-white p-4 cursor-pointer hover:bg-[#fff5f0]"
-                          onClick={async () => { setMessagesOpen(false); setActiveThread(conv); await supabase.from("conversation_members").update({ last_read_at: new Date().toISOString() }).eq("conversation_id", conv.id).eq("user_id", currentUserId); setGroupMessages(prev => prev.map(c => c.id === conv.id ? { ...c, unread: 0 } : c)); setUnreadMessageCount(prev => Math.max(0, prev - (conv.unread || 0))); loadInviteCount(); }}>
+                          onClick={async () => { setMessagesOpen(false); openThread(conv); await supabase.from("conversation_members").update({ last_read_at: new Date().toISOString() }).eq("conversation_id", conv.id).eq("user_id", currentUserId); setGroupMessages(prev => prev.map(c => c.id === conv.id ? { ...c, unread: 0 } : c)); setUnreadMessageCount(prev => Math.max(0, prev - (conv.unread || 0))); loadInviteCount(); }}>
                           <div className="flex items-center gap-3">
                             <div className="flex -space-x-2 shrink-0">
                               {others.slice(0, 2).map(m => (
@@ -883,13 +900,16 @@ export default function AppShell({ children }) {
       </nav>
       )}
       <div className="h-20 md:hidden" />
-      {activeThread && (
+      {activeThreads.map((thread, index) => (
         <GroupChatWindow
-          conversation={activeThread}
+          key={thread.id}
+          conversation={thread}
           currentUserId={currentUserId}
-          onClose={() => setActiveThread(null)}
+          onClose={() => closeThread(thread.id)}
+          offsetIndex={index}
+          isTopmost={index === activeThreads.length - 1}
         />
-      )}
+      ))}
     </div>
   );
 }
