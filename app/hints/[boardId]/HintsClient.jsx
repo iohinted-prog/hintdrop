@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useCallback, useRef, useState, memo } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
@@ -941,19 +941,20 @@ function EditHintModal({
 }
 
 
-function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePrivate, formatCurrency, sharerName }) {
+const MOBILE_CARD_GRADIENTS = [
+  "from-[#d9dfcf] via-[#b9c7aa] to-[#90a27e]",
+  "from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]",
+  "from-[#efe5de] via-[#e5d2c8] to-[#d1b2a4]",
+  "from-[#d5dbee] via-[#b3c0df] to-[#8f9fc9]",
+  "from-[#eadce8] via-[#d8bfd1] to-[#bb9ab6]",
+];
+
+const MobileHintCard = memo(function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePrivate, formatCurrency, sharerName }) {
   const [imgError, setImgError] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const pointerDownRef = useRef(null);
   const ratio = getCardAspectRatio(hint, imageRatios || {});
-  const GRADIENTS = [
-    "from-[#d9dfcf] via-[#b9c7aa] to-[#90a27e]",
-    "from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]",
-    "from-[#efe5de] via-[#e5d2c8] to-[#d1b2a4]",
-    "from-[#d5dbee] via-[#b3c0df] to-[#8f9fc9]",
-    "from-[#eadce8] via-[#d8bfd1] to-[#bb9ab6]",
-  ];
-  const gradient = GRADIENTS[hint.id ? hint.id.charCodeAt(0) % GRADIENTS.length : 0];
+  const gradient = MOBILE_CARD_GRADIENTS[hint.id ? hint.id.charCodeAt(0) % MOBILE_CARD_GRADIENTS.length : 0];
 
   function handleTapDown(e) {
     pointerDownRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
@@ -1063,9 +1064,9 @@ function MobileHintCard({ hint, imageRatios, onEdit, onToggleStarred, onTogglePr
       )}
     </>
   );
-}
+});
 
-function HintCard({
+const HintCard = memo(function HintCard({
   hint,
   imageRatios,
   onEdit,
@@ -1234,9 +1235,9 @@ function HintCard({
       </div>
     </article>
   );
-}
+});
 
-function SortableHintCard({
+const SortableHintCard = memo(function SortableHintCard({
   hint,
   imageRatios,
   onEdit,
@@ -1280,9 +1281,9 @@ function SortableHintCard({
       />
     </div>
   );
-}
+});
 
-function SortableMobileHintCard({
+const SortableMobileHintCard = memo(function SortableMobileHintCard({
   hint,
   imageRatios,
   onEdit,
@@ -1326,7 +1327,7 @@ function SortableMobileHintCard({
       />
     </div>
   );
-}
+});
 
 function LoadingHintCard({ ratio = "0.92" }) {
   return (
@@ -1638,7 +1639,7 @@ export default function HintsClient({ boardId }) {
     return interleaved.map((hint, index) => ({ ...hint, position: index }));
   }
 
-  function openEditModal(hint) {
+  const openEditModal = useCallback((hint) => {
     setEditingHintId(hint.id);
     setEditForm({
       title: hint.title || "",
@@ -1652,7 +1653,7 @@ export default function HintsClient({ boardId }) {
       size_type: hint.sizeType || "",
       colour: hint.colour || "",
     });
-  }
+  }, []);
 
   function closeEditModal() {
     setEditingHintId(null);
@@ -1779,7 +1780,7 @@ export default function HintsClient({ boardId }) {
     closeEditModal();
   }
 
-  async function toggleStarred(hint) {
+  const toggleStarred = useCallback(async (hint) => {
     if (!currentUser) return;
     const supabase = createClient();
     const newStarred = !hint.starred;
@@ -1792,9 +1793,9 @@ export default function HintsClient({ boardId }) {
       setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, starred: hint.starred } : h)));
       setError(errorToMessage(error));
     }
-  }
+  }, [currentUser]);
 
-  async function togglePrivate(hint) {
+  const togglePrivate = useCallback(async (hint) => {
     if (!currentUser) return;
     const supabase = createClient();
     const newPrivate = !hint.private;
@@ -1807,7 +1808,7 @@ export default function HintsClient({ boardId }) {
       setHints((current) => current.map((h) => (h.id === hint.id ? { ...h, private: hint.private } : h)));
       setError(errorToMessage(error));
     }
-  }
+  }, [currentUser]);
 
   async function toggleBoardPrivate() {
     if (!currentUser || !board || togglingBoardPrivacy) return;
