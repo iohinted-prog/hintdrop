@@ -6,9 +6,11 @@ import SocialLinks from "./SocialLinks";
 
 function LogoMark() {
   return (
-    <div className="relative flex h-9 w-9 items-center justify-center rounded-[12px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-md overflow-hidden">
-      <img src="/brand-icon.png" alt="" width={26} height={26} className="object-contain" />
-    </div>
+    // No colored badge/border wrapper — matches the new icon style
+    // approved for the OG images (a rounded-square gradient badge used
+    // to wrap the old icon here; removed for the same reason).
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src="/brand-icon-og.png" alt="" width={31} height={36} className="object-contain" />
   );
 }
 
@@ -20,7 +22,7 @@ export default function PublicShell({ children }) {
         <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
           <Link href="/" className="flex items-center gap-3">
             <LogoMark />
-            <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
+            <div className="font-nunito text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
               Hint<span className="text-[#ff875d]">Drop</span>
             </div>
           </Link>

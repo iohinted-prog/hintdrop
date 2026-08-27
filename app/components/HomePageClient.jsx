@@ -207,10 +207,12 @@ const shopTiles = [
 function LandingLogo() {
   return (
     <div className="flex items-center gap-3.5">
-      <div className="relative flex h-[52px] w-[52px] items-center justify-center rounded-[18px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-2xl text-white shadow-lg">
-        🎁
-      </div>
-      <div className="text-[22px] font-extrabold tracking-[-0.04em] text-slate-900">
+      {/* No colored badge/border wrapper, and the real icon instead of
+          an emoji placeholder — matches PublicShell.jsx, AppShell.jsx,
+          and the OG image style. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand-icon-og.png" alt="" width={44} height={52} className="object-contain" />
+      <div className="font-nunito text-[22px] font-extrabold tracking-[-0.04em] text-slate-900">
         Hint<span className="text-[#f36f64]">Drop</span>
       </div>
     </div>

@@ -11,9 +11,10 @@ import SocialLinks from "./SocialLinks";
 
 function LogoMark() {
   return (
-    <div className="relative flex h-11 w-11 items-center justify-center rounded-[16px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] text-white shadow-lg overflow-hidden">
-      <img src="/brand-icon.png" alt="" width={32} height={32} className="object-contain" />
-    </div>
+    // No colored badge/border wrapper — matches PublicShell.jsx and the
+    // OG image style.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src="/brand-icon-og.png" alt="" width={38} height={44} className="object-contain" />
   );
 }
 function getMetadataName(metadata = {}) {
@@ -491,7 +492,7 @@ export default function AppShell({ children }) {
         <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
           <Link href="/feed" className="flex items-center gap-3.5">
             <LogoMark />
-            <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
+            <div className="font-nunito text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
               Hint<span className="text-[#ff875d]">Drop</span>
             </div>
           </Link>

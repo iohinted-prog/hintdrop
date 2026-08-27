@@ -24,7 +24,7 @@ export const metadata = {
 export default async function AboutPage() {
   const user = await getUser();
   const inner = (
-    <main className="min-h-screen bg-[#f7f4ef] text-slate-800">
+    <main className="min-h-screen bg-[#fffaf7] text-slate-800">
         <section className="px-6 py-12 sm:py-16">
         <div className="mx-auto max-w-3xl">
           <div className="mb-8 rounded-[28px] border border-[#eadfd4] bg-white/80 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)] sm:p-10">

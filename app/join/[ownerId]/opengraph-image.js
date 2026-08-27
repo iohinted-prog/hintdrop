@@ -68,8 +68,11 @@ export default async function Image({ params }) {
           alignItems: "center",
           justifyContent: "center",
           fontFamily: "Nunito",
-          // A darker, more saturated peach throughout
-          background: "linear-gradient(160deg, #ffd4b8 0%, #ffc19b 55%, #ffaf7e 100%)",
+          // The site's actual pearly background color, matching the
+          // main opengraph-image.js and PublicShell.jsx — was a peach
+          // gradient, replaced per direct feedback to stick to one
+          // consistent background across the whole site.
+          background: "#fffaf7",
         }}
       >
         <div
@@ -156,10 +159,10 @@ export default async function Image({ params }) {
           </div>
           <div style={{ display: "flex", fontSize: 32, fontWeight: 800, letterSpacing: -1.6 }}>
             <span style={{ color: "#0f172a" }}>Hint</span>
-            {/* Deepened from the site's usual #ff875d — that reads fine on
-                a white/near-white surface, but sits too close in hue and
-                lightness to this darker peach background to stay readable */}
-            <span style={{ color: "#b8532f" }}>Drop</span>
+            {/* Exact brand coral now that the background is the light
+                site background instead of the peach gradient — matches
+                the fix already applied to the main opengraph-image.js. */}
+            <span style={{ color: "#ff875d" }}>Drop</span>
           </div>
         </div>
       </div>
