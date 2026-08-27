@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import AuthModal from "./AuthModal";
+import SocialLinks from "./SocialLinks";
 
 function LogoMark() {
   return (
@@ -39,12 +40,15 @@ export default function PublicShell({ children }) {
       </header>
       <main className="flex-1">{children}</main>
       <footer className="border-t border-[#efe0d7] py-8 px-5 text-center">
-        <div className="flex items-center justify-center gap-6 text-[12px] text-slate-400 flex-wrap">
-          <Link href="/terms" className="hover:text-slate-600 transition">Terms</Link>
-          <Link href="/privacy" className="hover:text-slate-600 transition">Privacy</Link>
-          <Link href="/contact" className="hover:text-slate-600 transition">Contact</Link>
-          <Link href="/for-brands" className="hover:text-slate-600 transition">For Brands</Link>
-          <span>© {new Date().getFullYear()} HintDrop™ LTD</span>
+        <div className="flex flex-col items-center gap-4">
+          <SocialLinks />
+          <div className="flex items-center justify-center gap-6 text-[12px] text-slate-400 flex-wrap">
+            <Link href="/terms" className="hover:text-slate-600 transition">Terms</Link>
+            <Link href="/privacy" className="hover:text-slate-600 transition">Privacy</Link>
+            <Link href="/contact" className="hover:text-slate-600 transition">Contact</Link>
+            <Link href="/for-brands" className="hover:text-slate-600 transition">For Brands</Link>
+            <span>© {new Date().getFullYear()} HintDrop™ LTD</span>
+          </div>
         </div>
       </footer>
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />

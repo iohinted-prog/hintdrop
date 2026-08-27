@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import GoogleAuthButtons from "./GoogleAuthButtons";
 import AuthModal from "./AuthModal";
+import SocialLinks from "./SocialLinks";
 
 const hints = [
   {
@@ -914,6 +915,7 @@ export default function HomePageClient() {
               <Link href="/contact" className="transition hover:text-slate-900">
                 Contact
               </Link>
+              <SocialLinks className="ml-1" />
             </div>
           </div>
         </footer>

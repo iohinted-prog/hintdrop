@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import HomePageClient from "./components/HomePageClient";
+import { SOCIAL_LINKS } from "./components/SocialLinks";
 
 export const metadata = {
   title: "HintDrop | Never forget. Always thoughtful.",
@@ -64,12 +65,11 @@ export default async function Page() {
         // icon instead, since Google's Organization/Logo guidance wants
         // a reasonably large square image (112x112 minimum).
         logo: "https://hintdrop.app/icon-192.png",
-        // sameAs: [] — add real profile URLs here once they exist
-        // (Twitter/X, Instagram, LinkedIn, Crunchbase, etc.). This is
-        // one of the strongest signals for a Knowledge Panel, but only
-        // works with real, live, consistent profiles — leaving it out
-        // entirely for now rather than guessing at URLs that don't
-        // exist yet.
+        // Real, live social/entity profiles — the strongest signal for
+        // a Knowledge Panel, per the SocialLinks component (single
+        // source of truth, also used for the visible footer/homepage
+        // icon links).
+        sameAs: SOCIAL_LINKS.map((s) => s.href),
       },
       {
         "@type": "WebSite",
