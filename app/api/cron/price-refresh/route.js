@@ -109,11 +109,18 @@ export async function GET(request) {
         // call it a deal either way, just record the baseline.
         const onSale = trailingAvg != null && preview.numericPrice <= trailingAvg * DEAL_THRESHOLD;
 
-        await supabase.from("price_history").insert({
+        const { error: historyError } = await supabase.from("price_history").insert({
           product_id: product.id,
           price: preview.numericPrice,
           currency: preview.detectedCurrency || product.currency || "GBP",
         });
+        // Was previously unchecked — if this insert silently failed (e.g.
+        // a missing grant, or Supabase's PostgREST schema cache not yet
+        // reflecting a recent ALTER TABLE), numeric_price would still
+        // update correctly below since that's a separate call, masking
+        // the failure entirely. Throwing here instead surfaces it
+        // properly in results.failed rather than swallowing it.
+        if (historyError) throw new Error(`price_history insert failed: ${historyError.message}`);
 
         await supabase.from("shop_products").update({
           numeric_price: preview.numericPrice,
