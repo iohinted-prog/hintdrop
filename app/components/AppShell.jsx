@@ -7,6 +7,7 @@ import { createClient } from "../../lib/supabase/client";
 import GroupChatWindow from "./GroupChatWindow";
 import { ChatWindowsContext } from "./ChatWindowsProvider";
 import HintImage from "./HintImage";
+import SocialLinks from "./SocialLinks";
 
 function LogoMark() {
   return (
@@ -884,6 +885,7 @@ export default function AppShell({ children }) {
             <Link href="/contact" className="transition hover:text-slate-900">
               Contact
             </Link>
+            <SocialLinks className="ml-1" />
           </div>
         </div>
       </footer>
