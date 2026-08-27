@@ -146,11 +146,13 @@ export default async function Image({ params }) {
           >
             {/* The new standalone icon (see lib/brandIcon.js) — swapped
                 for consistency with the main opengraph-image.js update.
-                Layout/badge-wrapper here left as-is since this file's
-                design wasn't part of what was reviewed — kept the same
-                48x48/cover treatment the wrapper was already built for. */}
+                objectFit switched from cover to contain: the icon isn't
+                square (491x577), and cover was cropping the bottom of
+                the box off inside this fixed 48x48 container — caught by
+                actually rendering this file through Satori and zooming
+                in, not just from reading the code. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={BRAND_ICON_OG_DATA_URI} width={48} height={48} style={{ objectFit: "cover" }} />
+            <img src={BRAND_ICON_OG_DATA_URI} width={48} height={48} style={{ objectFit: "contain" }} />
           </div>
           <div style={{ display: "flex", fontSize: 32, fontWeight: 800, letterSpacing: -1.6 }}>
             <span style={{ color: "#0f172a" }}>Hint</span>
