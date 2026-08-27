@@ -8,14 +8,13 @@ export const contentType = "image/png";
 
 // Satori (next/og's renderer) has no access to the browser/OS font stack a
 // real page gets — without explicitly loading one, it falls back to its
-// own generic sans-serif. This loads the real Nunito font at request time
-// via Google Fonts' CSS endpoint (the standard documented pattern for
-// next/og custom fonts). Previously loaded Arimo (an Arial substitute) to
-// match the site's Arial fallback — switched to Nunito to match the main
-// opengraph-image.js fix: Nunito is the site's actual intended display
-// font, imported in layout.js but never wired into any font-family rule.
+// own generic sans-serif. This loads Arimo (an Arial substitute) at
+// request time via Google Fonts' CSS endpoint, matching the site's actual
+// Arial rendering. (Briefly switched to Nunito, reverted after feedback
+// that the Nunito look wasn't wanted — matches the same revert on the
+// main opengraph-image.js.)
 async function loadFont(weight) {
-  const cssUrl = `https://fonts.googleapis.com/css2?family=Nunito:wght@${weight}`;
+  const cssUrl = `https://fonts.googleapis.com/css2?family=Arimo:wght@${weight}`;
   // Google serves WOFF2 by default to any modern user-agent, which Satori
   // (next/og's renderer) can't parse — it needs TTF/OTF specifically. This
   // exact old-Chrome user-agent string is the standard, widely-documented
@@ -52,8 +51,8 @@ export default async function Image({ params }) {
   });
   const fonts = regular && bold
     ? [
-        { name: "Nunito", data: regular, weight: 700, style: "normal" },
-        { name: "Nunito", data: bold, weight: 800, style: "normal" },
+        { name: "Arimo", data: regular, weight: 700, style: "normal" },
+        { name: "Arimo", data: bold, weight: 800, style: "normal" },
       ]
     : undefined;
 
@@ -67,7 +66,7 @@ export default async function Image({ params }) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "Nunito",
+          fontFamily: "Arimo",
           // The site's actual pearly background color, matching the
           // main opengraph-image.js and PublicShell.jsx — was a peach
           // gradient, replaced per direct feedback to stick to one

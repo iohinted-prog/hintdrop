@@ -212,7 +212,7 @@ function LandingLogo() {
           and the OG image style. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/brand-icon-og.png" alt="" width={44} height={52} className="object-contain" />
-      <div className="font-nunito text-[22px] font-extrabold tracking-[-0.04em] text-slate-900">
+      <div className="text-[22px] font-extrabold tracking-[-0.04em] text-slate-900">
         Hint<span className="text-[#f36f64]">Drop</span>
       </div>
     </div>

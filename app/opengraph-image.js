@@ -7,15 +7,15 @@ export const contentType = "image/png";
 
 // Satori (next/og's renderer) has no access to the browser/OS font stack a
 // real page gets — without explicitly loading one, it falls back to its
-// own generic sans-serif. This loads the real Nunito font at request time
-// via Google Fonts' CSS endpoint. (Previously loaded Arimo, an Arial
-// substitute, to match the site's body font — but the site's actual
-// intended display font is Nunito, which was imported in layout.js with a
-// full weight range but never actually wired into any font-family rule
-// anywhere. This OG image now uses the font the site was always meant to
-// use, rather than matching the accidental Arial fallback.)
+// own generic sans-serif, which looks nothing like the app's actual Arial.
+// Arial itself isn't freely redistributable, so this loads Arimo — an
+// open-source, metrically-compatible substitute purpose-built for exactly
+// this situation — at request time via Google Fonts' CSS endpoint.
+// (Briefly switched to Nunito, on the theory that Nunito was the site's
+// "real" intended font — reverted after feedback that the Nunito look
+// wasn't wanted. Back to matching the site's actual Arial rendering.)
 async function loadFont(weight) {
-  const cssUrl = `https://fonts.googleapis.com/css2?family=Nunito:wght@${weight}`;
+  const cssUrl = `https://fonts.googleapis.com/css2?family=Arimo:wght@${weight}`;
   // Google serves WOFF2 by default to any modern user-agent, which Satori
   // can't parse — it needs TTF/OTF specifically. This exact old-Chrome
   // user-agent is the standard, widely-documented trick to make the CSS2
@@ -41,8 +41,8 @@ export default async function Image() {
   });
   const fonts = regular && bold
     ? [
-        { name: "Nunito", data: regular, weight: 700, style: "normal" },
-        { name: "Nunito", data: bold, weight: 800, style: "normal" },
+        { name: "Arimo", data: regular, weight: 700, style: "normal" },
+        { name: "Arimo", data: bold, weight: 800, style: "normal" },
       ]
     : undefined;
 
@@ -56,7 +56,7 @@ export default async function Image() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "Nunito",
+          fontFamily: "Arimo",
           // The site's actual background color (matches PublicShell.jsx),
           // not a custom gradient — so the shared preview looks like the
           // real site people land on, not a separate marketing treatment.

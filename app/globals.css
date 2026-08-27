@@ -10,12 +10,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  /* Generates the font-nunito Tailwind utility. Nunito itself has been
-     imported in layout.js all along (full weight range, 400-900) but was
-     never actually wired into any font-family rule anywhere — the whole
-     site has been silently rendering in the plain Arial fallback below
-     instead of the font it looks like it was always meant to use. */
-  --font-nunito: var(--font-nunito), sans-serif;
 }
 
 html {
@@ -39,17 +33,6 @@ body {
      contain (not none) still allows normal scroll bounce within the
      page, just stops the gesture from escaping to the browser itself. */
   overscroll-behavior-y: contain;
-}
-
-/* Headings site-wide now use Nunito instead of inheriting the plain
-   Arial body font — matches the OG image redesign, so the font people
-   see in a shared link preview matches what they see landing on the
-   page. Body copy stays on Arial; this only targets heading tags. The
-   wordmark ("HintDrop" in the header/homepage) isn't a heading element,
-   so it needs the font-nunito utility class applied directly instead —
-   see PublicShell.jsx, AppShell.jsx, HomePageClient.jsx. */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-nunito), sans-serif;
 }
 
 @keyframes calFadeIn {

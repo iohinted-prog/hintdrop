@@ -22,7 +22,7 @@ export default function PublicShell({ children }) {
         <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
           <Link href="/" className="flex items-center gap-3">
             <LogoMark />
-            <div className="font-nunito text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
+            <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
               Hint<span className="text-[#ff875d]">Drop</span>
             </div>
           </Link>
