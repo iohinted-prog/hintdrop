@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { BRAND_ICON_DATA_URI } from "../lib/brandIcon";
+import { BRAND_ICON_OG_DATA_URI } from "../lib/brandIcon";
 
 export const alt = "HintDrop — Never forget. Always thoughtful.";
 export const size = { width: 1200, height: 630 };
@@ -7,12 +7,15 @@ export const contentType = "image/png";
 
 // Satori (next/og's renderer) has no access to the browser/OS font stack a
 // real page gets — without explicitly loading one, it falls back to its
-// own generic sans-serif, which looks nothing like the app's actual Arial.
-// Arial itself isn't freely redistributable, so this loads Arimo — an
-// open-source, metrically-compatible substitute purpose-built for exactly
-// this situation — at request time via Google Fonts' CSS endpoint.
+// own generic sans-serif. This loads the real Nunito font at request time
+// via Google Fonts' CSS endpoint. (Previously loaded Arimo, an Arial
+// substitute, to match the site's body font — but the site's actual
+// intended display font is Nunito, which was imported in layout.js with a
+// full weight range but never actually wired into any font-family rule
+// anywhere. This OG image now uses the font the site was always meant to
+// use, rather than matching the accidental Arial fallback.)
 async function loadFont(weight) {
-  const cssUrl = `https://fonts.googleapis.com/css2?family=Arimo:wght@${weight}`;
+  const cssUrl = `https://fonts.googleapis.com/css2?family=Nunito:wght@${weight}`;
   // Google serves WOFF2 by default to any modern user-agent, which Satori
   // can't parse — it needs TTF/OTF specifically. This exact old-Chrome
   // user-agent is the standard, widely-documented trick to make the CSS2
@@ -38,8 +41,8 @@ export default async function Image() {
   });
   const fonts = regular && bold
     ? [
-        { name: "Arimo", data: regular, weight: 700, style: "normal" },
-        { name: "Arimo", data: bold, weight: 800, style: "normal" },
+        { name: "Nunito", data: regular, weight: 700, style: "normal" },
+        { name: "Nunito", data: bold, weight: 800, style: "normal" },
       ]
     : undefined;
 
@@ -53,37 +56,27 @@ export default async function Image() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "Arimo",
-          // A darker, more saturated peach throughout
-          background: "linear-gradient(160deg, #ffd4b8 0%, #ffc19b 55%, #ffaf7e 100%)",
+          fontFamily: "Nunito",
+          // The site's actual background color (matches PublicShell.jsx),
+          // not a custom gradient — so the shared preview looks like the
+          // real site people land on, not a separate marketing treatment.
+          background: "#fffaf7",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 40 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 110,
-              height: 110,
-              borderRadius: 28,
-              overflow: "hidden",
-              boxShadow: "0 10px 28px rgba(255, 135, 93, 0.35)",
-            }}
-          >
-            {/* The actual icon file, embedded as a data URI (see
-                lib/brandIcon.js) — already has the peach gradient and
-                emoji baked in together as one image, so no separate
-                colored badge background is needed here anymore. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={BRAND_ICON_DATA_URI} width={110} height={110} style={{ objectFit: "cover" }} />
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 28, marginBottom: 40 }}>
+          {/* The new standalone icon (see lib/brandIcon.js), rendered
+              directly with no colored badge/border wrapper around it —
+              the previous rounded-square badge was specifically what
+              needed removing per design feedback. Sized/positioned to
+              match the approved preview (220px height). */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={BRAND_ICON_OG_DATA_URI} width={187} height={220} style={{ objectFit: "contain" }} />
           <div style={{ display: "flex", fontSize: 96, fontWeight: 800, letterSpacing: -4.8 }}>
             <span style={{ color: "#0f172a" }}>Hint</span>
-            {/* Deepened from the site's usual #ff875d — that reads fine on
-                a white/near-white surface, but sits too close in hue and
-                lightness to this darker peach background to stay readable */}
-            <span style={{ color: "#b8532f" }}>Drop</span>
+            {/* Exact brand coral, #ff875d — no longer needs deepening for
+                readability now that the background is the light site
+                background instead of a peach gradient. */}
+            <span style={{ color: "#ff875d" }}>Drop</span>
           </div>
         </div>
         <div

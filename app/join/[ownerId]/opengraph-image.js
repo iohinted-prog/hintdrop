@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "../../../lib/supabase/server";
-import { BRAND_ICON_DATA_URI } from "../../../lib/brandIcon";
+import { BRAND_ICON_OG_DATA_URI } from "../../../lib/brandIcon";
 
 export const alt = "You're invited to join a Circle on HintDrop";
 export const size = { width: 1200, height: 630 };
@@ -8,13 +8,14 @@ export const contentType = "image/png";
 
 // Satori (next/og's renderer) has no access to the browser/OS font stack a
 // real page gets — without explicitly loading one, it falls back to its
-// own generic sans-serif, which looks nothing like the app's actual Arial.
-// Arial itself isn't freely redistributable, so this loads Arimo — an
-// open-source, metrically-compatible substitute purpose-built for exactly
-// this situation — at request time via Google Fonts' CSS endpoint (the
-// standard documented pattern for next/og custom fonts).
+// own generic sans-serif. This loads the real Nunito font at request time
+// via Google Fonts' CSS endpoint (the standard documented pattern for
+// next/og custom fonts). Previously loaded Arimo (an Arial substitute) to
+// match the site's Arial fallback — switched to Nunito to match the main
+// opengraph-image.js fix: Nunito is the site's actual intended display
+// font, imported in layout.js but never wired into any font-family rule.
 async function loadFont(weight) {
-  const cssUrl = `https://fonts.googleapis.com/css2?family=Arimo:wght@${weight}`;
+  const cssUrl = `https://fonts.googleapis.com/css2?family=Nunito:wght@${weight}`;
   // Google serves WOFF2 by default to any modern user-agent, which Satori
   // (next/og's renderer) can't parse — it needs TTF/OTF specifically. This
   // exact old-Chrome user-agent string is the standard, widely-documented
@@ -51,8 +52,8 @@ export default async function Image({ params }) {
   });
   const fonts = regular && bold
     ? [
-        { name: "Arimo", data: regular, weight: 700, style: "normal" },
-        { name: "Arimo", data: bold, weight: 800, style: "normal" },
+        { name: "Nunito", data: regular, weight: 700, style: "normal" },
+        { name: "Nunito", data: bold, weight: 800, style: "normal" },
       ]
     : undefined;
 
@@ -66,7 +67,7 @@ export default async function Image({ params }) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "Arimo",
+          fontFamily: "Nunito",
           // A darker, more saturated peach throughout
           background: "linear-gradient(160deg, #ffd4b8 0%, #ffc19b 55%, #ffaf7e 100%)",
         }}
@@ -143,12 +144,13 @@ export default async function Image({ params }) {
               boxShadow: "0 6px 16px rgba(255, 135, 93, 0.35)",
             }}
           >
-            {/* The actual icon file, embedded as a data URI (see
-                lib/brandIcon.js) — already has the peach gradient and
-                emoji baked in together as one image, so no separate
-                colored badge background is needed here anymore. */}
+            {/* The new standalone icon (see lib/brandIcon.js) — swapped
+                for consistency with the main opengraph-image.js update.
+                Layout/badge-wrapper here left as-is since this file's
+                design wasn't part of what was reviewed — kept the same
+                48x48/cover treatment the wrapper was already built for. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={BRAND_ICON_DATA_URI} width={48} height={48} style={{ objectFit: "cover" }} />
+            <img src={BRAND_ICON_OG_DATA_URI} width={48} height={48} style={{ objectFit: "cover" }} />
           </div>
           <div style={{ display: "flex", fontSize: 32, fontWeight: 800, letterSpacing: -1.6 }}>
             <span style={{ color: "#0f172a" }}>Hint</span>
