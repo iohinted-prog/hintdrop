@@ -1,0 +1,46 @@
+name: Price refresh (scheduled)
+
+# Vercel Hobby's own cron is capped at once/day — this calls the exact
+# same route on a faster schedule, for free, without needing a Vercel
+# plan upgrade. The route itself doesn't care who calls it, only that
+# the request carries the right bearer token (same CRON_SECRET already
+# used by Vercel's own cron invocation).
+#
+# GitHub's schedule trigger has a similar "not perfectly on-time" caveat
+# to Vercel's — it can run a little late under high platform load. Fine
+# for a freshness job like this, not fine for anything needing exact
+# timing.
+#
+# Requires one manual step this workflow can't do itself: add a repo
+# secret named CRON_SECRET (Settings → Secrets and variables → Actions
+# → New repository secret) with the same value already set as the
+# CRON_SECRET environment variable on Vercel. If that value is ever
+# rotated, it needs updating in both places.
+on:
+  schedule:
+    # Every 6 hours — roughly a week to rotate through the full ~172
+    # product catalog at the existing batch size of 6/run, versus ~29
+    # days on Vercel's own once-daily cron alone.
+    - cron: "0 */6 * * *"
+  # Lets this be triggered manually from the Actions tab too, useful
+  # for testing without waiting for the schedule.
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call price-refresh endpoint
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://hintdrop.app/api/cron/price-refresh)
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "HTTP status: $http_code"
+          echo "Response: $body"
+          if [ "$http_code" != "200" ]; then
+            echo "::error::price-refresh returned HTTP $http_code"
+            exit 1
+          fi
