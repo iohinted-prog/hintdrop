@@ -1,50 +1,35 @@
 import { ImageResponse } from "next/og";
+import fs from "fs";
+import path from "path";
 import { BRAND_ICON_OG_DATA_URI } from "../lib/brandIcon";
 
 export const alt = "HintDrop — Never forget. Always thoughtful.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+// Needed for fs access to the bundled font files below — the OG image
+// convention defaults to Edge runtime, which has no filesystem access
+// at all. Previously fetched Arimo live from Google Fonts' CSS endpoint
+// on every request instead; that turned out to be genuinely fragile in
+// production (confirmed via a real Vercel build log: "Could not find a
+// TTF font URL in the Google Fonts CSS response", silently falling back
+// to Satori's generic default font). Root cause: the code was
+// requesting Arimo at weight 800, which doesn't exist for this font
+// (Arimo only goes up to 700) — Google's response for a nonexistent
+// weight didn't match the expected pattern. Switched to bundling the
+// real font files directly (via @fontsource/arimo, converted from WOFF
+// to TTF at lib/fonts/) so there's no live network dependency, no
+// user-agent trickery, and no possibility of requesting a weight that
+// doesn't exist, ever again.
+export const runtime = "nodejs";
 
-// Satori (next/og's renderer) has no access to the browser/OS font stack a
-// real page gets — without explicitly loading one, it falls back to its
-// own generic sans-serif, which looks nothing like the app's actual Arial.
-// Arial itself isn't freely redistributable, so this loads Arimo — an
-// open-source, metrically-compatible substitute purpose-built for exactly
-// this situation — at request time via Google Fonts' CSS endpoint.
-// (Briefly switched to Nunito, on the theory that Nunito was the site's
-// "real" intended font — reverted after feedback that the Nunito look
-// wasn't wanted. Back to matching the site's actual Arial rendering.)
-async function loadFont(weight) {
-  const cssUrl = `https://fonts.googleapis.com/css2?family=Arimo:wght@${weight}`;
-  // Google serves WOFF2 by default to any modern user-agent, which Satori
-  // can't parse — it needs TTF/OTF specifically. This exact old-Chrome
-  // user-agent is the standard, widely-documented trick to make the CSS2
-  // endpoint respond with a TTF source instead.
-  const css = await (
-    await fetch(cssUrl, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
-      },
-    })
-  ).text();
-  const match = css.match(/src: url\(([^)]+)\) format\('(?:opentype|truetype)'\)/);
-  if (!match) throw new Error("Could not find a TTF font URL in the Google Fonts CSS response");
-  const fontRes = await fetch(match[1]);
-  return fontRes.arrayBuffer();
-}
+const arimo600 = fs.readFileSync(path.join(process.cwd(), "lib/fonts/arimo-600.ttf"));
+const arimo700 = fs.readFileSync(path.join(process.cwd(), "lib/fonts/arimo-700.ttf"));
 
 export default async function Image() {
-  const [regular, bold] = await Promise.all([loadFont(700), loadFont(800)]).catch((err) => {
-    console.error("Font load failed, falling back to default:", err.message);
-    return [null, null];
-  });
-  const fonts = regular && bold
-    ? [
-        { name: "Arimo", data: regular, weight: 700, style: "normal" },
-        { name: "Arimo", data: bold, weight: 800, style: "normal" },
-      ]
-    : undefined;
+  const fonts = [
+    { name: "Arimo", data: arimo600, weight: 600, style: "normal" },
+    { name: "Arimo", data: arimo700, weight: 700, style: "normal" },
+  ];
 
   return new ImageResponse(
     (
@@ -71,7 +56,10 @@ export default async function Image() {
               match the approved preview (220px height). */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={BRAND_ICON_OG_DATA_URI} width={187} height={220} style={{ objectFit: "contain" }} />
-          <div style={{ display: "flex", fontSize: 96, fontWeight: 800, letterSpacing: -4.8 }}>
+          {/* fontWeight 700, not 800 — Arimo's actual heaviest weight;
+              800 doesn't exist for this font and was the root cause of
+              the production font-loading failure. */}
+          <div style={{ display: "flex", fontSize: 96, fontWeight: 700, letterSpacing: -4.8 }}>
             <span style={{ color: "#0f172a" }}>Hint</span>
             {/* Exact brand coral, #ff875d — no longer needs deepening for
                 readability now that the background is the light site

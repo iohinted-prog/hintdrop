@@ -1,37 +1,24 @@
 import { ImageResponse } from "next/og";
+import fs from "fs";
+import path from "path";
 import { createClient } from "../../../lib/supabase/server";
 import { BRAND_ICON_OG_DATA_URI } from "../../../lib/brandIcon";
 
 export const alt = "You're invited to join a Circle on HintDrop";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+// Needed for fs access to the bundled font files below — see the same
+// fix and explanation in app/opengraph-image.js. This file previously
+// fetched Arimo live from Google Fonts on every request; that failed in
+// production ("Could not find a TTF font URL in the Google Fonts CSS
+// response") because it was requesting a weight-800 Arimo, which
+// doesn't exist for this font. Bundling the real files removes the
+// live network dependency and the possibility of requesting a
+// nonexistent weight entirely.
+export const runtime = "nodejs";
 
-// Satori (next/og's renderer) has no access to the browser/OS font stack a
-// real page gets — without explicitly loading one, it falls back to its
-// own generic sans-serif. This loads Arimo (an Arial substitute) at
-// request time via Google Fonts' CSS endpoint, matching the site's actual
-// Arial rendering. (Briefly switched to Nunito, reverted after feedback
-// that the Nunito look wasn't wanted — matches the same revert on the
-// main opengraph-image.js.)
-async function loadFont(weight) {
-  const cssUrl = `https://fonts.googleapis.com/css2?family=Arimo:wght@${weight}`;
-  // Google serves WOFF2 by default to any modern user-agent, which Satori
-  // (next/og's renderer) can't parse — it needs TTF/OTF specifically. This
-  // exact old-Chrome user-agent string is the standard, widely-documented
-  // trick to make the CSS2 endpoint respond with a TTF source instead.
-  const css = await (
-    await fetch(cssUrl, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
-      },
-    })
-  ).text();
-  const match = css.match(/src: url\(([^)]+)\) format\('(?:opentype|truetype)'\)/);
-  if (!match) throw new Error("Could not find a TTF font URL in the Google Fonts CSS response");
-  const fontRes = await fetch(match[1]);
-  return fontRes.arrayBuffer();
-}
+const arimo600 = fs.readFileSync(path.join(process.cwd(), "lib/fonts/arimo-600.ttf"));
+const arimo700 = fs.readFileSync(path.join(process.cwd(), "lib/fonts/arimo-700.ttf"));
 
 export default async function Image({ params }) {
   const { ownerId } = await params;
@@ -45,16 +32,10 @@ export default async function Image({ params }) {
   const ownerName = owner?.full_name || "Someone";
   const initials = ownerName.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() || "").join("") || "?";
 
-  const [regular, bold] = await Promise.all([loadFont(700), loadFont(800)]).catch((err) => {
-    console.error("Font load failed, falling back to default:", err.message);
-    return [null, null];
-  });
-  const fonts = regular && bold
-    ? [
-        { name: "Arimo", data: regular, weight: 700, style: "normal" },
-        { name: "Arimo", data: bold, weight: 800, style: "normal" },
-      ]
-    : undefined;
+  const fonts = [
+    { name: "Arimo", data: arimo600, weight: 600, style: "normal" },
+    { name: "Arimo", data: arimo700, weight: 700, style: "normal" },
+  ];
 
   return new ImageResponse(
     (
@@ -101,7 +82,8 @@ export default async function Image({ params }) {
               style={{ objectFit: "cover", borderRadius: "50%" }}
             />
           ) : (
-            <div style={{ display: "flex", fontSize: 56, fontWeight: 800, color: "white" }}>{initials}</div>
+            // fontWeight 700, not 800 — Arimo's actual heaviest weight.
+            <div style={{ display: "flex", fontSize: 56, fontWeight: 700, color: "white" }}>{initials}</div>
           )}
         </div>
 
@@ -123,7 +105,7 @@ export default async function Image({ params }) {
           style={{
             display: "flex",
             fontSize: 68,
-            fontWeight: 800,
+            fontWeight: 700,
             letterSpacing: -3.4,
             color: "#0f172a",
             textAlign: "center",
@@ -156,7 +138,7 @@ export default async function Image({ params }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={BRAND_ICON_OG_DATA_URI} width={48} height={48} style={{ objectFit: "contain" }} />
           </div>
-          <div style={{ display: "flex", fontSize: 32, fontWeight: 800, letterSpacing: -1.6 }}>
+          <div style={{ display: "flex", fontSize: 32, fontWeight: 700, letterSpacing: -1.6 }}>
             <span style={{ color: "#0f172a" }}>Hint</span>
             {/* Exact brand coral now that the background is the light
                 site background instead of the peach gradient — matches
