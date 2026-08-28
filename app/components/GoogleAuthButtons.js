@@ -48,6 +48,33 @@ export default function GoogleAuthButtons({ variant = "hero-primary" }) {
     }
   }
 
+  // Required alongside Google/Microsoft per App Store Review Guideline 4.8 -
+  // any app offering third-party social login must also offer Sign in with
+  // Apple as an equivalent option. Uses the same web OAuth redirect flow as
+  // Google/Microsoft above (rather than a native SDK-based flow) since
+  // that's already how every other provider authenticates inside the
+  // Capacitor-wrapped app too - consistent with the existing pattern rather
+  // than a special case for just this one provider.
+  async function handleAppleSignIn() {
+    try {
+      setPageError("");
+      setLoadingProvider("apple");
+      rememberProvider("apple");
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "apple",
+        options: {
+          redirectTo: buildRedirectTo(),
+        },
+      });
+
+      if (error) throw error;
+    } catch (error) {
+      setPageError(error?.message || "Apple sign in failed.");
+      setLoadingProvider(null);
+    }
+  }
+
   async function handleMicrosoftSignIn() {
     try {
       setPageError("");
@@ -83,7 +110,16 @@ export default function GoogleAuthButtons({ variant = "hero-primary" }) {
             : "Continue with Google"}
         </button>
 
-
+        <button
+          type="button"
+          onClick={handleAppleSignIn}
+          disabled={loadingProvider !== null}
+          className="inline-flex h-12 w-full items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-bold text-slate-900 transition hover:bg-[#fff5f0] disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {loadingProvider === "apple"
+            ? "Connecting Apple..."
+            : "Continue with Apple"}
+        </button>
 
         {pageError ? (
           <p className="rounded-[18px] border border-[#f1d2c6] bg-[#fff4ef] px-4 py-3 text-sm text-[#b85c3e]">

@@ -103,6 +103,25 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
     }
   }
 
+  // Required alongside Google per App Store Review Guideline 4.8 - any app
+  // offering third-party social login must also offer Sign in with Apple.
+  // Same web OAuth redirect pattern as Google above.
+  async function handleAppleSignIn() {
+    setError(""); setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "apple",
+        options: {
+          redirectTo: `${getBaseUrl()}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      setError(getErrorMessage(err, "Apple sign in failed."));
+      setLoading(false);
+    }
+  }
+
   async function redirectAfterAuth() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -240,6 +259,15 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
               className="w-full h-12 flex items-center justify-center rounded-full border border-[#ead8ce] bg-white text-[14px] font-semibold text-slate-700 transition hover:bg-[#fff5f0] disabled:cursor-not-allowed disabled:opacity-70"
             >
               Continue with Google
+            </button>
+
+            <button
+              type="button"
+              onClick={handleAppleSignIn}
+              disabled={loading}
+              className="w-full h-12 mt-3 flex items-center justify-center rounded-full border border-[#ead8ce] bg-white text-[14px] font-semibold text-slate-700 transition hover:bg-[#fff5f0] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              Continue with Apple
             </button>
 
             <div className="flex items-center gap-3 my-5">
