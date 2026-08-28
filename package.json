@@ -30,11 +30,9 @@
     "stripe": "^20.2.0"
   },
   "devDependencies": {
-    "@tailwindcss/oxide-linux-x64-gnu": "^4.3.1",
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
-    "lightningcss-linux-x64-gnu": "^1.32.0",
     "tailwindcss": "^4"
   }
 }
