@@ -14,6 +14,18 @@ export async function generateMetadata({ params }) {
     return { title: "Hints | HintDrop" };
   }
 
+  // Same gap as /h/[hintId] - is_private was fetched but never actually
+  // checked before generating the title/description. Metadata
+  // generation happens before any client-side privacy check can run,
+  // and it's what search engines, AI crawlers, and link-preview bots
+  // actually read.
+  if (board.is_private) {
+    return {
+      title: "Hints | HintDrop",
+      description: "This board is private.",
+    };
+  }
+
   const ownerName = board.profiles?.full_name?.split(" ")[0] || "Someone";
   const title = `${board.title} — ${ownerName}'s Hints 👀 | HintDrop`;
   const description = `Take a look at ${ownerName}'s "${board.title}" Hints on HintDrop.`;
@@ -23,6 +35,9 @@ export async function generateMetadata({ params }) {
     description,
     openGraph: { title, description, type: "website" },
     twitter: { card: "summary", title, description },
+    alternates: {
+      canonical: `https://hintdrop.app/b/${boardId}`,
+    },
   };
 }
 
