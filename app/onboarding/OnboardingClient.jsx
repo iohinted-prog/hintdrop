@@ -179,6 +179,8 @@ export default function OnboardingPage() {
   const [searchingContacts, setSearchingContacts] = useState(false);
   const [contactsMessage, setContactsMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [addingContact, setAddingContact] = useState(false);
+  const [contactAdded, setContactAdded] = useState(false);
 
   const progress = useMemo(() => `${(step / steps.length) * 100}%`, [step]);
 
@@ -354,6 +356,11 @@ export default function OnboardingPage() {
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: "" }));
+    // Clear the "Added!" confirmation once they start typing a new
+    // contact's details, so it doesn't linger against the wrong person.
+    if ((key === "inviteName" || key === "inviteEmail") && contactAdded) {
+      setContactAdded(false);
+    }
   }
 
   function toggleInterest(interest) {
@@ -450,6 +457,49 @@ export default function OnboardingPage() {
     }
 
     return true;
+  }
+
+  async function handleAddContact() {
+    if (addingContact) return;
+
+    // Same validation as moving on from step 3 - a name needs an email
+    // and vice versa, and picking at least one relationship is required
+    // once either field has something in it.
+    const nextErrors = {};
+    if (form.inviteEmail && !form.inviteName.trim()) nextErrors.inviteName = "Add a name to match the email.";
+    if (form.inviteName && !form.inviteEmail.trim()) nextErrors.inviteEmail = "Add an email to match the name.";
+    if (!form.inviteName.trim() && !form.inviteEmail.trim()) {
+      nextErrors.inviteName = "Add a name or email first.";
+    } else if (selectedRelationships.length === 0) {
+      nextErrors.relationships = "Choose at least one relationship type.";
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+
+    setAddingContact(true);
+    setErrors({});
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const saved = await saveConnection(user.id);
+      if (!saved) return;
+
+      // Clear the form after a successful save - both gives clear visual
+      // confirmation it worked, and prevents finishOnboarding's own
+      // saveConnection call from re-inserting the same contact a second
+      // time if "Finish setup" is clicked right after (saveConnection
+      // already skips itself when both fields are empty).
+      setForm((prev) => ({ ...prev, inviteName: "", inviteEmail: "" }));
+      setSelectedRelationships([]);
+      setContactSearch("");
+      setContactAdded(true);
+    } finally {
+      setAddingContact(false);
+    }
   }
 
   async function nextStep() {
@@ -855,6 +905,24 @@ export default function OnboardingPage() {
                     })}
                   </div>
                   {errors.relationships ? <p className="mt-2 text-xs text-red-500">{errors.relationships}</p> : null}
+                </div>
+
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleAddContact}
+                    disabled={addingContact}
+                    className={`inline-flex h-[50px] min-w-[150px] items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-lg ${
+                      addingContact
+                        ? "cursor-not-allowed bg-[#e9a48d]"
+                        : "bg-gradient-to-b from-[#ff946d] to-[#f36f64]"
+                    }`}
+                  >
+                    {addingContact ? "Adding..." : "Add contact"}
+                  </button>
+                  {contactAdded ? (
+                    <p className="text-sm font-medium text-[#2f7a4d]">Added! You can add another, or finish setup below.</p>
+                  ) : null}
                 </div>
               </div>
             )}
