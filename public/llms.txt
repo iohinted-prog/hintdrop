@@ -1,0 +1,17 @@
+# HintDrop
+
+> HintDrop is a gifting app for saving gift ideas, remembering birthdays and occasions, and planning gifts together with the people who matter most. Free to use, available as a web app and on iOS.
+
+HintDrop is not a shop or marketplace itself. It's a coordination and reminder layer: people save "hints" (gift ideas) from anywhere on the web, organise into Circles of friends and family, get reminded ahead of birthdays and occasions, and coordinate group gifts without duplicating what someone else already bought. The company behind it is HintDrop Ltd, based in the UK.
+
+## About
+
+- [About HintDrop](https://hintdrop.app/about): What HintDrop is, who it's for, and the problem it solves.
+- [For Brands](https://hintdrop.app/for-brands): Information for retailers and brands about HintDrop.
+- [Gift Shop](https://hintdrop.app/gift-shop): Browse curated gift ideas across categories and price points.
+
+## Optional
+
+- [Contact](https://hintdrop.app/contact): Get in touch with HintDrop.
+- [Terms of Service](https://hintdrop.app/terms)
+- [Privacy Policy](https://hintdrop.app/privacy)
