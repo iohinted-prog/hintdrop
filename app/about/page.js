@@ -19,6 +19,7 @@ export const metadata = {
   title: "About HintDrop",
   description: "HintDrop helps you save gift ideas, remember birthdays and milestones, and plan group gifts with friends. Built for people who care about getting it right.",
   openGraph: {
+    images: ["https://hintdrop.app/og-default.png"],
     title: "About HintDrop",
     description: "HintDrop helps you save gift ideas, remember birthdays and milestones, and plan group gifts with friends. Built for people who care about getting it right.",
     url: "https://hintdrop.app/about",

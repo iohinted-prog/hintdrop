@@ -18,6 +18,7 @@ export const metadata = {
   description:
     "Read HintDrop's Terms of Service, including account rules, acceptable use, content rights, and limitations.",
   openGraph: {
+    images: ["https://hintdrop.app/og-default.png"],
     title: "Terms of Service | HintDrop",
     description:
       "Read HintDrop's Terms of Service, including account rules, acceptable use, content rights, and limitations.",
