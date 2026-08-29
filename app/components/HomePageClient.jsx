@@ -585,12 +585,6 @@ export default function HomePageClient() {
               <span className="text-[#ff8060]">Always thoughtful.</span>
             </h1>
 
-            <p className="mt-7 max-w-[560px] text-[16px] leading-8 text-slate-500 sm:text-[18px]">
-              Save what you actually want. Remember who matters. Plan gifts together.
-              HintDrop keeps it all in one place — your hints, your people, your circles.
-              when you need them.
-            </p>
-
             <div
               id="signup"
               className="mt-8 max-w-[540px] rounded-[28px] border border-slate-200 bg-white p-6 shadow-xl md:p-7"
