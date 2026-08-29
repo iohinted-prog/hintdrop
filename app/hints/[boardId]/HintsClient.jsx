@@ -488,6 +488,18 @@ function buildDraftFromPreview(data, rawUrl) {
   const retailer = data?.siteName || normaliseRetailer(rawUrl);
   const title = shortenTitle(data?.title || "Hint", retailer);
   const image = typeof data?.image === "string" && data.image.startsWith("http") ? data.image : "";
+  // Same imageOptions field the AI-experience-idea flow already
+  // populates below (buildDraftFromAiIdea) - reusing the existing
+  // picker UI in AddHintModal rather than building something new.
+  // Real product links can genuinely have multiple image candidates
+  // too now that lib/linkPreview.js gathers more than just one - most
+  // often this'll just be a single-item array (nothing to pick between,
+  // same as before), but when a page's default og:image is a logo
+  // rather than the actual product, this is what lets someone choose
+  // the real photo instead of silently keeping whatever was scraped.
+  const imageOptions = Array.isArray(data?.imageCandidates)
+    ? data.imageCandidates.filter((u) => typeof u === "string" && u.startsWith("http"))
+    : [];
   const finalUrl = data?.url || normaliseInputUrl(rawUrl);
   const needsReview = Boolean(data?.needsReview) || !image || !title;
 
@@ -495,6 +507,7 @@ function buildDraftFromPreview(data, rawUrl) {
     title,
     retailer,
     image,
+    imageOptions,
     uploadedImage: null,
     url: finalUrl,
     priceInput: priceMeta.numericPrice != null ? String(priceMeta.numericPrice) : "",
