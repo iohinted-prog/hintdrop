@@ -39,11 +39,6 @@ function daysUntilBirthday(birthday) {
   return Math.round((next - today) / (1000 * 60 * 60 * 24));
 }
 
-function formatMonthYear(dateStr) {
-  if (!dateStr) return "";
-  return new Date(dateStr).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-}
-
 const GRADIENTS = [
   "from-[#d9dfcf] via-[#b9c7aa] to-[#90a27e]",
   "from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]",
@@ -66,6 +61,7 @@ export default function ProfileClient({ userId }) {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [filter, setFilter] = useState("default");
+  const [filterPopupOpen, setFilterPopupOpen] = useState(false);
   const [occasionFilter, setOccasionFilter] = useState("");
   const [claimingId, setClaimingId] = useState(null);
   const [contactState, setContactState] = useState("none"); // "none" | "pending" | "active"
@@ -257,86 +253,135 @@ export default function ProfileClient({ userId }) {
 
   const inner = (
     <main className="min-h-screen bg-[#fffaf7]">
-      <div className="border-b border-[#f0dfd6] bg-white px-4 py-4 sm:px-8">
-        <div className="mx-auto max-w-[1200px] flex items-center gap-4 flex-wrap gap-y-3">
-          <Link href="/feed" className="h-9 w-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff5f0] shrink-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg></Link>
-          <ShareButton
-            supabase={supabase}
-            subjectType={selectedBoardId ? "board" : "profile"}
-            subjectId={selectedBoardId || userId}
-            path={selectedBoardId ? `/profile/${userId}?board=${selectedBoardId}` : `/profile/${userId}`}
-            title={selectedBoardId ? boards?.find(b => b.id === selectedBoardId)?.title : `${displayName}'s Hints`}
-            text={selectedBoardId
-              ? `${displayName}'s hint: "${boards?.find(b => b.id === selectedBoardId)?.title}"`
-              : `Check out ${displayName}'s Hints on HintDrop`}
-            currentUserId={currentUser?.id}
-            label="Share"
-            className="h-9 flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-3.5 text-[13px] font-semibold text-white shadow-md hover:brightness-105 shrink-0"
-          />
-          {profile?.avatar_url
-            ? <button type="button" onClick={goToMenu} className={selectedBoardId ? "cursor-pointer" : "cursor-default"}>
-                <HintImage src={profile.avatar_url} alt={displayName} width={56} height={56} className="rounded-full object-cover border-2 border-[#f0dfd6] shrink-0" fallbackClassName="hidden" />
+      <div className="border-b border-[#f0dfd6] bg-white px-4 py-3 sm:px-8 sm:py-4">
+        <div className="mx-auto max-w-[1200px]">
+          {/* Row 1: compact actions only - back/share on the left, the
+              filter trigger (a single button, not the full filter bar)
+              on the right. Kept deliberately separate from the identity
+              block below instead of one large wrapping row trying to
+              fit everything at once - that was the actual cause of
+              things stacking awkwardly and the header eating too much
+              vertical space on narrow screens. */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Link href="/feed" className="h-9 w-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff5f0] shrink-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg></Link>
+              <ShareButton
+                supabase={supabase}
+                subjectType={selectedBoardId ? "board" : "profile"}
+                subjectId={selectedBoardId || userId}
+                path={selectedBoardId ? `/profile/${userId}?board=${selectedBoardId}` : `/profile/${userId}`}
+                title={selectedBoardId ? boards?.find(b => b.id === selectedBoardId)?.title : `${displayName}'s Hints`}
+                text={selectedBoardId
+                  ? `${displayName}'s hint: "${boards?.find(b => b.id === selectedBoardId)?.title}"`
+                  : `Check out ${displayName}'s Hints on HintDrop`}
+                currentUserId={currentUser?.id}
+                label="Share"
+                className="h-9 flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-3.5 text-[13px] font-semibold text-white shadow-md hover:brightness-105 shrink-0"
+              />
+            </div>
+
+            {selectedBoardId && (
+              <button
+                type="button"
+                onClick={() => setFilterPopupOpen(true)}
+                className={`h-9 flex items-center gap-1.5 rounded-full border px-3.5 text-[12px] font-semibold shrink-0 transition ${
+                  filter !== "default" || occasionFilter
+                    ? "border-[#ff875d] bg-[#fff4ee] text-[#ff875d]"
+                    : "border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0]"
+                }`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                Filter
               </button>
-            : <button type="button" onClick={goToMenu} className={`h-14 w-14 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[16px] font-bold text-white shrink-0 ${selectedBoardId ? "cursor-pointer" : "cursor-default"}`}>{getInitials(displayName)}</button>
-          }
-          <div className="flex-1 min-w-0">
-            <button type="button" onClick={goToMenu} className={`block text-left ${selectedBoardId ? "cursor-pointer hover:underline" : "cursor-default"}`}>
-              <h1 className="text-[22px] font-semibold tracking-[-0.04em] text-slate-900">{displayName}'s Hints</h1>
-            </button>
-            {!isOwnProfile && currentUser && (
-              <button type="button" onClick={contactState === "none" ? handleAddToCircle : undefined}
-                disabled={addingContact || contactState !== "none"}
-                className={`mt-2 text-[12px] font-semibold px-3 py-1 rounded-full border transition ${
-                  contactState === "active" ? "border-[#c3e0c3] bg-[#f0faf0] text-[#3a7a3a] cursor-default"
-                  : contactState === "pending" ? "border-[#f0dfc9] bg-[#fff8ee] text-[#a87d3a] cursor-default"
-                  : "border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d]"
-                }`}>
-                {contactState === "active" ? `✓ In your circle since ${formatMonthYear(contactSince)}` : contactState === "pending" ? "Request sent — we'll let you know once accepted" : addingContact ? "Sending..." : "+ Add to circle"}
-              </button>
-            )}
-            {!isOwnProfile && !currentUser && (
-              <button type="button" onClick={() => setSignUpOpen(true)} className="mt-2 inline-flex text-[12px] font-semibold px-3 py-1 rounded-full border border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d] transition">
-                Sign up to join {displayName.split(" ")[0]}'s Circle
-              </button>
-            )}
-            {addContactError && <p className="mt-1 text-[11px] text-[#b14f43]">{addContactError}</p>}
-            {contactState === "active" && (() => {
-              const days = daysUntilBirthday(profile?.birthday);
-              if (days === null || days > 30) return null;
-              return (
-                <p className="mt-1.5 text-[12px] font-semibold text-[#df7b59]">
-                  🎂 {days === 0 ? "Birthday is today!" : days === 1 ? "Birthday is tomorrow" : `Birthday in ${days} days`}
-                </p>
-              );
-            })()}
-            {interests.length > 0 && (
-              <div className="mt-1 flex flex-wrap gap-1">
-                {interests.slice(0, 6).map(i => <span key={i} className="rounded-full bg-[#fff4ee] px-2.5 py-0.5 text-[11px] font-semibold text-[#df7b59]">{i}</span>)}
-              </div>
             )}
           </div>
 
-          {selectedBoardId && (
-            <div className="flex items-center gap-2 ml-auto overflow-x-auto">
-              <div className="flex gap-2">
+          {/* Row 2: identity - avatar + name/status/interests. Avatar
+              stays side-by-side with the text rather than stacking, a
+              56px avatar isn't what was eating the space - the filter
+              bar competing for room in the same row was. */}
+          <div className="mt-3 flex items-center gap-4">
+            {profile?.avatar_url
+              ? <button type="button" onClick={goToMenu} className={selectedBoardId ? "cursor-pointer" : "cursor-default"}>
+                  <HintImage src={profile.avatar_url} alt={displayName} width={56} height={56} className="rounded-full object-cover border-2 border-[#f0dfd6] shrink-0" fallbackClassName="hidden" />
+                </button>
+              : <button type="button" onClick={goToMenu} className={`h-14 w-14 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[16px] font-bold text-white shrink-0 ${selectedBoardId ? "cursor-pointer" : "cursor-default"}`}>{getInitials(displayName)}</button>
+            }
+            <div className="flex-1 min-w-0">
+              <button type="button" onClick={goToMenu} className={`block text-left ${selectedBoardId ? "cursor-pointer hover:underline" : "cursor-default"}`}>
+                <h1 className="text-[20px] sm:text-[22px] font-semibold tracking-[-0.04em] text-slate-900">{displayName}'s Hints</h1>
+              </button>
+              {!isOwnProfile && currentUser && (
+                <button type="button" onClick={contactState === "none" ? handleAddToCircle : undefined}
+                  disabled={addingContact || contactState !== "none"}
+                  className={`mt-2 text-[12px] font-semibold px-3 py-1 rounded-full border transition ${
+                    contactState === "active" ? "border-[#c3e0c3] bg-[#f0faf0] text-[#3a7a3a] cursor-default"
+                    : contactState === "pending" ? "border-[#f0dfc9] bg-[#fff8ee] text-[#a87d3a] cursor-default"
+                    : "border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d]"
+                  }`}>
+                  {contactState === "active" ? "✓ In your circle" : contactState === "pending" ? "Request sent — we'll let you know once accepted" : addingContact ? "Sending..." : "+ Add to circle"}
+                </button>
+              )}
+              {!isOwnProfile && !currentUser && (
+                <button type="button" onClick={() => setSignUpOpen(true)} className="mt-2 inline-flex text-[12px] font-semibold px-3 py-1 rounded-full border border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d] transition">
+                  Sign up to join {displayName.split(" ")[0]}'s Circle
+                </button>
+              )}
+              {addContactError && <p className="mt-1 text-[11px] text-[#b14f43]">{addContactError}</p>}
+              {contactState === "active" && (() => {
+                const days = daysUntilBirthday(profile?.birthday);
+                if (days === null || days > 30) return null;
+                return (
+                  <p className="mt-1.5 text-[12px] font-semibold text-[#df7b59]">
+                    🎂 {days === 0 ? "Birthday is today!" : days === 1 ? "Birthday is tomorrow" : `Birthday in ${days} days`}
+                  </p>
+                );
+              })()}
+              {interests.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {interests.slice(0, 6).map(i => <span key={i} className="rounded-full bg-[#fff4ee] px-2.5 py-0.5 text-[11px] font-semibold text-[#df7b59]">{i}</span>)}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {selectedBoardId && filterPopupOpen && (
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[rgba(33,24,20,0.42)] backdrop-blur-sm min-[480px]:items-center min-[480px]:px-4" onClick={() => setFilterPopupOpen(false)}>
+          <div className="flex w-full max-w-[420px] flex-col overflow-hidden rounded-t-[32px] border border-[#efdcd2] bg-white shadow-[0_28px_80px_rgba(75,45,30,0.18)] min-[480px]:rounded-[32px]"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between gap-4 border-b border-[#f2e5de] px-6 py-5">
+              <h2 className="text-[18px] font-semibold text-slate-900">Filter hints</h2>
+              <button type="button" onClick={() => setFilterPopupOpen(false)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#efe0d7] text-slate-500 hover:bg-[#faf6f3]">✕</button>
+            </div>
+            <div className="px-6 py-5">
+              <div className="flex flex-wrap gap-2">
                 {["default","starred","price_low","price_high"].map(f => (
                   <button key={f} type="button" onClick={() => { setFilter(f); setOccasionFilter(""); }}
-                    className={`shrink-0 h-9 px-4 rounded-full text-[12px] font-semibold transition ${filter === f && !occasionFilter ? "bg-[#ff875d] text-white" : "border border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0]"}`}>
+                    className={`h-9 px-4 rounded-full text-[13px] font-semibold transition ${filter === f && !occasionFilter ? "bg-[#ff875d] text-white" : "border border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0]"}`}>
                     {f === "default" ? "All" : f === "starred" ? "⭐ Favourites" : f === "price_low" ? "Price ↑" : "Price ↓"}
                   </button>
                 ))}
               </div>
               {allOccasions.length > 0 && (
-                <select value={occasionFilter} onChange={e => { setOccasionFilter(e.target.value); setFilter("default"); }}
-                  className="h-9 rounded-full border border-[#ead8ce] bg-white px-3 text-[12px] font-semibold text-slate-600 outline-none shrink-0">
-                  <option value="">All occasions</option>
-                  {allOccasions.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
+                <div className="mt-4">
+                  <label className="block text-[12px] font-semibold text-slate-500 mb-2">Occasion</label>
+                  <select value={occasionFilter} onChange={e => { setOccasionFilter(e.target.value); setFilter("default"); }}
+                    className="h-11 w-full rounded-full border border-[#ead8ce] bg-white px-4 text-[13px] font-semibold text-slate-600 outline-none">
+                    <option value="">All occasions</option>
+                    {allOccasions.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
               )}
+              <button type="button" onClick={() => setFilterPopupOpen(false)}
+                className="mt-6 w-full h-12 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[14px] font-semibold text-white shadow-md hover:brightness-105">
+                Done
+              </button>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {loading && (
         <div className="mx-auto max-w-[1200px] px-4 py-6 sm:px-8">
