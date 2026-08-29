@@ -984,13 +984,13 @@ const MobileHintCard = memo(function MobileHintCard({ hint, imageRatios, onEdit,
         onPointerDown={handleTapDown}
         onPointerUp={handleTapUp}
       >
-        <div className="relative w-full" style={{ aspectRatio: `${ratio}` }}>
+        <div className="relative w-full" style={{ aspectRatio: `${ratio}`, minHeight: CARD_MIN_HEIGHT }}>
           <HintImage src={hint.image} alt={hint.title} fill className="object-cover" sizes="(max-width: 768px) 50vw, 300px" fallbackClassName="text-4xl" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           <div className="absolute top-2 left-2 text-[13px]">{hint.private ? "🔒" : ""}</div>
           {hint.starred && <div className="absolute top-2 right-2 text-[13px]" >⭐</div>}
           <div className="absolute bottom-0 left-0 right-0 p-3">
-            <p className="text-[19px] font-extrabold text-white leading-tight line-clamp-2 mb-1" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.6)" }}>{hint.title || "Hint"}</p>
+            <p className="text-[19px] font-extrabold text-white leading-tight line-clamp-1 mb-1" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.6)" }}>{hint.title || "Hint"}</p>
             {(hint.rawPrice || hint.numericPrice > 0) && <span className="inline-block text-[12px] font-bold text-white rounded-full px-2.5 py-0.5" style={{ background: "#ff875d" }}>{hint.rawPrice || new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numericPrice)}</span>}
           </div>
         </div>
@@ -2368,7 +2368,7 @@ export default function HintsClient({ boardId }) {
             />
 
             {isLoading ? (
-              <div className="hidden md:grid md:grid-cols-3 md:gap-6">
+              <div className="hidden lg:grid lg:grid-cols-3 lg:gap-6">
                 {loadingColumns.map((column, columnIndex) => (
                   <div key={`loading-column-${columnIndex}`} className="space-y-6">
                     {column.map((ratio, index) => (
@@ -2388,7 +2388,7 @@ export default function HintsClient({ boardId }) {
                 onDragEnd={handleDragEnd}
                 onDragCancel={handleDragCancel}
               >
-                <div className="hidden md:grid md:grid-cols-3 md:gap-6">
+                <div className="hidden lg:grid lg:grid-cols-3 lg:gap-6">
                   {(dragColumns || columns).map((columnHints, columnIndex) => (
                     <SortableContext
                       key={`column-${columnIndex}`}
@@ -2437,7 +2437,7 @@ export default function HintsClient({ boardId }) {
                 onDragEnd={handleMobileDragEnd}
                 onDragCancel={handleDragCancel}
               >
-                <div className="grid grid-cols-2 gap-3 md:hidden">
+                <div className="grid grid-cols-2 gap-3 lg:hidden">
                   {(mobileDragColumns || mobileColumns).map((col, colIndex) => (
                     <SortableContext
                       key={`mobile-column-${colIndex}`}
@@ -2463,7 +2463,7 @@ export default function HintsClient({ boardId }) {
                 </div>
                 <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.25, 1, 0.5, 1)" }}>
                   {activeHint ? (
-                    <div className="w-full max-w-[220px] md:hidden">
+                    <div className="w-full max-w-[220px] lg:hidden">
                       <MobileHintCard
                         hint={activeHint}
                         imageRatios={imageRatios}
@@ -2491,7 +2491,7 @@ export default function HintsClient({ boardId }) {
               </>
             ) : (
               <>
-                <div className="hidden md:block columns-2 gap-4 md:columns-3">
+                <div className="hidden lg:block columns-2 gap-4 lg:columns-3">
                   {demoHints.map((hint) => (
                     <div key={hint.id} className="mb-6 break-inside-avoid">
                       <HintCard
@@ -2506,7 +2506,7 @@ export default function HintsClient({ boardId }) {
                     </div>
                   ))}
                 </div>
-                <div className="block md:hidden columns-2 gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid">
+                <div className="block lg:hidden columns-2 gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid">
                   {demoHints.map((hint) => (
                     <div key={hint.id} className="break-inside-avoid mb-3">
                       <MobileHintCard
