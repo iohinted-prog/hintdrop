@@ -131,8 +131,9 @@ export default function CalendarClient() {
   const todayKey = toKey(today);
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [showAdd, setShowAdd] = useState(false);
-  const [addForm, setAddForm] = useState({ title: "", date: "", type: "Holiday", recur: "none", color: "" });
+  const [addForm, setAddForm] = useState({ title: "", date: todayKey, type: "Holiday", recur: "none", color: "" });
   const [saving, setSaving] = useState(false);
+  const [addEventError, setAddEventError] = useState("");
   const [editingBirthdayId, setEditingBirthdayId] = useState(null);
   const [birthdayDraft, setBirthdayDraft] = useState("");
   const [monthDirection, setMonthDirection] = useState(0);
@@ -182,7 +183,15 @@ export default function CalendarClient() {
     e.preventDefault();
     if (!addForm.title || !addForm.date || !userId) return;
     setSaving(true);
-    const { data: inserted } = await supabase.from("calendar_events").insert({
+    setAddEventError("");
+    // Was only destructuring `data`, never checking `error` - if the
+    // insert failed for any reason (RLS, a bad value, anything), this
+    // silently did nothing: the event never got added, but the form
+    // still closed and reset right below as if it had succeeded, with
+    // zero indication anything went wrong. That's almost certainly what
+    // "doesn't work" was actually describing - not a crash, a silent
+    // no-op that looks like success.
+    const { data: inserted, error } = await supabase.from("calendar_events").insert({
       user_id: userId,
       title: addForm.title,
       event_date: addForm.date,
@@ -190,21 +199,36 @@ export default function CalendarClient() {
       recurrence: addForm.recur !== "none" ? addForm.recur : null,
       color: addForm.color || null,
     }).select().maybeSingle();
-    if (inserted) setEvents(prev => [...prev, inserted]);
+    setSaving(false);
+    if (error || !inserted) {
+      console.error("Error adding calendar event:", error?.message);
+      setAddEventError("Couldn't save that event. Please try again.");
+      return;
+    }
+    setEvents(prev => [...prev, inserted]);
     setShowAdd(false);
     setAddForm({ title: "", date: selectedDate || "", type: "Holiday", recur: "none", color: "" });
-    setSaving(false);
   }
 
   async function handleDeleteEvent(eventId) {
     if (!confirm("Delete this event?")) return;
-    await supabase.from("calendar_events").delete().eq("id", eventId);
+    const { error } = await supabase.from("calendar_events").delete().eq("id", eventId);
+    if (error) {
+      console.error("Error deleting calendar event:", error.message);
+      alert("Couldn't delete that event. Please try again.");
+      return;
+    }
     setEvents(prev => prev.filter(e => e.id !== eventId));
   }
 
   async function handleUpdateBirthday(contactId) {
     if (!birthdayDraft) return;
-    await supabase.from("contacts").update({ birthday: birthdayDraft }).eq("id", contactId);
+    const { error } = await supabase.from("contacts").update({ birthday: birthdayDraft }).eq("id", contactId);
+    if (error) {
+      console.error("Error updating birthday:", error.message);
+      alert("Couldn't save that birthday. Please try again.");
+      return;
+    }
     const updatedContacts = contactsList.map(c => (c.contact_id || c.id) === contactId ? { ...c, birthday: birthdayDraft } : c);
     setContactsList(updatedContacts);
     const nonBirthdayEvents = events.filter(e => e.source !== "contact");
@@ -224,6 +248,9 @@ export default function CalendarClient() {
     return (
       <form onSubmit={handleAddEvent} className="rounded-[16px] border border-[#ead8ce] bg-[#fffaf7] p-4 space-y-3" style={{ animation: "calCardIn 0.2s ease" }}>
         <p className="text-[13px] font-semibold text-slate-900">New event</p>
+        {addEventError && (
+          <p className="text-[12px] font-medium text-[#b14f43] bg-[#fff4f2] border border-[#f3d4cc] rounded-[10px] px-3 py-2">{addEventError}</p>
+        )}
         <input value={addForm.title} onChange={e => setAddForm(f => ({ ...f, title: e.target.value }))}
           placeholder="Event title" required
           className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#ff875d]" />
@@ -400,7 +427,7 @@ export default function CalendarClient() {
                 {selectedDate === todayKey ? "Today · " : ""}
                 {new Date((selectedDate || todayKey) + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
               </p>
-              <button type="button" onClick={() => setShowAdd(v => !v)}
+              <button type="button" onClick={() => { setShowAdd(v => !v); setAddEventError(""); }}
                 className="h-8 px-3 flex items-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[11px] font-semibold text-white">
                 + Add event
               </button>
@@ -428,7 +455,7 @@ export default function CalendarClient() {
                 {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
               </p>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={() => setShowAdd(v => !v)}
+                <button type="button" onClick={() => { setShowAdd(v => !v); setAddEventError(""); }}
                   className="h-8 px-3 flex items-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[11px] font-semibold text-white">
                   + Add event
                 </button>
