@@ -436,23 +436,31 @@ export default function OnboardingPage() {
     return { ok: true, user };
   }
 
-  async function saveConnection(profileId) {
+  // Was directly inserting into profile_connections - a completely
+  // different, disconnected table from the app's actual contact system
+  // (contacts + contact_invites, read via the contact_public_state view
+  // on the real Circle page - see PeopleClient.jsx). That meant a
+  // contact added during onboarding never showed up on the Circle page
+  // and never received an actual invite email - it was a dead end, not
+  // a real invite. Switched to the same send-contact-invite edge
+  // function every other "add a contact" flow in the app already uses
+  // (PeopleClient.jsx, ContactsManagerModal.jsx), so onboarding behaves
+  // consistently with the rest of the app instead of its own separate,
+  // silently-broken path.
+  async function saveConnection() {
     const hasInviteName = form.inviteName.trim().length > 0;
     const hasInviteEmail = form.inviteEmail.trim().length > 0;
     if (!hasInviteName && !hasInviteEmail) return true;
 
-    const payload = {
-      profile_id: profileId,
-      name: form.inviteName.trim() || "Unnamed contact",
-      email: form.inviteEmail.trim() || null,
-      relationship_types: selectedRelationships.map((item) =>
-        item.toLowerCase().replace(/\s+/g, "_")
-      ),
-    };
-
-    const { error } = await supabase.from("profile_connections").insert(payload);
+    const { error } = await supabase.functions.invoke("send-contact-invite", {
+      body: {
+        email: form.inviteEmail.trim().toLowerCase(),
+        name: form.inviteName.trim(),
+        role: selectedRelationships[0] || "Friend",
+      },
+    });
     if (error) {
-      console.error("Error saving connection:", error.message);
+      console.error("Error sending contact invite:", error.message);
       return false;
     }
 
@@ -485,7 +493,7 @@ export default function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const saved = await saveConnection(user.id);
+      const saved = await saveConnection();
       if (!saved) return;
 
       // Clear the form after a successful save - both gives clear visual
@@ -534,7 +542,7 @@ export default function OnboardingPage() {
       }
 
       if (!skippedInvite) {
-        const connectionSaved = await saveConnection(result.user.id);
+        const connectionSaved = await saveConnection();
         if (!connectionSaved) {
           setSaving(false);
           return;
