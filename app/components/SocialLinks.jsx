@@ -8,8 +8,6 @@ export const SOCIAL_LINKS = [
   { name: "Instagram", href: "https://www.instagram.com/hintdrop.app" },
   { name: "X", href: "https://x.com/HintDropapp" },
   { name: "Facebook", href: "https://www.facebook.com/people/HintDrop/61591697110919/" },
-  { name: "Product Hunt", href: "https://www.producthunt.com/@hint_drop" },
-  { name: "Crunchbase", href: "https://www.crunchbase.com/organization/hintdrop" },
 ];
 
 function Icon({ name }) {
@@ -42,20 +40,6 @@ function Icon({ name }) {
       return (
         <svg {...common}>
           <path d="M14.5 8.5H16.5V5.3C16.16 5.26 15 5.16 13.65 5.16C10.83 5.16 8.9 6.89 8.9 10.05V12.7H5.8V16.26H8.9V22H12.58V16.26H15.56L16.02 12.7H12.58V10.42C12.58 9.38 12.86 8.5 14.5 8.5Z" fill="currentColor" />
-        </svg>
-      );
-    case "Product Hunt":
-      return (
-        <svg {...common}>
-          <rect x="2" y="2" width="20" height="20" rx="6" stroke="currentColor" strokeWidth="1.6" />
-          <text x="12" y="16.2" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="12" fill="currentColor" textAnchor="middle">P</text>
-        </svg>
-      );
-    case "Crunchbase":
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.6" />
-          <text x="12" y="16" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="9.5" fill="currentColor" textAnchor="middle">cb</text>
         </svg>
       );
     default:
