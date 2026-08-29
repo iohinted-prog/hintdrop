@@ -498,7 +498,7 @@ export default function AppShell({ children }) {
           </Link>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-1">
+            <nav className="hidden lg:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-1">
               {navItems.map((item) => {
                 const isActive =
                   pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -893,7 +893,7 @@ export default function AppShell({ children }) {
       )}
 
       {!isLoggedIn && ["/terms", "/privacy", "/about", "/for-brands", "/contact"].includes(pathname) ? null : (
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex md:hidden items-center justify-around border-t border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur-sm px-2 pb-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex lg:hidden items-center justify-around border-t border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur-sm px-2 pb-2">
         <a href="/feed" className={`flex flex-col items-center gap-0.5 px-3 py-2 ${pathname === "/feed" ? "text-[#ff875d]" : "text-slate-400"}`}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           <span className="text-[10px] font-semibold">Home</span>
@@ -918,7 +918,7 @@ export default function AppShell({ children }) {
         </a>
       </nav>
       )}
-      <div className="h-20 md:hidden" />
+      <div className="h-20 lg:hidden" />
       {activeThreads.map((thread, index) => (
         <GroupChatWindow
           key={thread.id}
