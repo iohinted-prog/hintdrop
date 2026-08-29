@@ -37,6 +37,15 @@ const BASE_CURRENCY = "GBP";
 const PREVIEW_TIMEOUT_MS = 18000;
 const CARD_MAX_HEIGHT = "min(540px, 68vh)";
 const CARD_MIN_HEIGHT = "220px";
+// Deliberately lower than the desktop value above - mobile's 2-column
+// grid gives each card a much narrower width (~169px on a typical
+// phone) than desktop's 3-column grid does, so reusing the same 220px
+// floor made mobile cards noticeably taller than wide (an elongated,
+// too-tall look). 160px sits close to that column's own width - a
+// near-square floor that still stops extreme wide/short images from
+// looking broken, without flattening the natural variation for
+// everything else the way 220px did.
+const MOBILE_CARD_MIN_HEIGHT = "160px";
 const TIMEOUT_MODAL_MESSAGE =
   "We tried to get the title, image, and price, but this shop asked you to add them instead.";
 
@@ -984,7 +993,7 @@ const MobileHintCard = memo(function MobileHintCard({ hint, imageRatios, onEdit,
         onPointerDown={handleTapDown}
         onPointerUp={handleTapUp}
       >
-        <div className="relative w-full" style={{ aspectRatio: `${ratio}`, minHeight: CARD_MIN_HEIGHT }}>
+        <div className="relative w-full" style={{ aspectRatio: `${ratio}`, minHeight: MOBILE_CARD_MIN_HEIGHT }}>
           <HintImage src={hint.image} alt={hint.title} fill className="object-cover" sizes="(max-width: 768px) 50vw, 300px" fallbackClassName="text-4xl" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           <div className="absolute top-2 left-2 text-[13px]">{hint.private ? "🔒" : ""}</div>
