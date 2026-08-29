@@ -25,6 +25,12 @@ export default function sitemap() {
       priority: 0.7,
     },
     {
+      url: "https://hintdrop.app/contact",
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
+    {
       url: "https://hintdrop.app/terms",
       lastModified: new Date(),
       changeFrequency: "monthly",

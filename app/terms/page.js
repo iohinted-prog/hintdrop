@@ -17,6 +17,15 @@ export const metadata = {
   title: "Terms of Service | HintDrop",
   description:
     "Read HintDrop's Terms of Service, including account rules, acceptable use, content rights, and limitations.",
+  openGraph: {
+    title: "Terms of Service | HintDrop",
+    description:
+      "Read HintDrop's Terms of Service, including account rules, acceptable use, content rights, and limitations.",
+    url: "https://hintdrop.app/terms",
+    siteName: "HintDrop",
+    type: "website",
+  },
+  alternates: { canonical: "https://hintdrop.app/terms" },
 };
 
 export default async function TermsPage() {

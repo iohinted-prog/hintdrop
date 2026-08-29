@@ -17,6 +17,15 @@ export const metadata = {
   title: "Privacy Policy | HintDrop",
   description:
     "Read HintDrop's Privacy Policy, including what information we collect, how we use it, and your choices.",
+  openGraph: {
+    title: "Privacy Policy | HintDrop",
+    description:
+      "Read HintDrop's Privacy Policy, including what information we collect, how we use it, and your choices.",
+    url: "https://hintdrop.app/privacy",
+    siteName: "HintDrop",
+    type: "website",
+  },
+  alternates: { canonical: "https://hintdrop.app/privacy" },
 };
 
 export default async function PrivacyPage() {

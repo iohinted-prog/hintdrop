@@ -19,6 +19,17 @@ export const metadata = {
   title: "For Brands | HintDrop",
   description:
     "Partner with HintDrop to place thoughtful products into gifting, reminder, and shared planning moments.",
+  openGraph: {
+    title: "For Brands | HintDrop",
+    description:
+      "Partner with HintDrop to place thoughtful products into gifting, reminder, and shared planning moments.",
+    url: "https://hintdrop.app/for-brands",
+    siteName: "HintDrop",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://hintdrop.app/for-brands",
+  },
 };
 
 export default async function ForBrandsPage() {

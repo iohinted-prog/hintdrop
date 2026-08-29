@@ -77,6 +77,28 @@ export default async function Page() {
         url: "https://hintdrop.app",
         description: "Save what you actually want. Remember who matters. Plan gifts together.",
       },
+      // Added now that the situation is genuinely different from when
+      // this was first considered - deliberately skipped earlier this
+      // session because the example being copied claimed iOS/Android
+      // support and USD pricing, neither of which was true at the time
+      // (no native app existed, company is UK/GBP). An iOS app now
+      // genuinely exists and has been submitted for App Store review,
+      // so operatingSystem below is now accurate rather than
+      // aspirational. Still deliberately not claiming Android - no
+      // Android build exists yet. Price/currency match the App Store
+      // submission itself (free, no in-app purchases).
+      {
+        "@type": "SoftwareApplication",
+        name: "HintDrop",
+        url: "https://hintdrop.app",
+        applicationCategory: "LifestyleApplication",
+        operatingSystem: "iOS, Web",
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "GBP",
+        },
+      },
     ],
   };
 

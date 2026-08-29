@@ -18,6 +18,13 @@ import Link from "next/link";
 export const metadata = {
   title: "About HintDrop",
   description: "HintDrop helps you save gift ideas, remember birthdays and milestones, and plan group gifts with friends. Built for people who care about getting it right.",
+  openGraph: {
+    title: "About HintDrop",
+    description: "HintDrop helps you save gift ideas, remember birthdays and milestones, and plan group gifts with friends. Built for people who care about getting it right.",
+    url: "https://hintdrop.app/about",
+    siteName: "HintDrop",
+    type: "website",
+  },
   alternates: { canonical: "https://hintdrop.app/about" },
 };
 
