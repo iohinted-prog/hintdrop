@@ -19,6 +19,9 @@ export async function generateMetadata({ params }) {
     description,
     openGraph: { title, description, type: "website" },
     twitter: { card: "summary", title, description },
+    alternates: {
+      canonical: `https://hintdrop.app/join/${ownerId}`,
+    },
   };
 }
 
