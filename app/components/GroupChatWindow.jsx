@@ -158,7 +158,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
 
   return (
     <div
-      className={`${isTopmost ? "fixed inset-0 flex" : "hidden"} z-[110] md:flex md:inset-auto md:bottom-4 md:right-[var(--chat-right-offset)] md:w-[380px] md:h-[580px] flex-col bg-[#fffaf7] md:rounded-[22px] border border-[#efdcd2] shadow-2xl overflow-hidden`}
+      className={`${isTopmost ? "fixed inset-0 flex" : "hidden"} z-[110] lg:flex lg:inset-auto lg:bottom-4 lg:right-[var(--chat-right-offset)] lg:w-[380px] lg:h-[580px] flex-col bg-[#fffaf7] lg:rounded-[22px] border border-[#efdcd2] shadow-2xl overflow-hidden`}
       style={{ "--chat-right-offset": `${desktopRightOffset}px` }}
     >
       {/* Header */}
