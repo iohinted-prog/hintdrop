@@ -565,8 +565,17 @@ function buildDraftFromPreview(data, rawUrl) {
   // the person with a blank/broken image and no way to save something
   // that looks intentional.
   const usingFallbackGradients = !scrapedImage && scrapedImageOptions.length === 0;
-  const image = scrapedImage || (usingFallbackGradients ? FALLBACK_GRADIENT_OPTIONS[0] : "");
-  const imageOptions = usingFallbackGradients ? FALLBACK_GRADIENT_OPTIONS : scrapedImageOptions;
+  // No auto-selected big preview for a gradient - just offer the small
+  // swatches in the picker (capped to 3, matching the picker's own
+  // display limit - no point generating/offering 6 when only 3 ever
+  // show) and let the person choose. image stays empty until they
+  // actually pick one, so the large photo-preview area shows the
+  // normal "no image yet" state instead of a gradient blown up full
+  // size by default.
+  const image = scrapedImage;
+  const imageOptions = usingFallbackGradients
+    ? FALLBACK_GRADIENT_OPTIONS.slice(0, 3)
+    : scrapedImageOptions;
   const finalUrl = data?.url || normaliseInputUrl(rawUrl);
   const needsReview = Boolean(data?.needsReview) || usingFallbackGradients || !title;
 
