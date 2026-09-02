@@ -86,9 +86,25 @@ const TRANSIENT_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
 // itself relies on, rather than a raw fetch, so it isn't blocked by
 // retailer bot-protection. Processes a batch at a time to stay safely
 // within Vercel's function timeout — call repeatedly until "remaining" is 0.
-// Delete or leave dormant once the backfill is fully done.
+//
+// Two modes:
+// - Default: only products with no image at all (image_url null/empty,
+//   never attempted). This is the original bootstrap behavior.
+// - force: true — re-scrapes products that may already have an image,
+//   scoped to a specific retailer (or "all"). Added for cases like the
+//   Fortnum & Mason logo-instead-of-product-photo problem, where the
+//   fix genuinely needs a fresh scrape, not just a URL-param tweak.
+//   Uses stable offset-based pagination (not the attempts-based
+//   ordering below) since these rows aren't naturally removed from
+//   contention by gaining an image the way the default mode's rows
+//   are — pass the same offset back in as `offset` on each call,
+//   using the `nextOffset` this endpoint returns, until `done: true`.
+//   Critically: a failed re-scrape in force mode never deactivates the
+//   product or clears its existing image_url — that image was already
+//   there and presumably working before this ran; only a successful
+//   re-scrape ever overwrites it.
 export async function POST(req) {
-  const { secret, limit } = await req.json().catch(() => ({}));
+  const { secret, limit, force, retailer, offset } = await req.json().catch(() => ({}));
   if (!secret || secret !== process.env.ADMIN_BACKFILL_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -101,27 +117,60 @@ export async function POST(req) {
   const MAX_ATTEMPTS = 5;
 
   const supabase = getSupabase();
-  const { data: products, error } = await supabase
-    .from("shop_products")
-    .select("id, product_url, backfill_attempts")
-    .eq("network", "manual")
-    .or("image_url.is.null,image_url.eq.")
-    .is("raw_payload", null)
-    // No ordering meant the same handful of persistently-stuck items
-    // (Sonos, Urban Outfitters — domain-level blocks that never clear,
-    // not a real rate limit) sat at the head of every batch and kept
-    // getting retried ahead of untried items. Since run_backfill.sh
-    // counts a batch as a stall if ANY item in it is retryable, those
-    // few items were poisoning almost every batch and tripping the
-    // 5-stall give-up fast, even while plenty of healthy items sat
-    // untouched behind them. Ordering by fewest attempts first means
-    // never-tried items get priority; already-failing items only get
-    // their turn once nothing better is available, still accumulating
-    // toward their 5-attempt cap and eventual auto-deactivation.
-    .order("backfill_attempts", { ascending: true })
-    .limit(batchSize);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  let products, fetchError, totalMatching = null;
+  const startOffset = Number(offset) || 0;
+
+  if (force) {
+    if (!retailer) {
+      return NextResponse.json(
+        { error: "force mode requires a 'retailer' field — an exact retailer name, or the literal string \"all\"" },
+        { status: 400 }
+      );
+    }
+    let query = supabase
+      .from("shop_products")
+      .select("id, product_url")
+      .eq("network", "manual");
+    if (retailer !== "all") query = query.eq("retailer", retailer);
+    const { data, error } = await query
+      .order("id", { ascending: true })
+      .range(startOffset, startOffset + batchSize - 1);
+    products = data;
+    fetchError = error;
+
+    let countQuery = supabase
+      .from("shop_products")
+      .select("id", { count: "exact", head: true })
+      .eq("network", "manual");
+    if (retailer !== "all") countQuery = countQuery.eq("retailer", retailer);
+    const { count } = await countQuery;
+    totalMatching = count;
+  } else {
+    const { data, error } = await supabase
+      .from("shop_products")
+      .select("id, product_url, backfill_attempts")
+      .eq("network", "manual")
+      .or("image_url.is.null,image_url.eq.")
+      .is("raw_payload", null)
+      // No ordering meant the same handful of persistently-stuck items
+      // (Sonos, Urban Outfitters — domain-level blocks that never clear,
+      // not a real rate limit) sat at the head of every batch and kept
+      // getting retried ahead of untried items. Since run_backfill.sh
+      // counts a batch as a stall if ANY item in it is retryable, those
+      // few items were poisoning almost every batch and tripping the
+      // 5-stall give-up fast, even while plenty of healthy items sat
+      // untouched behind them. Ordering by fewest attempts first means
+      // never-tried items get priority; already-failing items only get
+      // their turn once nothing better is available, still accumulating
+      // toward their 5-attempt cap and eventual auto-deactivation.
+      .order("backfill_attempts", { ascending: true })
+      .limit(batchSize);
+    products = data;
+    fetchError = error;
+  }
+
+  if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 });
 
   const results = { updated: 0, failed: [] };
 
@@ -147,6 +196,12 @@ export async function POST(req) {
       if (image) {
         await supabase.from("shop_products").update({ image_url: image }).eq("id", product.id);
         results.updated += 1;
+      } else if (force) {
+        // Don't deactivate or clear the existing image_url — it was
+        // presumably already there and working before this ran; a
+        // failed re-scrape just means this attempt didn't find
+        // anything better, not that the product should go dark.
+        results.failed.push({ id: product.id, reason: "no usable image found on re-scrape — left existing image untouched" });
       } else {
         // No permanent-failure path was ever wired to is_active — a
         // product with no og:image tag at all would sit here indefinitely,
@@ -158,34 +213,51 @@ export async function POST(req) {
       }
     } catch (err) {
       const reason = err?.message || "fetch failed";
-      const isTransient = TRANSIENT_STATUSES.has(err?.status) || reason.includes("429") || reason.includes("aborted");
-      const nextAttempts = attemptsSoFar + 1;
-      // A "transient" failure normally stays eligible for retry rather than
-      // being permanently marked as failed — but if the SAME item keeps
-      // failing attempt after attempt, that's not really transient in
-      // practice, it's a persistently broken URL. Without this cap, a
-      // handful of permanently-425ing items sit at the head of the query
-      // forever (no ORDER BY, so the same rows keep coming back first) and
-      // block every healthy item behind them from ever being reached.
-      const permanentlyStuck = nextAttempts >= MAX_ATTEMPTS;
-      if (!isTransient || permanentlyStuck) {
-        // Same reasoning as the no-og:image case above — once a product
-        // is confirmed permanently unfixable (whether that's an
-        // immediate non-transient error like a 403, or exhausting every
-        // retry), deactivate it right then rather than leaving it
-        // active-but-imageless until someone happens to notice and
-        // cleans it up manually.
-        await supabase.from("shop_products").update({
-          raw_payload: { backfill_failed: permanentlyStuck ? `${reason} (gave up after ${nextAttempts} attempts)` : reason },
-          backfill_attempts: nextAttempts,
-          is_active: false,
-        }).eq("id", product.id);
+      if (force) {
+        // Same reasoning as the no-image case above — a thrown error
+        // on a force re-scrape still shouldn't touch a product that
+        // already had a working image.
+        results.failed.push({ id: product.id, reason });
       } else {
-        await supabase.from("shop_products").update({ backfill_attempts: nextAttempts }).eq("id", product.id);
+        const isTransient = TRANSIENT_STATUSES.has(err?.status) || reason.includes("429") || reason.includes("aborted");
+        const nextAttempts = attemptsSoFar + 1;
+        // A "transient" failure normally stays eligible for retry rather than
+        // being permanently marked as failed — but if the SAME item keeps
+        // failing attempt after attempt, that's not really transient in
+        // practice, it's a persistently broken URL. Without this cap, a
+        // handful of permanently-425ing items sit at the head of the query
+        // forever (no ORDER BY, so the same rows keep coming back first) and
+        // block every healthy item behind them from ever being reached.
+        const permanentlyStuck = nextAttempts >= MAX_ATTEMPTS;
+        if (!isTransient || permanentlyStuck) {
+          // Same reasoning as the no-og:image case above — once a product
+          // is confirmed permanently unfixable (whether that's an
+          // immediate non-transient error like a 403, or exhausting every
+          // retry), deactivate it right then rather than leaving it
+          // active-but-imageless until someone happens to notice and
+          // cleans it up manually.
+          await supabase.from("shop_products").update({
+            raw_payload: { backfill_failed: permanentlyStuck ? `${reason} (gave up after ${nextAttempts} attempts)` : reason },
+            backfill_attempts: nextAttempts,
+            is_active: false,
+          }).eq("id", product.id);
+        } else {
+          await supabase.from("shop_products").update({ backfill_attempts: nextAttempts }).eq("id", product.id);
+        }
+        results.failed.push({ id: product.id, reason, retryable: isTransient && !permanentlyStuck, attempts: nextAttempts });
       }
-      results.failed.push({ id: product.id, reason, retryable: isTransient && !permanentlyStuck, attempts: nextAttempts });
     }
     await new Promise((r) => setTimeout(r, 600));
+  }
+
+  if (force) {
+    const nextOffset = startOffset + (products?.length || 0);
+    return NextResponse.json({
+      ...results,
+      nextOffset,
+      totalMatching: totalMatching || 0,
+      done: nextOffset >= (totalMatching || 0),
+    });
   }
 
   const { count: remaining } = await supabase
