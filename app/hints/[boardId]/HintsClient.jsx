@@ -74,6 +74,7 @@ const EMPTY_EDIT_FORM = {
   size: "",
   size_type: "",
   colour: "",
+  private: false,
 };
 
 const demoHints = [
@@ -663,6 +664,7 @@ function HintFormFields({
   setForm,
   prefix = "new",
   showToggles = true,
+  showPrivateToggle = showToggles,
   imageHelpText = "No image yet. Upload one here if you want to add a photo.",
 }) {
   const previewImage = form.uploadedImage || form.image;
@@ -768,31 +770,35 @@ function HintFormFields({
         </div>
       </div>
       </div>
-      {showToggles ? (
+      {(showToggles || showPrivateToggle) ? (
         <div className="flex flex-wrap items-center gap-4">
-          <button
-            type="button"
-            onClick={() => setForm((current) => ({ ...current, starred: !current.starred }))}
-            className={`rounded-full border px-4 py-2 text-sm font-semibold ${
-              form.starred
-                ? "border-[#ffd8c9] bg-[#fff2ea] text-[#e27956]"
-                : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
-            }`}
-          >
-            {form.starred ? "★ Starred" : "★ Star"}
-          </button>
+          {showToggles && (
+            <button
+              type="button"
+              onClick={() => setForm((current) => ({ ...current, starred: !current.starred }))}
+              className={`rounded-full border px-4 py-2 text-sm font-semibold ${
+                form.starred
+                  ? "border-[#ffd8c9] bg-[#fff2ea] text-[#e27956]"
+                  : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
+              }`}
+            >
+              {form.starred ? "★ Starred" : "★ Star"}
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={() => setForm((current) => ({ ...current, private: !current.private }))}
-            className={`rounded-full border px-4 py-2 text-sm font-semibold ${
-              form.private
-                ? "border-[#ffd8c9] bg-[#fffaf7] text-[#e08a67]"
-                : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
-            }`}
-          >
-            {form.private ? "🔒 Private" : "Public"}
-          </button>
+          {showPrivateToggle && (
+            <button
+              type="button"
+              onClick={() => setForm((current) => ({ ...current, private: !current.private }))}
+              className={`rounded-full border px-4 py-2 text-sm font-semibold ${
+                form.private
+                  ? "border-[#ffd8c9] bg-[#fffaf7] text-[#e08a67]"
+                  : "border-[#efe0d7] bg-[#f7f2ee] text-slate-700 hover:bg-[#f1ebe6]"
+              }`}
+            >
+              {form.private ? "🔒 Private" : "Public"}
+            </button>
+          )}
         </div>
       ) : null}
           <div className="mt-4 grid grid-cols-2 gap-3">
@@ -957,6 +963,7 @@ function EditHintModal({
         setForm={setEditForm}
         prefix="edit"
         showToggles={false}
+        showPrivateToggle
         imageHelpText="No image yet. Add or replace a photo here if you want."
       />
     </ModalShell>
@@ -1229,13 +1236,15 @@ const HintCard = memo(function HintCard({
           </div>
 
           <div className="pointer-events-auto flex shrink-0 items-center gap-2 self-end">
-            <button
-              type="button"
-              onClick={() => onTogglePrivate(hint)}
-              className="rounded-full border border-white/45 bg-white/92 px-3 py-1.5 text-[12px] font-medium text-slate-700 hover:bg-white"
-            >
-              {hint.private ? "🔒" : ""}
-            </button>
+            {hint.private && (
+              <span
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/45 bg-white/92 text-[14px]"
+                aria-label="Private hint"
+                title="Private — change this in Edit"
+              >
+                🔒
+              </span>
+            )}
 
             <a
               href={hint.id?.startsWith("demo-") ? undefined : hint.url}
@@ -1682,6 +1691,7 @@ export default function HintsClient({ boardId }) {
       size: hint.size || "",
       size_type: hint.sizeType || "",
       colour: hint.colour || "",
+      private: Boolean(hint.private),
     });
   }, []);
 
@@ -1730,6 +1740,7 @@ export default function HintsClient({ boardId }) {
         size: editForm.size || null,
         size_type: editForm.size_type || null,
         colour: editForm.colour || null,
+        is_private: Boolean(editForm.private),
         })
         .eq("id", editingHintId);
 
@@ -1763,6 +1774,7 @@ export default function HintsClient({ boardId }) {
         size: editForm.size || "",
         sizeType: editForm.size_type || "",
         colour: editForm.colour || "",
+                private: Boolean(editForm.private),
                 needsReview: false,
               }
             : hint
