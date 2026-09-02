@@ -19,19 +19,9 @@ const nextConfig = {
   // down the full route, not just the OG tag) - this was live and
   // affecting every real visitor, not just the Capacitor app testing
   // that surfaced it.
-  //
-  // Same exact class of bug applies to lib/tesseract-data/eng.traineddata.gz
-  // (lib/textDetection.js's OCR check) and tesseract.js-core's bundled
-  // WASM files - both are binary assets loaded via non-standard means
-  // that static tracing can miss. Applied proactively here, to every
-  // route that can trigger an OCR check, rather than waiting to
-  // rediscover the same lesson in production again.
   outputFileTracingIncludes: {
     "/": ["./lib/fonts/**"],
     "/join/[ownerId]": ["./lib/fonts/**"],
-    "/api/link-preview": ["./lib/tesseract-data/**", "./node_modules/tesseract.js-core/**"],
-    "/api/admin/backfill-shop-images": ["./lib/tesseract-data/**", "./node_modules/tesseract.js-core/**"],
-    "/api/cron/price-refresh": ["./lib/tesseract-data/**", "./node_modules/tesseract.js-core/**"],
   },
 };
 

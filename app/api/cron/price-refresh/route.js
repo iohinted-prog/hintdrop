@@ -26,14 +26,7 @@ const TRANSIENT_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
 const GONE_STATUSES = new Set([404, 410]);
 
 const MAX_ATTEMPTS = 5;
-// Worst case per item now: 9.1s (as before) + up to ~9s for the OCR
-// text-in-image check (lib/textDetection.js, added later — checks run
-// concurrently across an item's own image candidates, so the added
-// cost is one slowest-check's worth, not a sum) ≈ 18.1s. Lowered from
-// 6 to 3 to keep real headroom under the 60s ceiling: 3 × 18.1s ≈
-// 54.3s. Even that leaves less margin than ideal, so lowered further
-// to 2 for real safety: 2 × 18.1s ≈ 36.2s, ~24s of headroom.
-const BATCH_SIZE = 2;
+const BATCH_SIZE = 6;
 // A "deal": current price at or below 90% of its trailing 30-day average.
 const DEAL_LOOKBACK_DAYS = 30;
 const DEAL_THRESHOLD = 0.9;

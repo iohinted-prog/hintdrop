@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isLikelyRealAmazonProductImage } from "@/lib/linkPreview";
-import { imageHasOverlaidText } from "@/lib/textDetection";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,13 +62,6 @@ async function scrapeImage(url) {
     if (image && /(^|\.)amazon\.[a-z.]+$/i.test(new URL(url).hostname.replace(/^www\./i, "")) && !isLikelyRealAmazonProductImage(image)) {
       image = "";
     }
-    // Same White Company/Joy problem this route's callers hit in the
-    // Hints flow: a scraped "product image" that's actually a
-    // marketing graphic with text baked into it. OCR check applies
-    // here too rather than only to the live Hints flow.
-    if (image && (await imageHasOverlaidText(image))) {
-      image = "";
-    }
     return image;
   } finally {
     clearTimeout(timeout);
@@ -92,13 +84,12 @@ export async function POST(req) {
   if (!secret || secret !== process.env.ADMIN_BACKFILL_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  // Lowered from 4 — the OCR text-detection check added below can add up
-  // to another ~9s per item worst case (its own timeout), on top of the
-  // existing 3s same-domain wait + up to 8.5s LinkPreview timeout + 0.6s
-  // delay ≈ 12.1s. New worst case is ~21.1s/item, so 4 items could reach
-  // ~84.4s — well over the 60s function limit. Capped at 2 instead:
-  // 2 × 21.1s ≈ 42.2s, leaving ~18s of real headroom even in the worst case.
-  const batchSize = Math.min(Number(limit) || 2, 2);
+  // Lowered from 6 — even 6 was still capable of exceeding the (now 60s)
+  // function timeout in the worst case: 3s same-domain wait + up to 8.5s
+  // LinkPreview timeout + 0.6s delay ≈ 12.1s per item, so 6 items could
+  // reach ~72.6s. Capped at 4 instead: 4 × 12.1s ≈ 48.4s, leaving ~12s of
+  // real headroom under the 60s limit even in the worst case.
+  const batchSize = Math.min(Number(limit) || 4, 4);
   const MAX_ATTEMPTS = 5;
 
   const supabase = getSupabase();
