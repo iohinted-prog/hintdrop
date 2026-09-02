@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 const PREFERENCE_COPY = {
   email_reminders: {
@@ -31,6 +32,7 @@ export default function UnsubscribeClient() {
     token ? "" : "This link is missing some information. Please use the link from your email directly."
   );
   const [name, setName] = useState(null);
+  const [email, setEmail] = useState(null);
   const [preferences, setPreferences] = useState(null);
 
   useEffect(() => {
@@ -46,6 +48,7 @@ export default function UnsubscribeClient() {
           throw new Error(data?.error || "Something went wrong.");
         }
         setName(data.name);
+        setEmail(data.email);
         setPreferences(data.preferences);
         setStatus("ready");
       })
@@ -114,6 +117,12 @@ export default function UnsubscribeClient() {
               Choose what you&apos;d like to hear from us about. No need to log in — this link is unique to you.
             </p>
 
+            {email && (
+              <p className="text-[13px] text-slate-500 mb-6 -mt-4">
+                These preferences apply to <span className="font-semibold text-slate-700">{email}</span>.
+              </p>
+            )}
+
             <div className="space-y-4">
               {Object.entries(PREFERENCE_COPY).map(([field, copy]) => (
                 <label
@@ -154,9 +163,17 @@ export default function UnsubscribeClient() {
             </div>
 
             {status === "saved" && (
-              <p className="mt-4 text-[13px] text-[#2f7a4d] text-center">
-                Your preferences have been updated.
-              </p>
+              <div className="mt-4 flex flex-col items-center gap-3">
+                <p className="text-[13px] text-[#2f7a4d] text-center">
+                  Your preferences have been updated.
+                </p>
+                <Link
+                  href="/"
+                  className="text-[13px] font-semibold text-[#ff7e54] hover:underline"
+                >
+                  Go to HintDrop →
+                </Link>
+              </div>
             )}
           </>
         )}

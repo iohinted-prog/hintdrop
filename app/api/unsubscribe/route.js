@@ -27,7 +27,7 @@ export async function GET(request) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("profiles")
-    .select("full_name, email_reminders, circle_reminders, weekly_digest")
+    .select("full_name, email, email_reminders, circle_reminders, weekly_digest")
     .eq("unsubscribe_token", token)
     .maybeSingle();
 
@@ -41,6 +41,7 @@ export async function GET(request) {
 
   return NextResponse.json({
     name: data.full_name || null,
+    email: data.email || null,
     preferences: {
       email_reminders: data.email_reminders !== false,
       circle_reminders: data.circle_reminders !== false,
