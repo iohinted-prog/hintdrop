@@ -570,7 +570,7 @@ export default function HomePageClient() {
           </div>
         </header>
 
-        <section className="grid items-start gap-10 xl:grid-cols-[minmax(420px,0.92fr)_minmax(560px,1.08fr)] xl:gap-10">
+        <section className="grid items-start gap-10 lg:grid-cols-[minmax(420px,0.92fr)_minmax(560px,1.08fr)] lg:gap-10">
           <div className="py-2 lg:pl-2">
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[14px] font-bold text-[#eb7b58] shadow-sm">
               <span>♡</span>
