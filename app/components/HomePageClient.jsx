@@ -549,7 +549,7 @@ export default function HomePageClient() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#fffaf7] text-slate-800">
       <div className="mx-auto max-w-[1320px] px-5 pb-16 pt-6 md:px-8">
-        <header className="flex items-center justify-between gap-3 pb-8 lg:grid lg:grid-cols-[auto_1fr_auto] lg:items-center lg:gap-8">
+        <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pb-8 lg:flex-nowrap lg:grid lg:grid-cols-[auto_1fr_auto] lg:items-center lg:gap-8">
           <LandingLogo />
 
           <nav className="hidden items-center justify-center gap-9 text-[15px] text-slate-600 lg:flex" />
