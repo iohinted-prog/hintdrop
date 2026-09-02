@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { isLikelyRealAmazonProductImage } from "@/lib/linkPreview";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,6 +53,14 @@ async function scrapeImage(url) {
     if (image.includes("media.johnlewiscontent.com") && image.includes("?$")) {
       const idx = image.indexOf("?$");
       image = image.slice(0, idx) + "?fmt=auto&$background-off-white$&" + image.slice(idx + 1);
+    }
+    // Amazon's own bot detection can intercept LinkPreview's request and
+    // hand back a robot-check/CAPTCHA page instead of the real product
+    // page — its og:image is then a logo or CAPTCHA graphic, not the
+    // product photo. Same check lib/linkPreview.js applies to the Hints
+    // flow: treat it as no image rather than saving a wrong one.
+    if (image && /(^|\.)amazon\.[a-z.]+$/i.test(new URL(url).hostname.replace(/^www\./i, "")) && !isLikelyRealAmazonProductImage(image)) {
+      image = "";
     }
     return image;
   } finally {
