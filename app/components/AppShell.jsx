@@ -91,6 +91,7 @@ export default function AppShell({ children }) {
     pathname === "/gift-shop" ||
     pathname === "/onboarding" ||
     pathname === "/auth/reset-password" ||
+    pathname === "/unsubscribe" ||
     pathname.startsWith("/gift-shop/");
 
   // These render their own PublicShell header for signed-out visitors (a
