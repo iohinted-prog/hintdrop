@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { isLikelyRealAmazonProductImage, upgradeAsosImageResolution } from "@/lib/linkPreview";
+import { isLikelyRealAmazonProductImage, upgradeAsosImageResolution, stripAmazonImageDirectives } from "@/lib/linkPreview";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,8 +63,12 @@ async function scrapeImage(url) {
     // page — its og:image is then a logo or CAPTCHA graphic, not the
     // product photo. Same check lib/linkPreview.js applies to the Hints
     // flow: treat it as no image rather than saving a wrong one.
-    if (image && /(^|\.)amazon\.[a-z.]+$/i.test(new URL(url).hostname.replace(/^www\./i, "")) && !isLikelyRealAmazonProductImage(image)) {
-      image = "";
+    if (image && /(^|\.)amazon\.[a-z.]+$/i.test(new URL(url).hostname.replace(/^www\./i, ""))) {
+      if (!isLikelyRealAmazonProductImage(image)) {
+        image = "";
+      } else {
+        image = stripAmazonImageDirectives(image);
+      }
     }
     return image;
   } finally {
