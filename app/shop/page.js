@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "../../lib/supabase/client";
 import { shuffleProducts } from "../../lib/products";
+import BoardPreviewGrid from "../components/BoardPreviewGrid";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 import HintImage from "../components/HintImage";
 
@@ -716,13 +717,24 @@ export default function ShopPage() {
 
   async function loadUserBoards(userId) {
     setBoardsLoading(true);
-    const { data } = await supabase
+    const { data: boardRows } = await supabase
       .from("hint_boards")
       .select("id, title, is_default, is_private")
       .eq("user_id", userId)
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: true });
-    setUserBoards(data || []);
+
+    const boardsWithPreviews = await Promise.all(
+      (boardRows || []).map(async (board) => {
+        const [{ count }, { data: previewHints }] = await Promise.all([
+          supabase.from("hints").select("id", { count: "exact", head: true }).eq("board_id", board.id),
+          supabase.from("hints").select("image_url").eq("board_id", board.id).order("position", { ascending: true }).limit(4),
+        ]);
+        return { ...board, hintCount: count || 0, previewHints: previewHints || [] };
+      })
+    );
+
+    setUserBoards(boardsWithPreviews);
     setBoardsLoading(false);
   }
 
@@ -1036,10 +1048,20 @@ export default function ShopPage() {
                     key={board.id}
                     type="button"
                     onClick={() => confirmAddToBoard(board.id)}
-                    className="w-full flex items-center justify-between rounded-[16px] border border-[#f0dfd6] bg-white px-4 py-3 text-left hover:bg-[#fff5f0] hover:border-[#e8c9bc]"
+                    className="w-full flex items-center gap-3 rounded-[16px] border border-[#f0dfd6] bg-white p-2 text-left hover:bg-[#fff5f0] hover:border-[#e8c9bc]"
                   >
-                    <span className="text-sm font-semibold text-slate-800">{board.title}</span>
-                    <span className="text-[11px] text-slate-400">{board.is_default ? "Personal" : board.is_private ? "Private" : "Public"}</span>
+                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[10px] bg-[#fdf5f0] p-0.5">
+                      <BoardPreviewGrid previewHints={board.previewHints} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-slate-800">
+                        {board.is_private && <span className="mr-1" title="Private">🔒</span>}
+                        {board.title}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        {board.is_default ? "Personal" : "Hints for someone else"} · {board.hintCount} Hint{board.hintCount === 1 ? "" : "s"}
+                      </p>
+                    </div>
                   </button>
                 ))
               )}
