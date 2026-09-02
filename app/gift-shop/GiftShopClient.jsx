@@ -353,6 +353,17 @@ export default function GiftShopClient() {
   const [selectedRelationship, setSelectedRelationship] = useState("");
   const [selectedPriceBand, setSelectedPriceBand] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  // Mobile-only - the occasion/relationship/price/interest controls default
+  // collapsed on narrow screens so search + this toggle is all that sits
+  // above the product grid, instead of the full filter panel taking up the
+  // whole first screen before a single product is visible. Desktop always
+  // shows them regardless of this state (see sm:flex overrides below).
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount =
+    (selectedOccasion ? 1 : 0) +
+    (selectedRelationship ? 1 : 0) +
+    (selectedPriceBand ? 1 : 0) +
+    selectedInterests.length;
   const [imageRatios, setImageRatios] = useState({});
   const [brokenImageIds, setBrokenImageIds] = useState(() => new Set());
 
@@ -544,7 +555,7 @@ export default function GiftShopClient() {
                 The Gift Shop
               </h1>
 
-              <p className="mt-3 max-w-[760px] text-[15px] leading-7 text-slate-600">
+              <p className="mt-3 hidden max-w-[760px] text-[15px] leading-7 text-slate-600 sm:block">
                 Curated gifts for everyone. Create a free HintDrop account to save your favourites to a wishlist.
               </p>
 
@@ -561,10 +572,24 @@ export default function GiftShopClient() {
                   className="h-12 w-full rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
                 />
 
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen((v) => !v)}
+                  className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm font-semibold text-slate-700 sm:hidden"
+                >
+                  Filters
+                  {activeFilterCount > 0 && (
+                    <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#ff875d] px-1 text-[11px] font-bold text-white">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                  <span className="text-[10px]">{filtersOpen ? "▲" : "▼"}</span>
+                </button>
+
                 <select
                   value={selectedOccasion}
                   onChange={(event) => setSelectedOccasion(event.target.value)}
-                  className="h-12 min-w-[190px] rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                  className={`${filtersOpen ? "flex" : "hidden"} h-12 min-w-[190px] rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e] sm:flex`}
                 >
                   <option value="">All occasions</option>
                   {OCCASION_OPTIONS.map((occasion) => (
@@ -575,7 +600,7 @@ export default function GiftShopClient() {
                 <select
                   value={selectedRelationship}
                   onChange={(event) => setSelectedRelationship(event.target.value)}
-                  className="h-12 min-w-[190px] rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                  className={`${filtersOpen ? "flex" : "hidden"} h-12 min-w-[190px] rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e] sm:flex`}
                 >
                   <option value="">Who's it for?</option>
                   {RELATIONSHIP_OPTIONS.map((relationship) => (
@@ -586,7 +611,7 @@ export default function GiftShopClient() {
                 <select
                   value={selectedPriceBand}
                   onChange={(event) => setSelectedPriceBand(event.target.value)}
-                  className="h-12 min-w-[150px] rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+                  className={`${filtersOpen ? "flex" : "hidden"} h-12 min-w-[150px] rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e] sm:flex`}
                 >
                   <option value="">Any price</option>
                   {PRICE_BAND_OPTIONS.map((band) => (
@@ -595,7 +620,7 @@ export default function GiftShopClient() {
                 </select>
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className={`${filtersOpen ? "flex" : "hidden"} mt-5 flex-wrap gap-2 sm:flex`}>
                 {INTEREST_OPTIONS.map((interest) => {
                   const selected = selectedInterests.includes(interest);
                   return (
