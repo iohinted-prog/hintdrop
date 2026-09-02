@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { isLikelyRealAmazonProductImage, upgradeAsosImageResolution, stripAmazonImageDirectives } from "@/lib/linkPreview";
+import { isLikelyRealAmazonProductImage, upgradeAsosImageResolution, stripAmazonImageDirectives, looksLikeGenericSiteAsset } from "@/lib/linkPreview";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,6 +69,12 @@ async function scrapeImage(url) {
       } else {
         image = stripAmazonImageDirectives(image);
       }
+    }
+    // Retailer-agnostic: a favicon, apple-touch-icon, or an image
+    // belonging to a cookie-consent vendor (onetrust.com etc.) instead
+    // of the retailer's own site — same check the Hints flow applies.
+    if (image && looksLikeGenericSiteAsset(image)) {
+      image = "";
     }
     return image;
   } finally {
