@@ -665,6 +665,7 @@ function HintFormFields({
   prefix = "new",
   showToggles = true,
   showPrivateToggle = showToggles,
+  imageOptions,
   imageHelpText = "No image yet. Upload one here if you want to add a photo.",
 }) {
   const previewImage = form.uploadedImage || form.image;
@@ -740,6 +741,29 @@ function HintFormFields({
         ) : (
           <div className="mt-3 rounded-[20px] border border-dashed border-[#efe0d7] bg-[#faf6f3] px-4 py-8 text-center text-sm text-slate-500">
             {imageHelpText}
+          </div>
+        )}
+
+        {Array.isArray(imageOptions) && imageOptions.length > 1 && (
+          <div className="mt-3">
+            <p className="mb-2 text-sm font-semibold text-slate-700">Choose a photo</p>
+            <div className="grid grid-cols-3 gap-2">
+              {imageOptions.slice(0, 3).map((url, i) => (
+                <button
+                  key={url + i}
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, image: url, uploadedImage: null }))}
+                  className={`relative aspect-square overflow-hidden rounded-[16px] border-2 transition ${
+                    form.image === url ? "border-[#ff946d]" : "border-transparent hover:border-[#f0dfd6]"
+                  }`}
+                >
+                  <HintImage src={url} alt="" fill className="object-cover" sizes="120px" />
+                  {form.image === url && (
+                    <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#ff946d] text-white text-[11px]">✓</span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -873,34 +897,12 @@ function AddHintModal({
 
         <p className="text-sm text-slate-500">{helperCopy}</p>
 
-        {Array.isArray(imageOptions) && imageOptions.length > 1 && (
-          <div>
-            <p className="mb-2 text-sm font-semibold text-slate-700">Choose a photo</p>
-            <div className="grid grid-cols-3 gap-2">
-              {imageOptions.map((url, i) => (
-                <button
-                  key={url + i}
-                  type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, image: url, uploadedImage: null }))}
-                  className={`relative aspect-square overflow-hidden rounded-[16px] border-2 transition ${
-                    form.image === url ? "border-[#ff946d]" : "border-transparent hover:border-[#f0dfd6]"
-                  }`}
-                >
-                  <HintImage src={url} alt="" fill className="object-cover" sizes="120px" />
-                  {form.image === url && (
-                    <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#ff946d] text-white text-[11px]">✓</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         <HintFormFields
           form={form}
           setForm={setForm}
           prefix="new"
           showToggles
+          imageOptions={imageOptions}
           imageHelpText="No image yet. Upload one if you want to add a photo now."
         />
       </div>
