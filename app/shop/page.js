@@ -1022,7 +1022,7 @@ export default function ShopPage() {
           onClick={() => setBoardPickerProduct(null)}
         >
           <div
-            className="w-full max-w-[420px] rounded-t-[28px] min-[480px]:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-hidden"
+            className="w-full max-w-[480px] rounded-t-[28px] min-[480px]:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-hidden"
             style={{ maxHeight: "80dvh", animation: "slideUp 0.2s ease" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1043,27 +1043,24 @@ export default function ShopPage() {
               ) : userBoards.length === 0 ? (
                 <p className="text-sm text-slate-400 text-center py-6">You don&apos;t have any hint lists yet — create one below.</p>
               ) : (
-                userBoards.map((board) => (
-                  <button
-                    key={board.id}
-                    type="button"
-                    onClick={() => confirmAddToBoard(board.id)}
-                    className="w-full flex items-center gap-3 rounded-[16px] border border-[#f0dfd6] bg-white p-2 text-left hover:bg-[#fff5f0] hover:border-[#e8c9bc]"
-                  >
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[10px] bg-[#fdf5f0] p-0.5">
-                      <BoardPreviewGrid previewHints={board.previewHints} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-slate-800">
-                        {board.is_private && <span className="mr-1" title="Private">🔒</span>}
+                <div className="grid grid-cols-2 gap-3">
+                  {userBoards.map((board) => (
+                    <button
+                      key={board.id}
+                      type="button"
+                      onClick={() => confirmAddToBoard(board.id)}
+                      className="text-left"
+                    >
+                      <div className="aspect-square overflow-hidden rounded-[16px] border border-[#f0dfd6] bg-[#fdf5f0] p-0.5 transition hover:border-[#e8c9bc]">
+                        <BoardPreviewGrid previewHints={board.previewHints} />
+                      </div>
+                      <p className="mt-1.5 truncate text-[13px] font-semibold text-slate-800">
+                        {board.is_private && <span title="Private">🔒 </span>}
                         {board.title}
                       </p>
-                      <p className="text-[11px] text-slate-400">
-                        {board.is_default ? "Personal" : "Hints for someone else"} · {board.hintCount} Hint{board.hintCount === 1 ? "" : "s"}
-                      </p>
-                    </div>
-                  </button>
-                ))
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
 
