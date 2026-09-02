@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { isLikelyRealAmazonProductImage, upgradeAsosImageResolution, stripAmazonImageDirectives, looksLikeGenericSiteAsset } from "@/lib/linkPreview";
+import { isLikelyRealAmazonProductImage, upgradeAsosImageResolution, upgradeScene7ImageResolution, stripAmazonImageDirectives, looksLikeGenericSiteAsset } from "@/lib/linkPreview";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,6 +58,10 @@ async function scrapeImage(url) {
     // size params, rendering at a low default resolution on their
     // Scene7-style CDN — same underlying problem as John Lewis above.
     image = upgradeAsosImageResolution(image);
+    // Adobe Scene7's standardized /is/image/ URL convention — same
+    // retailer-agnostic fix as the Hints flow, triggered by finding
+    // Selfridges on the same underlying CDN as John Lewis and ASOS.
+    image = upgradeScene7ImageResolution(image);
     // Amazon's own bot detection can intercept LinkPreview's request and
     // hand back a robot-check/CAPTCHA page instead of the real product
     // page — its og:image is then a logo or CAPTCHA graphic, not the
