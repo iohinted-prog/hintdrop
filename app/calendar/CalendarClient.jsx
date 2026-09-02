@@ -130,6 +130,15 @@ export default function CalendarClient() {
   const today = new Date();
   const todayKey = toKey(today);
   const [selectedDate, setSelectedDate] = useState(todayKey);
+  // Separate from selectedDate on purpose - the desktop sidebar is always
+  // visible and needs a default date to show (todayKey), but the mobile
+  // bottom sheet should start closed. Reusing selectedDate for both (its
+  // previous behavior) meant the sheet's own condition - `{selectedDate &&
+  // (<div className="md:hidden ...">` - was true from initial render,
+  // since selectedDate defaults to todayKey, not null. Net effect: the
+  // mobile sheet showed today's day open immediately on page load, with
+  // no tap needed.
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState({ title: "", date: todayKey, type: "Holiday", recur: "none", color: "" });
   const [saving, setSaving] = useState(false);
@@ -191,12 +200,21 @@ export default function CalendarClient() {
     // zero indication anything went wrong. That's almost certainly what
     // "doesn't work" was actually describing - not a crash, a silent
     // no-op that looks like success.
+    // The insert previously used a key called `recurrence`, but the real
+    // column in calendar_events is named `recurring` (there's also a
+    // separate `is_recurring` boolean column, never set at all before
+    // this fix). Since the insert always included the `recurrence` key
+    // regardless of its value, every single event save failed with a
+    // "column does not exist" error - not just recurring ones - which
+    // is exactly what "Couldn't save that event" was masking.
+    const isRecurring = addForm.recur !== "none";
     const { data: inserted, error } = await supabase.from("calendar_events").insert({
       user_id: userId,
       title: addForm.title,
       event_date: addForm.date,
       type: addForm.type,
-      recurrence: addForm.recur !== "none" ? addForm.recur : null,
+      is_recurring: isRecurring,
+      recurring: isRecurring ? addForm.recur : null,
       color: addForm.color || null,
     }).select().maybeSingle();
     setSaving(false);
@@ -240,6 +258,7 @@ export default function CalendarClient() {
   function openDate(d) {
     const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     setSelectedDate(key);
+    setMobileSheetOpen(true);
     setAddForm(f => ({ ...f, date: key }));
     setShowAdd(false);
   }
@@ -447,8 +466,8 @@ export default function CalendarClient() {
       </div>
 
       {/* Bottom sheet for selected date — mobile only */}
-      {selectedDate && (
-        <div className="md:hidden fixed inset-0 z-[110] flex items-end justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setSelectedDate(null); setShowAdd(false); }}>
+      {mobileSheetOpen && selectedDate && (
+        <div className="md:hidden fixed inset-0 z-[110] flex items-end justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setMobileSheetOpen(false); setShowAdd(false); }}>
           <div className="w-full max-w-[640px] rounded-t-[28px] bg-[#fffaf7] border-t border-[#efdcd2] shadow-xl max-h-[80dvh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#f2e5de] shrink-0">
               <p className="text-[15px] font-semibold text-slate-900">
@@ -459,7 +478,7 @@ export default function CalendarClient() {
                   className="h-8 px-3 flex items-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[11px] font-semibold text-white">
                   + Add event
                 </button>
-                <button type="button" onClick={() => { setSelectedDate(null); setShowAdd(false); }}
+                <button type="button" onClick={() => { setMobileSheetOpen(false); setShowAdd(false); }}
                   className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400">✕</button>
               </div>
             </div>
