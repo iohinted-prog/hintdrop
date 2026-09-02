@@ -138,7 +138,7 @@ function getOutboundUrl(product) {
   return affiliate || productUrl || "";
 }
 
-function buildHintInsertPayload(product, userId) {
+function buildHintInsertPayload(product, userId, boardId) {
   const outboundUrl = getOutboundUrl(product);
   const parsedNumericPrice =
     typeof product?.numeric_price === "number"
@@ -147,6 +147,7 @@ function buildHintInsertPayload(product, userId) {
 
   return {
     user_id: userId,
+    board_id: boardId || null,
     title: product?.title?.trim() || "Saved from shop",
     url: outboundUrl,
     image_url: product?.image_url || "",
@@ -478,6 +479,20 @@ export default function ShopPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [savingHintId, setSavingHintId] = useState("");
   const [openingLinkId, setOpeningLinkId] = useState("");
+  // Board picker for Add to hints - hints now live in boards (separate
+  // lists), and a hint saved with no board_id doesn't show up under any
+  // of them (confirmed: /hints/[boardId] queries filter .eq("board_id",
+  // boardId), which a NULL board_id never matches). Shop's Add to hints
+  // previously inserted with no board_id at all, so the hint "worked"
+  // (real row, real success toast) but was then genuinely invisible
+  // everywhere in the Hints UI - not a bug in the insert itself, a gap
+  // left over from before boards existed.
+  const [boardPickerProduct, setBoardPickerProduct] = useState(null);
+  const [userBoards, setUserBoards] = useState([]);
+  const [boardsLoading, setBoardsLoading] = useState(false);
+  const [newBoardTitle, setNewBoardTitle] = useState("");
+  const [isCreatingBoard, setIsCreatingBoard] = useState(false);
+  const toastTimerRef = useRef(null);
   const [selectedOccasion, setSelectedOccasion] = useState("");
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [selectedRelationship, setSelectedRelationship] = useState("");
@@ -699,31 +714,77 @@ export default function ShopPage() {
     setSearchQuery("");
   }
 
+  async function loadUserBoards(userId) {
+    setBoardsLoading(true);
+    const { data } = await supabase
+      .from("hint_boards")
+      .select("id, title, is_default, is_private")
+      .eq("user_id", userId)
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: true });
+    setUserBoards(data || []);
+    setBoardsLoading(false);
+  }
+
   async function handleAddToHints(product) {
     if (!currentUser?.id) {
       setPageError("You must be signed in to save something from Shop.");
       return;
     }
 
+    setBoardPickerProduct(product);
+    // Boards rarely change mid-session, but re-fetching on each open (
+    // rather than once and caching) means a board created a moment ago
+    // in another tab, or via the inline "New list" field just below,
+    // always shows up without needing extra invalidation logic.
+    loadUserBoards(currentUser.id);
+  }
+
+  async function confirmAddToBoard(boardId) {
+    const product = boardPickerProduct;
+    if (!product || !currentUser?.id) return;
+
     setSavingHintId(product.id);
     setPageError("");
     setSuccessMessage("");
+    setBoardPickerProduct(null);
 
     try {
-      const payload = buildHintInsertPayload(product, currentUser.id);
+      const payload = buildHintInsertPayload(product, currentUser.id, boardId);
       const { error } = await supabase.from("hints").insert(payload);
 
       if (error) throw error;
 
       setSuccessMessage(`Added "${product.title || "item"}" to your hints.`);
-      // Toast, not a persistent banner — clear it on its own so it doesn't
-      // just sit there forever waiting for some other action to clear it
-      window.clearTimeout(handleAddToHints._toastTimer);
-      handleAddToHints._toastTimer = window.setTimeout(() => setSuccessMessage(""), 3200);
+      window.clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = window.setTimeout(() => setSuccessMessage(""), 3200);
     } catch (error) {
       setPageError(errorToMessage(error));
     } finally {
       setSavingHintId("");
+    }
+  }
+
+  async function createBoardAndAdd() {
+    const title = newBoardTitle.trim();
+    if (!title || !currentUser?.id) return;
+
+    setIsCreatingBoard(true);
+    try {
+      const { data: newBoard, error } = await supabase
+        .from("hint_boards")
+        .insert({ user_id: currentUser.id, title, is_default: false, is_private: false })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+
+      setNewBoardTitle("");
+      await confirmAddToBoard(newBoard.id);
+    } catch (error) {
+      setPageError(errorToMessage(error));
+    } finally {
+      setIsCreatingBoard(false);
     }
   }
 
@@ -941,6 +1002,70 @@ export default function ShopPage() {
           </div>
         </section>
       </div>
+
+      {boardPickerProduct && (
+        <div
+          className="fixed inset-0 z-[120] flex items-end justify-center bg-black/40 backdrop-blur-sm min-[480px]:items-center min-[480px]:px-4"
+          style={{ animation: "fadeIn 0.15s ease" }}
+          onClick={() => setBoardPickerProduct(null)}
+        >
+          <div
+            className="w-full max-w-[420px] rounded-t-[28px] min-[480px]:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-hidden"
+            style={{ maxHeight: "80dvh", animation: "slideUp 0.2s ease" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#f2e5de]">
+              <p className="text-[15px] font-semibold text-slate-900">Add to which list?</p>
+              <button
+                type="button"
+                onClick={() => setBoardPickerProduct(null)}
+                className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-4 space-y-2" style={{ maxHeight: "calc(80dvh - 130px)" }}>
+              {boardsLoading ? (
+                <p className="text-sm text-slate-400 text-center py-6">Loading your lists...</p>
+              ) : userBoards.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-6">You don&apos;t have any hint lists yet — create one below.</p>
+              ) : (
+                userBoards.map((board) => (
+                  <button
+                    key={board.id}
+                    type="button"
+                    onClick={() => confirmAddToBoard(board.id)}
+                    className="w-full flex items-center justify-between rounded-[16px] border border-[#f0dfd6] bg-white px-4 py-3 text-left hover:bg-[#fff5f0] hover:border-[#e8c9bc]"
+                  >
+                    <span className="text-sm font-semibold text-slate-800">{board.title}</span>
+                    <span className="text-[11px] text-slate-400">{board.is_default ? "Personal" : board.is_private ? "Private" : "Public"}</span>
+                  </button>
+                ))
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 border-t border-[#f2e5de] p-4">
+              <input
+                type="text"
+                value={newBoardTitle}
+                onChange={(e) => setNewBoardTitle(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && newBoardTitle.trim()) createBoardAndAdd(); }}
+                placeholder="New list name"
+                className="h-11 flex-1 min-w-0 rounded-[16px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
+              />
+              <button
+                type="button"
+                onClick={createBoardAndAdd}
+                disabled={!newBoardTitle.trim() || isCreatingBoard}
+                className="h-11 shrink-0 rounded-[16px] bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {isCreatingBoard ? "Creating..." : "Create & add"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
