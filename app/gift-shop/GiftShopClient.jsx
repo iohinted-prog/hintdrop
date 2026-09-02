@@ -4,6 +4,7 @@ import PublicShell from "../components/PublicShell";
 import AuthModal from "../components/AuthModal";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 import HintImage from "../components/HintImage";
+import { shuffleProducts } from "../../lib/products";
 
 const INTEREST_OPTIONS = [
   "Home", "Food", "Beauty", "Tech", "Travel", "Wellness",
@@ -367,7 +368,7 @@ export default function GiftShopClient() {
   useEffect(() => {
     fetch("/api/products", { cache: "no-store" })
       .then(r => r.json())
-      .then(data => { setProducts(Array.isArray(data?.products) ? data.products : []); setIsLoading(false); })
+      .then(data => { setProducts(shuffleProducts(Array.isArray(data?.products) ? data.products : [])); setIsLoading(false); })
       .catch((error) => { setPageError(errorToMessage(error)); setIsLoading(false); });
   }, []);
 
@@ -447,14 +448,19 @@ export default function GiftShopClient() {
         return matchesInterest && matchesOccasion && matchesRelationship && matchesPrice && matchesQuery;
       })
       .sort((a, b) => {
-        const priceA = typeof a.numeric_price === "number" ? a.numeric_price : extractNumericPrice(a.price_text) || 0;
-        const priceB = typeof b.numeric_price === "number" ? b.numeric_price : extractNumericPrice(b.price_text) || 0;
-
         const interestCountA = getTagArray(a.interest_tags).filter((tag) => selectedInterests.includes(tag)).length;
         const interestCountB = getTagArray(b.interest_tags).filter((tag) => selectedInterests.includes(tag)).length;
 
-        if (interestCountA !== interestCountB) return interestCountB - interestCountA;
-        return priceA - priceB;
+        // Was priceA - priceB as a tiebreaker, which meant every visit
+        // (interests selected or not - with none selected every item
+        // ties on interest count) collapsed straight back to price-
+        // ascending order, undoing the shuffle above and clustering
+        // similarly-priced items (games, in practice) together every
+        // single time. Returning 0 here relies on Array.prototype.sort
+        // being a stable sort (guaranteed by spec since ES2019) to
+        // preserve the already-shuffled order among ties, instead of
+        // re-imposing a fixed price order.
+        return interestCountB - interestCountA;
       });
   }, [products, searchQuery, selectedInterests, selectedOccasion, selectedRelationship, selectedPriceBand]);
 

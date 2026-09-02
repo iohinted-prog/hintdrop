@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "../../lib/supabase/client";
+import { shuffleProducts } from "../../lib/products";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 import HintImage from "../components/HintImage";
 
@@ -536,7 +537,7 @@ export default function ShopPage() {
 
         if (!active) return;
 
-        setProducts(Array.isArray(data?.products) ? data.products : []);
+        setProducts(shuffleProducts(Array.isArray(data?.products) ? data.products : []));
         setIsLoading(false);
       } catch (error) {
         if (!active) return;
@@ -645,16 +646,6 @@ export default function ShopPage() {
         return matchesInterest && matchesOccasion && matchesRelationship && matchesPrice && matchesQuery;
       })
       .sort((a, b) => {
-        const priceA =
-          typeof a.numeric_price === "number"
-            ? a.numeric_price
-            : extractNumericPrice(a.price_text) || 0;
-
-        const priceB =
-          typeof b.numeric_price === "number"
-            ? b.numeric_price
-            : extractNumericPrice(b.price_text) || 0;
-
         const interestCountA = getTagArray(a.interest_tags).filter((tag) =>
           selectedInterests.includes(tag)
         ).length;
@@ -663,8 +654,16 @@ export default function ShopPage() {
           selectedInterests.includes(tag)
         ).length;
 
-        if (interestCountA !== interestCountB) return interestCountB - interestCountA;
-        return priceA - priceB;
+        // Was priceA - priceB as a tiebreaker, which meant every visit
+        // (interests selected or not - with none selected every item
+        // ties on interest count) collapsed straight back to price-
+        // ascending order, undoing the shuffle above and clustering
+        // similarly-priced items (games, in practice) together every
+        // single time. Returning 0 here relies on Array.prototype.sort
+        // being a stable sort (guaranteed by spec since ES2019) to
+        // preserve the already-shuffled order among ties, instead of
+        // re-imposing a fixed price order.
+        return interestCountB - interestCountA;
       });
   }, [products, searchQuery, selectedInterests, selectedOccasion, selectedRelationship, selectedPriceBand]);
 
