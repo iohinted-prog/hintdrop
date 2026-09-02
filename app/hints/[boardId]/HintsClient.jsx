@@ -482,12 +482,53 @@ function getCardAspectRatio(hint, imageRatios) {
   return fallbackCardRatio(hint);
 }
 
+// When scraping finds nothing at all (title comes back empty), the old
+// fallback was a bare "Hint" - unhelpful when it happens repeatedly for
+// the same handful of stubborn retailers (eBay, Trader Joe's, Office
+// all hit this in practice). Many product URLs carry a real descriptive
+// slug in the path even when the page itself can't be scraped (e.g.
+// endclothing.com/us/nike-dunk-low-hf0106-100.html,
+// traderjoes.com/.../fuyu-persimmons-095578) - try to turn that into a
+// readable guess first, and only fall back to "Item from {retailer}"
+// (still far better than bare "Hint") when the URL has no usable slug
+// at all (eBay's /itm/800588156476 is just a numeric ID, nothing to
+// extract).
+function guessTitleFromUrl(rawUrl, retailer) {
+  try {
+    const { pathname } = new URL(String(rawUrl || ""));
+    const segments = pathname.split("/").filter(Boolean);
+    const slugSegment = segments
+      .filter((seg) => seg.includes("-") && /[a-zA-Z]/.test(seg))
+      .sort((a, b) => b.length - a.length)[0];
+
+    if (slugSegment) {
+      const words = slugSegment
+        .replace(/\.(html?|php|aspx?)$/i, "")
+        .split(/[-_]+/)
+        .filter(Boolean);
+      // Prefer dropping numeric/SKU-looking tokens (e.g. "hf0106",
+      // "095578") for a cleaner guess, but only if enough real words
+      // remain - otherwise keep everything rather than end up empty.
+      const wordyTokens = words.filter((w) => /[a-zA-Z]{2,}/.test(w) && !/^\d+$/.test(w));
+      const useTokens = wordyTokens.length >= 2 ? wordyTokens : words;
+      const guess = useTokens
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ")
+        .trim();
+      if (guess.length >= 4) return guess;
+    }
+  } catch {
+    // fall through to the retailer-based guess below
+  }
+  return retailer ? `Item from ${retailer}` : "";
+}
+
 function buildDraftFromPreview(data, rawUrl) {
   const extractedNumericPrice =
     typeof data?.numericPrice === "number" ? data.numericPrice : extractNumericPrice(data?.priceText);
   const priceMeta = sanitisePrice(data?.priceText, extractedNumericPrice);
   const retailer = data?.siteName || normaliseRetailer(rawUrl);
-  const title = shortenTitle(data?.title || "Hint", retailer);
+  const title = shortenTitle(data?.title || guessTitleFromUrl(rawUrl, retailer) || "Hint", retailer);
   const image = typeof data?.image === "string" && data.image.startsWith("http") ? data.image : "";
   // Same imageOptions field the AI-experience-idea flow already
   // populates below (buildDraftFromAiIdea) - reusing the existing
