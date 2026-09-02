@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { isLikelyRealAmazonProductImage } from "@/lib/linkPreview";
+import { isLikelyRealAmazonProductImage, upgradeAsosImageResolution } from "@/lib/linkPreview";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +54,10 @@ async function scrapeImage(url) {
       const idx = image.indexOf("?$");
       image = image.slice(0, idx) + "?fmt=auto&$background-off-white$&" + image.slice(idx + 1);
     }
+    // ASOS's og:image (what LinkPreview reads) is a bare URL with no
+    // size params, rendering at a low default resolution on their
+    // Scene7-style CDN — same underlying problem as John Lewis above.
+    image = upgradeAsosImageResolution(image);
     // Amazon's own bot detection can intercept LinkPreview's request and
     // hand back a robot-check/CAPTCHA page instead of the real product
     // page — its og:image is then a logo or CAPTCHA graphic, not the
