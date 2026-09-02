@@ -561,7 +561,8 @@ export default function AppShell({ children }) {
               })}
             </nav>
 
-            <div className="relative" ref={messagesRef}>
+            <div className="relative flex items-center gap-3 sm:gap-4">
+            <div ref={messagesRef}>
               <button type="button" onClick={() => { setMessagesOpen(prev => !prev); setNotifOpen(false); }}
                 className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#ead8ce] bg-white shadow-sm transition hover:bg-[#fff5f0]"
                 aria-label="Messages">
@@ -620,7 +621,7 @@ export default function AppShell({ children }) {
               )}
             </div>
 
-            <div className="relative" ref={notifRef}>
+            <div ref={notifRef}>
               <button type="button" onClick={() => {
                   setNotifOpen(prev => {
                     const opening = !prev;
@@ -798,6 +799,7 @@ export default function AppShell({ children }) {
                   </div>
                 </div>
               )}
+            </div>
             </div>
             <div className="relative" ref={menuRef}>
               <button
