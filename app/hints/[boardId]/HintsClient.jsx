@@ -523,13 +523,32 @@ function guessTitleFromUrl(rawUrl, retailer) {
   return retailer ? `Item from ${retailer}` : "";
 }
 
+// Same 6 gradients used for the homepage's demo preview cards
+// (HomePageClient.jsx) - reused here as a fallback so a hint that
+// scraped no real image at all (eBay, Trader Joe's, Office all hit
+// this in practice - some retailers are blocked at the network level,
+// no amount of parsing fixes that) still gets something visually
+// consistent with the rest of the app, instead of a blank/broken
+// image. These are real static files (public/gradients/*.svg), so
+// they slot straight into the existing imageOptions picker without
+// needing any new rendering logic anywhere else in the app - a
+// gradient chosen this way is functionally just another image URL.
+const FALLBACK_GRADIENT_OPTIONS = [
+  "/gradients/1.png",
+  "/gradients/2.png",
+  "/gradients/3.png",
+  "/gradients/4.png",
+  "/gradients/5.png",
+  "/gradients/6.png",
+];
+
 function buildDraftFromPreview(data, rawUrl) {
   const extractedNumericPrice =
     typeof data?.numericPrice === "number" ? data.numericPrice : extractNumericPrice(data?.priceText);
   const priceMeta = sanitisePrice(data?.priceText, extractedNumericPrice);
   const retailer = data?.siteName || normaliseRetailer(rawUrl);
   const title = shortenTitle(data?.title || guessTitleFromUrl(rawUrl, retailer) || "Hint", retailer);
-  const image = typeof data?.image === "string" && data.image.startsWith("http") ? data.image : "";
+  const scrapedImage = typeof data?.image === "string" && data.image.startsWith("http") ? data.image : "";
   // Same imageOptions field the AI-experience-idea flow already
   // populates below (buildDraftFromAiIdea) - reusing the existing
   // picker UI in AddHintModal rather than building something new.
@@ -539,11 +558,17 @@ function buildDraftFromPreview(data, rawUrl) {
   // same as before), but when a page's default og:image is a logo
   // rather than the actual product, this is what lets someone choose
   // the real photo instead of silently keeping whatever was scraped.
-  const imageOptions = Array.isArray(data?.imageCandidates)
+  const scrapedImageOptions = Array.isArray(data?.imageCandidates)
     ? data.imageCandidates.filter((u) => typeof u === "string" && u.startsWith("http"))
     : [];
+  // Nothing real found at all - offer the gradients instead of leaving
+  // the person with a blank/broken image and no way to save something
+  // that looks intentional.
+  const usingFallbackGradients = !scrapedImage && scrapedImageOptions.length === 0;
+  const image = scrapedImage || (usingFallbackGradients ? FALLBACK_GRADIENT_OPTIONS[0] : "");
+  const imageOptions = usingFallbackGradients ? FALLBACK_GRADIENT_OPTIONS : scrapedImageOptions;
   const finalUrl = data?.url || normaliseInputUrl(rawUrl);
-  const needsReview = Boolean(data?.needsReview) || !image || !title;
+  const needsReview = Boolean(data?.needsReview) || usingFallbackGradients || !title;
 
   return {
     title,
