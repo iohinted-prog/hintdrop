@@ -683,6 +683,19 @@ function FeedItem({
           >
             {actorAvatarUrl ? <HintImage src={actorAvatarUrl} alt={metadata.actor_name || ""} fill sizes="44px" className="object-cover" fallbackClassName="hidden" /> : actorInitials}
           </button>
+        ) : bucket === "reminder" ? (
+          // Trial: themed illustration instead of plain initials for
+          // reminder cards, using the new SVG assets - birthday-specific
+          // icon when we know the event is a birthday, generic calendar
+          // icon otherwise.
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff1e7]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={metadata.event_type === "Birthday" ? "/illustrations/birthday-cake.svg" : "/illustrations/calendar.svg"}
+              alt=""
+              className="h-7 w-7"
+            />
+          </div>
         ) : (
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[12px] font-bold text-white">
             {actorInitials}
@@ -2255,6 +2268,7 @@ export default function FeedClient() {
           metadata: {
             social_enabled: false,
             event_date: event.event_date,
+            event_type: event.type,
             actor_name: event.contact_name || null,
             actor_avatar_url: event.contact_avatar_url || null,
             actor_profile_href: event.contact_profile_id ? `/profile/${event.contact_profile_id}` : null,

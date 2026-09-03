@@ -651,66 +651,19 @@ export default function HomePageClient() {
             </div>
           </div>
 
-          <div className="relative min-w-0">
-            <div className="rounded-[34px] border border-[#efd8ce] bg-[#fff7f2] p-4 shadow-[0_25px_80px_rgba(173,101,72,0.16)] sm:p-5">
-              <div className="rounded-[28px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
-                <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[16px] font-bold text-white shadow-sm ring-2 ring-[#f3dfd4]">
-                      M
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold tracking-tight text-slate-900">
-                        Maya
-                      </div>
-                      <div className="text-xs text-slate-500">Hints</div>
-                    </div>
-                  </div>
-                  <div className="hidden items-center gap-4 text-sm text-slate-500 md:flex">
-                    <span>Feed</span>
-                    <span>Circles</span>
-                    <span>Shop</span>
-                  </div>
-                </div>
-
-                <div className="pt-4">
-                  <h2 className="text-[28px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[34px]">
-                    Your hints.
-                  </h2>
-                  <p className="mt-2 text-[14px] leading-6 text-slate-600">
-                    Keep the useful details that help you remember people,
-                    conversations, gift ideas, and follow-ups.
-                  </p>
-
-                  <div className="mt-5 grid grid-cols-3 gap-3">
-                    {hints.map((hint) => (
-                      <HintCard
-                        key={hint.id}
-                        title={hint.title}
-                        text={hint.text}
-                        image={hint.image}
-                        tag={hint.tag}
-                        tag2={hint.tag2}
-                        starred={hint.starred}
-                        rotate={hint.rotate}
-                      />
-                    ))}
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap items-center gap-3">
-                    <div className="rounded-full bg-[#2f5d50] px-4 py-2 text-sm font-semibold text-white">
-                      Add hint
-                    </div>
-                    <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600">
-                      Organise cards
-                    </div>
-                    <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600">
-                      Customise view
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="relative flex min-w-0 items-center justify-center">
+            {/* Trial per Cian's reference mockup (Aug 24 2026 brand board) -
+                the commissioned "Hero pose" illustration, in place of the
+                fake app-preview card that was here before. Kept as a clean
+                swap (not deleted) so this is trivially revertible via git
+                if the trial doesn't land well - the previous block is
+                intact in history. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/illustrations/hero-character.png"
+              alt="Illustration of a woman holding a phone showing a gift, next to a wrapped present"
+              className="w-full max-w-[520px]"
+            />
           </div>
         </section>
 

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="HintDrop birthday cake">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- plate -->
+    <ellipse cx="128" cy="220" rx="78" ry="12" fill="#D9B88F" opacity=".75"/>
+    <!-- cake body -->
+    <path d="M69 129c0-12 10-22 22-22h74c12 0 22 10 22 22v65H69z" fill="#F0A15A"/>
+    <path d="M69 151c15 8 31 8 46 0 15-8 31-8 46 0 9 5 18 7 26 5v29H69z" fill="#D9823F"/>
+    <!-- frosting -->
+    <path d="M67 126c0-12 10-22 22-22h78c12 0 22 10 22 22v15c-8 8-17 8-26 0-8-8-18-8-26 0-8 8-18 8-26 0-8-8-18-8-26 0-7 7-13 8-18 4z" fill="#FFF1E7"/>
+    <!-- candles -->
+    <rect x="94" y="69" width="12" height="39" rx="6" fill="#FF7A59"/>
+    <rect x="122" y="55" width="12" height="53" rx="6" fill="#FF7A59"/>
+    <rect x="150" y="69" width="12" height="39" rx="6" fill="#FF7A59"/>
+    <!-- flames -->
+    <path d="M100 62c-8-7-6-17 0-25 6 8 8 18 0 25z" fill="#FF9E2C"/>
+    <path d="M128 49c-8-7-6-18 0-27 6 9 8 20 0 27z" fill="#FF9E2C"/>
+    <path d="M156 62c-8-7-6-17 0-25 6 8 8 18 0 25z" fill="#FF9E2C"/>
+    <!-- wicks -->
+    <path d="M100 70V63M128 56v-8M156 70v-8" stroke="#4B2C20" stroke-width="4"/>
+  </g>
+</svg>
