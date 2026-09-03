@@ -1674,6 +1674,64 @@ export default function HintsClient({ boardId }) {
     return () => { cancelled = true; };
   }, [boardId]);
 
+  // Live-update: a hint saved elsewhere (the Chrome extension is the
+  // motivating case - someone adds a hint from a product page while this
+  // tab is already open on /hints) now appears here immediately, no
+  // refresh needed. hints wasn't in the supabase_realtime publication at
+  // all before this - confirmed via pg_publication_tables and added via
+  // ALTER PUBLICATION. RLS's own "auth.uid() = user_id" read policy on
+  // hints (confirmed via pg_policy) already scopes Realtime delivery to
+  // the current user's own rows, so the user_id filter below is a second,
+  // belt-and-suspenders layer, not the only thing standing between users.
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`hints-live-${currentUser.id}-${boardId || "all"}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "hints", filter: `user_id=eq.${currentUser.id}` },
+        (payload) => {
+          const row = payload.new;
+          if (boardId && row.board_id !== boardId) return;
+
+          setHints((current) => {
+            // Already have it - either this same tab's own Add Hint flow
+            // already added it locally (that path updates state directly,
+            // without waiting on Realtime), or a duplicate delivery.
+            if (current.some((h) => h.id === row.id)) return current;
+
+            const newHint = {
+              id: row.id,
+              title: row.title || "Hint",
+              retailer: row.retailer || normaliseRetailer(row.url || ""),
+              numericPrice: row.numeric_price,
+              rawPrice: row.price_text || "",
+              currency: row.currency || detectCurrency(row.price_text) || BASE_CURRENCY,
+              occasions: row.occasions || [],
+              size: row.size || "",
+              sizeType: row.size_type || "",
+              colour: row.colour || "",
+              image: row.image_url || "",
+              fallbackGradient: buildFallbackGradient(current.length),
+              starred: Boolean(row.starred),
+              private: Boolean(row.is_private),
+              url: row.url || "",
+              position: row.position ?? 0,
+              needsReview: false,
+            };
+            return [newHint, ...current];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser, boardId]);
+
   const visibleHints = hints.slice(0, visibleCount);
   const activeHint = visibleHints.find((hint) => hint.id === activeId) || null;
   const columns = useMemo(() => splitIntoColumns(visibleHints, 3), [visibleHints]);
