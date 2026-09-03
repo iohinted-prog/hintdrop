@@ -2407,6 +2407,7 @@ export default function FeedClient() {
         return {
           id: `sidebar-reminder-${event.id}`,
           title: event.title,
+          eventType: event.type,
           prettyDate: eventDate.toLocaleDateString("en-GB", {
             day: "numeric",
             month: "long",
@@ -2577,18 +2578,22 @@ export default function FeedClient() {
                   {sidebarReminders.map((reminder) => (
                     <article
                       key={reminder.id}
-                      className="rounded-[22px] border border-[#ecd9cf] bg-[#fcf8f5] p-4"
+                      className="flex items-center gap-3 rounded-[22px] border border-[#ecd9cf] bg-[#fcf8f5] p-4"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">{reminder.title}</p>
-                          <p className="mt-1 text-sm text-slate-500">{reminder.prettyDate}</p>
-                        </div>
-
-                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#e77756]">
-                          {reminder.distanceLabel}
-                        </span>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={eventTypeIcon(reminder.eventType)}
+                        alt=""
+                        className="h-10 w-10 shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-slate-900 truncate">{reminder.title}</p>
+                        <p className="mt-1 text-sm text-slate-500">{reminder.prettyDate}</p>
                       </div>
+
+                      <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#e77756]">
+                        {reminder.distanceLabel}
+                      </span>
                     </article>
                   ))}
                 </div>
