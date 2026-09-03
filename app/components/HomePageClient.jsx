@@ -11,7 +11,7 @@ const hints = [
     id: 1,
     title: "Noise-cancelling headphones",
     text: "From: amazon.co.uk · ~£120",
-    image: "from-[#e8d5c4] to-[#c4a882]",
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
     tag: "Tech",
     tag2: "Birthday",
     starred: true,
@@ -21,7 +21,7 @@ const hints = [
     id: 2,
     title: "Weekend cabin stay",
     text: "From: airbnb.co.uk · Price varies",
-    image: "from-[#f5cfc4] to-[#e8a090]",
+    image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
     tag: "Experiences",
     tag2: "Travel",
     starred: false,
@@ -29,9 +29,9 @@ const hints = [
   },
   {
     id: 3,
-    title: "Cast-iron casserole dish",
-    text: "From: johnlewis.com · ~£85",
-    image: "from-[#d9d7c7] to-[#b8aa8a]",
+    title: "Espresso machine",
+    text: "From: sageappliances.com · ~£399",
+    image: "https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?auto=format&fit=crop&w=1200&q=80",
     tag: "Home",
     tag2: "Cooking",
     starred: false,
@@ -668,7 +668,7 @@ export default function HomePageClient() {
             <img
               src="/illustrations/hero-character.png"
               alt="Illustration of a woman holding a phone showing a gift, next to a wrapped present"
-              className="relative z-0 w-[72%] max-w-[300px] drop-shadow-[0_20px_40px_rgba(80,50,30,0.16)]"
+              className="relative z-0 w-[72%] max-w-[380px] drop-shadow-[0_20px_40px_rgba(80,50,30,0.16)]"
             />
 
             {/* Just the bottom half of the original card (the header row -
@@ -678,7 +678,7 @@ export default function HomePageClient() {
                 container. Sits in front (z-10, rendered after the
                 character) with only a small upward overlap (-mt-8), not
                 deep into her. */}
-            <div className="relative z-10 -mt-8 w-full max-w-[380px] rounded-[30px] border border-[#efd8ce] bg-[#fff7f2] p-3 shadow-[0_25px_80px_rgba(173,101,72,0.16)] sm:p-4">
+            <div className="relative z-10 -mt-8 w-full max-w-[480px] rounded-[30px] border border-[#efd8ce] bg-[#fff7f2] p-3 shadow-[0_25px_80px_rgba(173,101,72,0.16)] sm:p-4">
               <div className="rounded-[24px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
                 <h2 className="text-[22px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[26px]">
                   Your hints.
