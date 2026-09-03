@@ -29,9 +29,9 @@ const hints = [
   },
   {
     id: 3,
-    title: "Cashmere throw",
-    text: "thewhitecompany.com · ~£110",
-    image: "https://images.unsplash.com/photo-1517705008128-361805f42e86?auto=format&fit=crop&w=1200&q=80",
+    title: "Silk pillowcases",
+    text: "johnlewis.com · ~£45",
+    image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
     tag: "Home",
     tag2: "Cooking",
     starred: false,
@@ -580,7 +580,7 @@ export default function HomePageClient() {
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[14px] font-bold text-[#eb7b58] shadow-sm">
               <span>♡</span>
               <span>
-                Your hints. Your people. Your moments.
+                You craft the moments, we remember the details.
               </span>
             </div>
 
@@ -676,12 +676,11 @@ export default function HomePageClient() {
                 deep into her. */}
             <div className="relative z-10 -mt-8 w-full max-w-[480px] rounded-[30px] border border-[#efd8ce] bg-[#fff7f2] p-3 shadow-[0_25px_80px_rgba(173,101,72,0.16)] sm:p-4">
               <div className="rounded-[24px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
-                <h2 className="text-[22px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[26px]">
-                  Your hints.
+                <h2 className="text-[22px] font-semibold tracking-[-0.05em] text-[#ff8060] sm:text-[26px]">
+                  Drop a hint...
                 </h2>
                 <p className="mt-1.5 text-[13px] leading-5 text-slate-600">
-                  Keep the useful details that help you remember people,
-                  conversations, gift ideas, and follow-ups.
+                  For the givers and the receivers.
                 </p>
 
                 <div className="mt-4 grid grid-cols-3 gap-2.5">
@@ -698,15 +697,6 @@ export default function HomePageClient() {
                       rotate={hint.rotate}
                     />
                   ))}
-                </div>
-
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <div className="rounded-full bg-[#2f5d50] px-3 py-1.5 text-[12px] font-semibold text-white">
-                    Add hint
-                  </div>
-                  <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600">
-                    Organise cards
-                  </div>
                 </div>
               </div>
             </div>
