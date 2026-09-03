@@ -2,6 +2,23 @@
 import { useState, useEffect } from "react";
 import { createClient } from "../../lib/supabase/client";
 
+// Same visual design as public/illustrations/calendar.svg, but as inline
+// SVG so the date shown can actually be the real selected day, not a
+// fixed "12" - used for the "nothing on this day yet" empty state.
+function DayCalendarIcon({ day, className = "h-16 w-16" }) {
+  return (
+    <svg viewBox="0 0 256 256" className={className} role="img" aria-label={`Calendar showing day ${day}`}>
+      <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="49" y="58" width="158" height="150" rx="18" fill="#FFF1E7" />
+        <path d="M49 82c0-13.255 10.745-24 24-24h110c13.255 0 24 10.745 24 24v30H49z" fill="#FF7A59" />
+        <path d="M82 48v25M174 48v25" stroke="#FF4B2B" strokeWidth="14" />
+        <text x="128" y="174" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontSize="72" fontWeight="700" fill="#0F172A">{day}</text>
+        <path d="M72 112h112" stroke="#FFC8B0" strokeWidth="4" />
+      </g>
+    </svg>
+  );
+}
+
 function toKey(date) {
   return date.toISOString().slice(0, 10);
 }
@@ -74,6 +91,7 @@ function eventTypeIcon(eventType) {
   if (normalized.includes("celebration")) return "/illustrations/celebration.svg";
   if (normalized.includes("wedding")) return "/illustrations/wedding-church.svg";
   if (normalized.includes("holiday")) return "/illustrations/holiday-palm.svg";
+  if (normalized.includes("other")) return "/illustrations/balloon.svg";
   return "/illustrations/calendar.svg";
 }
 
@@ -387,24 +405,18 @@ export default function CalendarClient() {
 
   return (
     <main className="min-h-screen bg-[#fffaf7] pb-24 md:pb-12">
-      <div className="px-4 pt-6 pb-2 sm:px-8 md:px-8 md:max-w-[1100px] md:mx-auto md:grid md:grid-cols-[1fr_380px] md:gap-8 md:items-start">
+      <div className="px-4 pt-6 pb-2 sm:px-8 md:px-8 md:max-w-[1280px] md:mx-auto md:grid md:grid-cols-[1fr_420px] md:gap-10 md:items-start">
         <div className="max-w-[640px] mx-auto md:max-w-none md:mx-0 w-full">
-        <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] shadow-lg">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/illustrations/gift.svg" alt="" className="h-6 w-6" />
-          </div>
-          <h1 className="text-[26px] font-semibold tracking-[-0.04em] text-slate-900">Calendar</h1>
-        </div>
+        <h1 className="text-[26px] md:text-[32px] font-semibold tracking-[-0.04em] text-slate-900 mb-4">Calendar</h1>
 
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => { setMonthDirection(-1); setCurrentMonth(new Date(year, month - 1)); }}
             aria-label="Previous month"
-            className="h-11 w-11 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff4ee] hover:border-[#f0b394] hover:text-[#ff875d] active:scale-90 transition-all duration-150">
+            className="h-11 w-11 md:h-14 md:w-14 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff4ee] hover:border-[#f0b394] hover:text-[#ff875d] active:scale-90 transition-all duration-150">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
           <div className="flex flex-col items-center">
-            <p key={monthName} className="text-[17px] font-bold text-slate-900 tracking-[-0.02em]" style={{ animation: "calFadeIn 0.25s ease" }}>{monthName}</p>
+            <p key={monthName} className="text-[17px] md:text-[22px] font-bold text-slate-900 tracking-[-0.02em]" style={{ animation: "calFadeIn 0.25s ease" }}>{monthName}</p>
             {selectedDate !== todayKey && (
               <button onClick={() => { setCurrentMonth(today); setSelectedDate(todayKey); }}
                 className="mt-0.5 text-[11px] font-semibold text-[#df7b59] hover:text-[#c4633f]">
@@ -414,7 +426,7 @@ export default function CalendarClient() {
           </div>
           <button onClick={() => { setMonthDirection(1); setCurrentMonth(new Date(year, month + 1)); }}
             aria-label="Next month"
-            className="h-11 w-11 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff4ee] hover:border-[#f0b394] hover:text-[#ff875d] active:scale-90 transition-all duration-150">
+            className="h-11 w-11 md:h-14 md:w-14 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff4ee] hover:border-[#f0b394] hover:text-[#ff875d] active:scale-90 transition-all duration-150">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
           </button>
         </div>
@@ -427,11 +439,11 @@ export default function CalendarClient() {
 
         <div className="grid grid-cols-7 mb-1">
           {["S","M","T","W","T","F","S"].map((d, i) => (
-            <div key={i} className="text-center text-[11px] font-semibold text-slate-400 py-1">{d}</div>
+            <div key={i} className="text-center text-[11px] md:text-[13px] font-semibold text-slate-400 py-1">{d}</div>
           ))}
         </div>
 
-        <div key={monthName + "-grid"} className="grid grid-cols-7 gap-0.5 md:gap-1.5" style={{ animation: `calSlide${monthDirection >= 0 ? "Left" : "Right"} 0.22s ease` }}>
+        <div key={monthName + "-grid"} className="grid grid-cols-7 gap-0.5 md:gap-2.5" style={{ animation: `calSlide${monthDirection >= 0 ? "Left" : "Right"} 0.22s ease` }}>
           {Array.from({ length: firstDay }).map((_, i) => <div key={"e" + i} />)}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const d = i + 1;
@@ -444,7 +456,7 @@ export default function CalendarClient() {
             const showSingleIcon = dayEvents.length === 1 && !isSelected;
             return (
               <button key={d} type="button" onClick={() => openDate(d)}
-                className={"relative flex flex-col items-center justify-center h-10 md:h-14 rounded-full md:rounded-[14px] text-[13px] font-semibold transition-all duration-150 hover:scale-105 active:scale-95 " +
+                className={"relative flex flex-col items-center justify-center h-10 md:h-20 rounded-full md:rounded-[16px] text-[13px] md:text-[16px] font-semibold transition-all duration-150 hover:scale-105 active:scale-95 " +
                   (isSelected ? "bg-[#ff875d] text-white shadow-md shadow-[#ff875d]/30" : isToday ? "bg-[#fff4ee] text-[#ff875d] ring-1 ring-[#f6cbb3]" : dayEvents.length ? "text-slate-900 hover:bg-[#fff4ee]" : "text-slate-400 hover:bg-[#f9f6f3]")}
                 style={!isSelected && !isToday && firstCustomColor ? { backgroundColor: `${firstCustomColor}33` } : undefined}>
                 {d}
@@ -453,11 +465,11 @@ export default function CalendarClient() {
                   <img
                     src={eventTypeIcon(dayEvents[0].type)}
                     alt=""
-                    className="absolute bottom-0.5 h-3.5 w-3.5 md:bottom-1 md:h-4 md:w-4"
+                    className="absolute bottom-0.5 h-3.5 w-3.5 md:bottom-1.5 md:h-6 md:w-6"
                   />
                 ) : dotEntries.length > 0 && !isSelected && (
-                  <div className="absolute bottom-1 md:bottom-2 flex gap-0.5">
-                    {dotEntries.map((c, i) => <EventDot key={i} color={c} className="h-1 w-1" />)}
+                  <div className="absolute bottom-1 md:bottom-2.5 flex gap-0.5 md:gap-1">
+                    {dotEntries.map((c, i) => <EventDot key={i} color={c} className="h-1 w-1 md:h-1.5 md:w-1.5" />)}
                   </div>
                 )}
               </button>
@@ -501,7 +513,7 @@ export default function CalendarClient() {
         </div>
 
         {/* Desktop day-detail sidebar — replaces the mobile bottom sheet on md+ screens */}
-        <div className="hidden md:block sticky top-6 rounded-[20px] border border-[#efe0d7] bg-white p-5 min-h-[420px]">
+        <div className="hidden md:block sticky top-6 rounded-[24px] border border-[#efe0d7] bg-white p-7 min-h-[480px]">
           <div key={selectedDate} style={{ animation: "calFadeIn 0.2s ease" }}>
             <div className="flex items-center justify-between mb-4">
               <p className="text-[15px] font-semibold text-slate-900">
@@ -518,7 +530,10 @@ export default function CalendarClient() {
               {showAdd && renderAddEventForm()}
 
               {selectedEvents.length === 0 && !showAdd && (
-                <p className="text-sm text-slate-400 text-center py-4">Nothing on this day yet.</p>
+                <div className="flex flex-col items-center text-center py-4">
+                  <DayCalendarIcon day={new Date((selectedDate || todayKey) + "T00:00:00").getDate()} className="h-14 w-14 mb-2" />
+                  <p className="text-sm text-slate-400">Nothing on this day yet.</p>
+                </div>
               )}
 
               {selectedEvents.map(renderEventCard)}
@@ -549,7 +564,10 @@ export default function CalendarClient() {
               {showAdd && renderAddEventForm()}
 
               {selectedEvents.length === 0 && !showAdd && (
-                <p className="text-sm text-slate-400 text-center py-4">Nothing on this day yet.</p>
+                <div className="flex flex-col items-center text-center py-4">
+                  <DayCalendarIcon day={new Date((selectedDate || todayKey) + "T00:00:00").getDate()} className="h-14 w-14 mb-2" />
+                  <p className="text-sm text-slate-400">Nothing on this day yet.</p>
+                </div>
               )}
 
               {selectedEvents.map(renderEventCard)}

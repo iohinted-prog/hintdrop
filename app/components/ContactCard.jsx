@@ -58,35 +58,35 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onE
     });
   }
   return (
-    <article className="rounded-[22px] border border-[#f0dfd6] bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[#e8c9bc]">
-      <div className="flex items-center gap-3">
-        <div className={`h-11 w-11 shrink-0 rounded-full overflow-hidden flex items-center justify-center ${isClickable ? "cursor-pointer" : ""}`} onClick={isClickable ? handleClick : undefined}>
+    <article className="rounded-[22px] border border-[#f0dfd6] bg-white p-4 md:p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[#e8c9bc]">
+      <div className="flex items-center gap-3 md:gap-4">
+        <div className={`h-11 w-11 md:h-14 md:w-14 shrink-0 rounded-full overflow-hidden flex items-center justify-center ${isClickable ? "cursor-pointer" : ""}`} onClick={isClickable ? handleClick : undefined}>
           {contact.avatarUrl ? (
-            <HintImage src={contact.avatarUrl} alt={contact.name || "Contact"} width={44} height={44} className="rounded-full object-cover" />
+            <HintImage src={contact.avatarUrl} alt={contact.name || "Contact"} width={56} height={56} className="rounded-full object-cover" />
           ) : (
-            <div className={`flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b ${contact.colors || "from-[#efcdbf] to-[#bb8168]"} text-[12px] font-bold text-white`}>
+            <div className={`flex h-11 w-11 md:h-14 md:w-14 items-center justify-center rounded-full bg-gradient-to-b ${contact.colors || "from-[#efcdbf] to-[#bb8168]"} text-[12px] md:text-[15px] font-bold text-white`}>
               {contact.initials || getInitials(contact.name)}
             </div>
           )}
         </div>
         <div className={`min-w-0 flex-1 ${isClickable ? "cursor-pointer" : ""}`} onClick={isClickable ? handleClick : undefined}>
           <div className="flex items-center gap-1.5 flex-wrap">
-            <p className="text-sm font-semibold text-slate-900 truncate">{contact.name}</p>
+            <p className="text-sm md:text-[16px] font-semibold text-slate-900 truncate">{contact.name}</p>
             <span
-              className="text-[10px] font-semibold rounded-full px-2 py-0.5 shrink-0"
+              className="text-[10px] md:text-[11px] font-semibold rounded-full px-2 py-0.5 shrink-0"
               style={{ backgroundColor: roleColor(contact.role).bg + "66", color: roleColor(contact.role).text }}
             >
               {contact.role || "Friend"}
             </span>
           </div>
-          {contact.note && contact.note !== contact.role && <p className="text-xs text-slate-500 truncate mt-0.5">{contact.note}</p>}
+          {contact.note && contact.note !== contact.role && <p className="text-xs md:text-[13px] text-slate-500 truncate mt-0.5">{contact.note}</p>}
           {contact.birthday && (
-            <p className="text-[11px] text-[#df7b59] mt-0.5 truncate flex items-center gap-1.5">
+            <p className="text-[11px] md:text-[12px] text-[#df7b59] mt-0.5 truncate flex items-center gap-1.5">
               <span>
                 🎂 {new Date(contact.birthday + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })} · {getStarSign(contact.birthday)}
               </span>
               {contact.daysUntilBirthday != null && contact.daysUntilBirthday <= 30 && (
-                <span className="rounded-full bg-[#fdece0] px-2 py-0.5 text-[10px] font-semibold text-[#c9633f] shrink-0">
+                <span className="rounded-full bg-[#fdece0] px-2 py-0.5 text-[10px] md:text-[11px] font-semibold text-[#c9633f] shrink-0">
                   {contact.daysUntilBirthday === 0 ? "Today!" : contact.daysUntilBirthday === 1 ? "Tomorrow" : `in ${contact.daysUntilBirthday} days`}
                 </span>
               )}
@@ -111,7 +111,7 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onE
                   key={b.id}
                   href={profileId ? `/profile/${profileId}?board=${b.id}` : "#"}
                   onClick={(e) => e.stopPropagation()}
-                  className="relative h-16 w-16 shrink-0 overflow-hidden rounded-[10px] border border-[#f0dfd6] bg-[#fffaf7]"
+                  className="relative h-16 w-16 md:h-20 md:w-20 shrink-0 overflow-hidden rounded-[10px] border border-[#f0dfd6] bg-[#fffaf7]"
                 >
                   {b.previewImage
                     ? <HintImage src={b.previewImage} alt={b.title} fill className="object-cover" sizes="64px" fallbackClassName="text-base" />

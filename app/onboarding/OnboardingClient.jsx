@@ -388,7 +388,7 @@ export default function OnboardingPage() {
 
     if (step === 1) {
       if (!form.fullName.trim()) nextErrors.fullName = "Please tell us what to call you.";
-      if (!form.birthday.trim()) nextErrors.birthday = "Please add your birthday.";
+      if (!form.birthday.trim()) nextErrors.birthday = "Please add your birthday (so your closest people won't forget).";
     }
 
     if (step === 2) {
@@ -767,7 +767,7 @@ export default function OnboardingPage() {
                         onClick={() => toggleInterest(interest)}
                         className={`rounded-full px-4 py-2.5 text-sm font-medium transition ${
                           selected
-                            ? "bg-[#2f3b2d] text-white"
+                            ? "bg-[#e3f5ea] text-[#2f8a5f]"
                             : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                         }`}
                       >
@@ -903,7 +903,7 @@ export default function OnboardingPage() {
                           onClick={() => toggleRelationship(relationship)}
                           className={`rounded-full px-4 py-2.5 text-sm font-medium transition ${
                             selected
-                              ? "bg-[#2f3b2d] text-white"
+                              ? "bg-[#e3f5ea] text-[#2f8a5f]"
                               : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                           }`}
                         >
