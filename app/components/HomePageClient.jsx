@@ -651,44 +651,36 @@ export default function HomePageClient() {
             </div>
           </div>
 
-          <div className="relative flex min-w-0 items-center justify-center py-6">
-            {/* Layered composition: smaller hints-board card behind, the
-                character illustration overlapping its lower portion in
-                front - the card is the same content as before, just
-                scaled down to a supporting role instead of the main
-                focus. */}
-            <div className="w-full max-w-[400px] rounded-[30px] border border-[#efd8ce] bg-[#fff7f2] p-3 shadow-[0_25px_80px_rgba(173,101,72,0.16)] sm:p-4">
-              <div className="rounded-[24px] border border-[#f1dfd6] bg-white p-4 sm:p-5">
-                <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[13px] font-bold text-white shadow-sm ring-2 ring-[#f3dfd4]">
+          <div className="relative flex min-w-0 items-center justify-center pb-6 pt-20 sm:pt-24">
+            {/* Layered composition: the character illustration now pops up
+                above the card (rather than overlapping its bottom edge),
+                and the card itself is roughly halved - smaller max-width,
+                only the first 3 hints instead of all 6 - so it reads as a
+                supporting detail she's standing in front of/above, not the
+                main focus. */}
+            <div className="w-full max-w-[220px] rounded-[22px] border border-[#efd8ce] bg-[#fff7f2] p-2 shadow-[0_20px_60px_rgba(173,101,72,0.16)] sm:max-w-[240px] sm:p-2.5">
+              <div className="rounded-[17px] border border-[#f1dfd6] bg-white p-3 sm:p-3.5">
+                <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[10px] font-bold text-white shadow-sm ring-2 ring-[#f3dfd4]">
                       M
                     </div>
                     <div>
-                      <div className="text-[13px] font-semibold tracking-tight text-slate-900">
+                      <div className="text-[10px] font-semibold tracking-tight text-slate-900">
                         Maya
                       </div>
-                      <div className="text-[11px] text-slate-500">Hints</div>
+                      <div className="text-[9px] text-slate-500">Hints</div>
                     </div>
-                  </div>
-                  <div className="hidden items-center gap-3 text-[13px] text-slate-500 md:flex">
-                    <span>Feed</span>
-                    <span>Circles</span>
-                    <span>Shop</span>
                   </div>
                 </div>
 
-                <div className="pt-3">
-                  <h2 className="text-[20px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[24px]">
+                <div className="pt-2">
+                  <h2 className="text-[14px] font-semibold tracking-[-0.04em] text-slate-900">
                     Your hints.
                   </h2>
-                  <p className="mt-1.5 text-[12px] leading-5 text-slate-600">
-                    Keep the useful details that help you remember people,
-                    conversations, gift ideas, and follow-ups.
-                  </p>
 
-                  <div className="mt-4 grid grid-cols-3 gap-2">
-                    {hints.map((hint) => (
+                  <div className="mt-2.5 grid grid-cols-3 gap-1.5">
+                    {hints.slice(0, 3).map((hint) => (
                       <HintCard
                         key={hint.id}
                         title={hint.title}
@@ -702,15 +694,12 @@ export default function HomePageClient() {
                     ))}
                   </div>
 
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <div className="rounded-full bg-[#2f5d50] px-3 py-1.5 text-[12px] font-semibold text-white">
+                  <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                    <div className="rounded-full bg-[#2f5d50] px-2.5 py-1 text-[10px] font-semibold text-white">
                       Add hint
                     </div>
-                    <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600">
-                      Organise cards
-                    </div>
-                    <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600">
-                      Customise view
+                    <div className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium text-slate-600">
+                      Organise
                     </div>
                   </div>
                 </div>
@@ -721,7 +710,7 @@ export default function HomePageClient() {
             <img
               src="/illustrations/hero-character.png"
               alt="Illustration of a woman holding a phone showing a gift, next to a wrapped present"
-              className="absolute -bottom-8 left-1/2 w-[68%] max-w-[320px] -translate-x-1/2 drop-shadow-[0_20px_40px_rgba(80,50,30,0.18)] sm:-bottom-10"
+              className="absolute -top-4 left-1/2 w-[75%] max-w-[340px] -translate-x-1/2 drop-shadow-[0_20px_40px_rgba(80,50,30,0.18)] sm:-top-6"
             />
           </div>
         </section>
