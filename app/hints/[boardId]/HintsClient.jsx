@@ -435,6 +435,107 @@ function fileToDataUrl(file) {
   });
 }
 
+// Exact pixel crop amounts for known iPhone screenshot resolutions -
+// portrait only (screenshots of product pages are essentially always
+// portrait in practice). Sourced from Apple's own published safe-area
+// insets (in points) for each device class, converted to pixels at each
+// device's real @2x/@3x scale factor - not a guess, actual documented
+// values. Two families:
+// - Dynamic Island devices (iPhone 14 Pro onward, and 15/16 regular -
+//   Dynamic Island came to all models from the 15 on): 59pt top safe
+//   area, 34pt bottom (home indicator), both @3x = 177px top, 102px
+//   bottom
+// - Notch-only devices (iPhone X through 14 non-Pro): 47pt top, 34pt
+//   bottom, @3x = 141px top, 102px bottom
+// - Home-button devices (SE, 8 and earlier): plain 20pt/60px or 40px
+//   status bar depending on @2x vs @3x, no gesture bar to crop at the
+//   bottom at all (physical button, not a swipe gesture)
+const IOS_SCREENSHOT_CROPS = {
+  "1179x2556": { top: 177, bottom: 102 }, // 14 Pro, 15, 15 Pro, 16 (6.1")
+  "1206x2622": { top: 177, bottom: 102 }, // iPhone 16 (6.1", alternate reported resolution)
+  "1290x2796": { top: 177, bottom: 102 }, // 14 Pro Max, 15 Plus, 15 Pro Max, 16 Plus (6.7")
+  "1320x2868": { top: 177, bottom: 102 }, // 16 Pro Max, 17 Pro Max (6.9")
+  "1260x2736": { top: 177, bottom: 102 }, // iPhone Air (6.9")
+  "1170x2532": { top: 141, bottom: 102 }, // 12, 13, 14 (6.1")
+  "1284x2778": { top: 141, bottom: 102 }, // 12 Pro Max, 13 Pro Max (6.7")
+  "1125x2436": { top: 141, bottom: 102 }, // X, XS, 11 Pro (5.8")
+  "1242x2688": { top: 141, bottom: 102 }, // XS Max, 11 Pro Max (6.5")
+  "750x1334": { top: 40, bottom: 0 },     // SE 2nd/3rd gen, 6/6s/7/8 (4.7"), @2x
+  "1242x2208": { top: 60, bottom: 0 },    // 6/7/8 Plus (5.5"), @3x
+};
+
+// Fallback for anything not in the table above - most commonly Android
+// (too fragmented across manufacturers/densities to build a reliable
+// per-model table the way iPhone's small, Apple-controlled device list
+// allows), but also covers any future/unrecognized iPhone resolution.
+// ~4% top / ~3% bottom approximates a standard Android status bar +
+// gesture nav bar as a proportion of a typical tall phone screenshot.
+const FALLBACK_TOP_PERCENT = 0.04;
+const FALLBACK_BOTTOM_PERCENT = 0.03;
+
+// Only screenshot-shaped images should ever get cropped - a normal
+// uploaded product photo is usually closer to square or landscape, and
+// applying this to one would cut off real content for no reason. Modern
+// phone screenshots run roughly 1.78-2.2 height-to-width (the older
+// home-button iPhone resolutions - SE, 8 Plus - sit right at 1.78, which
+// a stricter 1.8 threshold would have wrongly excluded despite being in
+// the lookup table above; confirmed by testing against those exact
+// resolutions before settling on 1.75 as a safe floor).
+const SCREENSHOT_ASPECT_RATIO_THRESHOLD = 1.75;
+
+function getImageDimensions(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => reject(new Error("Could not read image dimensions."));
+    img.src = dataUrl;
+  });
+}
+
+function cropDataUrl(dataUrl, width, height, top, bottom) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const cropHeight = height - top - bottom;
+      if (cropHeight <= 0) {
+        resolve(dataUrl); // crop would remove everything - bail out safely
+        return;
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = cropHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, top, width, cropHeight, 0, 0, width, cropHeight);
+      resolve(canvas.toDataURL("image/jpeg", 0.92));
+    };
+    img.onerror = () => reject(new Error("Could not crop image."));
+    img.src = dataUrl;
+  });
+}
+
+// Detects whether an uploaded image looks like a phone screenshot and,
+// if so, crops out the status bar and home-indicator/gesture-bar area so
+// a saved hint's photo doesn't visibly read as "someone's phone screen."
+// Returns the original dataUrl unchanged for anything that doesn't look
+// like a screenshot, or if anything goes wrong - cropping is a nice-to-
+// have, never something that should block a photo from being saved.
+async function autoCropScreenshot(dataUrl) {
+  try {
+    const { width, height } = await getImageDimensions(dataUrl);
+    if (!width || !height || height / width < SCREENSHOT_ASPECT_RATIO_THRESHOLD) {
+      return dataUrl;
+    }
+
+    const known = IOS_SCREENSHOT_CROPS[`${width}x${height}`];
+    const top = known ? known.top : Math.round(height * FALLBACK_TOP_PERCENT);
+    const bottom = known ? known.bottom : Math.round(height * FALLBACK_BOTTOM_PERCENT);
+
+    return await cropDataUrl(dataUrl, width, height, top, bottom);
+  } catch {
+    return dataUrl; // never block the upload over a cropping failure
+  }
+}
+
 function loadImageAspectRatio(src) {
   return new Promise((resolve) => {
     if (!src) {
@@ -799,7 +900,8 @@ function HintFormFields({
           onChange={async (e) => {
             const file = e.target.files?.[0];
             if (!file) return;
-            const imageUrl = await fileToDataUrl(file);
+            const rawImageUrl = await fileToDataUrl(file);
+            const imageUrl = await autoCropScreenshot(rawImageUrl);
             setForm((current) => ({ ...current, uploadedImage: imageUrl }));
           }}
           className="block w-full rounded-[18px] border border-dashed border-[#eadcd3] bg-[#fcfaf8] px-4 py-4 text-sm text-slate-600 file:mr-4 file:rounded-full file:border-0 file:bg-[#fff1e9] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#df7c59]"
