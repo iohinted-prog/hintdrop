@@ -242,16 +242,25 @@ function AvatarStack() {
 }
 
 function HintCard({ title, text, image, tag, tag2, starred, rotate }) {
+  const isRealImage = typeof image === "string" && image.startsWith("http");
+
   return (
     <article
       className={`group relative flex flex-col overflow-hidden rounded-[24px] border border-[#ece2db] bg-white shadow-sm transition-transform duration-200 hover:scale-[1.02] hover:shadow-md ${rotate}`}
     >
-      <div className={`h-[120px] w-full bg-gradient-to-br ${image}`}>
-        <div className="flex justify-end p-3">
-          <div className="h-4 w-7 rounded-full bg-white/50" />
+      {isRealImage ? (
+        <div className="relative h-[120px] w-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={image} alt={title} className="h-full w-full object-cover" />
+          <div className="absolute right-3 top-3 h-4 w-7 rounded-full bg-white/50" />
         </div>
-      </div>
-
+      ) : (
+        <div className={`h-[120px] w-full bg-gradient-to-br ${image}`}>
+          <div className="flex justify-end p-3">
+            <div className="h-4 w-7 rounded-full bg-white/50" />
+          </div>
+        </div>
+      )}
       <div className="flex flex-1 flex-col p-3.5">
         <h3 className="text-[13px] font-semibold leading-tight tracking-[-0.02em] text-slate-900">
           {title}

@@ -775,12 +775,20 @@ function FeedItem({
                     ? "Time to plan something amazing."
                     : "Time to sort out the details."}
                 </p>
-                <Link
-                  href={item.cta_href}
-                  className="mt-2.5 inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-[13px] font-semibold text-[#c96d4f]"
-                >
-                  {item.cta_label}
-                </Link>
+                <div className="mt-2.5 flex flex-wrap gap-2">
+                  <Link
+                    href={metadata.actor_profile_href || "/hints"}
+                    className="inline-flex h-9 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-4 text-[13px] font-semibold text-white shadow-sm"
+                  >
+                    See hints
+                  </Link>
+                  <Link
+                    href="/shop"
+                    className="inline-flex h-9 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-4 text-[13px] font-semibold text-white shadow-sm"
+                  >
+                    Shop
+                  </Link>
+                </div>
               </div>
             </div>
           ) : (bucket !== "hint") && item.cta_label && item.cta_href ? (
