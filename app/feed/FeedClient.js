@@ -642,6 +642,7 @@ function FeedItem({
   const metadata = item.metadata || {};
   const socialEnabled = isSocialFeedItem(item);
   const bucket = getFeedBucket(item);
+  const reminderDaysAway = bucket === "reminder" ? diffInDaysFromToday(metadata.event_date) : null;
 
   const bucketStyle =
     bucket === "hint"
@@ -731,7 +732,7 @@ function FeedItem({
                 ) : null}
               </div>
               <p className="mt-2 text-[15px] leading-7 text-slate-700">{item.headline}</p>
-              {item.body ? <p className="mt-1 text-[14px] leading-6 text-slate-500">{item.body}</p> : null}
+              {item.body && bucket !== "reminder" ? <p className="mt-1 text-[14px] leading-6 text-slate-500">{item.body}</p> : null}
             </div>
             <span className="shrink-0 text-[12px] text-slate-400">
               {formatRelativeFromDate(item.occurred_at || item.created_at)}
@@ -757,7 +758,32 @@ function FeedItem({
                 </div>
               </div>
             )}
-          {(bucket !== "hint") && item.cta_label && item.cta_href ? (
+          {bucket === "reminder" && item.cta_label && item.cta_href ? (
+            <div className="mt-4 flex items-center gap-4 rounded-[22px] bg-[#fdece0] p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={String(metadata.event_type || "").toLowerCase() === "birthday" ? "/illustrations/birthday-cake.svg" : "/illustrations/calendar.svg"}
+                alt=""
+                className="h-14 w-14 shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold text-slate-900">
+                  {reminderDaysAway != null ? formatReminderDistance(reminderDaysAway) : "Coming up"}
+                </p>
+                <p className="mt-0.5 text-[13px] text-slate-600">
+                  {String(metadata.event_type || "").toLowerCase() === "birthday"
+                    ? "Time to plan something amazing."
+                    : "Time to sort out the details."}
+                </p>
+                <Link
+                  href={item.cta_href}
+                  className="mt-2.5 inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-[13px] font-semibold text-[#c96d4f]"
+                >
+                  {item.cta_label}
+                </Link>
+              </div>
+            </div>
+          ) : (bucket !== "hint") && item.cta_label && item.cta_href ? (
             <div className="mt-4">
               <Link
                 href={item.cta_href}

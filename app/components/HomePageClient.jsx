@@ -651,67 +651,59 @@ export default function HomePageClient() {
             </div>
           </div>
 
-          <div className="relative flex min-w-0 items-center justify-center pb-6 pt-20 sm:pt-24">
-            {/* Layered composition: the character illustration now pops up
-                above the card (rather than overlapping its bottom edge),
-                and the card itself is roughly halved - smaller max-width,
-                only the first 3 hints instead of all 6 - so it reads as a
-                supporting detail she's standing in front of/above, not the
-                main focus. */}
-            <div className="w-full max-w-[220px] rounded-[22px] border border-[#efd8ce] bg-[#fff7f2] p-2 shadow-[0_20px_60px_rgba(173,101,72,0.16)] sm:max-w-[240px] sm:p-2.5">
-              <div className="rounded-[17px] border border-[#f1dfd6] bg-white p-3 sm:p-3.5">
-                <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[10px] font-bold text-white shadow-sm ring-2 ring-[#f3dfd4]">
-                      M
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-semibold tracking-tight text-slate-900">
-                        Maya
-                      </div>
-                      <div className="text-[9px] text-slate-500">Hints</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <h2 className="text-[14px] font-semibold tracking-[-0.04em] text-slate-900">
-                    Your hints.
-                  </h2>
-
-                  <div className="mt-2.5 grid grid-cols-3 gap-1.5">
-                    {hints.slice(0, 3).map((hint) => (
-                      <HintCard
-                        key={hint.id}
-                        title={hint.title}
-                        text={hint.text}
-                        image={hint.image}
-                        tag={hint.tag}
-                        tag2={hint.tag2}
-                        starred={hint.starred}
-                        rotate={hint.rotate}
-                      />
-                    ))}
-                  </div>
-
-                  <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                    <div className="rounded-full bg-[#2f5d50] px-2.5 py-1 text-[10px] font-semibold text-white">
-                      Add hint
-                    </div>
-                    <div className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium text-slate-600">
-                      Organise
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+          <div className="relative flex min-w-0 flex-col items-center pb-6 pt-6">
+            {/* Character renders first, so at the overlap point below she
+                sits behind the card in natural stacking order - "tucking
+                in behind it," not fighting for the same space. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/illustrations/hero-character.png"
               alt="Illustration of a woman holding a phone showing a gift, next to a wrapped present"
-              className="absolute -top-4 left-1/2 w-[75%] max-w-[340px] -translate-x-1/2 drop-shadow-[0_20px_40px_rgba(80,50,30,0.18)] sm:-top-6"
+              className="relative z-0 w-[72%] max-w-[300px] drop-shadow-[0_20px_40px_rgba(80,50,30,0.16)]"
             />
+
+            {/* Just the bottom half of the original card (the header row -
+                Maya's avatar, Feed/Circles/Shop - is gone entirely, not
+                just shrunk), at close to its original scale so text and
+                spacing read properly rather than fighting a too-narrow
+                container. Sits in front (z-10, rendered after the
+                character) with only a small upward overlap (-mt-8), not
+                deep into her. */}
+            <div className="relative z-10 -mt-8 w-full max-w-[380px] rounded-[30px] border border-[#efd8ce] bg-[#fff7f2] p-3 shadow-[0_25px_80px_rgba(173,101,72,0.16)] sm:p-4">
+              <div className="rounded-[24px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
+                <h2 className="text-[22px] font-semibold tracking-[-0.05em] text-slate-900 sm:text-[26px]">
+                  Your hints.
+                </h2>
+                <p className="mt-1.5 text-[13px] leading-5 text-slate-600">
+                  Keep the useful details that help you remember people,
+                  conversations, gift ideas, and follow-ups.
+                </p>
+
+                <div className="mt-4 grid grid-cols-3 gap-2.5">
+                  {hints.slice(0, 3).map((hint) => (
+                    <HintCard
+                      key={hint.id}
+                      title={hint.title}
+                      text={hint.text}
+                      image={hint.image}
+                      tag={hint.tag}
+                      tag2={hint.tag2}
+                      starred={hint.starred}
+                      rotate={hint.rotate}
+                    />
+                  ))}
+                </div>
+
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <div className="rounded-full bg-[#2f5d50] px-3 py-1.5 text-[12px] font-semibold text-white">
+                    Add hint
+                  </div>
+                  <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600">
+                    Organise cards
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
