@@ -32,6 +32,20 @@ const GRADIENTS = [
   "from-[#d5dbee] via-[#b3c0df] to-[#8f9fc9]",
   "from-[#eadce8] via-[#d8bfd1] to-[#bb9ab6]",
 ];
+
+// Same pastel family used on the Calendar page's colour picker, mapped
+// to relationship types for a bit of coordinated colour across the app
+// rather than every card looking the same.
+const ROLE_COLORS = {
+  partner: { bg: "#ffb3b3", text: "#a15252" },
+  spouse: { bg: "#ffb3b3", text: "#a15252" },
+  family: { bg: "#ffd6a5", text: "#9a6a2e" },
+  friend: { bg: "#a0c4ff", text: "#3c5a8a" },
+  colleague: { bg: "#caffbf", text: "#3f7a3a" },
+};
+function roleColor(role) {
+  return ROLE_COLORS[String(role || "").toLowerCase()] || { bg: "#bdb2ff", text: "#5c4f8a" };
+}
 export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onEditClick, onMessageClick, previewBoards = [] }) {
   const profileId = contact.profileId || contact.matchedProfileId || null;
   const isClickable = Boolean(profileId && !contact.isDemo && onOpenProfile);
@@ -56,11 +70,26 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onE
           )}
         </div>
         <div className={`min-w-0 flex-1 ${isClickable ? "cursor-pointer" : ""}`} onClick={isClickable ? handleClick : undefined}>
-          <p className="text-sm font-semibold text-slate-900 truncate">{contact.name}</p>
-          <p className="text-xs text-slate-500 truncate">{contact.role || "Friend"}{contact.note ? ` · ${contact.note}` : ""}</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-sm font-semibold text-slate-900 truncate">{contact.name}</p>
+            <span
+              className="text-[10px] font-semibold rounded-full px-2 py-0.5 shrink-0"
+              style={{ backgroundColor: roleColor(contact.role).bg + "66", color: roleColor(contact.role).text }}
+            >
+              {contact.role || "Friend"}
+            </span>
+          </div>
+          {contact.note && contact.note !== contact.role && <p className="text-xs text-slate-500 truncate mt-0.5">{contact.note}</p>}
           {contact.birthday && (
-            <p className="text-[11px] text-[#df7b59] mt-0.5 truncate">
-              🎂 {new Date(contact.birthday + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })} · {getStarSign(contact.birthday)}
+            <p className="text-[11px] text-[#df7b59] mt-0.5 truncate flex items-center gap-1.5">
+              <span>
+                🎂 {new Date(contact.birthday + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })} · {getStarSign(contact.birthday)}
+              </span>
+              {contact.daysUntilBirthday != null && contact.daysUntilBirthday <= 30 && (
+                <span className="rounded-full bg-[#fdece0] px-2 py-0.5 text-[10px] font-semibold text-[#c9633f] shrink-0">
+                  {contact.daysUntilBirthday === 0 ? "Today!" : contact.daysUntilBirthday === 1 ? "Tomorrow" : `in ${contact.daysUntilBirthday} days`}
+                </span>
+              )}
             </p>
           )}
           {isClickable && <p className="text-[11px] text-[#df7b59] mt-0.5">👁 See hints</p>}
@@ -104,7 +133,7 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onE
           </div>
         ) : isClickable && (
           <p className="hidden md:block shrink-0 cursor-pointer text-[11px] text-slate-400" onClick={handleClick}>
-            No hints yet
+            No hints saved yet
           </p>
         )}
         <div className="flex items-center gap-1 shrink-0">

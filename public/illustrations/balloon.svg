@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 700" width="512" height="700">
+  <title>Red balloon vector</title>
+  <desc>Scalable vector illustration of a glossy red balloon with a tied knot and curved string.</desc>
+  <defs>
+    <linearGradient id="balloon" x1="18%" y1="10%" x2="88%" y2="82%">
+      <stop offset="0%" stop-color="#ff4654"/>
+      <stop offset="62%" stop-color="#f92f3e"/>
+      <stop offset="100%" stop-color="#c91f2d"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff3444"/>
+      <stop offset="100%" stop-color="#b91e2a"/>
+    </linearGradient>
+    <linearGradient id="knot" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#b91f2b"/>
+      <stop offset="100%" stop-color="#e3313f"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Balloon body -->
+  <path d="M256 54
+           C158 54 96 115 96 215
+           C96 315 157 390 256 462
+           C355 390 416 315 416 215
+           C416 115 354 54 256 54 Z"
+        fill="url(#balloon)"/>
+
+  <!-- Subtle right-side dimensional shading -->
+  <path d="M326 70
+           C383 101 416 153 416 215
+           C416 315 355 390 256 462
+           C309 393 350 321 354 232
+           C358 157 349 103 326 70 Z"
+        fill="url(#edge)" opacity=".72"/>
+
+  <!-- Gloss highlights -->
+  <path d="M145 171
+           C154 125 191 95 235 87"
+        fill="none" stroke="#ffd7da" stroke-width="18" stroke-linecap="round" opacity=".92"/>
+  <ellipse cx="142" cy="207" rx="9" ry="13" fill="#ffd7da" opacity=".9"/>
+
+  <!-- Tie -->
+  <ellipse cx="256" cy="465" rx="27" ry="8" fill="#a91d29"/>
+  <path d="M239 468 L273 468 L288 492
+           C291 497 287 502 281 502
+           L231 502 C225 502 222 497 225 492 Z"
+        fill="url(#knot)"/>
+  <path d="M239 468 L256 476 L273 468" fill="#d92735" opacity=".8"/>
+
+  <!-- String -->
+  <path d="M256 502
+           C249 535 251 558 270 579
+           C292 603 293 626 275 648
+           C260 667 259 683 268 696"
+        fill="none" stroke="#a8abad" stroke-width="5.5" stroke-linecap="round"/>
+</svg>

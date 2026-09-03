@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Holiday palm tree</title>
+  <desc id="desc">A rounded, colorful palm tree inspired by the holiday palm emoji.</desc>
+
+  <defs>
+    <linearGradient id="trunk" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8F5B32"/>
+      <stop offset=".45" stop-color="#B97842"/>
+      <stop offset="1" stop-color="#704322"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#76B83F"/>
+      <stop offset=".55" stop-color="#4F9B36"/>
+      <stop offset="1" stop-color="#2F7330"/>
+    </linearGradient>
+    <linearGradient id="leafLight" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#A0CB55"/>
+      <stop offset="1" stop-color="#4B9234"/>
+    </linearGradient>
+    <linearGradient id="coconut" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9B6337"/>
+      <stop offset="1" stop-color="#5D351E"/>
+    </linearGradient>
+  </defs>
+
+  <!-- soft ground -->
+  <ellipse cx="128" cy="231" rx="63" ry="9" fill="#D7C2AE" opacity=".55"/>
+
+  <!-- gently curved trunk -->
+  <path d="M111 224 C115 190 120 153 126 116
+           C128 108 139 108 142 116
+           C137 155 136 191 143 224
+           C135 228 120 228 111 224 Z"
+        fill="url(#trunk)"/>
+
+  <!-- trunk highlights -->
+  <path d="M125 123 C122 158 119 191 119 216"
+        fill="none" stroke="#D39A62" stroke-width="5" stroke-linecap="round" opacity=".58"/>
+  <path d="M132 144 C131 165 131 186 134 207"
+        fill="none" stroke="#6B3F23" stroke-width="4" stroke-linecap="round" opacity=".38"/>
+
+  <!-- crown -->
+  <circle cx="133" cy="113" r="12" fill="url(#coconut)"/>
+
+  <!-- palm fronds -->
+  <g fill="url(#leaf)" stroke="#2E7130" stroke-width="1.8" stroke-linejoin="round">
+    <path d="M130 113 C108 101 82 96 53 98 C72 111 97 119 126 120 Z"/>
+    <path d="M130 111 C110 91 93 68 82 42 C105 53 123 76 135 103 Z"/>
+    <path d="M132 109 C126 82 126 57 132 34 C143 58 144 84 138 108 Z"/>
+    <path d="M136 111 C147 84 163 62 184 47 C177 74 159 98 140 116 Z"/>
+    <path d="M138 114 C163 100 190 96 216 102 C195 113 169 120 142 121 Z"/>
+  </g>
+
+  <!-- frond highlights -->
+  <path d="M61 101 C83 103 103 109 122 116" fill="none"
+        stroke="#A4CF58" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+  <path d="M87 49 C105 66 118 84 128 104" fill="none"
+        stroke="#A4CF58" stroke-width="3" stroke-linecap="round" opacity=".65"/>
+  <path d="M132 40 C136 63 136 83 134 101" fill="none"
+        stroke="#A4CF58" stroke-width="3" stroke-linecap="round" opacity=".65"/>
+  <path d="M178 54 C161 73 151 91 142 108" fill="none"
+        stroke="#A4CF58" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+  <path d="M208 103 C184 104 163 110 144 117" fill="none"
+        stroke="#A4CF58" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+
+  <!-- coconuts -->
+  <circle cx="130" cy="114" r="5.5" fill="url(#coconut)"/>
+  <circle cx="140" cy="115" r="5.2" fill="#704322"/>
+  <circle cx="132" cy="112" r="1.7" fill="#C18A57" opacity=".7"/>
+</svg>

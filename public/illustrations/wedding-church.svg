@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200">
+<defs>
+  <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#fffefa"/><stop offset="1" stop-color="#eee7dc"/>
+  </linearGradient>
+  <linearGradient id="roof" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#697b90"/><stop offset=".5" stop-color="#34465b"/><stop offset="1" stop-color="#1e2f42"/>
+  </linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#fff1a0"/><stop offset=".3" stop-color="#ffc52f"/>
+    <stop offset=".65" stop-color="#d88900"/><stop offset="1" stop-color="#ffe889"/>
+  </linearGradient>
+  <linearGradient id="door" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#824319"/><stop offset=".5" stop-color="#bf6b2c"/><stop offset="1" stop-color="#743a17"/>
+  </linearGradient>
+  <linearGradient id="heart" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ff719f"/><stop offset=".5" stop-color="#f51d69"/><stop offset="1" stop-color="#c8004b"/>
+  </linearGradient>
+</defs>
+
+<!-- Main chapel body -->
+<path d="M300 1085V570L600 350 900 570V1085Z"
+ fill="url(#wall)" stroke="#4b5d70" stroke-width="10" stroke-linejoin="round"/>
+
+<!-- Steeple tower -->
+<path d="M455 455V205H745V455Z"
+ fill="url(#wall)" stroke="#4b5d70" stroke-width="10"/>
+<path d="M420 225L600 55L780 225Z"
+ fill="url(#roof)" stroke="#304457" stroke-width="10"/>
+<path d="M420 225L600 55L780 225"
+ fill="none" stroke="url(#gold)" stroke-width="18" stroke-linejoin="round"/>
+
+<!-- Steeple stained glass: deliberately NO cross -->
+<path d="M545 360V258Q600 215 655 258V360Z"
+ fill="#38b9d7" stroke="#ad7200" stroke-width="9"/>
+<path d="M600 228L600 360M545 300H655"
+ stroke="#ffffff" stroke-width="6" opacity=".75"/>
+<path d="M600 228L545 300M600 228L655 300M545 300L600 360M655 300L600 360"
+ stroke="#7254b5" stroke-width="5" opacity=".65"/>
+
+<!-- Main gable roof -->
+<path d="M255 575L600 330L945 575L900 625L600 415L300 625Z"
+ fill="url(#roof)" stroke="#304457" stroke-width="10" stroke-linejoin="round"/>
+<path d="M255 575L600 330L945 575"
+ fill="none" stroke="url(#gold)" stroke-width="18"/>
+
+<!-- Heart -->
+<path d="M600 655
+C558 603 465 610 465 695
+C465 772 536 816 600 866
+C664 816 735 772 735 695
+C735 610 642 603 600 655Z"
+ fill="url(#heart)" stroke="url(#gold)" stroke-width="12"/>
+<path d="M515 650Q548 625 575 646"
+ fill="none" stroke="#ffffff" stroke-width="17" stroke-linecap="round" opacity=".7"/>
+
+<!-- Arched entrance surround -->
+<path d="M455 1085V900Q455 812 600 778Q745 812 745 900V1085Z"
+ fill="url(#gold)" stroke="#8f5d00" stroke-width="8"/>
+
+<!-- Door -->
+<path d="M472 1085V900Q472 827 600 795Q728 827 728 900V1085Z"
+ fill="url(#door)" stroke="#633616" stroke-width="9"/>
+<path d="M600 800V1085" stroke="#653717" stroke-width="7"/>
+<path d="M525 850V1070M675 850V1070"
+ stroke="#df9b60" stroke-width="5" opacity=".45"/>
+
+<!-- Wedding drapes -->
+<path d="M390 1085Q395 900 435 810Q468 774 505 805Q468 910 475 1085Z"
+ fill="#fffdfa" stroke="#d9d0c5" stroke-width="7"/>
+<path d="M810 1085Q805 900 765 810Q732 774 695 805Q732 910 725 1085Z"
+ fill="#fffdfa" stroke="#d9d0c5" stroke-width="7"/>
+
+<!-- Bow -->
+<path d="M600 815C565 770 505 765 475 800C500 830 550 835 590 820Z"
+ fill="#fffdfa" stroke="#d6cec4" stroke-width="7"/>
+<path d="M600 815C635 770 695 765 725 800C700 830 650 835 610 820Z"
+ fill="#fffdfa" stroke="#d6cec4" stroke-width="7"/>
+<rect x="580" y="795" width="40" height="45" rx="10"
+ fill="url(#gold)" stroke="#9a6500" stroke-width="6"/>
+
+<!-- Lanterns -->
+<g fill="url(#gold)" stroke="#976100" stroke-width="6">
+ <path d="M385 730H415L428 770L400 805L372 770Z"/>
+ <path d="M785 730H815L828 770L800 805L772 770Z"/>
+</g>
+<g fill="#fff1a0">
+ <path d="M395 750H405L414 772L400 790L386 772Z"/>
+ <path d="M795 750H805L814 772L800 790L786 772Z"/>
+</g>
+
+<!-- Floral greenery -->
+<g fill="#3d9148" stroke="#2d6f37" stroke-width="5">
+ <ellipse cx="445" cy="820" rx="24" ry="48" transform="rotate(-35 445 820)"/>
+ <ellipse cx="470" cy="855" rx="22" ry="48" transform="rotate(35 470 855)"/>
+ <ellipse cx="430" cy="880" rx="22" ry="46" transform="rotate(-45 430 880)"/>
+ <ellipse cx="755" cy="820" rx="24" ry="48" transform="rotate(35 755 820)"/>
+ <ellipse cx="730" cy="855" rx="22" ry="48" transform="rotate(-35 730 855)"/>
+ <ellipse cx="770" cy="880" rx="22" ry="46" transform="rotate(45 770 880)"/>
+</g>
+
+<!-- Roses -->
+<g fill="#fffaf2" stroke="#d6b27c" stroke-width="4">
+ <circle cx="450" cy="820" r="27"/><circle cx="475" cy="855" r="25"/>
+ <circle cx="430" cy="890" r="23"/>
+ <circle cx="750" cy="820" r="27"/><circle cx="725" cy="855" r="25"/>
+ <circle cx="770" cy="890" r="23"/>
+</g>
+<g fill="none" stroke="#d7a866" stroke-width="4">
+ <path d="M437 820Q450 805 463 820Q450 835 437 820Z"/>
+ <path d="M463 855Q475 840 487 855Q475 870 463 855Z"/>
+ <path d="M419 890Q430 876 441 890Q430 904 419 890Z"/>
+ <path d="M737 820Q750 805 763 820Q750 835 737 820Z"/>
+ <path d="M713 855Q725 840 737 855Q725 870 713 855Z"/>
+ <path d="M759 890Q770 876 781 890Q770 904 759 890Z"/>
+</g>
+
+<!-- Small flowers -->
+<g fill="#fff" stroke="#d9b67f" stroke-width="3">
+ <circle cx="420" cy="845" r="7"/><circle cx="488" cy="830" r="7"/>
+ <circle cx="445" cy="910" r="7"/><circle cx="780" cy="845" r="7"/>
+ <circle cx="712" cy="830" r="7"/><circle cx="755" cy="910" r="7"/>
+</g>
+
+<!-- Door handles -->
+<circle cx="580" cy="960" r="14" fill="url(#gold)" stroke="#986300" stroke-width="5"/>
+<circle cx="620" cy="960" r="14" fill="url(#gold)" stroke="#986300" stroke-width="5"/>
+
+<!-- Steps -->
+<path d="M355 1085H845L875 1115H325Z"
+ fill="#eee7dd" stroke="#999187" stroke-width="8"/>
+<path d="M325 1115H875L900 1145H300Z"
+ fill="#fffaf1" stroke="#999187" stroke-width="8"/>
+
+</svg>

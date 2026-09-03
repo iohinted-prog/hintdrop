@@ -64,6 +64,19 @@ function eventEmoji(e) {
   return EVENT_EMOJI[e.type] || "📌";
 }
 
+// Same reasoning as eventTypeIcon() in FeedClient.js - substring match
+// rather than exact equality, forgiving of messy legacy type values
+// (confirmed some events have emoji baked into the stored type string).
+function eventTypeIcon(eventType) {
+  const normalized = String(eventType || "").toLowerCase();
+  if (normalized.includes("birthday")) return "/illustrations/birthday-cake.svg";
+  if (normalized.includes("anniversary")) return "/illustrations/anniversary.svg";
+  if (normalized.includes("celebration")) return "/illustrations/celebration.svg";
+  if (normalized.includes("wedding")) return "/illustrations/wedding-church.svg";
+  if (normalized.includes("holiday")) return "/illustrations/holiday-palm.svg";
+  return "/illustrations/calendar.svg";
+}
+
 function EventDot({ color, className = "h-2 w-2" }) {
   if (color.custom) {
     return <span className={`${className} rounded-full shrink-0`} style={{ backgroundColor: color.custom }} />;
@@ -179,6 +192,27 @@ export default function CalendarClient() {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const monthName = currentMonth.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+
+  // "This month at a glance" - count events in the currently displayed
+  // month by type, so the header can show a friendly one-line summary
+  // instead of just the bare month name.
+  const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
+  const monthTypeCounts = events
+    .filter(e => (e.event_date || "").startsWith(monthPrefix))
+    .reduce((acc, e) => {
+      const label = EVENT_EMOJI[e.type] ? e.type : "Other";
+      acc[label] = (acc[label] || 0) + 1;
+      return acc;
+    }, {});
+  const monthSummaryParts = Object.entries(monthTypeCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([type, count]) => {
+      const plurals = { Holiday: "holidays", Birthday: "birthdays", Celebration: "celebrations", Anniversary: "anniversaries", Wedding: "weddings", Other: "others" };
+      const singular = { Holiday: "holiday", Birthday: "birthday", Celebration: "celebration", Anniversary: "anniversary", Wedding: "wedding", Other: "other" };
+      const label = count > 1 ? plurals[type] : singular[type];
+      return `${EVENT_EMOJI[type] || "📌"} ${count} ${label}`;
+    });
 
   const selectedEvents = selectedDate ? (eventsByDate[selectedDate] || []) : [];
 
@@ -355,7 +389,13 @@ export default function CalendarClient() {
     <main className="min-h-screen bg-[#fffaf7] pb-24 md:pb-12">
       <div className="px-4 pt-6 pb-2 sm:px-8 md:px-8 md:max-w-[1100px] md:mx-auto md:grid md:grid-cols-[1fr_380px] md:gap-8 md:items-start">
         <div className="max-w-[640px] mx-auto md:max-w-none md:mx-0 w-full">
-        <h1 className="text-[26px] font-semibold tracking-[-0.04em] text-slate-900 mb-4">Calendar</h1>
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-gradient-to-b from-[#ffa47f] to-[#ff875d] shadow-lg">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/illustrations/gift.svg" alt="" className="h-6 w-6" />
+          </div>
+          <h1 className="text-[26px] font-semibold tracking-[-0.04em] text-slate-900">Calendar</h1>
+        </div>
 
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => { setMonthDirection(-1); setCurrentMonth(new Date(year, month - 1)); }}
@@ -379,6 +419,12 @@ export default function CalendarClient() {
           </button>
         </div>
 
+        {monthSummaryParts.length > 0 && (
+          <p className="text-center text-[12px] text-slate-500 mb-4">
+            {monthSummaryParts.join("  ·  ")} this month
+          </p>
+        )}
+
         <div className="grid grid-cols-7 mb-1">
           {["S","M","T","W","T","F","S"].map((d, i) => (
             <div key={i} className="text-center text-[11px] font-semibold text-slate-400 py-1">{d}</div>
@@ -394,12 +440,22 @@ export default function CalendarClient() {
             const isToday = key === todayKey;
             const isSelected = key === selectedDate;
             const dotEntries = dayEvents.slice(0, 3).map(e => eventColor(e));
+            const firstCustomColor = dayEvents.find(e => e.color)?.color;
+            const showSingleIcon = dayEvents.length === 1 && !isSelected;
             return (
               <button key={d} type="button" onClick={() => openDate(d)}
                 className={"relative flex flex-col items-center justify-center h-10 md:h-14 rounded-full md:rounded-[14px] text-[13px] font-semibold transition-all duration-150 hover:scale-105 active:scale-95 " +
-                  (isSelected ? "bg-[#ff875d] text-white shadow-md shadow-[#ff875d]/30" : isToday ? "bg-[#fff4ee] text-[#ff875d] ring-1 ring-[#f6cbb3]" : dayEvents.length ? "text-slate-900 hover:bg-[#fff4ee]" : "text-slate-400 hover:bg-[#f9f6f3]")}>
+                  (isSelected ? "bg-[#ff875d] text-white shadow-md shadow-[#ff875d]/30" : isToday ? "bg-[#fff4ee] text-[#ff875d] ring-1 ring-[#f6cbb3]" : dayEvents.length ? "text-slate-900 hover:bg-[#fff4ee]" : "text-slate-400 hover:bg-[#f9f6f3]")}
+                style={!isSelected && !isToday && firstCustomColor ? { backgroundColor: `${firstCustomColor}33` } : undefined}>
                 {d}
-                {dotEntries.length > 0 && !isSelected && (
+                {showSingleIcon ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={eventTypeIcon(dayEvents[0].type)}
+                    alt=""
+                    className="absolute bottom-0.5 h-3.5 w-3.5 md:bottom-1 md:h-4 md:w-4"
+                  />
+                ) : dotEntries.length > 0 && !isSelected && (
                   <div className="absolute bottom-1 md:bottom-2 flex gap-0.5">
                     {dotEntries.map((c, i) => <EventDot key={i} color={c} className="h-1 w-1" />)}
                   </div>
@@ -413,7 +469,14 @@ export default function CalendarClient() {
         <div className="mt-6">
           <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Coming up</p>
           {loading ? <div className="text-sm text-slate-400">Loading...</div> :
-            upcoming.length === 0 ? <div className="text-sm text-slate-400">Nothing coming up.</div> :
+            upcoming.length === 0 ? (
+              <div className="flex flex-col items-center text-center py-6">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/illustrations/calendar.svg" alt="" className="h-16 w-16 mb-2 opacity-80" />
+                <p className="text-sm text-slate-400">Nothing coming up yet.</p>
+                <p className="text-[12px] text-slate-400 mt-0.5">Add a birthday or event to keep track of it here.</p>
+              </div>
+            ) :
             <div className="space-y-2">
               {upcoming.map(e => {
                 const c = eventColor(e);

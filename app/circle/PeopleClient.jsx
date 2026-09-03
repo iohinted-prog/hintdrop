@@ -11,6 +11,16 @@ import HintImage from "../components/HintImage";
 function getInitials(name) {
   return String(name || "").trim().split(/\s+/).slice(0, 2).map(p => p[0]?.toUpperCase() || "").join("");
 }
+function daysUntilBirthday(birthday) {
+  if (!birthday) return null;
+  const bday = new Date(birthday + "T00:00:00");
+  if (isNaN(bday.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let next = new Date(today.getFullYear(), bday.getMonth(), bday.getDate());
+  if (next < today) next = new Date(today.getFullYear() + 1, bday.getMonth(), bday.getDate());
+  return Math.round((next - today) / (1000 * 60 * 60 * 24));
+}
 function getColors(role) {
   const r = String(role || "").toLowerCase();
   if (r === "partner" || r === "spouse") return "from-[#e8b9a7] to-[#bf755f]";
@@ -189,6 +199,12 @@ export default function PeopleClient() {
   }
 
   const filtered = contacts.filter(c => !search || c.name?.toLowerCase().includes(search.toLowerCase()));
+  const withDaysUntil = filtered.map(c => ({ ...c, daysUntilBirthday: daysUntilBirthday(c.birthday) }));
+  const upcomingBirthdays = withDaysUntil
+    .filter(c => c.daysUntilBirthday != null && c.daysUntilBirthday <= 30)
+    .sort((a, b) => a.daysUntilBirthday - b.daysUntilBirthday);
+  const upcomingIds = new Set(upcomingBirthdays.map(c => c.id));
+  const everyoneElse = withDaysUntil.filter(c => !upcomingIds.has(c.id));
 
   return (
     <main className="min-h-screen bg-[#fffaf7]">
@@ -203,18 +219,47 @@ export default function PeopleClient() {
         {loading ? <p className="text-sm text-slate-400 text-center py-8">Loading...</p>
         : filtered.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-slate-400 text-sm">No contacts yet</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/illustrations/hero-character.png" alt="" className="mx-auto w-40 mb-4 opacity-90" />
+            <p className="text-slate-500 text-sm font-medium">No contacts yet</p>
+            <p className="text-slate-400 text-[13px] mt-1">Add the people you&apos;d like to remember birthdays and gift ideas for.</p>
             <button type="button" onClick={() => { setAddKey(k => k + 1); setIsAddOpen(true); }}
               className="mt-4 h-10 px-6 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-sm font-semibold text-white shadow-lg">Add your first contact</button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {filtered.map(contact => (
-              <ContactCard key={contact.id} contact={contact} onOpenProfile={setProfileModal}
-                onEditClick={setEditingContact} onDeleteClick={handleDelete}
-                onMessageClick={handleMessageContact}
-                previewBoards={contactHints[contact.profileId] || []} />
-            ))}
+          <div className="space-y-5">
+            {upcomingBirthdays.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/illustrations/birthday-cake.svg" alt="" className="h-5 w-5" />
+                  <p className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide">Upcoming birthdays</p>
+                </div>
+                <div className="space-y-3">
+                  {upcomingBirthdays.map(contact => (
+                    <ContactCard key={contact.id} contact={contact} onOpenProfile={setProfileModal}
+                      onEditClick={setEditingContact} onDeleteClick={handleDelete}
+                      onMessageClick={handleMessageContact}
+                      previewBoards={contactHints[contact.profileId] || []} />
+                  ))}
+                </div>
+              </div>
+            )}
+            {everyoneElse.length > 0 && (
+              <div>
+                {upcomingBirthdays.length > 0 && (
+                  <p className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide mb-2.5">Everyone else</p>
+                )}
+                <div className="space-y-3">
+                  {everyoneElse.map(contact => (
+                    <ContactCard key={contact.id} contact={contact} onOpenProfile={setProfileModal}
+                      onEditClick={setEditingContact} onDeleteClick={handleDelete}
+                      onMessageClick={handleMessageContact}
+                      previewBoards={contactHints[contact.profileId] || []} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

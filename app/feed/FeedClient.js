@@ -262,6 +262,8 @@ function eventTypeIcon(eventType) {
   if (normalized.includes("birthday")) return "/illustrations/birthday-cake.svg";
   if (normalized.includes("anniversary")) return "/illustrations/anniversary.svg";
   if (normalized.includes("celebration")) return "/illustrations/celebration.svg";
+  if (normalized.includes("wedding")) return "/illustrations/wedding-church.svg";
+  if (normalized.includes("holiday")) return "/illustrations/holiday-palm.svg";
   return "/illustrations/calendar.svg";
 }
 
