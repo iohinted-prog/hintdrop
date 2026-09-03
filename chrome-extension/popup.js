@@ -138,6 +138,28 @@ async function loadAndShowBoardPicker() {
   }
 }
 
+function buildBoardPreview(images) {
+  const preview = document.createElement("div");
+  preview.className = "boardPreview";
+
+  if (images.length === 0) {
+    preview.innerHTML = '<span class="emptyIcon">🎁</span>';
+    return preview;
+  }
+
+  if (images.length === 1) preview.classList.add("single");
+  else if (images.length === 2) preview.classList.add("pair");
+
+  images.slice(0, 4).forEach((src) => {
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = "";
+    preview.appendChild(img);
+  });
+
+  return preview;
+}
+
 function renderBoardList(boards) {
   const boardListEl = document.getElementById("boardList");
   boardListEl.innerHTML = "";
@@ -148,7 +170,12 @@ function renderBoardList(boards) {
     boards.forEach((board) => {
       const btn = document.createElement("button");
       btn.className = "boardRow";
-      btn.textContent = board.is_private ? `🔒 ${board.title}` : board.title;
+      btn.appendChild(buildBoardPreview(board.previewImages || []));
+
+      const titleSpan = document.createElement("span");
+      titleSpan.textContent = board.is_private ? `🔒 ${board.title}` : board.title;
+      btn.appendChild(titleSpan);
+
       btn.addEventListener("click", () => handleSaveToBoard(board));
       boardListEl.appendChild(btn);
     });

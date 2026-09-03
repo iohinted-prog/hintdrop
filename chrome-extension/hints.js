@@ -44,7 +44,22 @@ async function fetchBoards(session) {
     throw new Error("Couldn't load your hint lists.");
   }
 
-  return response.json();
+  const boards = await response.json();
+
+  // Same idea as HintsMenuClient.jsx's own board list and the Shop page's
+  // Add-to-hints picker - a small visual preview of what's already in
+  // each list makes it much easier to recognise which one you actually
+  // want, versus picking blind from titles alone.
+  const boardsWithPreviews = await Promise.all(
+    boards.map(async (board) => {
+      const previewUrl = `${SUPABASE_URL}/rest/v1/hints?board_id=eq.${board.id}&select=image_url&order=position.asc&limit=4`;
+      const previewResponse = await authorizedFetch(session, previewUrl);
+      const previewHints = previewResponse.ok ? await previewResponse.json() : [];
+      return { ...board, previewImages: previewHints.map((h) => h.image_url).filter(Boolean) };
+    })
+  );
+
+  return boardsWithPreviews;
 }
 
 async function createBoard(session, title) {
