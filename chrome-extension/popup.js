@@ -2,6 +2,12 @@ const statusEl = document.getElementById("status");
 const notLoggedInEl = document.getElementById("notLoggedIn");
 const loginFormEl = document.getElementById("loginForm");
 const resultEl = document.getElementById("result");
+const boardPickerEl = document.getElementById("boardPicker");
+const addButtonEl = document.getElementById("addButton");
+const saveSuccessEl = document.getElementById("saveSuccess");
+
+let currentSession = null;
+let currentPageInfo = null;
 
 async function readCurrentPage() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -20,30 +26,36 @@ async function readCurrentPage() {
 }
 
 async function showResultView(session) {
+  currentSession = session;
+
   statusEl.style.display = "none";
   notLoggedInEl.style.display = "none";
   resultEl.style.display = "block";
+  addButtonEl.style.display = "block";
+  boardPickerEl.style.display = "none";
+  saveSuccessEl.style.display = "none";
 
   document.getElementById("loggedInEmail").textContent = session.email || "";
 
   try {
-    const info = await readCurrentPage();
+    currentPageInfo = await readCurrentPage();
 
     const imageEl = document.getElementById("resultImage");
-    if (info.image) {
-      imageEl.src = info.image;
+    if (currentPageInfo.image) {
+      imageEl.src = currentPageInfo.image;
       imageEl.style.display = "block";
     } else {
       imageEl.style.display = "none";
     }
 
-    document.getElementById("resultTitle").textContent = info.title || "(no title found)";
-    document.getElementById("resultPrice").textContent = info.price
-      ? `${info.currency || ""}${info.price}`
+    document.getElementById("resultTitle").textContent = currentPageInfo.title || "(no title found)";
+    document.getElementById("resultPrice").textContent = currentPageInfo.price
+      ? `${currentPageInfo.currency || ""}${currentPageInfo.price}`
       : "(no price found)";
   } catch (err) {
     document.getElementById("resultTitle").textContent =
       "Couldn't read this page (try a regular product page).";
+    addButtonEl.style.display = "none";
     console.error(err);
   }
 }
@@ -52,6 +64,60 @@ function showNotLoggedInView() {
   statusEl.style.display = "none";
   resultEl.style.display = "none";
   notLoggedInEl.style.display = "block";
+}
+
+addButtonEl.addEventListener("click", async () => {
+  addButtonEl.textContent = "Loading your lists…";
+  addButtonEl.disabled = true;
+
+  try {
+    const boards = await fetchBoards(currentSession);
+    const boardListEl = document.getElementById("boardList");
+    boardListEl.innerHTML = "";
+
+    if (boards.length === 0) {
+      boardListEl.innerHTML = '<p style="font-size:12px;color:#9a9a9a;">No lists yet — create one in HintDrop first.</p>';
+    } else {
+      boards.forEach((board) => {
+        const btn = document.createElement("button");
+        btn.className = "boardRow";
+        btn.textContent = board.is_private ? `🔒 ${board.title}` : board.title;
+        btn.addEventListener("click", () => handleSaveToBoard(board));
+        boardListEl.appendChild(btn);
+      });
+    }
+
+    addButtonEl.style.display = "none";
+    boardPickerEl.style.display = "block";
+  } catch (err) {
+    console.error(err);
+  } finally {
+    addButtonEl.textContent = "+ Add to Hints";
+    addButtonEl.disabled = false;
+  }
+});
+
+document.getElementById("pickerBack").addEventListener("click", () => {
+  boardPickerEl.style.display = "none";
+  addButtonEl.style.display = "block";
+});
+
+async function handleSaveToBoard(board) {
+  boardPickerEl.style.display = "none";
+  statusEl.textContent = "Saving…";
+  statusEl.style.display = "block";
+
+  try {
+    await saveHint(currentSession, board.id, currentPageInfo);
+    statusEl.style.display = "none";
+    saveSuccessEl.style.display = "block";
+    document.getElementById("saveSuccessText").textContent = `✓ Saved to ${board.title}`;
+  } catch (err) {
+    statusEl.style.display = "none";
+    addButtonEl.style.display = "block";
+    alert(err.message);
+    console.error(err);
+  }
 }
 
 document.getElementById("openHintDropButton").addEventListener("click", () => {
@@ -88,11 +154,8 @@ document.getElementById("logoutLink").addEventListener("click", async () => {
   showNotLoggedInView();
 });
 
-// Entry point. Order: cached extension session first (fastest, works
-// offline), then try reading the existing hintdrop.app web session
-// cookie (covers Google sign-in and anything else - this is the main
-// path most people will hit), then fall back to the not-logged-in view
-// (which itself offers the manual email/password form as a last resort).
+// Entry point - same order as before: cached session, then the web
+// cookie, then the not-logged-in view.
 (async () => {
   let session = await getStoredSession();
 

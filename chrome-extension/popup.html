@@ -3,12 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <style>
-    body {
-      width: 280px;
+    * { box-sizing: border-box; }
+    html, body {
       margin: 0;
-      padding: 18px;
-      background: #fffaf7;
+      background: transparent;
+    }
+    body {
+      width: 300px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    }
+    #card {
+      background: #fffaf7;
+      border: 1px solid #efdcd2;
+      border-radius: 22px;
+      box-shadow: 0 18px 50px rgba(80, 50, 30, 0.16);
+      overflow: hidden;
+      padding: 18px;
     }
     #status {
       text-align: center;
@@ -18,36 +28,33 @@
     }
 
     /* Not-logged-in view */
-    #notLoggedIn {
-      display: none;
-      text-align: center;
-    }
+    #notLoggedIn { display: none; text-align: center; }
     #notLoggedIn p {
       font-size: 13px;
       color: #4a4a4a;
       line-height: 1.5;
       margin: 0 0 14px;
     }
-    #openHintDropButton {
+    .primaryButton {
       width: 100%;
-      padding: 10px;
+      padding: 11px;
       border: none;
-      border-radius: 10px;
+      border-radius: 14px;
       background: linear-gradient(to bottom, #ff966f, #ff7e54);
       color: #fff;
       font-weight: 600;
       font-size: 13px;
       cursor: pointer;
-      margin-bottom: 10px;
     }
     #showManualLogin {
+      display: inline-block;
+      margin-top: 10px;
       font-size: 11px;
       color: #9a9a9a;
       text-decoration: underline;
       cursor: pointer;
     }
 
-    /* Manual login form (fallback) */
     #loginForm {
       display: none;
       margin-top: 14px;
@@ -56,99 +63,149 @@
     }
     #loginForm input {
       width: 100%;
-      box-sizing: border-box;
       padding: 9px 10px;
       margin-bottom: 8px;
       border: 1px solid #ead8ce;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 13px;
       background: #fff;
     }
-    #loginForm button {
-      width: 100%;
-      padding: 10px;
-      border: none;
-      border-radius: 10px;
-      background: #2f3b2d;
-      color: #fff;
-      font-weight: 600;
-      font-size: 13px;
-      cursor: pointer;
-    }
-    #loginError {
-      color: #d64545;
-      font-size: 12px;
-      margin-top: 8px;
-      display: none;
-    }
+    #loginForm button { width: 100%; padding: 10px; border: none; border-radius: 12px; background: #2f3b2d; color: #fff; font-weight: 600; font-size: 13px; cursor: pointer; }
+    #loginError { color: #d64545; font-size: 12px; margin-top: 8px; display: none; }
 
     /* Result view */
-    #result {
-      display: none;
-    }
+    #result { display: none; }
     #resultImage {
       width: 100%;
-      height: 160px;
+      height: 170px;
       object-fit: cover;
-      border-radius: 12px;
+      border-radius: 16px;
       background: #f0e5dd;
       display: none;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
     #resultTitle {
       font-size: 14px;
       font-weight: 600;
       color: #1a1a1a;
       margin-bottom: 4px;
-      line-height: 1.3;
+      line-height: 1.35;
     }
     #resultPrice {
       font-size: 13px;
       color: #df7b59;
       font-weight: 600;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
+    }
+    #addButton {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(to bottom, #ff966f, #ff7e54);
+      color: #fff;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
     }
     #loggedInAs {
       font-size: 11px;
       color: #9a9a9a;
       border-top: 1px solid #f0e5dd;
       padding-top: 10px;
-      margin-top: 4px;
+      margin-top: 14px;
     }
-    #logoutLink {
+    #logoutLink { color: #9a9a9a; text-decoration: underline; cursor: pointer; }
+
+    /* Board picker */
+    #boardPicker { display: none; }
+    #boardPicker p.pickerLabel {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b6b6b;
+      margin: 0 0 8px;
+    }
+    .boardRow {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      border: 1px solid #f0dfd6;
+      border-radius: 14px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1a1a;
+      cursor: pointer;
+    }
+    .boardRow:hover { background: #fff5f0; border-color: #e8c9bc; }
+    #pickerBack {
+      font-size: 11px;
       color: #9a9a9a;
       text-decoration: underline;
       cursor: pointer;
+      margin-top: 4px;
+      display: inline-block;
+    }
+
+    /* Success state */
+    #saveSuccess {
+      display: none;
+      text-align: center;
+      padding: 14px 0;
+    }
+    #saveSuccess p {
+      font-size: 13px;
+      font-weight: 600;
+      color: #2f3b2d;
+      margin: 0;
     }
   </style>
 </head>
 <body>
-  <div id="status">Loading…</div>
+  <div id="card">
+    <div id="status">Loading…</div>
 
-  <div id="notLoggedIn">
-    <p>You're not logged into HintDrop in this browser yet.</p>
-    <button id="openHintDropButton">Open HintDrop to log in</button>
-    <div id="showManualLogin">Have an email/password account? Log in manually</div>
+    <div id="notLoggedIn">
+      <p>You're not logged into HintDrop in this browser yet.</p>
+      <button id="openHintDropButton" class="primaryButton">Open HintDrop to log in</button>
+      <div id="showManualLogin">Have an email/password account? Log in manually</div>
 
-    <div id="loginForm">
-      <input id="emailInput" type="email" placeholder="Email" autocomplete="username" />
-      <input id="passwordInput" type="password" placeholder="Password" autocomplete="current-password" />
-      <button id="loginButton">Log in</button>
-      <div id="loginError"></div>
+      <div id="loginForm">
+        <input id="emailInput" type="email" placeholder="Email" autocomplete="username" />
+        <input id="passwordInput" type="password" placeholder="Password" autocomplete="current-password" />
+        <button id="loginButton">Log in</button>
+        <div id="loginError"></div>
+      </div>
     </div>
-  </div>
 
-  <div id="result">
-    <img id="resultImage" alt="" />
-    <div id="resultTitle"></div>
-    <div id="resultPrice"></div>
-    <div id="loggedInAs">
-      Logged in as <span id="loggedInEmail"></span> · <span id="logoutLink">Log out</span>
+    <div id="result">
+      <img id="resultImage" alt="" />
+      <div id="resultTitle"></div>
+      <div id="resultPrice"></div>
+
+      <button id="addButton" class="primaryButton">+ Add to Hints</button>
+
+      <div id="boardPicker">
+        <p class="pickerLabel">Add to which list?</p>
+        <div id="boardList"></div>
+        <div id="pickerBack">Cancel</div>
+      </div>
+
+      <div id="saveSuccess">
+        <p id="saveSuccessText"></p>
+      </div>
+
+      <div id="loggedInAs">
+        Logged in as <span id="loggedInEmail"></span> · <span id="logoutLink">Log out</span>
+      </div>
     </div>
   </div>
 
   <script src="config.js"></script>
   <script src="auth.js"></script>
+  <script src="hints.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
