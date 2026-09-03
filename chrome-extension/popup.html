@@ -16,6 +16,45 @@
       color: #6b6b6b;
       padding: 20px 0;
     }
+
+    /* Login form */
+    #loginForm {
+      display: none;
+    }
+    #loginForm h2 {
+      font-size: 15px;
+      margin: 0 0 12px;
+      color: #1a1a1a;
+    }
+    #loginForm input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 9px 10px;
+      margin-bottom: 8px;
+      border: 1px solid #ead8ce;
+      border-radius: 10px;
+      font-size: 13px;
+      background: #fff;
+    }
+    #loginForm button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(to bottom, #ff966f, #ff7e54);
+      color: #fff;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    #loginError {
+      color: #d64545;
+      font-size: 12px;
+      margin-top: 8px;
+      display: none;
+    }
+
+    /* Result view */
     #result {
       display: none;
     }
@@ -39,16 +78,44 @@
       font-size: 13px;
       color: #df7b59;
       font-weight: 600;
+      margin-bottom: 12px;
+    }
+    #loggedInAs {
+      font-size: 11px;
+      color: #9a9a9a;
+      border-top: 1px solid #f0e5dd;
+      padding-top: 10px;
+      margin-top: 4px;
+    }
+    #logoutLink {
+      color: #9a9a9a;
+      text-decoration: underline;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div id="status">Reading this page…</div>
+  <div id="status">Loading…</div>
+
+  <div id="loginForm">
+    <h2>Log in to HintDrop</h2>
+    <input id="emailInput" type="email" placeholder="Email" autocomplete="username" />
+    <input id="passwordInput" type="password" placeholder="Password" autocomplete="current-password" />
+    <button id="loginButton">Log in</button>
+    <div id="loginError"></div>
+  </div>
+
   <div id="result">
     <img id="resultImage" alt="" />
     <div id="resultTitle"></div>
     <div id="resultPrice"></div>
+    <div id="loggedInAs">
+      Logged in as <span id="loggedInEmail"></span> · <span id="logoutLink">Log out</span>
+    </div>
   </div>
+
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
