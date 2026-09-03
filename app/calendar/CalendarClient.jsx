@@ -25,7 +25,6 @@ const DEFAULT_COLOR = { dot: "bg-[#e8a06f]", badge: "bg-[#fdf1e7] text-[#b06a3a]
 const PASTEL_PALETTE = [
   { hex: "#ffb3b3", label: "Blush" },
   { hex: "#ffd6a5", label: "Peach" },
-  { hex: "#fdffb6", label: "Butter" },
   { hex: "#caffbf", label: "Mint" },
   { hex: "#9bf6ff", label: "Sky" },
   { hex: "#a0c4ff", label: "Periwinkle" },
@@ -278,7 +277,7 @@ export default function CalendarClient() {
           className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]" />
         <select value={addForm.type} onChange={e => setAddForm(f => ({ ...f, type: e.target.value }))}
           className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]">
-          {EVENT_TYPES.map(t => <option key={t}>{EVENT_EMOJI[t]} {t}</option>)}
+          {EVENT_TYPES.map(t => <option key={t} value={t}>{EVENT_EMOJI[t]} {t}</option>)}
         </select>
         <select value={addForm.recur} onChange={e => setAddForm(f => ({ ...f, recur: e.target.value }))}
           className="w-full rounded-[10px] border border-[#ead8ce] bg-white px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-[#ff875d]">

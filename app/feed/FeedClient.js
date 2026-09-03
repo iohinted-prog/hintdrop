@@ -248,32 +248,46 @@ function diffInDaysFromToday(dateString) {
 
 // Maps an event's type to its themed icon - birthday, anniversary, and
 // celebration each get a purpose-built illustration; anything else
-// (valentines, christmas, halloween, mothersDay, fathersDay, or simply
-// unknown) falls back to the generic calendar icon rather than needing
-// a dedicated asset for every possible type.
+// (valentines, christmas, halloween, mothersDay, fathersDay, holiday,
+// wedding, or simply unknown) falls back to the generic calendar icon
+// rather than needing a dedicated asset for every possible type.
+// Uses a substring match (not exact equality) since real stored type
+// values include messy legacy data - confirmed directly in the
+// database, e.g. "🎂 Birthday" (an emoji baked into the value itself,
+// caused by a missing value= attribute on the type <option> elements
+// in CalendarClient.jsx, now fixed at the source too) - an exact match
+// against "birthday" would silently miss that and any similar cases.
 function eventTypeIcon(eventType) {
   const normalized = String(eventType || "").toLowerCase();
-  if (normalized === "birthday") return "/illustrations/birthday-cake.svg";
-  if (normalized === "anniversary") return "/illustrations/anniversary.svg";
-  if (normalized === "celebration") return "/illustrations/celebration.svg";
+  if (normalized.includes("birthday")) return "/illustrations/birthday-cake.svg";
+  if (normalized.includes("anniversary")) return "/illustrations/anniversary.svg";
+  if (normalized.includes("celebration")) return "/illustrations/celebration.svg";
   return "/illustrations/calendar.svg";
 }
 
-// Background tint + prompt text for the reminder block, per event type -
-// birthday and anniversary/celebration each get their own warm tone and
-// wording, everything else gets the generic mint treatment.
-function reminderStyleForType(eventType) {
+// Background tint + prompt text for the reminder block. Prefers the
+// event's own chosen pastel colour (set on the calendar page) when
+// there is one - softened to ~30% opacity for a readable tinted
+// background rather than the full-saturation swatch shown in the
+// colour picker - falling back to a fixed peach/mint split by type
+// when no custom colour was chosen.
+function reminderStyleForType(eventType, customColor) {
   const normalized = String(eventType || "").toLowerCase();
-  if (normalized === "birthday") {
-    return { bg: "bg-[#fdece0]", prompt: "Time to plan something amazing." };
+  const isWarmType = normalized.includes("birthday") || normalized.includes("anniversary") || normalized.includes("celebration");
+
+  const prompt = normalized.includes("birthday")
+    ? "Time to plan something amazing."
+    : normalized.includes("anniversary")
+      ? "A moment worth celebrating together."
+      : normalized.includes("celebration")
+        ? "Time to plan something worth celebrating."
+        : "Time to sort out the details.";
+
+  if (customColor) {
+    return { bgClass: "", bgStyle: { backgroundColor: `${customColor}4D` }, prompt };
   }
-  if (normalized === "anniversary") {
-    return { bg: "bg-[#fdece0]", prompt: "A moment worth celebrating together." };
-  }
-  if (normalized === "celebration") {
-    return { bg: "bg-[#fdece0]", prompt: "Time to plan something worth celebrating." };
-  }
-  return { bg: "bg-[#e3f5ea]", prompt: "Time to sort out the details." };
+
+  return { bgClass: isWarmType ? "bg-[#fdece0]" : "bg-[#e3f5ea]", bgStyle: null, prompt };
 }
 
 function formatReminderDistance(diffDays) {
@@ -673,7 +687,7 @@ function FeedItem({
   const socialEnabled = isSocialFeedItem(item);
   const bucket = getFeedBucket(item);
   const reminderDaysAway = bucket === "reminder" ? diffInDaysFromToday(metadata.event_date) : null;
-  const reminderBlockStyle = bucket === "reminder" ? reminderStyleForType(metadata.event_type) : null;
+  const reminderBlockStyle = bucket === "reminder" ? reminderStyleForType(metadata.event_type, metadata.event_color) : null;
 
   const bucketStyle =
     bucket === "hint"
@@ -787,9 +801,10 @@ function FeedItem({
               </div>
             )}
           {bucket === "reminder" && item.cta_label && item.cta_href ? (
-            <div className={`mt-4 flex items-center gap-4 rounded-[22px] p-4 ${
-              reminderBlockStyle.bg
-            }`}>
+            <div
+              className={`mt-4 flex items-center gap-4 rounded-[22px] p-4 ${reminderBlockStyle.bgClass}`}
+              style={reminderBlockStyle.bgStyle || undefined}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={eventTypeIcon(metadata.event_type)}
@@ -2331,6 +2346,7 @@ export default function FeedClient() {
             social_enabled: false,
             event_date: event.event_date,
             event_type: event.type,
+            event_color: event.color,
             actor_name: event.contact_name || null,
             actor_avatar_url: event.contact_avatar_url || null,
             actor_profile_href: event.contact_profile_id ? `/profile/${event.contact_profile_id}` : null,
