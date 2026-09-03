@@ -90,3 +90,22 @@ actually built)*
 - Is data used for purposes unrelated to the extension's single purpose?
   **No**
 - Is data used to determine creditworthiness or for lending? **No**
+
+## Data usage checkboxes
+*(Which specific data types to check, per the public-facing disclosure
+form — reflects exactly what the code does, no more, no less)*
+
+**Check:**
+- Personally identifiable information (the user's email address is
+  stored locally to show "Logged in as...")
+- Authentication information (session access/refresh tokens, stored to
+  keep the user signed in)
+- Website content (the core function — reads text/image/price off the
+  page on click)
+
+**Leave unchecked:** Health information, Financial and payment
+information (a product's price isn't the user's own payment data),
+Personal communications, Location, Web history (the extension reads
+one page at the moment of an explicit click — not a logged history of
+everywhere someone's browsed), User activity (no click/mouse/scroll/
+keystroke tracking).
