@@ -720,6 +720,22 @@ function buildDraftFromAiIdea(data, prompt) {
   };
 }
 
+// The Chrome extension only works in Chrome (and other Chromium-based
+// browsers, which can install Chrome Web Store extensions the same way -
+// Edge, Brave, Opera, Vivaldi all included deliberately rather than
+// narrowing to literal Chrome only) - Safari and Firefox can't use it at
+// all, so the suggestion to try it should never show there, where it'd
+// just be a dead end.
+function isChromeFamilyBrowser() {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  // Chromium-based browsers all include "Chrome" in their UA string (even
+  // when they also identify themselves, e.g. Edge adds "Edg/", Opera adds
+  // "OPR/") - excluding UAs that specifically indicate a non-Chromium
+  // engine (Safari without Chrome, Firefox) is what actually matters here.
+  return /Chrome|Chromium|CriOS|Edg\/|OPR\//.test(ua) && !/Firefox/.test(ua);
+}
+
 function buildManualDraft(rawUrl) {
   const normalisedUrl = normaliseInputUrl(rawUrl);
   const retailer = normaliseRetailer(normalisedUrl);
@@ -1041,6 +1057,7 @@ function AddHintModal({
   isSaving,
   notice,
   imageOptions,
+  suggestExtension,
 }) {
   const helperCopy = notice
     ? "We tried to get your info, but this shop asked you to put it in instead."
@@ -1073,6 +1090,24 @@ function AddHintModal({
         ) : null}
 
         <p className="text-sm text-slate-500">{helperCopy}</p>
+
+        {suggestExtension && (
+          <div className="rounded-[22px] border border-[#e8dfd3] bg-[#f7f4ee] p-4 text-sm text-[#5c5647]">
+            <p className="font-semibold text-[#3a362b]">Having trouble with this one?</p>
+            <p className="mt-1">
+              Our Chrome extension reads the page directly while you&apos;re on it, so it can grab
+              details some shops won&apos;t hand over otherwise.
+            </p>
+            <a
+              href="/extension"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex h-9 items-center justify-center rounded-full border border-[#d8cdb8] bg-white px-4 text-[13px] font-semibold text-[#3a362b]"
+            >
+              Get the Chrome extension →
+            </a>
+          </div>
+        )}
 
         <HintFormFields
           form={form}
@@ -2806,6 +2841,11 @@ export default function HintsClient({ boardId }) {
         isSaving={isSubmittingNewHint}
         notice={addModalNotice}
         imageOptions={pendingHint?.imageOptions}
+        suggestExtension={
+          Boolean(pendingHint?.needsReview) &&
+          pendingHint?.source !== "stock-photo" &&
+          isChromeFamilyBrowser()
+        }
       />
 
       <EditHintModal
