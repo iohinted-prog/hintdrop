@@ -691,7 +691,7 @@ function FeedItem({
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff1e7]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={metadata.event_type === "Birthday" ? "/illustrations/birthday-cake.svg" : "/illustrations/calendar.svg"}
+              src={String(metadata.event_type || "").toLowerCase() === "birthday" ? "/illustrations/birthday-cake.svg" : "/illustrations/calendar.svg"}
               alt=""
               className="h-7 w-7"
             />
