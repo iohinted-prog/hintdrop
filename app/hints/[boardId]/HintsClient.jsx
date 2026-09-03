@@ -736,6 +736,16 @@ function isChromeFamilyBrowser() {
   return /Chrome|Chromium|CriOS|Edg\/|OPR\//.test(ua) && !/Firefox/.test(ua);
 }
 
+// The extension's own content script (detectInstalled.js) marks the page
+// with this attribute, running at document_start on hintdrop.app -
+// before this component even mounts if the extension is installed, so
+// checking for it here (no need for a useEffect/async check) reliably
+// tells us whether to bother suggesting an install someone already has.
+function hasExtensionInstalled() {
+  if (typeof document === "undefined") return false;
+  return document.documentElement.hasAttribute("data-hintdrop-extension");
+}
+
 function buildManualDraft(rawUrl) {
   const normalisedUrl = normaliseInputUrl(rawUrl);
   const retailer = normaliseRetailer(normalisedUrl);
@@ -1095,8 +1105,9 @@ function AddHintModal({
           <div className="rounded-[22px] border border-[#e8dfd3] bg-[#f7f4ee] p-4 text-sm text-[#5c5647]">
             <p className="font-semibold text-[#3a362b]">Having trouble with this one?</p>
             <p className="mt-1">
-              Our Chrome extension reads the page directly while you&apos;re on it, so it can grab
-              details some shops won&apos;t hand over otherwise.
+              Our browser extension reads the page directly while you&apos;re on it, so it can
+              grab details some shops won&apos;t hand over otherwise. Or, take a screenshot of
+              the page and upload it below — we&apos;ll tidy it up automatically.
             </p>
             <a
               href="/extension"
@@ -1104,7 +1115,7 @@ function AddHintModal({
               rel="noreferrer"
               className="mt-3 inline-flex h-9 items-center justify-center rounded-full border border-[#d8cdb8] bg-white px-4 text-[13px] font-semibold text-[#3a362b]"
             >
-              Get the Chrome extension →
+              Get the extension →
             </a>
           </div>
         )}
@@ -2844,7 +2855,8 @@ export default function HintsClient({ boardId }) {
         suggestExtension={
           Boolean(pendingHint?.needsReview) &&
           pendingHint?.source !== "stock-photo" &&
-          isChromeFamilyBrowser()
+          isChromeFamilyBrowser() &&
+          !hasExtensionInstalled()
         }
       />
 

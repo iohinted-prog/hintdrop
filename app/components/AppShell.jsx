@@ -110,7 +110,8 @@ export default function AppShell({ children }) {
     pathname.startsWith("/h/") ||
     pathname.startsWith("/b/") ||
     pathname.startsWith("/join/") ||
-    pathname.startsWith("/profile/");
+    pathname.startsWith("/profile/") ||
+    pathname === "/extension";
 
   const hideChrome = alwaysHideChrome || (conditionallyHiddenPath && !currentUserId);
 

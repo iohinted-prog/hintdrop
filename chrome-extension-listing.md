@@ -63,6 +63,12 @@ Needed to communicate with HintDrop's own backend (Supabase) to save a
 hint and fetch the user's lists — this is HintDrop's database, not a
 third party.
 
+**Content script on hintdrop.app / www.hintdrop.app**
+A minimal script that runs only on HintDrop's own site, marking the
+page so hintdrop.app's own code can tell the extension is installed
+and avoid suggesting an install to someone who already has it. Does
+not read page content, does not run on any other site.
+
 ---
 
 ## Privacy policy URL
