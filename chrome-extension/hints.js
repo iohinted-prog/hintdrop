@@ -47,6 +47,25 @@ async function fetchBoards(session) {
   return response.json();
 }
 
+async function createBoard(session, title) {
+  const response = await authorizedFetch(session, `${SUPABASE_URL}/rest/v1/hint_boards`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify({ user_id: session.user_id, title, is_default: false, is_private: false }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    throw new Error(errorBody?.message || "Couldn't create that list.");
+  }
+
+  const [board] = await response.json();
+  return board;
+}
+
 // Same normaliseRetailer approach as the main app - just the hostname,
 // matching how retailer is displayed everywhere else in HintDrop.
 function normaliseRetailer(url) {
