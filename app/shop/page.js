@@ -965,7 +965,7 @@ export default function ShopPage() {
                         onClick={() => toggleInterest(interest)}
                         className={`inline-flex h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition ${
                           selected
-                            ? "border-[#3c4d39] bg-[#2f3b2d] text-white"
+                            ? "border-[#2f8a5f] bg-[#3BA876] text-white"
                             : "border-[#ead8ce] bg-white text-slate-700 hover:bg-[#fff5f0]"
                         }`}
                       >

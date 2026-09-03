@@ -684,22 +684,9 @@ function FeedItem({
           >
             {actorAvatarUrl ? <HintImage src={actorAvatarUrl} alt={metadata.actor_name || ""} fill sizes="44px" className="object-cover" fallbackClassName="hidden" /> : actorInitials}
           </button>
-        ) : bucket === "reminder" ? (
-          // Trial: themed illustration instead of plain initials for
-          // reminder cards, using the new SVG assets - birthday-specific
-          // icon when we know the event is a birthday, generic calendar
-          // icon otherwise.
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff1e7]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={String(metadata.event_type || "").toLowerCase() === "birthday" ? "/illustrations/birthday-cake.svg" : "/illustrations/calendar.svg"}
-              alt=""
-              className="h-7 w-7"
-            />
-          </div>
         ) : (
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[12px] font-bold text-white">
-            {actorInitials}
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[12px] font-bold text-white overflow-hidden">
+            {actorAvatarUrl ? <HintImage src={actorAvatarUrl} alt={metadata.actor_name || ""} fill sizes="44px" className="object-cover" fallbackClassName="hidden" /> : actorInitials}
           </div>
         )}
 
@@ -2441,7 +2428,7 @@ export default function FeedClient() {
                       onClick={() => setActiveFilter(filter.key)}
                       className={`flex items-center justify-between rounded-[14px] px-4 py-2.5 text-sm font-medium transition text-left ${
                         selected
-                          ? "bg-[#2f3b2d] text-white shadow-sm"
+                          ? "bg-[#3BA876] text-white shadow-sm"
                           : "text-slate-600 hover:bg-[#fff5f0]"
                       }`}
                     >
