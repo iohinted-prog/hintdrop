@@ -68,6 +68,7 @@ export default function ProfileClient({ userId }) {
   const [contactSince, setContactSince] = useState(null);
   const [selectedHint, setSelectedHint] = useState(null);
   const [groupHint, setGroupHint] = useState(null);
+  const [inviteConfirmation, setInviteConfirmation] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -557,7 +558,22 @@ export default function ProfileClient({ userId }) {
           recipientName={displayName}
           currentUserId={currentUser?.id}
           onClose={() => setGroupHint(null)}
+          onSent={(count) => {
+            setGroupHint(null);
+            setInviteConfirmation(count);
+            setTimeout(() => setInviteConfirmation(null), 4000);
+          }}
         />
+      )}
+      {inviteConfirmation != null && (
+        <div className="fixed inset-x-0 bottom-6 z-[130] flex justify-center px-4">
+          <div className="flex items-center gap-2 rounded-full bg-[#2f3b2d] px-5 py-3 text-[13px] font-semibold text-white shadow-xl">
+            <span>✓</span>
+            <span>
+              Invite{inviteConfirmation > 1 ? "s" : ""} sent — you&apos;ll find {inviteConfirmation > 1 ? "them" : "it"} in your chats
+            </span>
+          </div>
+        </div>
       )}
       <AuthModal open={signUpOpen} onClose={() => setSignUpOpen(false)} initialMode="signup" />
     </main>

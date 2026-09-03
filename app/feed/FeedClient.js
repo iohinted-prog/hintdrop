@@ -2360,7 +2360,7 @@ export default function FeedClient() {
     return (calendarEvents || [])
       .map((event) => {
         const diffDays = diffInDaysFromToday(event.event_date);
-        if (diffDays === null || diffDays < 8) return null;
+        if (diffDays === null || diffDays < 0) return null;
 
         const eventDate = parseDateOnly(event.event_date);
         if (!eventDate) return null;
@@ -2428,7 +2428,7 @@ export default function FeedClient() {
                       onClick={() => setActiveFilter(filter.key)}
                       className={`flex items-center justify-between rounded-[14px] px-4 py-2.5 text-sm font-medium transition text-left ${
                         selected
-                          ? "bg-[#3BA876] text-white shadow-sm"
+                          ? "bg-[#e3f5ea] text-[#2f8a5f] shadow-sm"
                           : "text-slate-600 hover:bg-[#fff5f0]"
                       }`}
                     >

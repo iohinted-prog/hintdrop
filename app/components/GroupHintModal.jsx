@@ -57,7 +57,7 @@ async function findOrCreateGroupConversation(supabase, currentUserId, participan
   return { id: newId, isNew: true };
 }
 
-export default function GroupHintModal({ hint, recipientUserId, recipientName, currentUserId, onClose }) {
+export default function GroupHintModal({ hint, recipientUserId, recipientName, currentUserId, onClose, onSent }) {
   const supabase = createClient();
   const [contacts, setContacts] = useState([]);
   const [selected, setSelected] = useState([]);
@@ -65,7 +65,6 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [done, setDone] = useState(false);
   const [sendError, setSendError] = useState("");
 
   useEffect(() => {
@@ -168,14 +167,18 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
 
       setGroupHint(gh);
       setMembers(newMembers || []);
+      const invitedCount = selected.length;
       setSelected([]);
-      setDone(true);
       // Send invite emails (kept as an out-of-band nudge alongside the in-chat invite)
       fetch("/api/group-hint-notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "invite", groupHintId: gh?.id }),
       }).catch(console.error);
+      // Close the modal and let the parent show a proper confirmation,
+      // rather than leaving this modal open with just an inline banner.
+      onSent && onSent(invitedCount);
+      onClose();
     } catch (e) {
       console.error("handleSend error:", e);
     } finally {
@@ -187,7 +190,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
   const availableContacts = contacts.filter(c => !existingMemberIds.includes(c.profile_id));
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 backdrop-blur-sm min-[480px]:items-center min-[480px]:px-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/40 backdrop-blur-sm min-[480px]:items-center min-[480px]:px-4" onClick={onClose}>
       <div className="w-full max-w-[480px] rounded-t-[28px] min-[480px]:rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl overflow-hidden flex flex-col" style={{ maxHeight: "88dvh" }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#f2e5de] shrink-0">
           <div>
@@ -249,11 +252,6 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
 
               {sendError && (
                 <div className="rounded-[14px] bg-[#fde8e8] px-4 py-3 text-[13px] font-semibold text-[#b14f43]">{sendError}</div>
-              )}
-              {done && (
-                <div className="rounded-[14px] bg-[#edf6eb] px-4 py-3 text-[13px] font-semibold text-[#4a7a3a]">
-                  ✓ Invites sent — you'll find them in your chats
-                </div>
               )}
             </>
           )}
