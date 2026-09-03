@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Anniversary icon">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- left ring -->
+    <circle cx="98" cy="150" r="42" fill="none" stroke="#FF9E2C" stroke-width="16"/>
+    <!-- right ring -->
+    <circle cx="158" cy="150" r="42" fill="none" stroke="#FF7A59" stroke-width="16"/>
+    <!-- small heart above the join -->
+    <path d="M128 96
+             c-9-12-27-13-33 0
+             c-5 11 6 22 33 40
+             c27-18 38-29 33-40
+             c-6-13-24-12-33 0z" fill="#FF4B2B"/>
+  </g>
+</svg>

@@ -246,6 +246,36 @@ function diffInDaysFromToday(dateString) {
   return Math.round(diffMs / (1000 * 60 * 60 * 24));
 }
 
+// Maps an event's type to its themed icon - birthday, anniversary, and
+// celebration each get a purpose-built illustration; anything else
+// (valentines, christmas, halloween, mothersDay, fathersDay, or simply
+// unknown) falls back to the generic calendar icon rather than needing
+// a dedicated asset for every possible type.
+function eventTypeIcon(eventType) {
+  const normalized = String(eventType || "").toLowerCase();
+  if (normalized === "birthday") return "/illustrations/birthday-cake.svg";
+  if (normalized === "anniversary") return "/illustrations/anniversary.svg";
+  if (normalized === "celebration") return "/illustrations/celebration.svg";
+  return "/illustrations/calendar.svg";
+}
+
+// Background tint + prompt text for the reminder block, per event type -
+// birthday and anniversary/celebration each get their own warm tone and
+// wording, everything else gets the generic mint treatment.
+function reminderStyleForType(eventType) {
+  const normalized = String(eventType || "").toLowerCase();
+  if (normalized === "birthday") {
+    return { bg: "bg-[#fdece0]", prompt: "Time to plan something amazing." };
+  }
+  if (normalized === "anniversary") {
+    return { bg: "bg-[#fdece0]", prompt: "A moment worth celebrating together." };
+  }
+  if (normalized === "celebration") {
+    return { bg: "bg-[#fdece0]", prompt: "Time to plan something worth celebrating." };
+  }
+  return { bg: "bg-[#e3f5ea]", prompt: "Time to sort out the details." };
+}
+
 function formatReminderDistance(diffDays) {
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Tomorrow";
@@ -643,6 +673,7 @@ function FeedItem({
   const socialEnabled = isSocialFeedItem(item);
   const bucket = getFeedBucket(item);
   const reminderDaysAway = bucket === "reminder" ? diffInDaysFromToday(metadata.event_date) : null;
+  const reminderBlockStyle = bucket === "reminder" ? reminderStyleForType(metadata.event_type) : null;
 
   const bucketStyle =
     bucket === "hint"
@@ -663,7 +694,7 @@ function FeedItem({
           : "Contact";
 
   const actorHref = metadata.actor_profile_href || item.cta_href || "#";
-  const actorInitials = metadata.actor_avatar_initials || getInitials(metadata.actor_name || item.headline || "H");
+  const actorInitials = metadata.actor_avatar_initials || (metadata.actor_name ? getInitials(metadata.actor_name) : "");
   const actorUserId = item.actor_user_id && item.actor_user_id !== "hinted-demo" ? item.actor_user_id : null;
   const actorAvatarUrl = metadata.actor_avatar_url || null;
   const demoReactions = item.isDemo
@@ -684,6 +715,16 @@ function FeedItem({
           >
             {actorAvatarUrl ? <HintImage src={actorAvatarUrl} alt={metadata.actor_name || ""} fill sizes="44px" className="object-cover" fallbackClassName="hidden" /> : actorInitials}
           </button>
+        ) : bucket === "reminder" && !metadata.actor_name && !actorAvatarUrl ? (
+          // No real linked contact for this reminder (e.g. a plain
+          // calendar event, not tied to a Circle contact) - rather than
+          // guess at initials from the headline text (which produced
+          // wrong results, like "Anniversary with James" reading as "AW"
+          // instead of "J"), fall back to the themed event-type icon.
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff1e7]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={eventTypeIcon(metadata.event_type)} alt="" className="h-7 w-7" />
+          </div>
         ) : (
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[12px] font-bold text-white overflow-hidden">
             {actorAvatarUrl ? <HintImage src={actorAvatarUrl} alt={metadata.actor_name || ""} fill sizes="44px" className="object-cover" fallbackClassName="hidden" /> : actorInitials}
@@ -747,11 +788,11 @@ function FeedItem({
             )}
           {bucket === "reminder" && item.cta_label && item.cta_href ? (
             <div className={`mt-4 flex items-center gap-4 rounded-[22px] p-4 ${
-              String(metadata.event_type || "").toLowerCase() === "birthday" ? "bg-[#fdece0]" : "bg-[#e3f5ea]"
+              reminderBlockStyle.bg
             }`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={String(metadata.event_type || "").toLowerCase() === "birthday" ? "/illustrations/birthday-cake.svg" : "/illustrations/calendar.svg"}
+                src={eventTypeIcon(metadata.event_type)}
                 alt=""
                 className="h-14 w-14 shrink-0"
               />
@@ -760,9 +801,7 @@ function FeedItem({
                   {reminderDaysAway != null ? formatReminderDistance(reminderDaysAway) : "Coming up"}
                 </p>
                 <p className="mt-0.5 text-[13px] text-slate-600">
-                  {String(metadata.event_type || "").toLowerCase() === "birthday"
-                    ? "Time to plan something amazing."
-                    : "Time to sort out the details."}
+                  {reminderBlockStyle.prompt}
                 </p>
                 <div className="mt-2.5 flex flex-wrap gap-2">
                   <Link
@@ -2523,7 +2562,7 @@ export default function FeedClient() {
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Calendar</p>
               <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.03em] text-slate-900">
-                {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+                Next Events:
               </h2>
 
               {sidebarReminders.length === 0 ? (

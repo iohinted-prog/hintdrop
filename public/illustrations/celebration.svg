@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Celebration icon">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- party horn: a simple triangle/cone shape, wide end up-right -->
+    <path d="M75 195 L150 60 L195 150 Z" fill="#FF7A59"/>
+    <!-- horn opening highlight -->
+    <path d="M150 60 L195 150 L165 155 Z" fill="#FF9E2C"/>
+    <!-- confetti pieces bursting outward -->
+    <rect x="55" y="55" width="16" height="16" rx="4" fill="#FF9E2C" transform="rotate(18 63 63)"/>
+    <circle cx="190" cy="60" r="9" fill="#FF4B2B"/>
+    <rect x="195" y="105" width="14" height="14" rx="4" fill="#FF9E2C" transform="rotate(-12 202 112)"/>
+    <circle cx="120" cy="45" r="7" fill="#FF7A59"/>
+    <rect x="45" y="115" width="12" height="12" rx="3" fill="#FF4B2B" transform="rotate(24 51 121)"/>
+  </g>
+</svg>
