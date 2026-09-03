@@ -273,7 +273,36 @@ export default async function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                8. Data retention and deletion
+                8. The HintDrop Chrome extension
+              </h2>
+              <p className="text-[17px] leading-8 text-slate-700">
+                The HintDrop browser extension only reads the current page
+                when you click its icon — it does not run in the background
+                or watch your browsing otherwise. When clicked, it looks for
+                a product&apos;s title, image, and price on that page (using
+                the same kind of structured data many shopping sites already
+                publish for search engines) so you can save it as a hint
+                without leaving the page.
+              </p>
+              <p className="text-[17px] leading-8 text-slate-700">
+                To know which HintDrop account to save to, the extension
+                reads your existing sign-in session from hintdrop.app if
+                you&apos;re already signed in there in the same browser, or
+                lets you sign in directly. That session is stored locally in
+                your browser&apos;s own extension storage, not shared with
+                any third party, and is used only to save hints to your
+                account and show you which lists you can save them into.
+              </p>
+              <p className="text-[17px] leading-8 text-slate-700">
+                The extension does not collect, transmit, or sell your
+                general browsing activity, and does not read any page unless
+                you actively click the extension to do so.
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
+                9. Data retention and deletion
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 We keep personal information for as long as reasonably
@@ -294,7 +323,7 @@ export default async function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                9. Data security
+                10. Data security
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 We use reasonable technical and organisational measures designed
@@ -312,7 +341,7 @@ export default async function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                10. Your rights and choices
+                11. Your rights and choices
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 Depending on where you live, you may have the right to access,
@@ -340,7 +369,7 @@ export default async function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                11. Children&apos;s privacy
+                12. Children&apos;s privacy
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 HintDrop is not intended for children under the age of 13, or
@@ -352,7 +381,7 @@ export default async function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                12. International users
+                13. International users
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 HintDrop may process and store information in countries other
@@ -365,7 +394,7 @@ export default async function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                13. Changes to this Privacy Policy
+                14. Changes to this Privacy Policy
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 We may update this Privacy Policy from time to time. If we make
@@ -378,7 +407,7 @@ export default async function PrivacyPage() {
 
             <section className="space-y-3">
               <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
-                14. Contact us
+                15. Contact us
               </h2>
               <p className="text-[17px] leading-8 text-slate-700">
                 If you have questions about this Privacy Policy or our privacy
