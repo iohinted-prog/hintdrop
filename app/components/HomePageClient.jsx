@@ -10,7 +10,7 @@ const hints = [
   {
     id: 1,
     title: "Noise-cancelling headphones",
-    text: "From: amazon.co.uk · ~£120",
+    text: "amazon.co.uk · ~£120",
     image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1200&q=80",
     tag: "Tech",
     tag2: "Birthday",
@@ -20,7 +20,7 @@ const hints = [
   {
     id: 2,
     title: "Weekend cabin stay",
-    text: "From: airbnb.co.uk · Price varies",
+    text: "airbnb.co.uk · Price varies",
     image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
     tag: "Experiences",
     tag2: "Travel",
@@ -29,12 +29,13 @@ const hints = [
   },
   {
     id: 3,
-    title: "Espresso machine",
-    text: "From: sageappliances.com · ~£399",
-    image: "https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?auto=format&fit=crop&w=1200&q=80",
+    title: "Cashmere throw",
+    text: "thewhitecompany.com · ~£110",
+    image: "https://images.unsplash.com/photo-1517705008128-361805f42e86?auto=format&fit=crop&w=1200&q=80",
     tag: "Home",
     tag2: "Cooking",
     starred: false,
+    private: true,
     rotate: "-rotate-[0.5deg]",
   },
   {
@@ -241,7 +242,7 @@ function AvatarStack() {
   );
 }
 
-function HintCard({ title, text, image, tag, tag2, starred, rotate }) {
+function HintCard({ title, text, image, tag, tag2, starred, private: isPrivate, rotate }) {
   const isRealImage = typeof image === "string" && image.startsWith("http");
 
   return (
@@ -252,14 +253,9 @@ function HintCard({ title, text, image, tag, tag2, starred, rotate }) {
         <div className="relative h-[120px] w-full">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={image} alt={title} className="h-full w-full object-cover" />
-          <div className="absolute right-3 top-3 h-4 w-7 rounded-full bg-white/50" />
         </div>
       ) : (
-        <div className={`h-[120px] w-full bg-gradient-to-br ${image}`}>
-          <div className="flex justify-end p-3">
-            <div className="h-4 w-7 rounded-full bg-white/50" />
-          </div>
-        </div>
+        <div className={`h-[120px] w-full bg-gradient-to-br ${image}`} />
       )}
       <div className="flex flex-1 flex-col p-3.5">
         <h3 className="text-[13px] font-semibold leading-tight tracking-[-0.02em] text-slate-900">
@@ -284,7 +280,7 @@ function HintCard({ title, text, image, tag, tag2, starred, rotate }) {
               M
             </div>
             <span className="text-[10px] text-slate-400">
-              {starred ? "Top pick" : "Nice to have"}
+              {isPrivate ? "🔒 Private" : starred ? "Top pick" : "Nice to have"}
             </span>
           </div>
           <button
@@ -698,6 +694,7 @@ export default function HomePageClient() {
                       tag={hint.tag}
                       tag2={hint.tag2}
                       starred={hint.starred}
+                      private={hint.private}
                       rotate={hint.rotate}
                     />
                   ))}

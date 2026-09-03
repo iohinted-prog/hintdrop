@@ -759,7 +759,9 @@ function FeedItem({
               </div>
             )}
           {bucket === "reminder" && item.cta_label && item.cta_href ? (
-            <div className="mt-4 flex items-center gap-4 rounded-[22px] bg-[#fdece0] p-4">
+            <div className={`mt-4 flex items-center gap-4 rounded-[22px] p-4 ${
+              String(metadata.event_type || "").toLowerCase() === "birthday" ? "bg-[#fdece0]" : "bg-[#e3f5ea]"
+            }`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={String(metadata.event_type || "").toLowerCase() === "birthday" ? "/illustrations/birthday-cake.svg" : "/illustrations/calendar.svg"}
@@ -784,7 +786,7 @@ function FeedItem({
                   </Link>
                   <Link
                     href="/shop"
-                    className="inline-flex h-9 items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] px-4 text-[13px] font-semibold text-white shadow-sm"
+                    className="inline-flex h-9 items-center justify-center rounded-full bg-white px-4 text-[13px] font-semibold text-slate-900 shadow-sm"
                   >
                     Shop
                   </Link>

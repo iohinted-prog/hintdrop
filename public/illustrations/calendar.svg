@@ -1,16 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Calendar icon">
   <g fill="none" stroke-linecap="round" stroke-linejoin="round">
     <!-- calendar body -->
-    <rect x="49" y="58" width="158" height="150" rx="18" fill="#EAF7EF"/>
+    <rect x="49" y="58" width="158" height="150" rx="18" fill="#FFF1E7"/>
     <!-- header -->
-    <path d="M49 82c0-13.255 10.745-24 24-24h110c13.255 0 24 10.745 24 24v30H49z" fill="#5EBF93"/>
+    <path d="M49 82c0-13.255 10.745-24 24-24h110c13.255 0 24 10.745 24 24v30H49z" fill="#FF7A59"/>
     <!-- binding rings -->
-    <path d="M82 48v25M174 48v25" stroke="#3A9A6E" stroke-width="14"/>
+    <path d="M82 48v25M174 48v25" stroke="#FF4B2B" stroke-width="14"/>
     <!-- date -->
     <text x="128" y="174" text-anchor="middle"
           font-family="Arial, Helvetica, sans-serif"
           font-size="72" font-weight="700" fill="#0F172A">12</text>
     <!-- subtle calendar line -->
-    <path d="M72 112h112" stroke="#B7E4CB" stroke-width="4"/>
+    <path d="M72 112h112" stroke="#FFC8B0" stroke-width="4"/>
   </g>
 </svg>
