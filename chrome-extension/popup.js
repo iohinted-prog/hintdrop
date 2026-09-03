@@ -1,4 +1,5 @@
 const statusEl = document.getElementById("status");
+const notLoggedInEl = document.getElementById("notLoggedIn");
 const loginFormEl = document.getElementById("loginForm");
 const resultEl = document.getElementById("result");
 
@@ -20,7 +21,7 @@ async function readCurrentPage() {
 
 async function showResultView(session) {
   statusEl.style.display = "none";
-  loginFormEl.style.display = "none";
+  notLoggedInEl.style.display = "none";
   resultEl.style.display = "block";
 
   document.getElementById("loggedInEmail").textContent = session.email || "";
@@ -47,11 +48,19 @@ async function showResultView(session) {
   }
 }
 
-function showLoginView() {
+function showNotLoggedInView() {
   statusEl.style.display = "none";
   resultEl.style.display = "none";
-  loginFormEl.style.display = "block";
+  notLoggedInEl.style.display = "block";
 }
+
+document.getElementById("openHintDropButton").addEventListener("click", () => {
+  chrome.tabs.create({ url: "https://hintdrop.app" });
+});
+
+document.getElementById("showManualLogin").addEventListener("click", () => {
+  loginFormEl.style.display = loginFormEl.style.display === "block" ? "none" : "block";
+});
 
 document.getElementById("loginButton").addEventListener("click", async () => {
   const email = document.getElementById("emailInput").value.trim();
@@ -66,8 +75,8 @@ document.getElementById("loginButton").addEventListener("click", async () => {
   }
 
   try {
-    const user = await login(email, password);
-    await showResultView({ email: user.email });
+    const session = await login(email, password);
+    await showResultView(session);
   } catch (err) {
     errorEl.textContent = err.message;
     errorEl.style.display = "block";
@@ -76,15 +85,27 @@ document.getElementById("loginButton").addEventListener("click", async () => {
 
 document.getElementById("logoutLink").addEventListener("click", async () => {
   await logout();
-  showLoginView();
+  showNotLoggedInView();
 });
 
-// Entry point: check for a stored session on popup open, branch accordingly.
+// Entry point. Order: cached extension session first (fastest, works
+// offline), then try reading the existing hintdrop.app web session
+// cookie (covers Google sign-in and anything else - this is the main
+// path most people will hit), then fall back to the not-logged-in view
+// (which itself offers the manual email/password form as a last resort).
 (async () => {
-  const session = await getStoredSession();
+  let session = await getStoredSession();
+
+  if (!session) {
+    session = await getSessionFromWebCookie();
+    if (session) {
+      await storeSession(session);
+    }
+  }
+
   if (session) {
     await showResultView(session);
   } else {
-    showLoginView();
+    showNotLoggedInView();
   }
 })();

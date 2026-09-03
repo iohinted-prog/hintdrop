@@ -17,14 +17,42 @@
       padding: 20px 0;
     }
 
-    /* Login form */
+    /* Not-logged-in view */
+    #notLoggedIn {
+      display: none;
+      text-align: center;
+    }
+    #notLoggedIn p {
+      font-size: 13px;
+      color: #4a4a4a;
+      line-height: 1.5;
+      margin: 0 0 14px;
+    }
+    #openHintDropButton {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(to bottom, #ff966f, #ff7e54);
+      color: #fff;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    #showManualLogin {
+      font-size: 11px;
+      color: #9a9a9a;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    /* Manual login form (fallback) */
     #loginForm {
       display: none;
-    }
-    #loginForm h2 {
-      font-size: 15px;
-      margin: 0 0 12px;
-      color: #1a1a1a;
+      margin-top: 14px;
+      border-top: 1px solid #f0e5dd;
+      padding-top: 14px;
     }
     #loginForm input {
       width: 100%;
@@ -41,7 +69,7 @@
       padding: 10px;
       border: none;
       border-radius: 10px;
-      background: linear-gradient(to bottom, #ff966f, #ff7e54);
+      background: #2f3b2d;
       color: #fff;
       font-weight: 600;
       font-size: 13px;
@@ -97,12 +125,17 @@
 <body>
   <div id="status">Loading…</div>
 
-  <div id="loginForm">
-    <h2>Log in to HintDrop</h2>
-    <input id="emailInput" type="email" placeholder="Email" autocomplete="username" />
-    <input id="passwordInput" type="password" placeholder="Password" autocomplete="current-password" />
-    <button id="loginButton">Log in</button>
-    <div id="loginError"></div>
+  <div id="notLoggedIn">
+    <p>You're not logged into HintDrop in this browser yet.</p>
+    <button id="openHintDropButton">Open HintDrop to log in</button>
+    <div id="showManualLogin">Have an email/password account? Log in manually</div>
+
+    <div id="loginForm">
+      <input id="emailInput" type="email" placeholder="Email" autocomplete="username" />
+      <input id="passwordInput" type="password" placeholder="Password" autocomplete="current-password" />
+      <button id="loginButton">Log in</button>
+      <div id="loginError"></div>
+    </div>
   </div>
 
   <div id="result">
