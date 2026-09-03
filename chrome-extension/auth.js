@@ -109,6 +109,39 @@ async function storeSession(session) {
   await chrome.storage.local.set({ hintdrop_session: session });
 }
 
+// Supabase access tokens typically expire after an hour. The web app
+// refreshes this automatically in the background while a hintdrop.app tab
+// is open, using its own refresh_token - but the cookie we read is just a
+// snapshot at one moment, so it can already be stale by the time an API
+// call actually needs it. This does the same refresh the web app would,
+// using the refresh_token from that same session.
+async function refreshSession(session) {
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({ refresh_token: session.refresh_token }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error("Your session has expired - please log in again.");
+  }
+
+  const refreshed = {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    user_id: data.user?.id || session.user_id,
+    email: data.user?.email || session.email,
+  };
+
+  await storeSession(refreshed);
+  return refreshed;
+}
+
 async function logout() {
   await chrome.storage.local.remove("hintdrop_session");
 }

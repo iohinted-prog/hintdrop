@@ -5,15 +5,40 @@
 // policies resolve auth.uid() correctly, same as any other authenticated
 // request to this project.
 
+// Wraps a fetch to Supabase's REST API with automatic token-refresh:
+// if the access_token has expired (401), refreshes it via refreshSession()
+// and retries exactly once with the new token. Mutates the passed-in
+// session object in place with the refreshed tokens, so the caller's
+// reference (popup.js's currentSession) stays current for any further
+// calls in the same popup session too, not just this one.
+async function authorizedFetch(session, url, options = {}) {
+  async function attempt() {
+    return fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+  }
+
+  let response = await attempt();
+
+  if (response.status === 401) {
+    const refreshed = await refreshSession(session);
+    session.access_token = refreshed.access_token;
+    session.refresh_token = refreshed.refresh_token;
+    response = await attempt();
+  }
+
+  return response;
+}
+
 async function fetchBoards(session) {
   const url = `${SUPABASE_URL}/rest/v1/hint_boards?user_id=eq.${session.user_id}&select=id,title,is_default,is_private&order=is_default.desc,created_at.asc`;
 
-  const response = await fetch(url, {
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${session.access_token}`,
-    },
-  });
+  const response = await authorizedFetch(session, url);
 
   if (!response.ok) {
     throw new Error("Couldn't load your hint lists.");
@@ -57,11 +82,9 @@ async function saveHint(session, boardId, pageInfo) {
     position: 0,
   };
 
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/hints`, {
+  const response = await authorizedFetch(session, `${SUPABASE_URL}/rest/v1/hints`, {
     method: "POST",
     headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${session.access_token}`,
       "Content-Type": "application/json",
       Prefer: "return=minimal",
     },
