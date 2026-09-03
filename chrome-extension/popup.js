@@ -90,6 +90,7 @@ addButtonEl.addEventListener("click", async () => {
     addButtonEl.style.display = "none";
     boardPickerEl.style.display = "block";
   } catch (err) {
+    alert("Couldn't load your lists: " + err.message);
     console.error(err);
   } finally {
     addButtonEl.textContent = "+ Add to Hints";
