@@ -414,9 +414,21 @@ function possessiveName(name) {
 
 function buildReminderHeadline({ title, type, eventDate }) {
   const diffDays = diffInDaysFromToday(eventDate);
-  if (diffDays == null) return `${title || "Event"} is coming up`;
+  const cleanTitle = String(title || "Event").trim();
+
+  if (diffDays == null) return `${cleanTitle} is coming up`;
 
   const distance = formatReminderDistance(diffDays).toLowerCase();
+
+  // If the title already says what kind of event this is (e.g. "Maya's
+  // Birthday", "James Bday", "5th Anniversary"), don't redundantly
+  // re-append the type label on top of it via possessiveName - that's
+  // what produced "Maya's Birthday's birthday is X". Just use the
+  // title as-is instead.
+  if (/\b(birthday|bday|anniversary|wedding|celebration)\b/i.test(cleanTitle)) {
+    return `${cleanTitle} is ${distance}`;
+  }
+
   const normalizedType = String(type || "").toLowerCase();
   const typeLabel = eventTypeStyles[normalizedType]?.label?.toLowerCase() || "event";
 

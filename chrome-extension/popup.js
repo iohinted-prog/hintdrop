@@ -36,6 +36,23 @@ function clearError() {
   errorBannerEl.style.display = "none";
 }
 
+// A session-expired error (thrown by refreshSession() in auth.js when the
+// refresh_token itself is no longer valid, not just the access_token)
+// used to just show as a dead-end red banner with no way forward. Now it
+// clears the stale session and drops back to the not-logged-in view,
+// which has a real recovery path (re-open hintdrop.app to log in, or the
+// manual login form).
+async function handleActionError(err) {
+  console.error(err);
+  if (String(err.message || "").toLowerCase().includes("session has expired")) {
+    await logout();
+    showNotLoggedInView();
+    showError("Your session expired - please log in again to continue.");
+  } else {
+    showError(err.message);
+  }
+}
+
 async function readCurrentPage() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -130,8 +147,7 @@ async function loadAndShowBoardPicker() {
     document.querySelectorAll("label.fieldLabel").forEach((l) => (l.style.display = "none"));
     boardPickerEl.style.display = "block";
   } catch (err) {
-    showError(err.message);
-    console.error(err);
+    await handleActionError(err);
   } finally {
     addButtonEl.textContent = "+ Add to Hints";
     addButtonEl.disabled = false;
@@ -203,8 +219,7 @@ document.getElementById("createBoardButton").addEventListener("click", async () 
     input.value = "";
     await handleSaveToBoard(board);
   } catch (err) {
-    showError(err.message);
-    console.error(err);
+    await handleActionError(err);
   }
 });
 
@@ -237,12 +252,20 @@ async function handleSaveToBoard(board) {
     document.getElementById("viewInHintDrop").href = `https://hintdrop.app/hints/${board.id}`;
   } catch (err) {
     statusEl.style.display = "none";
+    console.error(err);
+
+    if (String(err.message || "").toLowerCase().includes("session has expired")) {
+      await logout();
+      showNotLoggedInView();
+      showError("Your session expired - please log in again to continue.");
+      return;
+    }
+
     addButtonEl.style.display = "block";
     titleInputEl.style.display = "block";
     priceInputEl.style.display = "block";
     document.querySelectorAll("label.fieldLabel").forEach((l) => (l.style.display = "block"));
     showError(err.message);
-    console.error(err);
   }
 }
 
