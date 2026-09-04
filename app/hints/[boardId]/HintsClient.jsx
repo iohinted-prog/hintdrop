@@ -1595,6 +1595,7 @@ const SortableMobileHintCard = memo(function SortableMobileHintCard({
     zIndex: isDragging ? 20 : 1,
     position: "relative",
     touchAction: "pan-y",
+    WebkitTouchCallout: "none",
   };
 
   return (
@@ -2536,6 +2537,18 @@ export default function HintsClient({ boardId }) {
     const reorderedVisible = rebuildFromColumns(workingColumns);
     const hiddenRemainder = hints.slice(visibleCount);
     const nextHints = [...reorderedVisible, ...hiddenRemainder].map((h, i) => ({ ...h, position: i }));
+
+    // A touch hold long enough to activate dnd-kit's TouchSensor (past
+    // its 250ms delay) but without any actual movement afterward still
+    // reaches this point with an unchanged order - confirmed this is
+    // exactly what was causing a network round-trip (and its loading
+    // state) on every long-press, even ones that were never really a
+    // drag at all. Skip persisting when the hint ID sequence is
+    // actually identical to what's already there. Same fix applied to
+    // handleMobileDragEnd below.
+    const orderUnchanged = nextHints.length === hints.length && nextHints.every((h, i) => h.id === hints[i]?.id);
+    if (orderUnchanged) return;
+
     setHints(nextHints);
     await persistOrder(nextHints);
   }
@@ -2597,6 +2610,10 @@ export default function HintsClient({ boardId }) {
     const reorderedVisible = rebuildFromColumns(workingColumns);
     const hiddenRemainder = hints.slice(visibleCount);
     const nextHints = [...reorderedVisible, ...hiddenRemainder].map((h, i) => ({ ...h, position: i }));
+
+    const orderUnchanged = nextHints.length === hints.length && nextHints.every((h, i) => h.id === hints[i]?.id);
+    if (orderUnchanged) return;
+
     setHints(nextHints);
     await persistOrder(nextHints);
   }
