@@ -62,33 +62,30 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onM
       <div className="flex items-center gap-3 md:gap-4">
         {previewBoards.length > 0 && (
           <div className="hidden md:flex gap-2 shrink-0">
-            {previewBoards.slice(0, 6).map((b, i) => {
-              const overflowCount = previewBoards.length - 6;
-              const showOverflowBadge = i === 5 && overflowCount > 0;
-              return (
-                <Link
-                  key={b.id}
-                  href={profileId ? `/profile/${profileId}?board=${b.id}` : "#"}
-                  onClick={(e) => e.stopPropagation()}
-                  className="relative h-16 w-16 md:h-20 md:w-20 shrink-0 overflow-hidden rounded-[10px] border border-[#f0dfd6] bg-[#fffaf7]"
-                >
-                  {b.previewImage
-                    ? <HintImage src={b.previewImage} alt={b.title} fill className="object-cover" sizes="64px" fallbackClassName="text-base" />
-                    : <div className={`absolute inset-0 bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]} flex items-center justify-center text-base opacity-80`}>📋</div>
-                  }
-                  {showOverflowBadge ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/55">
-                      <p className="text-[13px] font-bold text-white">+{overflowCount}</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.55)_0%,rgba(255,255,255,0)_55%)]" />
-                      <p className="absolute inset-x-0 bottom-0 p-1 text-[8px] font-semibold text-white leading-tight line-clamp-2">{b.title}</p>
-                    </>
-                  )}
-                </Link>
-              );
-            })}
+            {previewBoards.slice(0, 3).map((b, i) => (
+              <Link
+                key={b.id}
+                href={profileId ? `/profile/${profileId}?board=${b.id}` : "#"}
+                onClick={(e) => e.stopPropagation()}
+                className="relative h-16 w-16 md:h-20 md:w-20 shrink-0 overflow-hidden rounded-[10px] border border-[#f0dfd6] bg-[#fffaf7]"
+              >
+                {b.previewImage
+                  ? <HintImage src={b.previewImage} alt={b.title} fill className="object-cover" sizes="64px" fallbackClassName="text-base" />
+                  : <div className={`absolute inset-0 bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]} flex items-center justify-center text-base opacity-80`}>📋</div>
+                }
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.55)_0%,rgba(255,255,255,0)_55%)]" />
+                <p className="absolute inset-x-0 bottom-0 p-1 text-[8px] font-semibold text-white leading-tight line-clamp-2">{b.title}</p>
+              </Link>
+            ))}
+            {previewBoards.length > 3 && (
+              <Link
+                href={profileId ? `/profile/${profileId}` : "#"}
+                onClick={(e) => e.stopPropagation()}
+                className="relative h-16 w-16 md:h-20 md:w-20 shrink-0 overflow-hidden rounded-[10px] border border-[#f0dfd6] bg-[#f5efe9] flex items-center justify-center"
+              >
+                <p className="text-[13px] font-bold text-slate-500">+{previewBoards.length - 3}</p>
+              </Link>
+            )}
           </div>
         )}
         <div className={`h-11 w-11 md:h-14 md:w-14 shrink-0 rounded-full overflow-hidden flex items-center justify-center ${isClickable ? "cursor-pointer" : ""}`} onClick={isClickable ? handleClick : undefined}>
