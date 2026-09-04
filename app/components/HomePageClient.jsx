@@ -207,7 +207,7 @@ const shopTiles = [
 
 function LandingLogo() {
   return (
-    <div className="flex items-center gap-0">
+    <div className="flex items-baseline gap-0">
       {/* Trial per request - the H-ribbon logo standing in for the
           literal "H" letter, "int" recoloured to match the logo's
           peach, "Drop" switched to black (previously the reverse -
