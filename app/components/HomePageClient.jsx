@@ -207,13 +207,13 @@ const shopTiles = [
 
 function LandingLogo() {
   return (
-    <div className="flex items-baseline gap-0">
+    <div className="flex items-center gap-0">
       {/* Trial per request - the H-ribbon logo standing in for the
           literal "H" letter, "int" recoloured to match the logo's
           peach, "Drop" switched to black (previously the reverse -
           "Hint" was black/dark and "Drop" was the accent colour). */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/illustrations/logo-trial-h-v3.png" alt="" className="h-10 w-auto object-contain" />
+      <img src="/illustrations/logo-trial-h.png" alt="" className="h-10 w-auto object-contain" />
       <div className="text-[22px] font-extrabold tracking-[-0.04em]">
         <span className="text-[#ff875d]">int</span>
         <span className="text-slate-900">Drop</span>

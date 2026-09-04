@@ -15,7 +15,7 @@ function LogoMark() {
     // to see". Background removed (was a peach rounded-square behind
     // the H) so it sits transparent against whatever's behind it here.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/illustrations/logo-trial-h-v3.png" alt="" width={38} height={40} className="object-contain" />
+    <img src="/illustrations/logo-trial-h.png" alt="" width={38} height={40} className="object-contain" />
   );
 }
 function getMetadataName(metadata = {}) {
@@ -493,7 +493,7 @@ export default function AppShell({ children }) {
       {!isLoggedIn && ["/terms", "/privacy", "/about", "/for-brands", "/contact"].includes(pathname) ? null : (
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur relative z-[100]">
         <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
-          <Link href="/feed" className="flex items-baseline gap-0">
+          <Link href="/feed" className="flex items-center gap-0">
             <LogoMark />
             <div className="text-[22px] font-extrabold tracking-[-0.05em]">
               <span className="text-[#ff875d]">int</span>

@@ -89,12 +89,11 @@ export default function UnsubscribeClient() {
   return (
     <main className="min-h-screen bg-[#fffaf7] flex items-center justify-center px-5 py-16">
       <div className="w-full max-w-[480px] rounded-[28px] border border-[#efdcd2] bg-white p-8 shadow-[0_20px_60px_rgba(88,46,31,0.1)]">
-        <div className="flex items-baseline gap-0 mb-6">
+        <div className="flex items-center gap-2 mb-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/illustrations/logo-trial-h-v3.png" alt="" className="h-6 w-auto object-contain" />
-          <span className="text-[18px] font-extrabold tracking-[-0.04em]">
-            <span className="text-[#ff875d]">int</span>
-            <span className="text-slate-900">Drop</span>
+          <img src="/brand-icon.png" alt="" width={28} height={28} className="object-contain" />
+          <span className="text-[18px] font-extrabold tracking-[-0.04em] text-slate-900">
+            Hint<span className="text-[#ff875d]">Drop</span>
           </span>
         </div>
 
