@@ -60,6 +60,40 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onM
   return (
     <article className="rounded-[22px] border border-[#f0dfd6] bg-white p-4 md:p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[#e8c9bc]">
       <div className="flex items-center gap-3 md:gap-4">
+        <div className={`h-11 w-11 md:h-14 md:w-14 shrink-0 rounded-full overflow-hidden flex items-center justify-center ${isClickable ? "cursor-pointer" : ""}`} onClick={isClickable ? handleClick : undefined}>
+          {contact.avatarUrl ? (
+            <HintImage src={contact.avatarUrl} alt={contact.name || "Contact"} width={56} height={56} className="rounded-full object-cover" />
+          ) : (
+            <div className={`flex h-11 w-11 md:h-14 md:w-14 items-center justify-center rounded-full bg-gradient-to-b ${contact.colors || "from-[#efcdbf] to-[#bb8168]"} text-[12px] md:text-[15px] font-bold text-white`}>
+              {contact.initials || getInitials(contact.name)}
+            </div>
+          )}
+        </div>
+        <div className={`min-w-0 max-w-[160px] md:max-w-[220px] shrink-0 ${isClickable ? "cursor-pointer" : ""}`} onClick={isClickable ? handleClick : undefined}>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-sm md:text-[16px] font-semibold text-slate-900 truncate">{contact.name}</p>
+            <span
+              className="text-[10px] md:text-[11px] font-semibold rounded-full px-2 py-0.5 shrink-0"
+              style={{ backgroundColor: roleColor(contact.role).bg + "66", color: roleColor(contact.role).text }}
+            >
+              {contact.role || "Friend"}
+            </span>
+          </div>
+          {contact.note && contact.note !== contact.role && <p className="text-xs md:text-[13px] text-slate-500 truncate mt-0.5">{contact.note}</p>}
+          {contact.birthday && (
+            <p className="text-[11px] md:text-[12px] text-[#df7b59] mt-0.5 truncate flex items-center gap-1.5">
+              <span>
+                🎂 {new Date(contact.birthday + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })} · {getStarSign(contact.birthday)}
+              </span>
+              {contact.daysUntilBirthday != null && contact.daysUntilBirthday <= 30 && (
+                <span className="rounded-full bg-[#fdece0] px-2 py-0.5 text-[10px] md:text-[11px] font-semibold text-[#c9633f] shrink-0">
+                  {contact.daysUntilBirthday === 0 ? "Today!" : contact.daysUntilBirthday === 1 ? "Tomorrow" : `in ${contact.daysUntilBirthday} days`}
+                </span>
+              )}
+            </p>
+          )}
+          {isClickable && <p className="text-[11px] text-[#df7b59] mt-0.5">👁 See hints</p>}
+        </div>
         {previewBoards.length > 0 && (
           <div className="hidden md:flex gap-2 shrink-0">
             {previewBoards.slice(0, 3).map((b, i) => (
@@ -88,45 +122,12 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onM
             )}
           </div>
         )}
-        <div className={`h-11 w-11 md:h-14 md:w-14 shrink-0 rounded-full overflow-hidden flex items-center justify-center ${isClickable ? "cursor-pointer" : ""}`} onClick={isClickable ? handleClick : undefined}>
-          {contact.avatarUrl ? (
-            <HintImage src={contact.avatarUrl} alt={contact.name || "Contact"} width={56} height={56} className="rounded-full object-cover" />
-          ) : (
-            <div className={`flex h-11 w-11 md:h-14 md:w-14 items-center justify-center rounded-full bg-gradient-to-b ${contact.colors || "from-[#efcdbf] to-[#bb8168]"} text-[12px] md:text-[15px] font-bold text-white`}>
-              {contact.initials || getInitials(contact.name)}
-            </div>
-          )}
-        </div>
-        <div className={`min-w-0 flex-1 ${isClickable ? "cursor-pointer" : ""}`} onClick={isClickable ? handleClick : undefined}>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <p className="text-sm md:text-[16px] font-semibold text-slate-900 truncate">{contact.name}</p>
-            <span
-              className="text-[10px] md:text-[11px] font-semibold rounded-full px-2 py-0.5 shrink-0"
-              style={{ backgroundColor: roleColor(contact.role).bg + "66", color: roleColor(contact.role).text }}
-            >
-              {contact.role || "Friend"}
-            </span>
-          </div>
-          {contact.note && contact.note !== contact.role && <p className="text-xs md:text-[13px] text-slate-500 truncate mt-0.5">{contact.note}</p>}
-          {contact.birthday && (
-            <p className="text-[11px] md:text-[12px] text-[#df7b59] mt-0.5 truncate flex items-center gap-1.5">
-              <span>
-                🎂 {new Date(contact.birthday + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })} · {getStarSign(contact.birthday)}
-              </span>
-              {contact.daysUntilBirthday != null && contact.daysUntilBirthday <= 30 && (
-                <span className="rounded-full bg-[#fdece0] px-2 py-0.5 text-[10px] md:text-[11px] font-semibold text-[#c9633f] shrink-0">
-                  {contact.daysUntilBirthday === 0 ? "Today!" : contact.daysUntilBirthday === 1 ? "Tomorrow" : `in ${contact.daysUntilBirthday} days`}
-                </span>
-              )}
-            </p>
-          )}
-          {isClickable && <p className="text-[11px] text-[#df7b59] mt-0.5">👁 See hints</p>}
-        </div>
         {previewBoards.length === 0 && isClickable && (
           <p className="hidden md:block shrink-0 cursor-pointer text-[11px] text-slate-400" onClick={handleClick}>
             No hints saved yet
           </p>
         )}
+        <div className="flex-1" />
         <div className="flex items-center gap-1 shrink-0">
           {onMessageClick && profileId && (
             <button type="button" onClick={e => { e.stopPropagation(); onMessageClick(contact); }}
