@@ -60,6 +60,37 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onM
   return (
     <article className="rounded-[22px] border border-[#f0dfd6] bg-white p-4 md:p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[#e8c9bc]">
       <div className="flex items-center gap-3 md:gap-4">
+        {previewBoards.length > 0 && (
+          <div className="hidden md:flex gap-2 shrink-0">
+            {previewBoards.slice(0, 6).map((b, i) => {
+              const overflowCount = previewBoards.length - 6;
+              const showOverflowBadge = i === 5 && overflowCount > 0;
+              return (
+                <Link
+                  key={b.id}
+                  href={profileId ? `/profile/${profileId}?board=${b.id}` : "#"}
+                  onClick={(e) => e.stopPropagation()}
+                  className="relative h-16 w-16 md:h-20 md:w-20 shrink-0 overflow-hidden rounded-[10px] border border-[#f0dfd6] bg-[#fffaf7]"
+                >
+                  {b.previewImage
+                    ? <HintImage src={b.previewImage} alt={b.title} fill className="object-cover" sizes="64px" fallbackClassName="text-base" />
+                    : <div className={`absolute inset-0 bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]} flex items-center justify-center text-base opacity-80`}>📋</div>
+                  }
+                  {showOverflowBadge ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/55">
+                      <p className="text-[13px] font-bold text-white">+{overflowCount}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.55)_0%,rgba(255,255,255,0)_55%)]" />
+                      <p className="absolute inset-x-0 bottom-0 p-1 text-[8px] font-semibold text-white leading-tight line-clamp-2">{b.title}</p>
+                    </>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        )}
         <div className={`h-11 w-11 md:h-14 md:w-14 shrink-0 rounded-full overflow-hidden flex items-center justify-center ${isClickable ? "cursor-pointer" : ""}`} onClick={isClickable ? handleClick : undefined}>
           {contact.avatarUrl ? (
             <HintImage src={contact.avatarUrl} alt={contact.name || "Contact"} width={56} height={56} className="rounded-full object-cover" />
@@ -94,44 +125,7 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onM
           )}
           {isClickable && <p className="text-[11px] text-[#df7b59] mt-0.5">👁 See hints</p>}
         </div>
-        {/* Desktop-only preview tiles, in the same row as the avatar
-            rather than a separate row below (was hidden md:flex ... mt-3,
-            spanning the full card width underneath everything else) -
-            also sized up slightly (was h-14/56px, now h-16/64px). Mobile
-            dropped its own separate small-tile preview entirely (was
-            36px tiles inline under the name/role text) - not needed
-            there per request. */}
-        {previewBoards.length > 0 ? (
-          <div className="hidden md:flex gap-2 shrink-0">
-            {previewBoards.slice(0, 6).map((b, i) => {
-              const overflowCount = previewBoards.length - 6;
-              const showOverflowBadge = i === 5 && overflowCount > 0;
-              return (
-                <Link
-                  key={b.id}
-                  href={profileId ? `/profile/${profileId}?board=${b.id}` : "#"}
-                  onClick={(e) => e.stopPropagation()}
-                  className="relative h-16 w-16 md:h-20 md:w-20 shrink-0 overflow-hidden rounded-[10px] border border-[#f0dfd6] bg-[#fffaf7]"
-                >
-                  {b.previewImage
-                    ? <HintImage src={b.previewImage} alt={b.title} fill className="object-cover" sizes="64px" fallbackClassName="text-base" />
-                    : <div className={`absolute inset-0 bg-gradient-to-br ${GRADIENTS[i % GRADIENTS.length]} flex items-center justify-center text-base opacity-80`}>📋</div>
-                  }
-                  {showOverflowBadge ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/55">
-                      <p className="text-[13px] font-bold text-white">+{overflowCount}</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(16,12,10,0.55)_0%,rgba(255,255,255,0)_55%)]" />
-                      <p className="absolute inset-x-0 bottom-0 p-1 text-[8px] font-semibold text-white leading-tight line-clamp-2">{b.title}</p>
-                    </>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        ) : isClickable && (
+        {previewBoards.length === 0 && isClickable && (
           <p className="hidden md:block shrink-0 cursor-pointer text-[11px] text-slate-400" onClick={handleClick}>
             No hints saved yet
           </p>

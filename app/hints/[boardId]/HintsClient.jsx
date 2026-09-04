@@ -77,6 +77,32 @@ const EMPTY_EDIT_FORM = {
   private: false,
 };
 
+// Wraps demo/placeholder content with a reduced-opacity look plus a
+// diagonal light sweep animating across it on a loop - a visual cue
+// that this is illustrative example content, not real data, without
+// needing extra text or a badge on every card.
+function DemoShimmerOverlay({ children }) {
+  return (
+    <div className="relative overflow-hidden rounded-[18px] opacity-70">
+      {children}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.55) 50%, transparent 60%)",
+          backgroundSize: "250% 250%",
+          animation: "demoShimmerSweep 2.6s ease-in-out infinite",
+        }}
+      />
+      <style jsx>{`
+        @keyframes demoShimmerSweep {
+          0% { background-position: 200% 200%; }
+          100% { background-position: -50% -50%; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 const demoHints = [
   {
     id: "demo-1",
@@ -2811,29 +2837,33 @@ export default function HintsClient({ boardId }) {
                 <div className="hidden lg:block columns-2 gap-4 lg:columns-3">
                   {demoHints.map((hint) => (
                     <div key={hint.id} className="mb-6 break-inside-avoid">
-                      <HintCard
-                        hint={hint}
-                        imageRatios={imageRatios}
-                        onEdit={() => {}}
-                        onToggleStarred={() => {}}
-                        onTogglePrivate={() => {}}
-                        isDragging={false}
-                        formatCurrency={formatCurrency}
-                      />
+                      <DemoShimmerOverlay>
+                        <HintCard
+                          hint={hint}
+                          imageRatios={imageRatios}
+                          onEdit={() => {}}
+                          onToggleStarred={() => {}}
+                          onTogglePrivate={() => {}}
+                          isDragging={false}
+                          formatCurrency={formatCurrency}
+                        />
+                      </DemoShimmerOverlay>
                     </div>
                   ))}
                 </div>
                 <div className="block lg:hidden columns-2 gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid">
                   {demoHints.map((hint) => (
                     <div key={hint.id} className="break-inside-avoid mb-3">
-                      <MobileHintCard
-                        hint={hint}
-                        imageRatios={imageRatios}
-                        onEdit={() => {}}
-                        onToggleStarred={() => {}}
-                        onTogglePrivate={() => {}}
-                        formatCurrency={formatCurrency}
-                      />
+                      <DemoShimmerOverlay>
+                        <MobileHintCard
+                          hint={hint}
+                          imageRatios={imageRatios}
+                          onEdit={() => {}}
+                          onToggleStarred={() => {}}
+                          onTogglePrivate={() => {}}
+                          formatCurrency={formatCurrency}
+                        />
+                      </DemoShimmerOverlay>
                     </div>
                   ))}
                 </div>

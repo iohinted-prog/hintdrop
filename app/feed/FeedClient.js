@@ -72,6 +72,70 @@ const demoContacts = [
   },
 ];
 
+const demoHintPost = {
+  id: "demo-hint-post",
+  owner_user_id: "demo-owner",
+  actor_user_id: null,
+  target_user_id: null,
+  family: "hint",
+  item_type: "hint_save_session",
+  visibility: "private",
+  circle_id: null,
+  activity_session_id: null,
+  source_event_id: null,
+  headline: "Demo added a hint",
+  body: "",
+  cta_label: null,
+  cta_href: null,
+  occurred_at: new Date().toISOString(),
+  created_at: new Date().toISOString(),
+  metadata: {
+    social_enabled: true,
+    actor_name: "Demo",
+    actor_avatar_url: "/illustrations/demo-avatar-1.png",
+    actor_avatar_initials: "D",
+    preview_hints: [
+      {
+        id: "demo-hint-1",
+        title: "Nothing Headphones",
+        retailer: "amazon.co.uk",
+        image_url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
+      },
+    ],
+  },
+  isDemo: true,
+};
+
+const demoReminderPost = {
+  id: "demo-reminder-post",
+  owner_user_id: "demo-owner",
+  actor_user_id: null,
+  target_user_id: null,
+  family: "reminder",
+  item_type: "reminder",
+  visibility: "private",
+  circle_id: null,
+  activity_session_id: null,
+  source_event_id: null,
+  headline: "Demo's birthday is in 6 days",
+  body: "",
+  cta_label: "See hints",
+  cta_href: "/hints",
+  occurred_at: new Date().toISOString(),
+  created_at: new Date().toISOString(),
+  metadata: {
+    social_enabled: true,
+    actor_name: "Demo",
+    actor_avatar_url: "/illustrations/demo-avatar-2.jpg",
+    actor_avatar_initials: "D",
+    actor_profile_href: "/hints",
+    event_type: "birthday",
+    event_title: "Demo's Birthday",
+    event_date: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+  },
+  isDemo: true,
+};
+
 const firstLookCard = {
   id: "first-look-card",
   owner_user_id: "demo-owner",
@@ -2394,7 +2458,7 @@ export default function FeedClient() {
 
   const combinedFeedItems = useMemo(() => {
     const hasRealActivity = feedItems.length > 0;
-    const base = hasRealActivity ? feedItems : [firstLookCard];
+    const base = hasRealActivity ? feedItems : [firstLookCard, demoHintPost, demoReminderPost];
     const merged = [...base, ...shortReminderFeedItems];
 
     return merged.sort((a, b) => {
