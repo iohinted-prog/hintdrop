@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { createClient } from "../../lib/supabase/client";
 import AddContactModal from "../components/AddContactModal";
-import EditContactModal from "../components/EditContactModal";
 import ContactCard from "../components/ContactCard";
 import { useChatWindows } from "../components/ChatWindowsProvider";
 import UserProfileModal from "../components/UserProfileModal";
@@ -94,7 +93,6 @@ export default function PeopleClient() {
   const [loading, setLoading] = useState(true);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [addKey, setAddKey] = useState(0);
-  const [editingContact, setEditingContact] = useState(null);
   const [profileModal, setProfileModal] = useState(null);
   const [search, setSearch] = useState("");
 
@@ -246,7 +244,19 @@ export default function PeopleClient() {
         </div>
         <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search contacts..."
           className="w-full h-11 rounded-[18px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e] mb-4" />
-        {loading ? <p className="text-sm text-slate-400 text-center py-8">Loading...</p>
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 rounded-[22px] border border-[#f0dfd6] bg-white p-4 animate-pulse">
+                <div className="h-11 w-11 shrink-0 rounded-full bg-[#f0e4dd]" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3.5 w-32 rounded-full bg-[#f0e4dd]" />
+                  <div className="h-3 w-20 rounded-full bg-[#f5ede8]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )
         : filtered.length === 0 ? (
           <div className="text-center py-12">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -268,7 +278,7 @@ export default function PeopleClient() {
                 <div className="space-y-3">
                   {upcomingBirthdays.map(contact => (
                     <ContactCard key={contact.id} contact={contact} onOpenProfile={setProfileModal}
-                      onEditClick={setEditingContact} onDeleteClick={handleDelete}
+                      onDeleteClick={handleDelete}
                       onMessageClick={handleMessageContact}
                       previewBoards={contactHints[contact.profileId] || []} />
                   ))}
@@ -283,7 +293,7 @@ export default function PeopleClient() {
                 <div className="space-y-3">
                   {everyoneElse.map(contact => (
                     <ContactCard key={contact.id} contact={contact} onOpenProfile={setProfileModal}
-                      onEditClick={setEditingContact} onDeleteClick={handleDelete}
+                      onDeleteClick={handleDelete}
                       onMessageClick={handleMessageContact}
                       previewBoards={contactHints[contact.profileId] || []} />
                   ))}
@@ -295,10 +305,6 @@ export default function PeopleClient() {
       </div>
       <AddContactModal key={addKey} modalKey={addKey} open={isAddOpen} onClose={() => setIsAddOpen(false)}
         onSave={async (payload) => { await handleSaveContact(payload); setIsAddOpen(false); }} supabase={supabase} />
-      {editingContact && (
-        <EditContactModal contact={editingContact} onClose={() => setEditingContact(null)}
-          onSave={async () => { await loadContacts(); setEditingContact(null); }} />
-      )}
       {profileModal && (
         <UserProfileModal
           userId={profileModal.userId}

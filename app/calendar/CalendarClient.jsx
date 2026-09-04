@@ -520,7 +520,19 @@ export default function CalendarClient() {
         {/* Coming up */}
         <div className="mt-6">
           <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Coming up</p>
-          {loading ? <div className="text-sm text-slate-400">Loading...</div> :
+          {loading ? (
+            <div className="space-y-2">
+              {[1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-3 rounded-[14px] bg-[#faf7f4] p-3 animate-pulse">
+                  <div className="h-8 w-8 shrink-0 rounded-full bg-[#f0e4dd]" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3 w-28 rounded-full bg-[#f0e4dd]" />
+                    <div className="h-2.5 w-16 rounded-full bg-[#f5ede8]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) :
             upcoming.length === 0 ? (
               <div className="flex flex-col items-center text-center py-6">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -528,6 +540,7 @@ export default function CalendarClient() {
                 <p className="text-sm text-slate-400">Nothing coming up yet.</p>
                 <p className="text-[12px] text-slate-400 mt-0.5">Add a birthday or event to keep track of it here.</p>
               </div>
+            
             ) :
             <div className="space-y-2">
               {upcoming.map(e => {

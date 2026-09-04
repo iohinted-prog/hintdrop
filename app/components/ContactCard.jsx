@@ -46,7 +46,7 @@ const ROLE_COLORS = {
 function roleColor(role) {
   return ROLE_COLORS[String(role || "").toLowerCase()] || { bg: "#bdb2ff", text: "#5c4f8a" };
 }
-export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onEditClick, onMessageClick, previewBoards = [] }) {
+export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onMessageClick, previewBoards = [] }) {
   const profileId = contact.profileId || contact.matchedProfileId || null;
   const isClickable = Boolean(profileId && !contact.isDemo && onOpenProfile);
   function handleClick() {
@@ -142,10 +142,6 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onE
               className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400 hover:bg-[#fff5f0] hover:text-[#ff875d]">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </button>
-          )}
-          {onEditClick && (
-            <button type="button" onClick={e => { e.stopPropagation(); onEditClick(contact); }}
-              className="h-8 w-8 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-400 hover:bg-[#fff5f0] text-sm">✎</button>
           )}
           {onDeleteClick && (
             <button type="button" onClick={e => { e.stopPropagation(); onDeleteClick(contact); }}

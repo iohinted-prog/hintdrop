@@ -762,7 +762,40 @@ export default function ShopPage() {
     setBoardPickerProduct(null);
 
     try {
-      const payload = buildHintInsertPayload(product, currentUser.id, boardId);
+      // Shop product images are sourced at whatever the original catalog
+      // ingestion happened to grab - confirmed directly some of these are
+      // genuinely poor (one PlayStation product's stored "image" is
+      // literally a favicon, not a product photo at all; others use a
+      // deliberately small CDN preset intended for a grid thumbnail, not
+      // a larger hint card). Try a live refetch from the retailer's own
+      // page using the same scraping logic already proven for pasted
+      // URLs (JSON-LD extraction, generic-asset filtering) before
+      // falling back to whatever the shop already has stored - bounded
+      // to 8s so a slow or blocked retailer never holds up the save.
+      let refetchedImage = null;
+      try {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 8000);
+        const res = await fetch("/api/link-preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: getOutboundUrl(product) }),
+          signal: controller.signal,
+        });
+        window.clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.image && typeof data.image === "string" && data.image.startsWith("http")) {
+            refetchedImage = data.image;
+          }
+        }
+      } catch {
+        // Refetch failed or timed out - fall through and use the shop's
+        // own stored image below, same as before this change existed.
+      }
+
+      const productForInsert = refetchedImage ? { ...product, image_url: refetchedImage } : product;
+      const payload = buildHintInsertPayload(productForInsert, currentUser.id, boardId);
       const { error } = await supabase.from("hints").insert(payload);
 
       if (error) throw error;

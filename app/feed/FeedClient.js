@@ -1263,12 +1263,6 @@ function MiniCalendar({
         </div>
       ) : null}
 
-      {calendarLoading ? (
-        <div className="mt-4 rounded-[18px] bg-[#faf7f4] px-4 py-3 text-sm text-slate-500">
-          Loading calendar...
-        </div>
-      ) : null}
-
       <div className="mt-4 grid grid-cols-7 gap-2 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">
         <div>Mon</div>
         <div>Tue</div>
