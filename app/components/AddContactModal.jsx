@@ -198,7 +198,7 @@ export default function AddContactModal({ open, onClose, onSave, modalKey }) {
               <div className="mt-3 flex flex-wrap gap-2.5">
                 {relationshipOptions.map((r) => (
                   <button key={r} type="button" onClick={() => setSelectedRelationships([r])}
-                    className={"rounded-full border px-4 py-2.5 text-sm font-medium transition " + (selectedRelationships.includes(r) ? "border-[#2f3b2d] bg-[#2f3b2d] text-white" : "border-[#d9dce3] bg-white text-slate-600 hover:bg-slate-50")}>
+                    className={"rounded-full border px-4 py-2.5 text-sm font-medium transition " + (selectedRelationships.includes(r) ? "border-[#bfe4cf] bg-[#e3f5ea] text-[#2f8a5f]" : "border-[#d9dce3] bg-white text-slate-600 hover:bg-slate-50")}>
                     {r}
                   </button>
                 ))}

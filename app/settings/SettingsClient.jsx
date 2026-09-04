@@ -328,7 +328,7 @@ export default function SettingsPage() {
                     onClick={() => toggleInterest(interest)}
                     className={`rounded-full px-4 py-2.5 text-sm font-medium transition ${
                       selected
-                        ? "bg-[#2f3b2d] text-white"
+                        ? "bg-[#e3f5ea] text-[#2f8a5f]"
                         : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                     }`}
                   >

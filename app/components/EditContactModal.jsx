@@ -51,7 +51,7 @@ export default function EditContactModal({ contact, onClose, onSave }) {
             <div className="mt-2 flex flex-wrap gap-2">
               {relationshipOptions.map(r => (
                 <button key={r} type="button" onClick={() => setForm(p => ({ ...p, role: r }))}
-                  className={"rounded-full border px-3 py-1.5 text-xs font-medium transition " + (form.role === r ? "border-[#2f3b2d] bg-[#2f3b2d] text-white" : "border-[#d9dce3] bg-white text-slate-600 hover:bg-slate-50")}>
+                  className={"rounded-full border px-3 py-1.5 text-xs font-medium transition " + (form.role === r ? "border-[#bfe4cf] bg-[#e3f5ea] text-[#2f8a5f]" : "border-[#d9dce3] bg-white text-slate-600 hover:bg-slate-50")}>
                   {r}
                 </button>
               ))}

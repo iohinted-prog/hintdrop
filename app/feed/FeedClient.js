@@ -257,14 +257,32 @@ function diffInDaysFromToday(dateString) {
 // caused by a missing value= attribute on the type <option> elements
 // in CalendarClient.jsx, now fixed at the source too) - an exact match
 // against "birthday" would silently miss that and any similar cases.
-function eventTypeIcon(eventType) {
-  const normalized = String(eventType || "").toLowerCase();
-  if (normalized.includes("birthday")) return "/illustrations/birthday-cake.svg";
-  if (normalized.includes("anniversary")) return "/illustrations/anniversary.svg";
-  if (normalized.includes("celebration")) return "/illustrations/celebration.svg";
-  if (normalized.includes("wedding")) return "/illustrations/wedding-church.svg";
+// Takes both title and type (not type alone) - the only way to tell
+// Christmas from Halloween from a plain "Holiday" event, since these
+// are all typically stored under the same generic type and only the
+// title actually distinguishes them (same approach eventEmoji() in
+// CalendarClient.jsx already uses for its emoji choice). Checking
+// title for birthday/wedding/anniversary too, not just type, also
+// catches real messy data - confirmed directly: an event titled
+// "Ciara's Birthday" but stored with type "Holiday" would otherwise
+// silently get the generic holiday icon instead of the cake.
+function eventTypeIcon(title, type) {
+  const t = String(title || "").toLowerCase();
+  const normalized = String(type || "").toLowerCase();
+
+  if (t.includes("christmas")) return "/illustrations/santa.png";
+  if (t.includes("halloween")) return "/illustrations/pumpkin.png";
+  if (t.includes("easter")) return "/illustrations/bunny.png";
+  if (t.includes("patrick")) return "/illustrations/shamrock.png";
+  if (t.includes("new year")) return "/illustrations/balloon.svg";
+
+  if (t.includes("birthday") || normalized.includes("birthday")) return "/illustrations/birthday-cake.svg";
+  if (t.includes("wedding") || normalized.includes("wedding")) return "/illustrations/wedding-church.svg";
+  if (t.includes("anniversary") || normalized.includes("anniversary")) return "/illustrations/calendar.svg";
+
+  if (normalized.includes("celebration")) return "/illustrations/balloon.svg";
   if (normalized.includes("holiday")) return "/illustrations/holiday-palm.svg";
-  if (normalized.includes("other")) return "/illustrations/balloon.svg";
+
   return "/illustrations/calendar.svg";
 }
 
@@ -740,7 +758,7 @@ function FeedItem({
           // instead of "J"), fall back to the themed event-type icon.
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff1e7]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={eventTypeIcon(metadata.event_type)} alt="" className="h-7 w-7" />
+            <img src={eventTypeIcon(metadata.event_title, metadata.event_type)} alt="" className="h-7 w-7" />
           </div>
         ) : (
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[12px] font-bold text-white overflow-hidden">
@@ -810,7 +828,7 @@ function FeedItem({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={eventTypeIcon(metadata.event_type)}
+                src={eventTypeIcon(metadata.event_title, metadata.event_type)}
                 alt=""
                 className="h-14 w-14 shrink-0"
               />
@@ -2349,6 +2367,7 @@ export default function FeedClient() {
             social_enabled: false,
             event_date: event.event_date,
             event_type: event.type,
+            event_title: event.title,
             event_color: event.color,
             actor_name: event.contact_name || null,
             actor_avatar_url: event.contact_avatar_url || null,
@@ -2601,7 +2620,7 @@ export default function FeedClient() {
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={eventTypeIcon(reminder.eventType)}
+                        src={eventTypeIcon(reminder.title, reminder.eventType)}
                         alt=""
                         className="h-10 w-10 shrink-0"
                       />

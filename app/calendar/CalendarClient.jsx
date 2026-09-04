@@ -81,17 +81,29 @@ function eventEmoji(e) {
   return EVENT_EMOJI[e.type] || "📌";
 }
 
-// Same reasoning as eventTypeIcon() in FeedClient.js - substring match
-// rather than exact equality, forgiving of messy legacy type values
-// (confirmed some events have emoji baked into the stored type string).
-function eventTypeIcon(eventType) {
-  const normalized = String(eventType || "").toLowerCase();
-  if (normalized.includes("birthday")) return "/illustrations/birthday-cake.svg";
-  if (normalized.includes("anniversary")) return "/illustrations/anniversary.svg";
-  if (normalized.includes("celebration")) return "/illustrations/celebration.svg";
-  if (normalized.includes("wedding")) return "/illustrations/wedding-church.svg";
+// Same reasoning as eventTypeIcon() in FeedClient.js - takes title and
+// type together (title is what actually distinguishes Christmas from
+// Halloween from a plain Holiday event, since these usually share the
+// same generic type) and checks title for birthday/wedding/anniversary
+// too, catching real messy data where the type field is wrong but the
+// title is still clear.
+function eventTypeIcon(title, type) {
+  const t = String(title || "").toLowerCase();
+  const normalized = String(type || "").toLowerCase();
+
+  if (t.includes("christmas")) return "/illustrations/santa.png";
+  if (t.includes("halloween")) return "/illustrations/pumpkin.png";
+  if (t.includes("easter")) return "/illustrations/bunny.png";
+  if (t.includes("patrick")) return "/illustrations/shamrock.png";
+  if (t.includes("new year")) return "/illustrations/balloon.svg";
+
+  if (t.includes("birthday") || normalized.includes("birthday")) return "/illustrations/birthday-cake.svg";
+  if (t.includes("wedding") || normalized.includes("wedding")) return "/illustrations/wedding-church.svg";
+  if (t.includes("anniversary") || normalized.includes("anniversary")) return "/illustrations/calendar.svg";
+
+  if (normalized.includes("celebration")) return "/illustrations/balloon.svg";
   if (normalized.includes("holiday")) return "/illustrations/holiday-palm.svg";
-  if (normalized.includes("other")) return "/illustrations/balloon.svg";
+
   return "/illustrations/calendar.svg";
 }
 
@@ -463,7 +475,7 @@ export default function CalendarClient() {
                 {showSingleIcon ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={eventTypeIcon(dayEvents[0].type)}
+                    src={eventTypeIcon(dayEvents[0].title, dayEvents[0].type)}
                     alt=""
                     className="absolute bottom-0.5 h-3.5 w-3.5 md:bottom-1.5 md:h-6 md:w-6"
                   />

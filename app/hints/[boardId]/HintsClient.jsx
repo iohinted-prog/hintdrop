@@ -988,7 +988,7 @@ function HintFormFields({
                   if (false) return current;
                   return { ...current, occasions: isSel ? sel.filter(o => o !== occasion) : [...sel, occasion] };
                 })}
-                className={"rounded-full px-4 py-2.5 text-sm font-medium transition " + (selected ? "bg-[#2f3b2d] text-white" : atMax ? "border border-slate-200 bg-white text-slate-300 cursor-not-allowed" : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}
+                className={"rounded-full px-4 py-2.5 text-sm font-medium transition " + (selected ? "bg-[#e3f5ea] text-[#2f8a5f]" : atMax ? "border border-slate-200 bg-white text-slate-300 cursor-not-allowed" : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}
               >
                 {occasion}
               </button>

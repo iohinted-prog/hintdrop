@@ -215,14 +215,14 @@ export default function HintsMenuClient() {
                     <button
                       type="button"
                       onClick={() => setNewBoardPrivate(false)}
-                      className={`flex-1 h-10 rounded-full text-[12px] font-semibold transition ${!newBoardPrivate ? "bg-[#2f3b2d] text-white" : "border border-[#ead8ce] bg-white text-slate-600"}`}
+                      className={`flex-1 h-10 rounded-full text-[12px] font-semibold transition ${!newBoardPrivate ? "bg-[#e3f5ea] text-[#2f8a5f]" : "border border-[#ead8ce] bg-white text-slate-600"}`}
                     >
                       Public
                     </button>
                     <button
                       type="button"
                       onClick={() => setNewBoardPrivate(true)}
-                      className={`flex-1 h-10 rounded-full text-[12px] font-semibold transition ${newBoardPrivate ? "bg-[#2f3b2d] text-white" : "border border-[#ead8ce] bg-white text-slate-600"}`}
+                      className={`flex-1 h-10 rounded-full text-[12px] font-semibold transition ${newBoardPrivate ? "bg-[#e3f5ea] text-[#2f8a5f]" : "border border-[#ead8ce] bg-white text-slate-600"}`}
                     >
                       🔒 Private
                     </button>
