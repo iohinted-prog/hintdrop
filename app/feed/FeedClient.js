@@ -2613,8 +2613,7 @@ export default function FeedClient() {
 
           <aside className={`space-y-5 ${true !== "never" ? "hidden xl:block" : ""}`}>
             <section className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Calendar</p>
-              <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.03em] text-slate-900">
+              <h2 className="text-[20px] font-semibold tracking-[-0.03em] text-slate-900">
                 Next Events:
               </h2>
 

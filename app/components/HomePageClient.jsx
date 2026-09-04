@@ -6,12 +6,6 @@ import GoogleAuthButtons from "./GoogleAuthButtons";
 import AuthModal from "./AuthModal";
 import SocialLinks from "./SocialLinks";
 
-const nextEvents = [
-  { title: "Sarah's Birthday", date: "29 June", icon: "/illustrations/birthday-cake.svg", tileColor: "#fdece0" },
-  { title: "Tom & Ella's Wedding", date: "6 July", icon: "/illustrations/wedding-church.svg", tileColor: "#e3f0fb" },
-  { title: "Mom & Dad's Anniversary", date: "10 July", icon: "/illustrations/calendar.svg", tileColor: "#e3f5ea" },
-];
-
 const hints = [
   {
     id: 1,
@@ -581,7 +575,7 @@ export default function HomePageClient() {
           </div>
         </header>
 
-        <section className="grid items-start gap-10 lg:grid-cols-[minmax(420px,0.92fr)_minmax(560px,1.08fr)] lg:gap-10">
+        <section className="grid items-end gap-10 lg:grid-cols-[minmax(420px,0.92fr)_minmax(560px,1.08fr)] lg:gap-10">
           <div className="py-2 lg:pl-2">
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[14px] font-bold text-[#eb7b58] shadow-sm">
               <span>♡</span>
@@ -662,7 +656,7 @@ export default function HomePageClient() {
             </div>
           </div>
 
-          <div className="relative flex min-w-0 flex-col items-center pb-6 pt-6">
+          <div className="relative flex min-w-0 flex-col items-center pt-6">
             {/* Character renders first, so at the overlap point below she
                 sits behind the card in natural stacking order - "tucking
                 in behind it," not fighting for the same space. */}
@@ -706,39 +700,6 @@ export default function HomePageClient() {
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        <section className="mt-14 md:mt-20">
-          <div className="mx-auto max-w-[520px] rounded-[30px] border border-[#efd8ce] bg-white p-6 shadow-[0_20px_60px_rgba(173,101,72,0.12)] md:p-8">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Calendar</p>
-            <h2 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-slate-900">Next Events:</h2>
-
-            <div className="mt-5 space-y-3">
-              {nextEvents.map((event) => (
-                <div
-                  key={event.title}
-                  className="flex items-center gap-3 rounded-[20px] p-3.5"
-                  style={{ backgroundColor: event.tileColor }}
-                >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-white">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={event.icon} alt="" className="h-7 w-7" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-slate-900 truncate">{event.title}</p>
-                    <p className="text-[13px] text-slate-500">{event.date}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <Link
-              href="/calendar"
-              className="mt-5 flex h-12 w-full items-center justify-center rounded-full bg-gradient-to-b from-[#ff946d] to-[#f36f64] text-sm font-semibold text-white shadow-lg"
-            >
-              Open calendar
-            </Link>
           </div>
         </section>
 
