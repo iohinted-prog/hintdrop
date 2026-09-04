@@ -81,23 +81,17 @@ const EMPTY_EDIT_FORM = {
 // diagonal light sweep animating across it on a loop - a visual cue
 // that this is illustrative example content, not real data, without
 // needing extra text or a badge on every card.
-function DemoShimmerOverlay({ children }) {
+function DemoFadeOverlay({ children }) {
   return (
-    <div className="relative overflow-hidden rounded-[18px] opacity-70">
+    <div
+      className="relative overflow-hidden rounded-[18px]"
+      style={{ animation: "demoFadeBreathe 4s ease-in-out infinite" }}
+    >
       {children}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: "linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.45) 50%, transparent 60%)",
-          backgroundSize: "250% 250%",
-          animation: "demoShimmerSweep 5s ease-in-out infinite",
-        }}
-      />
       <style jsx>{`
-        @keyframes demoShimmerSweep {
-          0% { background-position: 200% 200%; }
-          30% { background-position: -50% -50%; }
-          100% { background-position: -50% -50%; }
+        @keyframes demoFadeBreathe {
+          0%, 100% { opacity: 0.35; }
+          50% { opacity: 0.9; }
         }
       `}</style>
     </div>
@@ -2855,7 +2849,7 @@ export default function HintsClient({ boardId }) {
                 <div className="hidden lg:block columns-2 gap-4 lg:columns-3">
                   {demoHints.map((hint) => (
                     <div key={hint.id} className="mb-6 break-inside-avoid">
-                      <DemoShimmerOverlay>
+                      <DemoFadeOverlay>
                         <HintCard
                           hint={hint}
                           imageRatios={imageRatios}
@@ -2865,14 +2859,14 @@ export default function HintsClient({ boardId }) {
                           isDragging={false}
                           formatCurrency={formatCurrency}
                         />
-                      </DemoShimmerOverlay>
+                      </DemoFadeOverlay>
                     </div>
                   ))}
                 </div>
                 <div className="block lg:hidden columns-2 gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid">
                   {demoHints.map((hint) => (
                     <div key={hint.id} className="break-inside-avoid mb-3">
-                      <DemoShimmerOverlay>
+                      <DemoFadeOverlay>
                         <MobileHintCard
                           hint={hint}
                           imageRatios={imageRatios}
@@ -2881,7 +2875,7 @@ export default function HintsClient({ boardId }) {
                           onTogglePrivate={() => {}}
                           formatCurrency={formatCurrency}
                         />
-                      </DemoShimmerOverlay>
+                      </DemoFadeOverlay>
                     </div>
                   ))}
                 </div>
