@@ -69,7 +69,7 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onM
             </div>
           )}
         </div>
-        <div className={`min-w-0 max-w-[160px] md:max-w-[220px] shrink-0 ${isClickable ? "cursor-pointer" : ""}`} onClick={isClickable ? handleClick : undefined}>
+        <div className={`min-w-0 flex-1 ${isClickable ? "cursor-pointer" : ""}`} onClick={isClickable ? handleClick : undefined}>
           <div className="flex items-center gap-1.5 flex-wrap">
             <p className="text-sm md:text-[16px] font-semibold text-slate-900 truncate">{contact.name}</p>
             <span
@@ -127,7 +127,6 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onM
             No hints saved yet
           </p>
         )}
-        <div className="flex-1" />
         <div className="flex items-center gap-1 shrink-0">
           {onMessageClick && profileId && (
             <button type="button" onClick={e => { e.stopPropagation(); onMessageClick(contact); }}
