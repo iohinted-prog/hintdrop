@@ -36,21 +36,34 @@ function clearError() {
   errorBannerEl.style.display = "none";
 }
 
-// A session-expired error (thrown by refreshSession() in auth.js when the
-// refresh_token itself is no longer valid, not just the access_token)
-// used to just show as a dead-end red banner with no way forward. Now it
-// clears the stale session and drops back to the not-logged-in view,
-// which has a real recovery path (re-open hintdrop.app to log in, or the
-// manual login form).
+// A session-expired error used to just show as a dead-end red banner.
+// Real fix, not just better wording: try re-reading the current
+// hintdrop.app cookie first - if the person is still actually logged in
+// on the website (the common case, since Supabase rotates tokens in the
+// background and the extension's cached copy can go stale while the
+// website's own session stays perfectly valid), this recovers silently
+// and the caller can just retry. Only drops to the login screen if a
+// fresh cookie read also fails, meaning they're genuinely logged out.
+// Returns true if recovered (safe to retry the action), false if not.
 async function handleActionError(err) {
   console.error(err);
-  if (String(err.message || "").toLowerCase().includes("session has expired")) {
-    await logout();
-    showNotLoggedInView();
-    showError("Your session expired - please log in again to continue.");
-  } else {
+
+  if (!String(err.message || "").toLowerCase().includes("session has expired")) {
     showError(err.message);
+    return false;
   }
+
+  const freshSession = await getSessionFromWebCookie();
+  if (freshSession) {
+    await storeSession(freshSession);
+    currentSession = freshSession;
+    return true;
+  }
+
+  await logout();
+  showNotLoggedInView();
+  showError("Your session expired - please log in again to continue.");
+  return false;
 }
 
 async function readCurrentPage() {
@@ -147,7 +160,8 @@ async function loadAndShowBoardPicker() {
     document.querySelectorAll("label.fieldLabel").forEach((l) => (l.style.display = "none"));
     boardPickerEl.style.display = "block";
   } catch (err) {
-    await handleActionError(err);
+    const recovered = await handleActionError(err);
+    if (recovered) return loadAndShowBoardPicker();
   } finally {
     addButtonEl.textContent = "+ Add to Hints";
     addButtonEl.disabled = false;
@@ -219,7 +233,11 @@ document.getElementById("createBoardButton").addEventListener("click", async () 
     input.value = "";
     await handleSaveToBoard(board);
   } catch (err) {
-    await handleActionError(err);
+    const recovered = await handleActionError(err);
+    if (recovered) {
+      input.value = title;
+      document.getElementById("createBoardButton").click();
+    }
   }
 });
 
@@ -252,25 +270,39 @@ async function handleSaveToBoard(board) {
     document.getElementById("viewInHintDrop").href = `https://hintdrop.app/hints/${board.id}`;
   } catch (err) {
     statusEl.style.display = "none";
-    console.error(err);
 
-    if (String(err.message || "").toLowerCase().includes("session has expired")) {
-      await logout();
-      showNotLoggedInView();
-      showError("Your session expired - please log in again to continue.");
-      return;
+    const recovered = await handleActionError(err);
+    if (recovered) {
+      return handleSaveToBoard(board);
     }
 
     addButtonEl.style.display = "block";
     titleInputEl.style.display = "block";
     priceInputEl.style.display = "block";
     document.querySelectorAll("label.fieldLabel").forEach((l) => (l.style.display = "block"));
-    showError(err.message);
   }
 }
 
 document.getElementById("addAnotherButton").addEventListener("click", () => {
   showResultView(currentSession);
+});
+
+document.getElementById("recheckLoginButton").addEventListener("click", async () => {
+  clearError();
+  const button = document.getElementById("recheckLoginButton");
+  button.textContent = "Checking…";
+  button.disabled = true;
+
+  const session = await getSessionFromWebCookie();
+  if (session) {
+    await storeSession(session);
+    await showResultView(session);
+  } else {
+    showError("Still not seeing a login on hintdrop.app in this browser. Make sure you're logged in there, then try again.");
+  }
+
+  button.textContent = "Already logged in? Check again";
+  button.disabled = false;
 });
 
 document.getElementById("openHintDropButton").addEventListener("click", () => {
