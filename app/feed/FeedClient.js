@@ -83,7 +83,7 @@ const demoHintPost = {
   circle_id: null,
   activity_session_id: null,
   source_event_id: null,
-  headline: "Demo added a hint",
+  headline: "James added a hint",
   body: "",
   cta_label: null,
   cta_href: null,
@@ -91,9 +91,9 @@ const demoHintPost = {
   created_at: new Date().toISOString(),
   metadata: {
     social_enabled: true,
-    actor_name: "Demo",
-    actor_avatar_url: "/illustrations/demo-avatar-1.png",
-    actor_avatar_initials: "D",
+    actor_name: "James",
+    actor_avatar_url: "/illustrations/demo-avatar-james.jpg",
+    actor_avatar_initials: "J",
     preview_hints: [
       {
         id: "demo-hint-1",
@@ -101,6 +101,14 @@ const demoHintPost = {
         retailer: "amazon.co.uk",
         image_url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
       },
+    ],
+    demo_reactions: [
+      { id: "r1", emoji: "❤️", count: 1 },
+      { id: "r2", emoji: "🎁", count: 2 },
+      { id: "r3", emoji: "👏", count: 1 },
+    ],
+    demo_comments: [
+      { id: "c1", author_name: "Maya", body: "Love this!" },
     ],
   },
   isDemo: true,
@@ -117,7 +125,7 @@ const demoReminderPost = {
   circle_id: null,
   activity_session_id: null,
   source_event_id: null,
-  headline: "Demo's birthday is in 6 days",
+  headline: "Maya's birthday is in 6 days",
   body: "",
   cta_label: "See hints",
   cta_href: "/hints",
@@ -125,48 +133,13 @@ const demoReminderPost = {
   created_at: new Date().toISOString(),
   metadata: {
     social_enabled: true,
-    actor_name: "Demo",
-    actor_avatar_url: "/illustrations/demo-avatar-2.jpg",
-    actor_avatar_initials: "D",
+    actor_name: "Maya",
+    actor_avatar_url: "/illustrations/demo-avatar-maya.jpg",
+    actor_avatar_initials: "M",
     actor_profile_href: "/hints",
     event_type: "birthday",
-    event_title: "Demo's Birthday",
+    event_title: "Maya's Birthday",
     event_date: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-  },
-  isDemo: true,
-};
-
-const firstLookCard = {
-  id: "first-look-card",
-  owner_user_id: "demo-owner",
-  actor_user_id: "hinted-demo",
-  target_user_id: null,
-  family: "hint",
-  item_type: "first_look",
-  visibility: "private",
-  circle_id: null,
-  activity_session_id: null,
-  source_event_id: null,
-  headline: "Your feed will fill up as hints, reminders, and circle updates start rolling in.",
-  body: "This first-look card helps show how HintDrop works before real activity arrives.",
-  cta_label: "See hints",
-  cta_href: "/hints",
-  occurred_at: new Date().toISOString(),
-  created_at: new Date().toISOString(),
-  metadata: {
-    social_enabled: true,
-    actor_name: "HintDrop",
-    actor_profile_href: "/hints",
-    actor_avatar_initials: "H",
-    demo_reactions: [
-      { id: "r1", emoji: "❤️", count: 4 },
-      { id: "r2", emoji: "👏", count: 2 },
-      { id: "r3", emoji: "🎁", count: 3 },
-    ],
-    demo_comments: [
-      { id: "c1", author_name: "Maya", body: "Can already picture this being useful." },
-      { id: "c2", author_name: "James", body: "Nice way to make the feed feel alive." },
-    ],
   },
   isDemo: true,
 };
@@ -1661,10 +1634,12 @@ export default function FeedClient() {
   const [demoCommentsByFeedId, setDemoCommentsByFeedId] = useState({});
   const [demoReactionsByFeedId, setDemoReactionsByFeedId] = useState(() => {
     const initial = {};
-    initial[firstLookCard.id] = (firstLookCard.metadata?.demo_reactions || []).map((reaction) => ({
-      ...reaction,
-      active: false,
-    }));
+    [demoHintPost].forEach((card) => {
+      initial[card.id] = (card.metadata?.demo_reactions || []).map((reaction) => ({
+        ...reaction,
+        active: reaction.emoji === "❤️",
+      }));
+    });
     return initial;
   });
 
@@ -2458,7 +2433,7 @@ export default function FeedClient() {
 
   const combinedFeedItems = useMemo(() => {
     const hasRealActivity = feedItems.length > 0;
-    const base = hasRealActivity ? feedItems : [firstLookCard, demoHintPost, demoReminderPost];
+    const base = hasRealActivity ? feedItems : [demoHintPost, demoReminderPost];
     const merged = [...base, ...shortReminderFeedItems];
 
     return merged.sort((a, b) => {
