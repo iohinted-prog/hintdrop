@@ -19,9 +19,8 @@ function splitName(fullName = "") {
   };
 }
 
-function buildFullName(firstName = "", lastName = "", displayName = "") {
-  const combined = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
-  return combined || displayName.trim();
+function buildFullName(firstName = "", lastName = "") {
+  return [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
 }
 
 function getMetadataName(metadata = {}) {
@@ -93,7 +92,6 @@ export default function AccountPageClient() {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
-    displayName: "",
     phone: "",
     birthday: "",
     bio: "",
@@ -101,8 +99,8 @@ export default function AccountPageClient() {
   });
 
   const resolvedName = useMemo(
-    () => buildFullName(form.firstName, form.lastName, form.displayName),
-    [form.firstName, form.lastName, form.displayName]
+    () => buildFullName(form.firstName, form.lastName),
+    [form.firstName, form.lastName]
   );
 
   const initials = useMemo(() => getInitials(resolvedName, email), [resolvedName, email]);
@@ -152,7 +150,6 @@ export default function AccountPageClient() {
         setForm({
           firstName: nameParts.firstName,
           lastName: nameParts.lastName,
-          displayName: savedFullName,
           phone: profile?.phone || "",
           birthday: profile?.birthday || "",
           bio: profile?.bio || "",
@@ -386,11 +383,6 @@ export default function AccountPageClient() {
         console.error("Auth metadata update error:", authUpdateError.message);
       }
 
-      setForm((prev) => ({
-        ...prev,
-        displayName: fullName,
-      }));
-
       setMessageType("success");
       setMessage("Your account details have been saved.");
     } catch (error) {
@@ -607,19 +599,6 @@ export default function AccountPageClient() {
                     className="mt-2 h-[54px] w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-900" htmlFor="displayName">
-                  Display name
-                </label>
-                <input
-                  id="displayName"
-                  type="text"
-                  value={form.displayName}
-                  onChange={(e) => updateField("displayName", e.target.value)}
-                  className="mt-2 h-[54px] w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
-                />
               </div>
 
               <div>

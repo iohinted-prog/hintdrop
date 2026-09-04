@@ -169,6 +169,36 @@ export default function PeopleClient() {
   }
   useEffect(() => { loadContacts(); }, []);
 
+  // Live-update: a friend request being accepted (by either side), a new
+  // contact being added, or an existing one changing now refreshes the
+  // list immediately - previously needed a manual page reload to see any
+  // of this. Re-running loadContacts() on any relevant change rather than
+  // trying to patch local state directly, since accepting a request can
+  // affect the contact's public_state/profile link in ways that are
+  // simpler to just re-fetch than reconstruct piecemeal.
+  useEffect(() => {
+    if (!sessionUser?.id) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`circle-live-${sessionUser.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "contacts", filter: `user_id=eq.${sessionUser.id}` },
+        () => loadContacts()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "circle_invites" },
+        () => loadContacts()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionUser?.id]);
+
   async function handleSaveContact(payload) {
     if (!sessionUser?.id) throw new Error("You must be signed in.");
     const cleanedEmail = String(payload.email || "").trim().toLowerCase();

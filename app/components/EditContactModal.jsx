@@ -19,11 +19,21 @@ export default function EditContactModal({ contact, onClose, onSave }) {
     if (!form.name.trim()) { setError("Name is required."); return; }
     setSaving(true); setError("");
     try {
-      const { error: err } = await supabase
+      const { data, error: err } = await supabase
         .from("contacts")
         .update({ name: form.name.trim(), role: form.role })
-        .eq("id", contact.id);
+        .eq("id", contact.id)
+        .select();
       if (err) throw new Error(err.message);
+      if (!data || data.length === 0) {
+        // A successful-looking update that matched zero rows - happens
+        // silently with Supabase/Postgres (no error thrown), usually
+        // meaning the row's id didn't match what was expected. Without
+        // checking this explicitly, the modal would report "saved"
+        // even though nothing actually changed - exactly what was
+        // reported as "not sure if it saves."
+        throw new Error("Couldn't find this contact to update - try refreshing the page.");
+      }
       await onSave();
       onClose();
     } catch (e) {

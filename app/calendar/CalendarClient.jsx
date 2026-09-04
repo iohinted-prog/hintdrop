@@ -205,8 +205,36 @@ export default function CalendarClient() {
       const birthdayEvents = buildContactBirthdayEvents(contacts || []);
       setEvents([...(calEvents || []), ...birthdayEvents]);
       setLoading(false);
+      return user.id;
     }
-    load();
+
+    let channel;
+    load().then((uid) => {
+      if (!uid) return;
+      // Live-update: a birthday added/changed on a contact, or a
+      // calendar event added/changed elsewhere, now reflects here
+      // immediately rather than needing a manual page reload. Simplest
+      // robust approach - just re-run the same load() on any relevant
+      // change rather than trying to patch the combined events+birthdays
+      // state piecemeal.
+      channel = supabase
+        .channel(`calendar-live-${uid}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "calendar_events", filter: `user_id=eq.${uid}` },
+          () => load()
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "contacts", filter: `user_id=eq.${uid}` },
+          () => load()
+        )
+        .subscribe();
+    });
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
   const eventsByDate = events.reduce((acc, e) => {
