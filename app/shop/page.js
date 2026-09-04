@@ -773,13 +773,14 @@ export default function ShopPage() {
       // falling back to whatever the shop already has stored - bounded
       // to 8s so a slow or blocked retailer never holds up the save.
       let refetchedImage = null;
+      const scrapeUrl = String(product?.product_url || "").trim() || getOutboundUrl(product);
       try {
         const controller = new AbortController();
         const timeout = window.setTimeout(() => controller.abort(), 8000);
         const res = await fetch("/api/link-preview", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: getOutboundUrl(product) }),
+          body: JSON.stringify({ url: scrapeUrl }),
           signal: controller.signal,
         });
         window.clearTimeout(timeout);
