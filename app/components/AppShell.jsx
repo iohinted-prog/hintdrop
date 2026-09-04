@@ -11,10 +11,11 @@ import SocialLinks from "./SocialLinks";
 
 function LogoMark() {
   return (
-    // No colored badge/border wrapper — matches PublicShell.jsx and the
-    // OG image style.
+    // Trial swap to the new H-shaped ribbon logo, per request - "just
+    // to see". Background removed (was a peach rounded-square behind
+    // the H) so it sits transparent against whatever's behind it here.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/brand-icon-og.png" alt="" width={38} height={44} className="object-contain" />
+    <img src="/illustrations/logo-trial-h.png" alt="" width={38} height={40} className="object-contain" />
   );
 }
 function getMetadataName(metadata = {}) {
