@@ -29,9 +29,9 @@ const hints = [
   },
   {
     id: 3,
-    title: "Silk pillowcases",
-    text: "johnlewis.com · ~£45",
-    image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
+    title: "Luxury fragrance",
+    text: "selfridges.com · ~£98",
+    image: "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&w=1200&q=80",
     tag: "Home",
     tag2: "Cooking",
     starred: false,

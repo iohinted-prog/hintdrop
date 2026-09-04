@@ -88,14 +88,15 @@ function DemoShimmerOverlay({ children }) {
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: "linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.55) 50%, transparent 60%)",
+          background: "linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.45) 50%, transparent 60%)",
           backgroundSize: "250% 250%",
-          animation: "demoShimmerSweep 2.6s ease-in-out infinite",
+          animation: "demoShimmerSweep 5s ease-in-out infinite",
         }}
       />
       <style jsx>{`
         @keyframes demoShimmerSweep {
           0% { background-position: 200% 200%; }
+          30% { background-position: -50% -50%; }
           100% { background-position: -50% -50%; }
         }
       `}</style>
