@@ -14,11 +14,13 @@ export const metadata = {
     url: "https://hintdrop.app",
     siteName: "HintDrop",
     type: "website",
+    images: ["https://hintdrop.app/og-default.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: "HintDrop | Never forget. Always thoughtful.",
     description: "Save what you actually want. Remember who matters. Plan gifts together.",
+    images: ["https://hintdrop.app/og-default.png"],
   },
   alternates: {
     canonical: "https://hintdrop.app",
