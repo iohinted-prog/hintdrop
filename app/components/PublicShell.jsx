@@ -9,7 +9,7 @@ function LogoMark() {
     // Trial wordmark - the H-ribbon logo standing in for the literal
     // "H" letter, matches AppShell.jsx and HomePageClient.jsx.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/illustrations/logo-trial-h.png" alt="" className="h-8 w-auto object-contain" />
+    <img src="/illustrations/logo-trial-h-v2.png" alt="" className="h-8 w-auto object-contain" />
   );
 }
 
