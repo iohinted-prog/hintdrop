@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useCallback, useRef, useState, memo } from "react";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
@@ -1637,6 +1638,7 @@ function LoadingHintCard({ ratio = "0.92" }) {
 }
 
 export default function HintsClient({ boardId }) {
+  const router = useRouter();
   const { formatCurrency } = useCurrencyFormatter();
   const { currency: userCurrency } = usePreferences();
   const [board, setBoard] = useState(null);
@@ -2178,6 +2180,27 @@ export default function HintsClient({ boardId }) {
     setTogglingBoardPrivacy(false);
   }
 
+  async function handleDeleteBoard() {
+    if (!currentUser || !board || board.is_default) return;
+    const confirmed = window.confirm(
+      `Delete "${board.title}"? This removes the list and everything saved in it (${hints.length} hint${hints.length === 1 ? "" : "s"}). This can't be undone.`
+    );
+    if (!confirmed) return;
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("hint_boards")
+      .delete()
+      .eq("id", boardId)
+      .eq("user_id", currentUser.id);
+
+    if (error) {
+      setError(errorToMessage(error));
+      return;
+    }
+    router.push("/hints");
+  }
+
   async function refreshHintFromLink() {
     const trimmed = editForm.url.trim();
 
@@ -2661,6 +2684,15 @@ export default function HintsClient({ boardId }) {
                 >
                   {board.is_private ? "🔒 Private" : "Public"}
                 </button>
+                {!board.is_default && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteBoard}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-4 py-2 text-[13px] font-semibold text-slate-500 hover:bg-[#fff0f0] hover:text-[#b14f43]"
+                  >
+                    Delete list
+                  </button>
+                )}
               </div>
             )}
             {boardId && !boardLoading && board?.is_private && (

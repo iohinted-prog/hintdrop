@@ -227,6 +227,23 @@ export default function ProfileClient({ userId }) {
     router.push(`/profile/${userId}`, { scroll: false });
   }
 
+  async function handleDeleteBoard(board) {
+    if (board.is_default) return;
+    const confirmed = window.confirm(
+      `Delete "${board.title}"? This removes the list and everything saved in it (${board.hintCount} hint${board.hintCount === 1 ? "" : "s"}). This can't be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const { error: deleteError } = await supabase.from("hint_boards").delete().eq("id", board.id);
+      if (deleteError) throw deleteError;
+      setBoards((prev) => (prev || []).filter((b) => b.id !== board.id));
+      if (selectedBoardId === board.id) setSelectedBoardId(null);
+    } catch (err) {
+      alert(err?.message || "Couldn't delete this list. Try again.");
+    }
+  }
+
   async function handleAddToCircle() {
     if (!currentUser) return;
     setAddingContact(true);
@@ -407,23 +424,34 @@ export default function ProfileClient({ userId }) {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {(boards || []).map((board) => (
-                <button
-                  key={board.id}
-                  type="button"
-                  onClick={() => setSelectedBoardId(board.id)}
-                  className="group flex flex-col overflow-hidden rounded-[26px] border border-[#f0dfd6] bg-white text-left transition hover:-translate-y-1 hover:shadow-md"
-                >
-                  <div className="bg-[#fdf5f0] p-0.5" style={{ aspectRatio: "16/9" }}>
-                    <BoardPreviewGrid previewHints={board.previewHints} />
-                  </div>
-                  <div className="flex items-center justify-between gap-3 p-4">
-                    <div className="min-w-0">
-                      <p className="truncate text-[15px] font-semibold text-slate-900">{board.title}</p>
-                      <p className="mt-0.5 text-[12px] text-slate-400">{board.hintCount} Hint{board.hintCount === 1 ? "" : "s"}</p>
+                <div key={board.id} className="group relative flex flex-col overflow-hidden rounded-[26px] border border-[#f0dfd6] bg-white transition hover:-translate-y-1 hover:shadow-md">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBoardId(board.id)}
+                    className="flex flex-col text-left"
+                  >
+                    <div className="bg-[#fdf5f0] p-0.5" style={{ aspectRatio: "16/9" }}>
+                      <BoardPreviewGrid previewHints={board.previewHints} />
                     </div>
-                    <span className="shrink-0 text-slate-300 transition group-hover:text-[#df7b59]">→</span>
-                  </div>
-                </button>
+                    <div className="flex items-center justify-between gap-3 p-4">
+                      <div className="min-w-0">
+                        <p className="truncate text-[15px] font-semibold text-slate-900">{board.title}</p>
+                        <p className="mt-0.5 text-[12px] text-slate-400">{board.hintCount} Hint{board.hintCount === 1 ? "" : "s"}</p>
+                      </div>
+                      <span className="shrink-0 text-slate-300 transition group-hover:text-[#df7b59]">→</span>
+                    </div>
+                  </button>
+                  {isOwnProfile && !board.is_default && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteBoard(board)}
+                      className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-[#ead8ce] bg-white/90 text-slate-400 opacity-0 backdrop-blur transition hover:bg-[#fff0f0] hover:text-[#b14f43] group-hover:opacity-100"
+                      aria-label={`Delete ${board.title}`}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           )}

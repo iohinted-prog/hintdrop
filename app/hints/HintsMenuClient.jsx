@@ -13,11 +13,11 @@ function errorToMessage(value) {
   return String(value);
 }
 
-function BoardCard({ board }) {
+function BoardCard({ board, onDelete }) {
   return (
     <Link
       href={`/hints/${board.id}`}
-      className="group flex flex-col overflow-hidden rounded-[26px] border border-[#f0dfd6] bg-white transition hover:-translate-y-1 hover:shadow-md"
+      className="group relative flex flex-col overflow-hidden rounded-[26px] border border-[#f0dfd6] bg-white transition hover:-translate-y-1 hover:shadow-md"
     >
       <div className="bg-[#fdf5f0] p-0.5" style={{ aspectRatio: "16/9" }}>
         <BoardPreviewGrid previewHints={board.previewHints} />
@@ -34,6 +34,20 @@ function BoardCard({ board }) {
         </div>
         <span className="shrink-0 text-slate-300 transition group-hover:text-[#df7b59]">→</span>
       </div>
+      {/* The auto-created "My Hints" board can't be deleted - other
+          parts of the app assume it always exists as the personal
+          default, so removing that guarantee would break things
+          elsewhere rather than just tidy up a list. */}
+      {!board.is_default && onDelete && (
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(board); }}
+          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-[#ead8ce] bg-white/90 text-slate-400 opacity-0 backdrop-blur transition hover:bg-[#fff0f0] hover:text-[#b14f43] group-hover:opacity-100"
+          aria-label={`Delete ${board.title}`}
+        >
+          ✕
+        </button>
+      )}
     </Link>
   );
 }
@@ -161,6 +175,24 @@ export default function HintsMenuClient() {
     }
   }
 
+  async function handleDeleteBoard(board) {
+    if (board.is_default) return;
+    const confirmed = window.confirm(
+      `Delete "${board.title}"? This removes the list and everything saved in it (${board.hintCount} hint${board.hintCount === 1 ? "" : "s"}). This can't be undone.`
+    );
+    if (!confirmed) return;
+
+    setError("");
+    try {
+      const supabase = createClient();
+      const { error: deleteError } = await supabase.from("hint_boards").delete().eq("id", board.id);
+      if (deleteError) throw deleteError;
+      setBoards((prev) => prev.filter((b) => b.id !== board.id));
+    } catch (err) {
+      setError(errorToMessage(err));
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
       <div className="mx-auto max-w-[1100px] px-5 py-10 md:px-8">
@@ -194,7 +226,7 @@ export default function HintsMenuClient() {
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {boards.map((board) => (
-                <BoardCard key={board.id} board={board} />
+                <BoardCard key={board.id} board={board} onDelete={handleDeleteBoard} />
               ))}
 
               {showCreateForm ? (
