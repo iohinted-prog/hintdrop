@@ -207,14 +207,16 @@ const shopTiles = [
 
 function LandingLogo() {
   return (
-    <div className="flex items-center gap-3.5">
-      {/* No colored badge/border wrapper, and the real icon instead of
-          an emoji placeholder — matches PublicShell.jsx, AppShell.jsx,
-          and the OG image style. */}
+    <div className="flex items-center gap-1">
+      {/* Trial per request - the H-ribbon logo standing in for the
+          literal "H" letter, "int" recoloured to match the logo's
+          peach, "Drop" switched to black (previously the reverse -
+          "Hint" was black/dark and "Drop" was the accent colour). */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand-icon-og.png" alt="" width={44} height={52} className="object-contain" />
-      <div className="text-[22px] font-extrabold tracking-[-0.04em] text-slate-900">
-        Hint<span className="text-[#f36f64]">Drop</span>
+      <img src="/illustrations/logo-trial-h.png" alt="" className="h-10 w-auto object-contain" />
+      <div className="text-[22px] font-extrabold tracking-[-0.04em]">
+        <span className="text-[#ff875d]">int</span>
+        <span className="text-slate-900">Drop</span>
       </div>
     </div>
   );
@@ -566,12 +568,13 @@ export default function HomePageClient() {
             >
               Gift Shop
             </Link>
-            <a
-              href="#signup"
+            <button
+              type="button"
+              onClick={() => setAuthOpen(true)}
               className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-3.5 text-[13px] font-bold text-white shadow-lg transition hover:translate-y-[-1px] sm:h-12 sm:px-6 sm:text-[15px]"
             >
               Get started
-            </a>
+            </button>
           </div>
         </header>
 
