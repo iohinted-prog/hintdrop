@@ -221,7 +221,14 @@ function parseDateOnly(dateString) {
   if (!dateString) return null;
   const [year, month, day] = String(dateString).split("-").map(Number);
   if (!year || !month || !day) return null;
-  return new Date(year, month - 1, day);
+  // Built directly in UTC, not local time - constructing via
+  // new Date(year, month, day) (local) and later reading back UTC
+  // fields (as startOfDayUTC does) silently shifts the date back a
+  // day for any timezone ahead of UTC, like British Summer Time
+  // (UTC+1): local midnight on the 11th is 23:00 UTC on the 10th.
+  // Confirmed directly - this was producing "6 days" instead of 7 for
+  // a real event on the 11th, checked from London during BST.
+  return new Date(Date.UTC(year, month - 1, day));
 }
 
 function startOfDay(date) {
@@ -2455,6 +2462,7 @@ export default function FeedClient() {
           prettyDate: eventDate.toLocaleDateString("en-GB", {
             day: "numeric",
             month: "long",
+            timeZone: "UTC",
           }),
           distanceLabel: formatReminderDistance(diffDays),
           diffDays,

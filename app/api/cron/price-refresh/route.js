@@ -64,7 +64,7 @@ export async function GET(request) {
     const nowIso = new Date().toISOString();
 
     try {
-      const preview = await getProductPreview(product.product_url, product.currency || "GBP");
+      const preview = await getProductPreview(product.product_url, product.currency || "GBP", { skipImageSizeCheck: true });
 
       if (preview.blocked || preview.numericPrice == null) {
         const status = preview.debug?.status;

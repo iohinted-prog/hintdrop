@@ -771,12 +771,16 @@ export default function ShopPage() {
       // page using the same scraping logic already proven for pasted
       // URLs (JSON-LD extraction, generic-asset filtering) before
       // falling back to whatever the shop already has stored - bounded
-      // to 8s so a slow or blocked retailer never holds up the save.
+      // to 18s so a slow or blocked retailer never holds up the save -
+      // widened from an initial 8s once the server-side scraper also
+      // started checking each candidate image's actual pixel dimensions
+      // (up to ~5s per candidate, occasionally checking more than one),
+      // which needed more headroom than the original budget allowed.
       let refetchedImage = null;
       const scrapeUrl = String(product?.product_url || "").trim() || getOutboundUrl(product);
       try {
         const controller = new AbortController();
-        const timeout = window.setTimeout(() => controller.abort(), 8000);
+        const timeout = window.setTimeout(() => controller.abort(), 18000);
         const res = await fetch("/api/link-preview", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
