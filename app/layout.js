@@ -33,13 +33,19 @@ export const metadata = {
     // option here — Google's guidance wants a size that's a multiple of
     // 48px among the available options, and the old declared set
     // topped out at 32x32.
+    // ?v=2 query strings added on the explicit icon/apple/shortcut URLs
+    // below - browsers cache favicons far more aggressively than
+    // regular images (often ignoring normal cache invalidation
+    // entirely), so changing just the file's content wasn't enough to
+    // get some browsers to pick up the new design. A version query
+    // string forces it to be treated as a genuinely different resource.
     icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon.png", type: "image/png", sizes: "32x32" },
-      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/favicon.svg?v=2", type: "image/svg+xml" },
+      { url: "/favicon.png?v=2", type: "image/png", sizes: "32x32" },
+      { url: "/icon-192.png?v=2", type: "image/png", sizes: "192x192" },
     ],
-    apple: "/apple-touch-icon.png",
-    shortcut: "/favicon.png",
+    apple: "/apple-touch-icon.png?v=2",
+    shortcut: "/favicon.png?v=2",
   },
   title: {
     default: "HintDrop",
