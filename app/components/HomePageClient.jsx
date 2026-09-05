@@ -213,7 +213,7 @@ function LandingLogo() {
           peach, "Drop" switched to black (previously the reverse -
           "Hint" was black/dark and "Drop" was the accent colour). */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/illustrations/logo-trial-h-v5.png" alt="" className="h-10 w-auto object-contain" />
+      <img src="/illustrations/logo-trial-h-v6.png" alt="" className="h-10 w-auto object-contain" />
       <div className="text-[22px] font-extrabold tracking-[-0.04em]">
         <span className="text-[#ff875d]">int</span>
         <span className="text-slate-900">Drop</span>

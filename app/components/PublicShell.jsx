@@ -7,7 +7,7 @@ import SocialLinks from "./SocialLinks";
 function LogoMark() {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/illustrations/logo-trial-h-v5.png" alt="" className="h-8 w-auto object-contain" />
+    <img src="/illustrations/logo-trial-h-v6.png" alt="" className="h-8 w-auto object-contain" />
   );
 }
 
