@@ -2381,11 +2381,19 @@ export default function HintsClient({ boardId }) {
     // routed to a stock-photo search instead of the link scraper.
     if (!isValidHttpUrl(trimmed)) {
       try {
-        const res = await fetch("/api/hint-idea", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: trimmed }),
-        });
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 12000);
+        let res;
+        try {
+          res = await fetch("/api/hint-idea", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: trimmed }),
+            signal: controller.signal,
+          });
+        } finally {
+          window.clearTimeout(timeoutId);
+        }
         const data = await res.json();
         if (!res.ok) {
           console.error("hint-idea error:", data?.error);
@@ -2400,7 +2408,12 @@ export default function HintsClient({ boardId }) {
         setLink("");
       } catch (err) {
         console.error("hint-idea request failed:", err);
-        setError("Couldn't find stock photos for that description right now — try pasting a link instead?");
+        const timedOut = err?.name === "AbortError";
+        setError(
+          timedOut
+            ? "That took too long to search — try again, or paste a link instead."
+            : "Couldn't find stock photos for that description right now — try pasting a link instead?"
+        );
       } finally {
         setIsAdding(false);
         closeBusy();

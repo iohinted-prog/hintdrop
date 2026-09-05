@@ -21,6 +21,9 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   /* Prevents the browser's native pull-to-refresh gesture from firing.
      This app has no built-in pull-to-refresh anywhere, so that gesture is
      never intentional — the real problem it was causing: dnd-kit's touch
