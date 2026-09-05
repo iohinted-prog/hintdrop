@@ -1011,9 +1011,21 @@ function HintFormFields({
 
         {Array.isArray(imageOptions) && imageOptions.length > 1 && (
           <div className="mt-3">
-            <p className="mb-2 text-sm font-semibold text-slate-700">Choose a photo</p>
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-sm font-semibold text-slate-700">Choose a photo</p>
+              {imageOptions[0]?.startsWith("/gradients/") && imageOptions.length > 3 && (
+                <button
+                  type="button"
+                  onClick={() => setGradientBatch((b) => Math.min(b + 1, Math.floor(imageOptions.length / 3) - 1))}
+                  disabled={gradientBatch >= Math.floor(imageOptions.length / 3) - 1}
+                  className="text-[13px] font-semibold text-[#df7b59] disabled:cursor-not-allowed disabled:text-slate-300"
+                >
+                  {gradientBatch >= Math.floor(imageOptions.length / 3) - 1 ? "No more options" : "Don't like these? Show 3 more"}
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-3 gap-2">
-              {imageOptions.slice(0, 3).map((url, i) => (
+              {imageOptions.slice(gradientBatch * 3, gradientBatch * 3 + 3).map((url, i) => (
                 <button
                   key={url + i}
                   type="button"
@@ -1031,6 +1043,32 @@ function HintFormFields({
             </div>
           </div>
         )}
+        {imageOptions?.[0]?.startsWith("/gradients/") && (
+          <div className="mt-3">
+            <p className="mb-2 text-sm font-semibold text-slate-700">What kind of idea is this?</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setForm((prev) => ({ ...prev, ideaType: "gift" }))}
+                className={`flex-1 h-11 rounded-[14px] text-sm font-semibold transition ${
+                  form.ideaType !== "experience" ? "bg-[#e3f5ea] text-[#2f8a5f]" : "border border-[#ead8ce] bg-white text-slate-600"
+                }`}
+              >
+                🎁 Gift idea
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm((prev) => ({ ...prev, ideaType: "experience" }))}
+                className={`flex-1 h-11 rounded-[14px] text-sm font-semibold transition ${
+                  form.ideaType === "experience" ? "bg-[#e3f5ea] text-[#2f8a5f]" : "border border-[#ead8ce] bg-white text-slate-600"
+                }`}
+              >
+                🎟️ Experience idea
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
       <div>
       <div>
@@ -1131,6 +1169,8 @@ function AddHintModal({
   imageOptions,
   suggestExtension,
 }) {
+  const [gradientBatch, setGradientBatch] = useState(0);
+
   const helperCopy = notice
     ? "We tried to get your info, but this shop asked you to put it in instead."
     : "We found what we could. Check the details and fix anything before saving.";
@@ -2452,6 +2492,7 @@ export default function HintsClient({ boardId }) {
         size: newHintForm.size || null,
         size_type: newHintForm.size_type || null,
         colour: newHintForm.colour || null,
+        idea_type: newHintForm.ideaType || null,
       });
 
       if (error) throw new Error(errorToMessage(error));
