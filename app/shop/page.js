@@ -41,26 +41,22 @@ const OCCASION_OPTIONS = [
   "Just because",
 ];
 
-const RELATIONSHIP_OPTIONS = [
-  "Partner",
-  "Boyfriend",
-  "Girlfriend",
-  "Husband",
-  "Wife",
-  "Father",
-  "Mother",
-  "Parent",
-  "Brother",
-  "Sister",
-  "Sibling",
-  "Son",
-  "Child",
-  "Friend",
-  "Colleague",
-  "Family",
-  "For him",
-  "For her",
-];
+// Simplified from 18 granular options (Partner/Boyfriend/Girlfriend/
+// Husband/Wife/Father/Mother/Parent/Brother/Sister/Sibling/Son/Child/
+// Friend/Colleague/Family/For him/For her) down to 6 broader buckets -
+// each maps to several of the actual stored tags (confirmed directly
+// against real product data) rather than requiring an exact 1:1 match,
+// which is both simpler to choose from and more forgiving of how
+// products happen to be tagged.
+const RELATIONSHIP_GROUPS = {
+  "Partner": ["Partner", "Boyfriend", "Girlfriend", "Husband", "Wife"],
+  "Family": ["Family", "Father", "Mother", "Parent", "Brother", "Sister", "Sibling", "Son", "Child"],
+  "Friend": ["Friend"],
+  "Colleague": ["Colleague"],
+  "For him": ["For him"],
+  "For her": ["For her"],
+};
+const RELATIONSHIP_OPTIONS = Object.keys(RELATIONSHIP_GROUPS);
 
 const PRICE_BAND_OPTIONS = [
   { label: "Up to £25", max: 25 },
@@ -638,7 +634,10 @@ export default function ShopPage() {
         const matchesOccasion = !selectedOccasion || occasionTags.includes(selectedOccasion);
 
         const matchesRelationship =
-          !selectedRelationship || relationshipTags.includes(selectedRelationship);
+          !selectedRelationship ||
+          (RELATIONSHIP_GROUPS[selectedRelationship] || [selectedRelationship]).some((tag) =>
+            relationshipTags.includes(tag)
+          );
 
         const productPrice =
           typeof product.numeric_price === "number"
