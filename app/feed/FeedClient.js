@@ -87,8 +87,8 @@ const demoHintPost = {
   body: "",
   cta_label: null,
   cta_href: null,
-  occurred_at: new Date().toISOString(),
-  created_at: new Date().toISOString(),
+  occurred_at: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
+  created_at: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
   metadata: {
     social_enabled: true,
     actor_name: "James",
@@ -140,6 +140,35 @@ const demoReminderPost = {
     event_type: "birthday",
     event_title: "Maya's Birthday",
     event_date: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+  },
+  isDemo: true,
+};
+
+const demoWeddingReminderPost = {
+  id: "demo-wedding-reminder-post",
+  owner_user_id: "demo-owner",
+  actor_user_id: null,
+  target_user_id: null,
+  family: "reminder",
+  item_type: "reminder",
+  visibility: "private",
+  circle_id: null,
+  activity_session_id: null,
+  source_event_id: null,
+  headline: "Sam & Alex's Wedding is in 10 days",
+  body: "",
+  cta_label: "See hints",
+  cta_href: "/hints",
+  occurred_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+  created_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+  metadata: {
+    social_enabled: true,
+    // No actor_name/avatar - lets this correctly fall back to the
+    // themed wedding-church icon (matches how a reminder with no
+    // linked Circle contact renders elsewhere in the app).
+    event_type: "wedding",
+    event_title: "Sam & Alex's Wedding",
+    event_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
   },
   isDemo: true,
 };
@@ -338,7 +367,7 @@ function eventTypeIcon(title, type) {
 // when no custom colour was chosen.
 function reminderStyleForType(eventType, customColor) {
   const normalized = String(eventType || "").toLowerCase();
-  const isWarmType = normalized.includes("birthday") || normalized.includes("anniversary") || normalized.includes("celebration");
+  const isWarmType = normalized.includes("birthday") || normalized.includes("anniversary") || normalized.includes("celebration") || normalized.includes("wedding");
 
   const prompt = normalized.includes("birthday")
     ? "Time to plan something amazing."
@@ -346,7 +375,9 @@ function reminderStyleForType(eventType, customColor) {
       ? "A moment worth celebrating together."
       : normalized.includes("celebration")
         ? "Time to plan something worth celebrating."
-        : "Time to sort out the details.";
+        : normalized.includes("wedding")
+          ? "Time to celebrate the happy couple."
+          : "Time to sort out the details.";
 
   if (customColor) {
     return { bgClass: "", bgStyle: { backgroundColor: `${customColor}4D` }, prompt };
@@ -2433,7 +2464,7 @@ export default function FeedClient() {
 
   const combinedFeedItems = useMemo(() => {
     const hasRealActivity = feedItems.length > 0;
-    const base = hasRealActivity ? feedItems : [demoHintPost, demoReminderPost];
+    const base = hasRealActivity ? feedItems : [demoReminderPost, demoHintPost, demoWeddingReminderPost];
     const merged = [...base, ...shortReminderFeedItems];
 
     return merged.sort((a, b) => {
