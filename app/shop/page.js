@@ -488,6 +488,7 @@ export default function ShopPage() {
   const [userBoards, setUserBoards] = useState([]);
   const [boardsLoading, setBoardsLoading] = useState(false);
   const [newBoardTitle, setNewBoardTitle] = useState("");
+  const [newBoardPrivate, setNewBoardPrivate] = useState(false);
   const [isCreatingBoard, setIsCreatingBoard] = useState(false);
   const toastTimerRef = useRef(null);
   const interestLimitTimerRef = useRef(null);
@@ -833,13 +834,14 @@ export default function ShopPage() {
     try {
       const { data: newBoard, error } = await supabase
         .from("hint_boards")
-        .insert({ user_id: currentUser.id, title, is_default: false, is_private: false })
+        .insert({ user_id: currentUser.id, title, is_default: false, is_private: newBoardPrivate })
         .select("id")
         .single();
 
       if (error) throw error;
 
       setNewBoardTitle("");
+      setNewBoardPrivate(false);
       await confirmAddToBoard(newBoard.id);
     } catch (error) {
       setPageError(errorToMessage(error));
@@ -1124,6 +1126,16 @@ export default function ShopPage() {
                 placeholder="New list name"
                 className="h-11 flex-1 min-w-0 rounded-[16px] border border-[#ead8ce] bg-white px-4 text-sm text-slate-700 outline-none focus:border-[#f19b7e]"
               />
+              <button
+                type="button"
+                onClick={() => setNewBoardPrivate((v) => !v)}
+                title={newBoardPrivate ? "Private — only you can see this list" : "Public — visible on your profile"}
+                className={`h-11 shrink-0 rounded-[16px] border px-3 text-[13px] font-semibold transition ${
+                  newBoardPrivate ? "border-[#ead8ce] bg-white text-slate-600" : "border-[#bfe4cf] bg-[#e3f5ea] text-[#2f8a5f]"
+                }`}
+              >
+                {newBoardPrivate ? "🔒 Private" : "Public"}
+              </button>
               <button
                 type="button"
                 onClick={createBoardAndAdd}
