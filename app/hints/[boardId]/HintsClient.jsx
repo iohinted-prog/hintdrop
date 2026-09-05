@@ -1114,7 +1114,15 @@ function AddHintModal({
         </div>
       }
     >
-      <div className="space-y-4">
+      <div
+        className="space-y-4"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && e.target.tagName !== "TEXTAREA" && !isSaving) {
+            e.preventDefault();
+            onSubmit();
+          }
+        }}
+      >
         {notice ? (
           <div className="rounded-[22px] border border-[#f4cdbd] bg-[#fff6f1] p-4 text-sm text-[#9b553d]">
             {notice}
@@ -1282,7 +1290,7 @@ const MobileHintCard = memo(function MobileHintCard({ hint, imageRatios, onEdit,
               }
             </div>
             <div className="p-5">
-              <p className="text-[18px] font-semibold text-slate-900 leading-tight mb-1">{hint.title || "Hint"}</p>
+              <p className="text-[18px] font-semibold text-slate-900 leading-tight mb-1">{hint.private ? "🔒 " : ""}{hint.title || "Hint"}</p>
               {hint.retailer && <p className="text-[13px] text-slate-400 mb-1">{hint.retailer}</p>}
               {(hint.size || hint.colour) && (
                 <p className="text-[13px] text-slate-600 mb-1">
@@ -1465,7 +1473,7 @@ const HintCard = memo(function HintCard({
                 lineClamp: 2,
               }}
             >
-              {hint.title}
+              {hint.private ? "🔒 " : ""}{hint.title}
             </h2>
 
             <p className="mt-1 truncate text-[13px] text-white/78">{hint.retailer}</p>
@@ -2697,7 +2705,7 @@ export default function HintsClient({ boardId }) {
             )}
             {boardId && !boardLoading && board?.is_private && (
               <p className="max-w-[36ch] text-[12px] leading-5 text-slate-400">
-                Only you can see this in your Hints menu. Anyone with the direct share link can still view it.
+                Hidden from your Hints menu and anyone browsing your profile — but still viewable by anyone you send the direct link to.
               </p>
             )}
           </div>
