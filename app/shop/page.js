@@ -490,6 +490,8 @@ export default function ShopPage() {
   const [newBoardTitle, setNewBoardTitle] = useState("");
   const [isCreatingBoard, setIsCreatingBoard] = useState(false);
   const toastTimerRef = useRef(null);
+  const interestLimitTimerRef = useRef(null);
+  const [interestLimitMessage, setInterestLimitMessage] = useState("");
   const [selectedOccasion, setSelectedOccasion] = useState("");
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [selectedRelationship, setSelectedRelationship] = useState("");
@@ -699,10 +701,19 @@ export default function ShopPage() {
   function toggleInterest(interest) {
     setSelectedInterests((current) => {
       if (current.includes(interest)) {
+        setInterestLimitMessage("");
         return current.filter((item) => item !== interest);
       }
 
-      return [...current, interest].slice(0, 5);
+      if (current.length >= 2) {
+        setInterestLimitMessage("You can only pick 2 at a time — unclick one first.");
+        window.clearTimeout(interestLimitTimerRef.current);
+        interestLimitTimerRef.current = window.setTimeout(() => setInterestLimitMessage(""), 3000);
+        return current;
+      }
+
+      setInterestLimitMessage("");
+      return [...current, interest];
     });
   }
 
@@ -1011,6 +1022,9 @@ export default function ShopPage() {
                     );
                   })}
                 </div>
+                {interestLimitMessage && (
+                  <p className="mt-2 text-[13px] font-medium text-[#c9633f]">{interestLimitMessage}</p>
+                )}
               <div className="mt-5">
                 <ShopGuide />
               </div>
