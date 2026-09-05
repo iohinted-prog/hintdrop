@@ -34,7 +34,7 @@ export default function ExtensionClient() {
         <div className="mx-auto max-w-3xl">
           <div className="mb-8 rounded-[28px] border border-[#eadfd4] bg-white/80 p-8 shadow-[0_20px_60px_rgba(15,23,42,0.06)] sm:p-10">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[#c1846c]">
-              Coming soon
+              Now available
             </p>
             <h1 className="mb-4 text-3xl font-bold text-slate-900 sm:text-4xl">
               The HintDrop browser extension
@@ -46,12 +46,17 @@ export default function ExtensionClient() {
               details, even from the trickiest sites.
             </p>
             <p className="mb-6 text-slate-600">
-              It&apos;s in final testing right now. Check back here — this page will turn into
-              a one-click install for your browser as soon as it&apos;s live.
+              It&apos;s live now for Chrome. Install it below, then look for the HintDrop icon
+              in your browser toolbar whenever you want to save something.
             </p>
-            <div className="inline-flex h-12 cursor-not-allowed items-center justify-center rounded-full border border-[#ead8ce] bg-[#f3ece3] px-6 text-sm font-semibold text-slate-400">
-              Coming soon
-            </div>
+            <a
+              href="https://chromewebstore.google.com/detail/ckanonmndemkfbjhblnlnogagfincjbo"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-6 text-sm font-semibold text-white shadow-lg transition hover:translate-y-[-1px]"
+            >
+              Add to Chrome
+            </a>
           </div>
         </div>
       </section>
