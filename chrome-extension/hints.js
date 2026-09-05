@@ -62,14 +62,14 @@ async function fetchBoards(session) {
   return boardsWithPreviews;
 }
 
-async function createBoard(session, title) {
+async function createBoard(session, title, isPrivate = false) {
   const response = await authorizedFetch(session, `${SUPABASE_URL}/rest/v1/hint_boards`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Prefer: "return=representation",
     },
-    body: JSON.stringify({ user_id: session.user_id, title, is_default: false, is_private: false }),
+    body: JSON.stringify({ user_id: session.user_id, title, is_default: false, is_private: isPrivate }),
   });
 
   if (!response.ok) {

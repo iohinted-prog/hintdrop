@@ -222,14 +222,23 @@ document.getElementById("pickerBack").addEventListener("click", () => {
   document.querySelectorAll("label.fieldLabel").forEach((l) => (l.style.display = "block"));
 });
 
+document.getElementById("newBoardPrivateToggle").addEventListener("click", (e) => {
+  const btn = e.currentTarget;
+  const nowPrivate = btn.dataset.private !== "true";
+  btn.dataset.private = String(nowPrivate);
+  btn.textContent = nowPrivate ? "Private" : "Public";
+});
+
 document.getElementById("createBoardButton").addEventListener("click", async () => {
   const input = document.getElementById("newBoardInput");
   const title = input.value.trim();
   if (!title) return;
 
+  const isPrivate = document.getElementById("newBoardPrivateToggle").dataset.private === "true";
+
   clearError();
   try {
-    const board = await createBoard(currentSession, title);
+    const board = await createBoard(currentSession, title, isPrivate);
     input.value = "";
     await handleSaveToBoard(board);
   } catch (err) {
