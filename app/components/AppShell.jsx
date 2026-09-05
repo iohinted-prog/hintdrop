@@ -15,7 +15,7 @@ function LogoMark() {
     // to see". Background removed (was a peach rounded-square behind
     // the H) so it sits transparent against whatever's behind it here.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/illustrations/logo-trial-h-v7.png" alt="" width={38} height={40} className="object-contain" />
+    <img src="/illustrations/logo-trial-h-v6.png" alt="" width={38} height={40} className="object-contain" />
   );
 }
 function getMetadataName(metadata = {}) {

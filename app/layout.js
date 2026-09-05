@@ -40,12 +40,12 @@ export const metadata = {
     // get some browsers to pick up the new design. A version query
     // string forces it to be treated as a genuinely different resource.
     icon: [
-      { url: "/favicon.svg?v=4", type: "image/svg+xml" },
-      { url: "/favicon.png?v=4", type: "image/png", sizes: "32x32" },
-      { url: "/icon-192.png?v=4", type: "image/png", sizes: "192x192" },
+      { url: "/favicon.svg?v=3", type: "image/svg+xml" },
+      { url: "/favicon.png?v=3", type: "image/png", sizes: "32x32" },
+      { url: "/icon-192.png?v=3", type: "image/png", sizes: "192x192" },
     ],
-    apple: "/apple-touch-icon.png?v=4",
-    shortcut: "/favicon.png?v=4",
+    apple: "/apple-touch-icon.png?v=3",
+    shortcut: "/favicon.png?v=3",
   },
   title: {
     default: "HintDrop",
