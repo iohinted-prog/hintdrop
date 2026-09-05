@@ -23,6 +23,13 @@ function toKey(date) {
   return date.toISOString().slice(0, 10);
 }
 
+function parseDateOnlyLocal(dateString) {
+  if (!dateString) return null;
+  const [year, month, day] = dateString.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
 const TITLE_COLORS = {
   "christmas": { dot: "bg-[#2d6a4f]", badge: "bg-[#d8f3dc] text-[#2d6a4f]", border: "border-[#b7e4c7]" },
   "valentine": { dot: "bg-[#e63946]", badge: "bg-[#ffe5e7] text-[#e63946]", border: "border-[#ffb3b8]" },
@@ -238,10 +245,43 @@ export default function CalendarClient() {
   }, []);
 
   const eventsByDate = events.reduce((acc, e) => {
-    const key = (e.event_date || "").slice(0, 10);
-    if (!key) return acc;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(e);
+    const originalKey = (e.event_date || "").slice(0, 10);
+    if (!originalKey) return acc;
+
+    const addKey = (key) => {
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(e);
+    };
+
+    // Recurring events previously only ever appeared on their single
+    // original stored date - a "yearly" birthday, for instance, never
+    // showed up again the following year. Generate the occurrence that
+    // falls within the currently displayed month specifically, in
+    // addition to the original date (which still needs to show if
+    // it's genuinely in the current month/year).
+    if (e.recurring === "yearly" || e.recurring === "monthly" || e.recurring === "weekly") {
+      const original = parseDateOnlyLocal(originalKey);
+      if (original) {
+        if (e.recurring === "yearly") {
+          const thisYear = new Date(currentMonth.getFullYear(), original.getMonth(), original.getDate());
+          addKey(toKey(thisYear));
+        } else if (e.recurring === "monthly") {
+          const thisMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), original.getDate());
+          addKey(toKey(thisMonth));
+        } else if (e.recurring === "weekly") {
+          // Find every date in the displayed month matching the
+          // original event's day-of-week.
+          const daysInDisplayedMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
+          for (let d = 1; d <= daysInDisplayedMonth; d++) {
+            const candidate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), d);
+            if (candidate.getDay() === original.getDay()) addKey(toKey(candidate));
+          }
+        }
+        return acc;
+      }
+    }
+
+    addKey(originalKey);
     return acc;
   }, {});
 
