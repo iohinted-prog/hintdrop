@@ -496,7 +496,25 @@ export default function CalendarClient() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
           <div className="flex flex-col items-center">
-            <p key={monthName} className="text-[17px] md:text-[22px] font-bold text-slate-900 tracking-[-0.02em]" style={{ animation: "calFadeIn 0.25s ease" }}>{monthName}</p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setMonthDirection(-1); setCurrentMonth(new Date(year - 1, month)); }}
+                aria-label="Previous year"
+                title="Previous year"
+                className="flex h-7 w-7 items-center justify-center rounded-full text-slate-300 transition-all duration-150 hover:bg-[#fff4ee] hover:text-[#ff875d] active:scale-90"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 17l-5-5 5-5M11 17l-5-5 5-5" /></svg>
+              </button>
+              <p key={monthName} className="text-[17px] md:text-[22px] font-bold text-slate-900 tracking-[-0.02em]" style={{ animation: "calFadeIn 0.25s ease" }}>{monthName}</p>
+              <button
+                onClick={() => { setMonthDirection(1); setCurrentMonth(new Date(year + 1, month)); }}
+                aria-label="Next year"
+                title="Next year"
+                className="flex h-7 w-7 items-center justify-center rounded-full text-slate-300 transition-all duration-150 hover:bg-[#fff4ee] hover:text-[#ff875d] active:scale-90"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 17l5-5-5-5M13 17l5-5-5-5" /></svg>
+              </button>
+            </div>
             {selectedDate !== todayKey && (
               <button onClick={() => { setCurrentMonth(today); setSelectedDate(todayKey); }}
                 className="mt-0.5 text-[11px] font-semibold text-[#df7b59] hover:text-[#c4633f]">
