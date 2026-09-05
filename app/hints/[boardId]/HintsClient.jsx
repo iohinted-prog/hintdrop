@@ -99,6 +99,46 @@ function DemoFadeOverlay({ children }) {
   );
 }
 
+function SortableDemoHintCard({ hint, imageRatios, formatCurrency, useMobileCard }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: hint.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 20 : 1,
+    position: "relative",
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="mb-6 break-inside-avoid">
+      <DemoFadeOverlay>
+        {useMobileCard ? (
+          <MobileHintCard
+            hint={hint}
+            imageRatios={imageRatios}
+            onEdit={() => {}}
+            onToggleStarred={() => {}}
+            onTogglePrivate={() => {}}
+            formatCurrency={formatCurrency}
+          />
+        ) : (
+          <HintCard
+            hint={hint}
+            imageRatios={imageRatios}
+            onEdit={() => {}}
+            onToggleStarred={() => {}}
+            onTogglePrivate={() => {}}
+            isDragging={isDragging}
+            formatCurrency={formatCurrency}
+          />
+        )}
+      </DemoFadeOverlay>
+    </div>
+  );
+}
+
 const demoHints = [
   {
     id: "demo-1",
@@ -1654,6 +1694,11 @@ export default function HintsClient({ boardId }) {
   const [togglingBoardPrivacy, setTogglingBoardPrivacy] = useState(false);
 
   const [hints, setHints] = useState([]);
+  // Demo hints (shown on an empty board) are draggable for
+  // demonstration purposes - reordering them only ever changes this
+  // local state, never persisted anywhere, since there's no real
+  // board content yet to save an order for.
+  const [demoHintsOrder, setDemoHintsOrder] = useState(demoHints);
   // Caps how many hints actually render into the DOM at once — with no
   // limit, a board with a large number of hints meant every card (each
   // with its own set of overlay buttons) rendered simultaneously
@@ -2886,39 +2931,48 @@ export default function HintsClient({ boardId }) {
               </>
             ) : (
               <>
-                <div className="hidden lg:block columns-2 gap-4 lg:columns-3">
-                  {demoHints.map((hint) => (
-                    <div key={hint.id} className="mb-6 break-inside-avoid">
-                      <DemoFadeOverlay>
-                        <HintCard
-                          hint={hint}
-                          imageRatios={imageRatios}
-                          onEdit={() => {}}
-                          onToggleStarred={() => {}}
-                          onTogglePrivate={() => {}}
-                          isDragging={false}
-                          formatCurrency={formatCurrency}
-                        />
-                      </DemoFadeOverlay>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(event) => {
+                    const { active, over } = event;
+                    if (!over || active.id === over.id) return;
+                    setDemoHintsOrder((current) => {
+                      const oldIndex = current.findIndex((h) => h.id === active.id);
+                      const newIndex = current.findIndex((h) => h.id === over.id);
+                      return arrayMove(current, oldIndex, newIndex);
+                    });
+                  }}
+                >
+                  <SortableContext items={demoHintsOrder.map((h) => h.id)}>
+                    <div className="hidden lg:block columns-2 gap-4 lg:columns-3">
+                      {demoHintsOrder.map((hint) => (
+                        <SortableDemoHintCard key={hint.id} hint={hint} imageRatios={imageRatios} formatCurrency={formatCurrency} />
+                      ))}
                     </div>
-                  ))}
-                </div>
-                <div className="block lg:hidden columns-2 gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid">
-                  {demoHints.map((hint) => (
-                    <div key={hint.id} className="break-inside-avoid mb-3">
-                      <DemoFadeOverlay>
-                        <MobileHintCard
-                          hint={hint}
-                          imageRatios={imageRatios}
-                          onEdit={() => {}}
-                          onToggleStarred={() => {}}
-                          onTogglePrivate={() => {}}
-                          formatCurrency={formatCurrency}
-                        />
-                      </DemoFadeOverlay>
+                  </SortableContext>
+                </DndContext>
+                <DndContext
+                  sensors={mobileSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(event) => {
+                    const { active, over } = event;
+                    if (!over || active.id === over.id) return;
+                    setDemoHintsOrder((current) => {
+                      const oldIndex = current.findIndex((h) => h.id === active.id);
+                      const newIndex = current.findIndex((h) => h.id === over.id);
+                      return arrayMove(current, oldIndex, newIndex);
+                    });
+                  }}
+                >
+                  <SortableContext items={demoHintsOrder.map((h) => h.id)}>
+                    <div className="block lg:hidden columns-2 gap-3 [&>*]:mb-3 [&>*]:break-inside-avoid">
+                      {demoHintsOrder.map((hint) => (
+                        <SortableDemoHintCard key={hint.id} hint={hint} imageRatios={imageRatios} formatCurrency={formatCurrency} useMobileCard />
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </SortableContext>
+                </DndContext>
               </>
             )}
           </div>
