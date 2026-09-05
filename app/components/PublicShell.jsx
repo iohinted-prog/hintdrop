@@ -7,7 +7,7 @@ import SocialLinks from "./SocialLinks";
 function LogoMark() {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/illustrations/logo-trial-h-v6.png" alt="" className="h-8 w-auto object-contain" />
+    <img src="/illustrations/logo-trial-h-v8.png" alt="" className="h-8 w-auto object-contain" />
   );
 }
 
@@ -20,7 +20,7 @@ export default function PublicShell({ children }) {
           <Link href="/" className="flex items-baseline gap-0">
             <LogoMark />
             <div className="text-[22px] font-extrabold tracking-[-0.05em]">
-              <span className="text-[#E07757]">int</span>
+              <span className="text-[#FC724A]">int</span>
               <span className="text-slate-900">Drop</span>
             </div>
           </Link>

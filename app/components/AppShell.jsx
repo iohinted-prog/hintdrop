@@ -15,7 +15,7 @@ function LogoMark() {
     // to see". Background removed (was a peach rounded-square behind
     // the H) so it sits transparent against whatever's behind it here.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/illustrations/logo-trial-h-v6.png" alt="" width={38} height={40} className="object-contain" />
+    <img src="/illustrations/logo-trial-h-v8.png" alt="" width={38} height={40} className="object-contain" />
   );
 }
 function getMetadataName(metadata = {}) {
@@ -496,7 +496,7 @@ export default function AppShell({ children }) {
           <Link href="/feed" className="flex items-baseline gap-0">
             <LogoMark />
             <div className="text-[22px] font-extrabold tracking-[-0.05em]">
-              <span className="text-[#E07757]">int</span>
+              <span className="text-[#FC724A]">int</span>
               <span className="text-slate-900">Drop</span>
             </div>
           </Link>
