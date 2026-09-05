@@ -20,7 +20,7 @@ export default function PublicShell({ children }) {
           <Link href="/" className="flex items-baseline gap-0">
             <LogoMark />
             <div className="text-[22px] font-extrabold tracking-[-0.05em]">
-              <span className="text-[#ff875d]">int</span>
+              <span className="text-[#E07757]">int</span>
               <span className="text-slate-900">Drop</span>
             </div>
           </Link>

@@ -108,7 +108,7 @@ const demoHintPost = {
       { id: "r3", emoji: "👏", count: 1 },
     ],
     demo_comments: [
-      { id: "c1", author_name: "Maya", body: "Love this!" },
+      { id: "c1", author_name: "Maya", author_avatar: "/illustrations/demo-avatar-maya.jpg", body: "Love this!" },
     ],
   },
   isDemo: true,

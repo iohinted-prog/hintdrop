@@ -93,7 +93,7 @@ export default function UnsubscribeClient() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/illustrations/logo-trial-h-v6.png" alt="" className="h-6 w-auto object-contain" />
           <span className="text-[18px] font-extrabold tracking-[-0.04em]">
-            <span className="text-[#ff875d]">int</span>
+            <span className="text-[#E07757]">int</span>
             <span className="text-slate-900">Drop</span>
           </span>
         </div>
