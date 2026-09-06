@@ -2762,9 +2762,10 @@ export default function HintsClient({ boardId }) {
           )}
 
           <div className="flex flex-col items-center gap-3">
-            {boardId && !boardLoading && board && !board.is_default && (
-              <div className="inline-flex rounded-full bg-[#fff4ee] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.1em] text-[#e37b57]">
-                {board.title}
+            {boardId && !boardLoading && board && (
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-[#fff4ee] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.1em] text-[#e37b57]">
+                {board.is_private && <span title="Private">🔒</span>}
+                {board.is_default ? "My Hints" : board.title}
               </div>
             )}
             <h1 className="text-[32px] font-extrabold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
