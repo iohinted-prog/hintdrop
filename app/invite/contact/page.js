@@ -253,7 +253,6 @@ const styles = {
     maxWidth: '480px',
     margin: '80px auto',
     padding: '24px',
-    fontFamily: 'Arial, sans-serif',
     textAlign: 'center',
   },
   heading: {

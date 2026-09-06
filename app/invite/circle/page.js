@@ -123,7 +123,7 @@ function AcceptCircleInvite() {
 
 export default function AcceptCircleInvitePage() {
   return (
-    <Suspense fallback={<main style={{ maxWidth: '480px', margin: '80px auto', padding: '24px', textAlign: 'center', fontFamily: 'Arial, sans-serif' }}><p>Loading...</p></main>}>
+    <Suspense fallback={<main style={{ maxWidth: '480px', margin: '80px auto', padding: '24px', textAlign: 'center' }}><p>Loading...</p></main>}>
       <AcceptCircleInvite />
     </Suspense>
   )
@@ -134,7 +134,6 @@ const styles = {
     maxWidth: '480px',
     margin: '80px auto',
     padding: '24px',
-    fontFamily: 'Arial, sans-serif',
     textAlign: 'center',
   },
   heading: {
