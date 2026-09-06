@@ -29,18 +29,37 @@ async function searchPexelsPhotos(query, count = 3) {
   url.searchParams.set("per_page", String(count));
   url.searchParams.set("orientation", "portrait");
 
-  const response = await fetch(url.toString(), {
-    headers: { Authorization: apiKey },
-    cache: "no-store",
-  });
+  // Own internal timeout, shorter than the client's 12s abort budget -
+  // without this, a slow/hanging Pexels request could consume the
+  // entire client-side window (or longer, if the client gives up but
+  // this server-side fetch keeps running), when returning quickly with
+  // no images (falling back to gradients) is a much better experience
+  // than a long stall either way.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 7000);
 
-  if (!response.ok) return [];
+  try {
+    const response = await fetch(url.toString(), {
+      headers: { Authorization: apiKey },
+      cache: "no-store",
+      signal: controller.signal,
+    });
 
-  const data = await response.json();
-  const photos = Array.isArray(data?.photos) ? data.photos : [];
-  return photos
-    .map((photo) => photo?.src?.large2x || photo?.src?.large || photo?.src?.medium || "")
-    .filter(Boolean);
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    const photos = Array.isArray(data?.photos) ? data.photos : [];
+    return photos
+      .map((photo) => photo?.src?.large2x || photo?.src?.large || photo?.src?.medium || "")
+      .filter(Boolean);
+  } catch (error) {
+    // Timeout or network failure - fall back to no images (triggers
+    // the gradient picker) rather than letting the error bubble up
+    // and fail the whole request.
+    return [];
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export async function POST(request) {

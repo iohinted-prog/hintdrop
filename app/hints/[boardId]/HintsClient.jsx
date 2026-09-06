@@ -762,7 +762,12 @@ function buildDraftFromPreview(data, rawUrl) {
 
 function buildDraftFromAiIdea(data, prompt) {
   const title = String(data?.title || prompt || "Hint").trim();
-  const images = Array.isArray(data?.images) ? data.images.filter((u) => typeof u === "string" && u.startsWith("http")) : [];
+  const foundImages = Array.isArray(data?.images) ? data.images.filter((u) => typeof u === "string" && u.startsWith("http")) : [];
+  // No stock photos found at all (missing API key, no matches, or the
+  // request timed out server-side) - fall back to the same gradient
+  // options the URL-scraping flow already uses in this situation,
+  // instead of leaving a blank/broken image with nothing to pick.
+  const images = foundImages.length > 0 ? foundImages : FALLBACK_GRADIENT_OPTIONS.slice(0, 3);
 
   return {
     title,
