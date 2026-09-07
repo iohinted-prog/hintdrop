@@ -33,6 +33,8 @@ export default function SettingsPage() {
   const [emailReminders, setEmailReminders] = useState(true);
   const [pushStatus, setPushStatus] = useState("not-subscribed");
   const [pushBusy, setPushBusy] = useState(false);
+  const [testPushBusy, setTestPushBusy] = useState(false);
+  const [testPushResult, setTestPushResult] = useState("");
   const [personalizedOffers, setPersonalizedOffers] = useState(true);
   const [hintSaleAlerts, setHintSaleAlerts] = useState(true);
   const [productUpdates, setProductUpdates] = useState(false);
@@ -135,6 +137,32 @@ export default function SettingsPage() {
       }
     } finally {
       setPushBusy(false);
+    }
+  }
+
+  async function handleSendTestPush() {
+    setTestPushBusy(true);
+    setTestPushResult("");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setTestPushResult("Not signed in.");
+        return;
+      }
+      const res = await fetch("/api/notifications/test-push", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setTestPushResult(data?.error || "Couldn't send a test notification.");
+      } else {
+        setTestPushResult("Sent — check for a notification on this device now.");
+      }
+    } catch (err) {
+      setTestPushResult(err?.message || "Couldn't send a test notification.");
+    } finally {
+      setTestPushBusy(false);
     }
   }
 
@@ -267,6 +295,30 @@ export default function SettingsPage() {
                     className="h-5 w-5 accent-[#f36f64] disabled:opacity-50"
                   />
                 </label>
+              )}
+
+              {pushStatus === "subscribed" && (
+                <div className="rounded-[20px] border border-[#f1e4dc] bg-[#fffdfa] px-4 py-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">Test it</p>
+                      <p className="text-xs text-slate-500">
+                        Right now, push only fires when someone else comments or reacts on your hint — send yourself one directly to check it&apos;s working.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSendTestPush}
+                      disabled={testPushBusy}
+                      className="shrink-0 rounded-full border border-[#ead8ce] bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0] disabled:opacity-50"
+                    >
+                      {testPushBusy ? "Sending…" : "Send test"}
+                    </button>
+                  </div>
+                  {testPushResult && (
+                    <p className="mt-2 text-xs text-slate-500">{testPushResult}</p>
+                  )}
+                </div>
               )}
 
               <label className="flex items-center justify-between gap-4 rounded-[20px] border border-[#f1e4dc] bg-[#fffdfa] px-4 py-4">
