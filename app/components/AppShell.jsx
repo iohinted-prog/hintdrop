@@ -541,7 +541,7 @@ export default function AppShell({ children }) {
                       }`}
                       title={item.label}
                     >
-                      <img src="/brand-icon.png" alt="" width={24} height={24} className="object-contain" />
+                      <img src="/illustrations/giftbox-icon-negative.png" alt="" width={22} height={22} className="object-contain" />
                     </Link>
                   );
                 }
@@ -909,7 +909,7 @@ export default function AppShell({ children }) {
         </a>
         <a href="/hints" className="flex flex-col items-center gap-0.5 px-2 -mt-3">
           <div className={`flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] shadow-lg shadow-[#ff7e54]/40 ${pathname === "/hints" || pathname.startsWith("/hints/") ? "ring-2 ring-[#ff875d] ring-offset-2" : ""}`}>
-            <img src="/brand-icon.png" alt="" width={30} height={30} className="object-contain" />
+            <img src="/illustrations/giftbox-icon-negative.png" alt="" width={26} height={26} className="object-contain" />
           </div>
           <span className={`text-[10px] font-semibold mt-0.5 ${pathname === "/hints" || pathname.startsWith("/hints/") ? "text-[#ff875d]" : "text-slate-400"}`}>Hints</span>
         </a>
