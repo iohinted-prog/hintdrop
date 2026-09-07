@@ -61,6 +61,8 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
     const channel = supabase.channel("conv-" + conversation.id)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: "conversation_id=eq." + conversation.id },
         payload => setMessages(prev => [payload.new, ...prev]))
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages" },
+        payload => setMessages(prev => prev.filter(m => m.id !== payload.old.id)))
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_hints", filter: "conversation_id=eq." + conversation.id },
         () => {
           supabase.from("conversation_hints")
@@ -101,6 +103,26 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
       // messages insert, no client-side call needed.
     }
     setSending(false);
+  }
+
+  async function handleDeleteMessage(messageId) {
+    if (!confirm("Delete this message? This can't be undone.")) return;
+    // Remove locally right away rather than waiting on the realtime
+    // echo back - the DELETE listener above will just no-op for other
+    // clients since this id won't be in their state until it arrives.
+    setMessages(prev => prev.filter(m => m.id !== messageId));
+    const { error } = await supabase.from("messages").delete().eq("id", messageId);
+    if (error) {
+      console.error("Failed to delete message:", error.message);
+      // Reload from the server rather than trying to reconstruct the
+      // removed message locally - simplest correct recovery from a
+      // failed delete.
+      const { data } = await supabase.from("messages")
+        .select("id, body, type, created_at, sender_id, profiles(full_name, avatar_url)")
+        .eq("conversation_id", conversation.id)
+        .order("created_at", { ascending: false });
+      setMessages(data || []);
+    }
   }
 
   async function dismissHint(pinnedHintId) {
@@ -270,12 +292,24 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
           const isOwn = msg.sender_id === currentUserId;
           const sp = isOwn ? myProfile : msg.profiles;
           return (
-            <div key={msg.id} className={"flex items-end gap-2 " + (isOwn ? "flex-row-reverse" : "")}>
+            <div key={msg.id} className={"group flex items-end gap-2 " + (isOwn ? "flex-row-reverse" : "")}>
               <Avatar profile={sp} size="h-7 w-7" />
               <div className="flex flex-col gap-0.5 max-w-[70%]" style={{ alignItems: isOwn ? "flex-end" : "flex-start" }}>
                 {!isOwn && <span className="text-[10px] text-slate-400 px-1">{sp?.full_name?.split(" ")[0]}</span>}
-                <div className={"px-3 py-2 rounded-[16px] text-[13px] " + (isOwn ? "bg-[#ff875d] text-white rounded-br-[4px]" : "bg-white border border-[#f0dfd6] text-slate-800 rounded-bl-[4px]")}>
-                  {msg.body}
+                <div className="flex items-center gap-1">
+                  {isOwn && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteMessage(msg.id)}
+                      title="Delete message"
+                      className="h-5 w-5 shrink-0 flex items-center justify-center rounded-full text-slate-300 opacity-0 transition group-hover:opacity-100 hover:bg-[#fff0f0] hover:text-[#b14f43] text-[10px]"
+                    >
+                      ✕
+                    </button>
+                  )}
+                  <div className={"px-3 py-2 rounded-[16px] text-[13px] " + (isOwn ? "bg-[#ff875d] text-white rounded-br-[4px]" : "bg-white border border-[#f0dfd6] text-slate-800 rounded-bl-[4px]")}>
+                    {msg.body}
+                  </div>
                 </div>
               </div>
             </div>
