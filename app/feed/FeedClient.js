@@ -6,7 +6,7 @@ import HintImage from "../components/HintImage";
 import ShareButton from "../components/ShareButton";
 import HintDetailModal from "../components/HintDetailModal";
 import { trackRetailerClick } from "../../lib/trackRetailerClick";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import UserProfileModal from "../components/UserProfileModal";
 import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
@@ -798,7 +798,7 @@ function FeedItem({
   const canInteract = item.isDemo || socialEnabled;
 
   return (
-    <article className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
+    <article data-feed-item-id={item.id} className="rounded-[28px] border border-[#f0dfd6] bg-white p-5 shadow-sm">
       <div className="flex items-start gap-4">
         {actorUserId ? (
           <button
@@ -1631,6 +1631,28 @@ export default function FeedClient() {
 
   const [commentsByFeedId, setCommentsByFeedId] = useState({});
   const [reactionsByFeedId, setReactionsByFeedId] = useState({});
+  const scrollAnchorRef = useRef(null);
+
+  // Runs synchronously right after the DOM reflects the new comments
+  // (before the browser paints), using the anchor captured in
+  // loadComments right before this state changed. If the anchor card
+  // moved (because comments were inserted into a card above/at it),
+  // scroll by exactly that much to keep the user looking at the same
+  // content they were before - this is the actual fix for the
+  // scroll-jump bug, not just a mitigation.
+  useLayoutEffect(() => {
+    const anchor = scrollAnchorRef.current;
+    if (!anchor) return;
+    const el = document.querySelector(`[data-feed-item-id="${anchor.itemId}"]`);
+    if (!el) return;
+    const newTop = el.getBoundingClientRect().top;
+    const delta = newTop - anchor.top;
+    if (Math.abs(delta) > 1) {
+      window.scrollBy(0, delta);
+    }
+    scrollAnchorRef.current = null;
+  }, [commentsByFeedId]);
+
   const [activeComposerId, setActiveComposerId] = useState(null);
   const [draftComment, setDraftComment] = useState("");
   const [demoCommentsByFeedId, setDemoCommentsByFeedId] = useState({});
@@ -1819,6 +1841,31 @@ export default function FeedClient() {
     setReactionsByFeedId(grouped);
   }, []);
 
+  // Comments load asynchronously after the initial feed paint, and the
+  // block that renders them is fully conditional (comments.length > 0)
+  // - meaning when this data arrives for a card the user has already
+  // scrolled past, that card's height changes and everything below it
+  // shifts, which is exactly what "the page jumps while scrolling"
+  // was describing. Browser-native scroll anchoring (overflow-anchor)
+  // is supposed to compensate for this automatically, but it has known
+  // gaps with React's reconciliation, especially when many cards
+  // update at once (which is what happens here - comments resolve for
+  // the whole feed in one state update). Capturing the topmost visible
+  // card's position right before this update, and correcting for any
+  // shift right after, is more reliable than hoping the browser
+  // handles it.
+  function captureScrollAnchor() {
+    const cards = document.querySelectorAll("[data-feed-item-id]");
+    for (const card of cards) {
+      const rect = card.getBoundingClientRect();
+      if (rect.bottom > 0) {
+        scrollAnchorRef.current = { itemId: card.getAttribute("data-feed-item-id"), top: rect.top };
+        return;
+      }
+    }
+    scrollAnchorRef.current = null;
+  }
+
   const loadComments = useCallback(async (feedIds) => {
     if (!feedIds.length) {
       setCommentsByFeedId({});
@@ -1853,6 +1900,7 @@ export default function FeedClient() {
       });
       return acc;
     }, {});
+    captureScrollAnchor();
     setCommentsByFeedId(grouped);
   }, []);
 
