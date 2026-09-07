@@ -7,7 +7,7 @@ import SocialLinks from "./SocialLinks";
 function LogoMark() {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/illustrations/giftbox-icon.png" alt="" className="h-8 w-auto object-contain" />
+    <img src="/illustrations/giftbox-icon-v2.png" alt="" className="h-8 w-auto object-contain" />
   );
 }
 

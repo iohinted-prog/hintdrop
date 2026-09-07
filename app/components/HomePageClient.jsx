@@ -211,7 +211,7 @@ function LandingLogo() {
       {/* Back to the gift box icon - the H-letterform trials felt too
           corporate. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/illustrations/giftbox-icon.png" alt="" width={44} height={52} className="object-contain" />
+      <img src="/illustrations/giftbox-icon-v2.png" alt="" width={44} height={52} className="object-contain" />
       <div className="text-[22px] font-extrabold tracking-[-0.04em] text-slate-900">
         Hint<span className="text-[#ff875d]">Drop</span>
       </div>

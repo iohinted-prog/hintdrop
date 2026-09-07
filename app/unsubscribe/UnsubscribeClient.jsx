@@ -91,7 +91,7 @@ export default function UnsubscribeClient() {
       <div className="w-full max-w-[480px] rounded-[28px] border border-[#efdcd2] bg-white p-8 shadow-[0_20px_60px_rgba(88,46,31,0.1)]">
         <div className="flex items-center gap-2 mb-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/illustrations/giftbox-icon.png" alt="" width={28} height={28} className="object-contain" />
+          <img src="/illustrations/giftbox-icon-v2.png" alt="" width={28} height={28} className="object-contain" />
           <span className="text-[18px] font-extrabold tracking-[-0.04em] text-slate-900">
             Hint<span className="text-[#ff875d]">Drop</span>
           </span>

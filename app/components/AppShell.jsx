@@ -15,7 +15,7 @@ function LogoMark() {
     // felt too corporate. Genuine transparency, verified against both
     // a dark and light background before use.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/illustrations/giftbox-icon.png" alt="" width={38} height={44} className="object-contain" />
+    <img src="/illustrations/giftbox-icon-v2.png" alt="" width={38} height={44} className="object-contain" />
   );
 }
 function getMetadataName(metadata = {}) {
