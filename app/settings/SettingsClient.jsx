@@ -123,6 +123,12 @@ export default function SettingsPage() {
         } else if (result.reason === "denied") {
           setPushStatus("denied");
           setError("Notifications are blocked for this site in your browser settings. You'll need to allow them there first.");
+        } else if (result.reason === "config") {
+          setError(`Push isn't set up correctly on our end yet (${result.detail}). This isn't something you can fix — it needs a deploy.`);
+        } else if (result.reason === "subscribe-failed") {
+          setError(`Couldn't turn on notifications: ${result.detail}`);
+        } else if (result.reason === "save-failed") {
+          setError(`Notifications were allowed, but we couldn't save that: ${result.detail}`);
         } else {
           setError("Couldn't turn on push notifications right now. Try again in a moment.");
         }
