@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Nunito, Poppins } from "next/font/google";
+import { Geist, Geist_Mono, Nunito } from "next/font/google";
 import Script from "next/script";
 
 const nunito = Nunito({
@@ -18,18 +18,6 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-});
-
-// Wordmark-only font, per request to match an uploaded reference image
-// - no exact font name or file was available, so this is a visual best
-// match (bold geometric sans, flat-cut terminals) rather than a
-// confirmed exact match. Scoped to its own variable rather than
-// replacing --font-geist-sans, since this is specifically for the
-// "HintDrop" wordmark, not body text sitewide.
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["800", "900"],
-  variable: "--font-poppins",
 });
 
 export const metadata = {
@@ -52,12 +40,12 @@ export const metadata = {
     // get some browsers to pick up the new design. A version query
     // string forces it to be treated as a genuinely different resource.
     icon: [
-      { url: "/favicon.svg?v=7", type: "image/svg+xml" },
-      { url: "/favicon.png?v=7", type: "image/png", sizes: "32x32" },
-      { url: "/icon-192.png?v=7", type: "image/png", sizes: "192x192" },
+      { url: "/favicon.svg?v=8", type: "image/svg+xml" },
+      { url: "/favicon.png?v=8", type: "image/png", sizes: "32x32" },
+      { url: "/icon-192.png?v=8", type: "image/png", sizes: "192x192" },
     ],
-    apple: "/apple-touch-icon.png?v=7",
-    shortcut: "/favicon.png?v=7",
+    apple: "/apple-touch-icon.png?v=8",
+    shortcut: "/favicon.png?v=8",
   },
   title: {
     default: "HintDrop",
@@ -70,7 +58,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} ${nunito.variable} ${poppins.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${nunito.variable} antialiased`}>
         {/* Auto-affiliate link rewriting (Skimlinks) — was only loaded on
             /shop, meaning every outbound retailer link anywhere else in the
             app (gift-shop, hints, hint detail modals, shared hint/board

@@ -212,7 +212,7 @@ function LandingLogo() {
           corporate. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/illustrations/giftbox-icon-v2.png" alt="" width={44} height={52} className="object-contain" />
-      <div className="text-[22px] font-extrabold tracking-[-0.04em] text-slate-900" style={{ fontFamily: "var(--font-poppins)" }}>
+      <div className="text-[22px] font-bold tracking-[0em] text-slate-900" style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
         Hint<span className="text-[#ff875d]">Drop</span>
       </div>
     </div>
