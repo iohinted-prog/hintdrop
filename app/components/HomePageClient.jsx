@@ -212,9 +212,8 @@ function LandingLogo() {
           corporate. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/illustrations/giftbox-icon-v2.png" alt="" width={44} height={52} className="object-contain" />
-      <div className="text-[22px] font-bold tracking-[0em] text-slate-900" style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
-        Hint<span className="text-[#ff875d]">Drop</span>
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/illustrations/wordmark-final.png" alt="HintDrop" className="h-8 w-auto" />
     </div>
   );
 }
@@ -584,7 +583,7 @@ export default function HomePageClient() {
               </span>
             </div>
 
-            <h1 className="mt-7 max-w-[580px] text-[48px] font-extrabold leading-[0.98] tracking-[-0.065em] text-slate-900 sm:text-[64px] lg:text-[82px]" >
+            <h1 className="mt-7 max-w-[580px] text-[48px] font-bold leading-[0.98] tracking-[-0.02em] text-slate-900 sm:text-[64px] lg:text-[82px]" >
               Never forget.
               <br />
               <span className="text-[#ff8060]">Always thoughtful.</span>

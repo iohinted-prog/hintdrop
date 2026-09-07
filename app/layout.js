@@ -1,4 +1,4 @@
-import { Nunito } from "next/font/google";
+import { Nunito, Poppins } from "next/font/google";
 import Script from "next/script";
 
 const nunito = Nunito({
@@ -9,6 +9,18 @@ const nunito = Nunito({
 import "./globals.css";
 import { PreferencesProvider } from "./providers/PreferencesProvider";
 import AppShell from "./components/AppShell";
+
+// Sitewide font, per request to match the uploaded reference logo/H1
+// image. No font name or file was available for that reference either
+// - this is a visual best match (bold geometric sans, rounded dot on
+// the "i"), at Bold (700) specifically rather than the ExtraBold/Black
+// weights tried earlier, since that heavier weight was flagged as too
+// heavy previously.
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-poppins",
+});
 
 export const metadata = {
   icons: {
@@ -48,7 +60,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${nunito.variable} antialiased`}>
+      <body className={`${nunito.variable} ${poppins.variable} antialiased`}>
         {/* Auto-affiliate link rewriting (Skimlinks) — was only loaded on
             /shop, meaning every outbound retailer link anywhere else in the
             app (gift-shop, hints, hint detail modals, shared hint/board

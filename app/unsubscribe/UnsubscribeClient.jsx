@@ -92,9 +92,8 @@ export default function UnsubscribeClient() {
         <div className="flex items-center gap-2 mb-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/illustrations/giftbox-icon-v2.png" alt="" width={28} height={28} className="object-contain" />
-          <span className="text-[18px] font-bold tracking-[0em] text-slate-900" style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
-            Hint<span className="text-[#ff875d]">Drop</span>
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/illustrations/wordmark-final.png" alt="HintDrop" className="h-6 w-auto" />
         </div>
 
         {status === "loading" && (

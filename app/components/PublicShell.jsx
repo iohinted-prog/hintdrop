@@ -19,9 +19,8 @@ export default function PublicShell({ children }) {
         <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
           <Link href="/" className="flex items-center gap-3">
             <LogoMark />
-            <div className="text-[22px] font-bold tracking-[0em] text-slate-900" style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
-              Hint<span className="text-[#ff875d]">Drop</span>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/illustrations/wordmark-final.png" alt="HintDrop" className="h-8 w-auto" />
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/gift-shop" className="hidden md:flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold text-slate-600 border border-[#ead8ce] hover:bg-[#fff5f0] transition">
