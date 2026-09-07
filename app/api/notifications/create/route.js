@@ -1,9 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { sendPushToUser } from "../../../../lib/pushSend";
 
-// Single place to create a notification, so the bell (real-time) and
-// eventual email (batched, see app/api/cron/notification-digest) both
-// come from one insert path rather than being created ad-hoc from
+// Single place to create a notification, so the bell (real-time),
+// push, and eventual email (batched, see app/api/cron/notification-digest)
+// all come from one insert path rather than being created ad-hoc from
 // multiple callers.
 
 export async function POST(req) {
@@ -31,6 +32,22 @@ export async function POST(req) {
     });
 
     if (insertError) throw insertError;
+
+    // Push runs after the bell insert and is deliberately non-blocking
+    // for the response - a push failure (dead subscription, network
+    // issue) shouldn't turn into a 500 for what is otherwise a
+    // successful notification creation. Whether this actually reaches
+    // a device depends entirely on push_subscriptions having a row for
+    // this user - that table only gets a row once someone explicitly
+    // grants browser notification permission and subscribes, so it's
+    // the opt-in gate; no separate preference column needed.
+    sendPushToUser(supabase, user_id, {
+      title,
+      body: notifBody || "",
+      url: data?.url || "/feed",
+    }).catch((err) => {
+      console.error("Push send error:", err);
+    });
 
     // Email sending removed from here (Aug 2026) — was firing an email
     // instantly for every single notification, which would double up

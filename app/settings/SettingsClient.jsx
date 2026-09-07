@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "../../lib/supabase/client";
+import { subscribeToPush, unsubscribeFromPush, getPushSubscriptionStatus, isPushSupported } from "../../lib/push";
 import { saveSettings } from "../actions/settings";
 import { usePreferences } from "../providers/PreferencesProvider";
 
@@ -30,6 +31,8 @@ export default function SettingsPage() {
   const [success, setSuccess] = useState("");
 
   const [emailReminders, setEmailReminders] = useState(true);
+  const [pushStatus, setPushStatus] = useState("not-subscribed");
+  const [pushBusy, setPushBusy] = useState(false);
   const [personalizedOffers, setPersonalizedOffers] = useState(true);
   const [hintSaleAlerts, setHintSaleAlerts] = useState(true);
   const [productUpdates, setProductUpdates] = useState(false);
@@ -100,6 +103,34 @@ export default function SettingsPage() {
       cancelled = true;
     };
   }, [supabase]);
+
+  useEffect(() => {
+    getPushSubscriptionStatus().then(setPushStatus);
+  }, []);
+
+  async function handleTogglePush() {
+    if (!userId || pushBusy) return;
+    setPushBusy(true);
+    setError("");
+    try {
+      if (pushStatus === "subscribed") {
+        await unsubscribeFromPush(supabase);
+        setPushStatus("not-subscribed");
+      } else {
+        const result = await subscribeToPush(supabase, userId);
+        if (result.ok) {
+          setPushStatus("subscribed");
+        } else if (result.reason === "denied") {
+          setPushStatus("denied");
+          setError("Notifications are blocked for this site in your browser settings. You'll need to allow them there first.");
+        } else {
+          setError("Couldn't turn on push notifications right now. Try again in a moment.");
+        }
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  }
 
   function toggleInterest(interest) {
     setError("");
@@ -211,6 +242,26 @@ export default function SettingsPage() {
                   className="h-5 w-5 accent-[#f36f64]"
                 />
               </label>
+
+              {isPushSupported() && (
+                <label className="flex items-center justify-between gap-4 rounded-[20px] border border-[#f1e4dc] bg-[#fffdfa] px-4 py-4">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Push notifications</p>
+                    <p className="text-xs text-slate-500">
+                      {pushStatus === "denied"
+                        ? "Blocked in your browser settings — allow notifications for this site to turn this on."
+                        : "Get notified on this device for comments, reminders, and Circle activity."}
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={pushStatus === "subscribed"}
+                    disabled={pushBusy || pushStatus === "denied"}
+                    onChange={handleTogglePush}
+                    className="h-5 w-5 accent-[#f36f64] disabled:opacity-50"
+                  />
+                </label>
+              )}
 
               <label className="flex items-center justify-between gap-4 rounded-[20px] border border-[#f1e4dc] bg-[#fffdfa] px-4 py-4">
                 <div>
