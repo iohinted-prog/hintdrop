@@ -139,6 +139,40 @@ function eventBorderStyle(color) {
 const EVENT_TYPES = ["Holiday", "Birthday", "Celebration", "Anniversary", "Wedding", "Other"];
 const RECUR_OPTIONS = ["none", "weekly", "monthly", "yearly"];
 
+// Same recurring-yearly logic as buildContactBirthdayEvents, but for
+// the logged-in user's own birthday (profiles.birthday) - collected
+// as a required field at signup, but previously never surfaced
+// anywhere on the calendar at all, since this page only ever read
+// from contacts (other people), never the user's own profile.
+function buildOwnBirthdayEvent(profile) {
+  if (!profile?.birthday) return [];
+  const bday = new Date(profile.birthday + "T00:00:00");
+  if (isNaN(bday.getTime())) return [];
+  const now = new Date();
+  const month = bday.getMonth();
+  const day = bday.getDate();
+  for (let y = now.getFullYear(); y <= now.getFullYear() + 2; y++) {
+    const date = new Date(y, month, day);
+    if (date >= now) {
+      return [{
+        id: "own-birthday-" + y,
+        title: "Your Birthday",
+        event_date: `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`,
+        raw_birthday: profile.birthday,
+        type: "Birthday",
+        source: "own",
+        // Update your own hints for people to see, rather than "See
+        // hints" pointed at someone else's profile like the contact
+        // version - this is the one birthday entry where the person
+        // viewing it IS the birthday person.
+        cta_label: "Update your hints",
+        cta_href: "/hints",
+      }];
+    }
+  }
+  return [];
+}
+
 function buildContactBirthdayEvents(contacts) {
   const now = new Date();
   const rows = [];
@@ -201,16 +235,18 @@ export default function CalendarClient() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
-      const [{ data: calEvents }, { data: contacts }] = await Promise.all([
+      const [{ data: calEvents }, { data: contacts }, { data: ownProfile }] = await Promise.all([
         Promise.all([
           supabase.from("calendar_events").select("*").eq("user_id", user.id).order("event_date"),
           supabase.from("calendar_events").select("*").eq("is_shared", true).order("event_date"),
         ]).then(([personal, shared]) => ({ data: [...(personal.data || []), ...(shared.data || [])], error: personal.error || shared.error })),
         supabase.from("contact_public_state").select("*").eq("owner_user_id", user.id),
+        supabase.from("profiles").select("birthday").eq("id", user.id).maybeSingle(),
       ]);
       setContactsList(contacts || []);
       const birthdayEvents = buildContactBirthdayEvents(contacts || []);
-      setEvents([...(calEvents || []), ...birthdayEvents]);
+      const ownBirthdayEvent = buildOwnBirthdayEvent(ownProfile);
+      setEvents([...(calEvents || []), ...birthdayEvents, ...ownBirthdayEvent]);
       setLoading(false);
       return user.id;
     }
@@ -442,7 +478,7 @@ export default function CalendarClient() {
 
   function renderEventCard(e) {
     const c = eventColor(e);
-    const isDeletable = e.source !== "contact";
+    const isDeletable = e.source !== "contact" && e.source !== "own";
     const isEditingThisBirthday = e.source === "contact" && editingBirthdayId === e.contact_id;
     return (
       <div key={e.id} className="rounded-[16px] border bg-white p-4" style={{ ...eventBorderStyle(c), animation: "calCardIn 0.2s ease" }}>
