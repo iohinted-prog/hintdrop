@@ -50,7 +50,7 @@ export default function ExtensionClient() {
               in your browser toolbar whenever you want to save something.
             </p>
             <a
-              href="https://chromewebstore.google.com/detail/ckanonmndemkfbjhblnlnogagfincjbo"
+              href="https://chromewebstore.google.com/detail/HintDrop/ckanonmndemkfbjhblnlnogagfincjbo"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-6 text-sm font-semibold text-white shadow-lg transition hover:translate-y-[-1px]"
