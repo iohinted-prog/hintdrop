@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Nunito } from "next/font/google";
+import { Nunito } from "next/font/google";
 import Script from "next/script";
 
 const nunito = Nunito({
@@ -9,16 +9,6 @@ const nunito = Nunito({
 import "./globals.css";
 import { PreferencesProvider } from "./providers/PreferencesProvider";
 import AppShell from "./components/AppShell";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata = {
   icons: {
@@ -58,7 +48,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} ${nunito.variable} antialiased`}>
+      <body className={`${nunito.variable} antialiased`}>
         {/* Auto-affiliate link rewriting (Skimlinks) — was only loaded on
             /shop, meaning every outbound retailer link anywhere else in the
             app (gift-shop, hints, hint detail modals, shared hint/board
