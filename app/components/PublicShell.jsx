@@ -7,7 +7,7 @@ import SocialLinks from "./SocialLinks";
 function LogoMark() {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/illustrations/logo-trial-h-v8.png" alt="" className="h-8 w-auto object-contain" />
+    <img src="/illustrations/giftbox-icon.png" alt="" className="h-8 w-auto object-contain" />
   );
 }
 
@@ -17,11 +17,10 @@ export default function PublicShell({ children }) {
     <div className="min-h-screen bg-[#fffaf7] text-slate-800 flex flex-col">
       <header className="border-b border-[#efe0d7] bg-[#fffaf7]/95 backdrop-blur sticky top-0 z-50">
         <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
-          <Link href="/" className="flex items-baseline gap-0">
+          <Link href="/" className="flex items-center gap-3">
             <LogoMark />
-            <div className="text-[22px] font-extrabold tracking-[-0.05em]">
-              <span className="text-[#FC724A]">int</span>
-              <span className="text-slate-900">Drop</span>
+            <div className="text-[22px] font-extrabold tracking-[-0.05em] text-slate-900">
+              Hint<span className="text-[#ff875d]">Drop</span>
             </div>
           </Link>
           <div className="flex items-center gap-3">
