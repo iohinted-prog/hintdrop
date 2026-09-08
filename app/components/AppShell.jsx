@@ -118,7 +118,25 @@ export default function AppShell({ children }) {
     pathname.startsWith("/b/") ||
     pathname.startsWith("/join/") ||
     pathname.startsWith("/profile/") ||
-    pathname === "/extension";
+    pathname === "/extension" ||
+    // Added when /gift-shop-uk and /gift-shop-us were introduced,
+    // fixing a regression: they render their own PublicShell (same
+    // as /gift-shop above), but weren't added to any exclusion list
+    // here, so AppShell kept rendering its own chrome on top -
+    // showing two headers stacked for every visitor, not just signed-
+    // in ones. Belongs here rather than in alwaysHideChrome above,
+    // for the same reason as the other entries in this list: a
+    // signed-in visitor who lands on one of these directly (bookmark,
+    // shared link, since the region-routing auth check only applies
+    // to the un-suffixed /gift-shop entry point, not a direct visit
+    // to the suffixed path) should still get the normal app chrome,
+    // not the public marketing header. Exact match only, not a
+    // startsWith prefix - the product detail pages under
+    // /gift-shop-{region}/p/... don't render their own competing
+    // shell, so they correctly keep relying on AppShell always, for
+    // every visitor.
+    pathname === "/gift-shop-uk" ||
+    pathname === "/gift-shop-us";
 
   const hideChrome = alwaysHideChrome || (conditionallyHiddenPath && !currentUserId);
 

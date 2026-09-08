@@ -340,13 +340,6 @@ function ShopCard({
         </div>
 
         <div className="shrink-0 p-3">
-          {/* TEMPORARY diagnostic - shows the raw measured aspect
-              ratio (or "no data") directly on the card, so this can
-              be read straight off a screenshot without needing dev
-              tools. Remove once the cause is found. */}
-          <p className="mb-1 rounded bg-black px-1.5 py-0.5 text-[10px] font-bold text-white inline-block">
-            AR: {typeof rawRatio === "number" && Number.isFinite(rawRatio) ? rawRatio.toFixed(2) : "no data"}
-          </p>
           <h3 className="text-[13px] font-semibold tracking-[-0.02em] text-slate-900 leading-tight line-clamp-1">
             {product.title || "Gift idea"}
           </h3>

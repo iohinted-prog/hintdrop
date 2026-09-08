@@ -1,10 +1,11 @@
 "use client";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, Fragment } from "react";
 import PublicShell from "../components/PublicShell";
 import AuthModal from "../components/AuthModal";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 import HintImage from "../components/HintImage";
 import { shuffleProducts } from "../../lib/products";
+import { createClient } from "../../lib/supabase/client";
 
 const INTEREST_OPTIONS = [
   "Home", "Food", "Beauty", "Tech", "Travel", "Wellness",
@@ -210,11 +211,6 @@ function GiftCard({ product, region, imageRatios, onViewItem, isOpeningLink, for
         </div>
 
         <div className="shrink-0 p-3">
-          {/* TEMPORARY diagnostic - see identical comment in
-              ShopPageContent.jsx. Remove once the cause is found. */}
-          <p className="mb-1 rounded bg-black px-1.5 py-0.5 text-[10px] font-bold text-white inline-block">
-            AR: {typeof rawRatio === "number" && Number.isFinite(rawRatio) ? rawRatio.toFixed(2) : "no data"}
-          </p>
           <h3 className="text-[13px] font-semibold tracking-[-0.02em] text-slate-900 leading-tight line-clamp-1">
             <a href={detailUrl} onClick={(e) => e.stopPropagation()} className="hover:text-[#e37b57]">
               {product.title || "Gift idea"}
@@ -403,6 +399,17 @@ function ShopGuide() {
 export default function GiftShopClient({ region = "uk" }) {
   const { formatCurrency, formatCurrencyIn } = useCurrencyFormatter();
   const [authOpen, setAuthOpen] = useState(false);
+  // Only used to decide which header to render (see the Shell choice
+  // near the return below) - a signed-in visitor landing here
+  // directly (bookmark, shared link - the auth-aware redirect on the
+  // un-suffixed /gift-shop entry point doesn't apply to a direct
+  // visit to this exact path) should see the normal app chrome from
+  // the root layout's AppShell, not this page's own public-facing
+  // PublicShell stacked on top of it. Deliberately minimal: just the
+  // auth check, none of the profile/interests fetching
+  // ShopPageContent.jsx's bootstrap does, since nothing else on this
+  // page needs it.
+  const [currentUser, setCurrentUser] = useState(null);
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState("");
@@ -471,6 +478,17 @@ export default function GiftShopClient({ region = "uk" }) {
       next.add(productId);
       return next;
     });
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (active) setCurrentUser(user || null);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -642,8 +660,16 @@ export default function GiftShopClient({ region = "uk" }) {
     }
   }
 
+  // A signed-in visitor here directly (bookmark, shared link) gets
+  // the normal app chrome from AppShell (the root layout) instead of
+  // this page's own public-facing header - Fragment renders nothing
+  // extra, so AppShell's is the only header shown. Matches the fix
+  // in AppShell.jsx (conditionallyHiddenPath) exactly: hide one side
+  // or the other based on auth state, never both, never neither.
+  const Shell = currentUser ? Fragment : PublicShell;
+
   return (
-    <PublicShell>
+    <Shell>
       <div className="mx-auto max-w-[1380px] px-5 py-8 md:px-8">
         {pageError ? (
           <div className="mb-5 rounded-[22px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">
@@ -793,6 +819,6 @@ export default function GiftShopClient({ region = "uk" }) {
         </div>
       </div>
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
-    </PublicShell>
+    </Shell>
   );
 }
