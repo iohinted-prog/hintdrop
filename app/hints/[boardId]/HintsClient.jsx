@@ -940,6 +940,33 @@ function HintFormFields({
   setGradientBatch,
 }) {
   const previewImage = form.uploadedImage || form.image;
+  // Same 2-max pattern as the shop page's interest filter
+  // (toggleInterest/interestLimitMessage in ShopPageContent.jsx) -
+  // mirrored here rather than shared, since this component has its
+  // own local form state and the shop page's version is tied to its
+  // own page-level filter state.
+  const [occasionLimitMessage, setOccasionLimitMessage] = useState("");
+  const occasionLimitTimerRef = useRef(null);
+
+  function toggleOccasion(occasion) {
+    setForm((current) => {
+      const sel = current.occasions || [];
+      if (sel.includes(occasion)) {
+        setOccasionLimitMessage("");
+        return { ...current, occasions: sel.filter((o) => o !== occasion) };
+      }
+
+      if (sel.length >= 2) {
+        setOccasionLimitMessage("You can only pick 2 at a time — unclick one first.");
+        window.clearTimeout(occasionLimitTimerRef.current);
+        occasionLimitTimerRef.current = window.setTimeout(() => setOccasionLimitMessage(""), 3000);
+        return current;
+      }
+
+      setOccasionLimitMessage("");
+      return { ...current, occasions: [...sel, occasion] };
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -1083,25 +1110,21 @@ function HintFormFields({
         <div className="flex flex-wrap gap-2.5">
           {["Birthday", "Christmas", "Valentine's Day", "Anniversary", "Wedding", "Graduation", "Just because", "Mother's Day", "Father's Day", "Housewarming"].map(occasion => {
             const selected = form.occasions?.includes(occasion);
-            const atMax = (form.occasions?.length || 0) >= 2 && !selected;
             return (
               <button
                 key={occasion}
                 type="button"
-                disabled={atMax}
-                onClick={() => setForm(current => {
-                  const sel = current.occasions || [];
-                  const isSel = sel.includes(occasion);
-                  if (false) return current;
-                  return { ...current, occasions: isSel ? sel.filter(o => o !== occasion) : [...sel, occasion] };
-                })}
-                className={"rounded-full px-4 py-2.5 text-sm font-medium transition " + (selected ? "bg-[#e3f5ea] text-[#2f8a5f]" : atMax ? "border border-slate-200 bg-white text-slate-300 cursor-not-allowed" : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}
+                onClick={() => toggleOccasion(occasion)}
+                className={"rounded-full px-4 py-2.5 text-sm font-medium transition " + (selected ? "bg-[#e3f5ea] text-[#2f8a5f]" : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}
               >
                 {occasion}
               </button>
             );
           })}
         </div>
+        {occasionLimitMessage ? (
+          <p className="mt-2 text-[13px] font-medium text-[#c9633f]">{occasionLimitMessage}</p>
+        ) : null}
       </div>
       </div>
       {(showToggles || showPrivateToggle) ? (
