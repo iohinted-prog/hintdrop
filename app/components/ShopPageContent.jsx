@@ -1143,6 +1143,32 @@ export default function ShopPageContent({ region = "uk" }) {
         </section>
 
         <section className="mt-12">
+          {activeFilterCount > 0 ? (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-[#f0dfd6] bg-[#fff7f2] px-5 py-3">
+              <p className="text-[13px] text-slate-600">
+                <span className="font-semibold text-slate-900">
+                  Showing {visibleProducts.length} gift{visibleProducts.length === 1 ? "" : "s"}
+                </span>
+                {" "}filtered by
+                {selectedInterests.length ? ` your interests (${selectedInterests.join(", ")})` : ""}
+                {selectedInterests.length && (selectedOccasion || selectedRelationship || selectedPriceBand) ? " and" : ""}
+                {selectedOccasion ? ` occasion (${selectedOccasion})` : ""}
+                {selectedOccasion && (selectedRelationship || selectedPriceBand) ? "," : ""}
+                {selectedRelationship ? ` relationship (${selectedRelationship})` : ""}
+                {selectedRelationship && selectedPriceBand ? "," : ""}
+                {selectedPriceBand ? ` price (${selectedPriceBand})` : ""}
+                . Interests are pre-filled from your saved preferences.
+              </p>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="shrink-0 rounded-full border border-[#e37b57] px-4 py-1.5 text-[12px] font-semibold text-[#e37b57] hover:bg-[#fff4ee]"
+              >
+                Clear filters
+              </button>
+            </div>
+          ) : null}
+
           <div className="relative rounded-[36px] border border-[#efe0d7] bg-[#fffdfb] p-3 shadow-[0_12px_32px_rgba(176,118,86,0.08)] sm:p-5">
             <div className="relative">
               {isLoading ? (
