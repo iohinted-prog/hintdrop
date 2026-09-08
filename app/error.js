@@ -1,42 +1,17 @@
 "use client";
-import { useEffect, useState } from "react";
 import Link from "next/link";
 
+// No reload-then-show-details state machine anymore - that added a
+// layer of timing complexity (sessionStorage, when exactly the
+// reload completes, whether a fast-repeating error could retrigger
+// a second reload before the first one's state was ever visible)
+// that made this genuinely hard to reason about and, per direct
+// testing, didn't reliably behave as "first time reloads, second
+// time shows details" at all - sometimes got stuck on what should
+// have been the very first occurrence. Simplified to the only
+// version with zero ambiguity: every error shows its real message
+// immediately, every time, full stop.
 export default function Error({ error, reset }) {
-  // A second occurrence after the automatic reload below means the
-  // error is genuinely repeatable (not a transient blip a reload
-  // would fix), so show what actually happened instead of a fake
-  // "Loading..." forever with no way out - previously this just
-  // silently stuck, disguised as a loading state, on any error that
-  // survived one reload. Confirmed a real problem, not theoretical:
-  // this is exactly what happened when the non-URL hint-idea flow
-  // threw an error - no way to tell what had gone wrong, no path
-  // back except manually retyping the URL.
-  const [showDetails] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const reloaded = sessionStorage.getItem("error-reloaded");
-    if (reloaded) {
-      sessionStorage.removeItem("error-reloaded");
-      return true;
-    }
-    return false;
-  });
-
-  useEffect(() => {
-    if (showDetails) return;
-    sessionStorage.setItem("error-reloaded", "1");
-    window.location.reload();
-  }, [showDetails]);
-
-  if (!showDetails) {
-    return (
-      <div className="min-h-screen bg-[#fffaf7] flex flex-col items-center justify-center gap-4 p-8 text-center">
-        <div className="text-4xl">🎁</div>
-        <p className="text-[15px] text-slate-500">Loading...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#fffaf7] flex flex-col items-center justify-center gap-4 p-8 text-center">
       <div className="text-4xl">🎁</div>
