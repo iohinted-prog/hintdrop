@@ -1020,21 +1020,8 @@ export default function ShopPageContent({ region = "uk" }) {
         <section className="rounded-[34px] border border-[#eeddd3] bg-[#fff7f2] p-4 shadow-[0_18px_60px_rgba(173,101,72,0.10)] sm:p-5">
           <div className="rounded-[28px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
             <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="inline-flex rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e37b57]">
-                    Curated gifting
-                  </div>
-                  {/* Auto-detected on arrival by middleware.js from the visitor's
-                      country - this link is the manual override for anyone it
-                      gets wrong (or who's shopping for someone in the other
-                      region). Visiting it directly updates the remembered
-                      region for next time too. */}
-                  <a
-                    href={region === "uk" ? "/shop-us" : "/shop-uk"}
-                    className="inline-flex rounded-full border border-[#f1dfd6] px-3 py-1 text-[11px] font-semibold text-slate-500 hover:border-[#e37b57] hover:text-[#e37b57]"
-                  >
-                    Shopping {region === "uk" ? "UK (£)" : "US ($)"} · Switch to {region === "uk" ? "US ($)" : "UK (£)"}
-                  </a>
+                <div className="inline-flex rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e37b57]">
+                  Curated gifting
                 </div>
 
                 <h1 className="mt-3 text-[34px] font-bold tracking-[-0.06em] text-slate-900 sm:text-[40px]">

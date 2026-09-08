@@ -6,6 +6,7 @@ import { createClient } from "../../lib/supabase/client";
 import { subscribeToPush, unsubscribeFromPush, getPushSubscriptionStatus, isPushSupported } from "../../lib/push";
 import { saveSettings } from "../actions/settings";
 import { usePreferences } from "../providers/PreferencesProvider";
+import { REGION_COOKIE, REGIONS, DEFAULT_REGION, isValidRegion } from "../../lib/region";
 
 const INTEREST_OPTIONS = [
   "Home",
@@ -41,6 +42,20 @@ export default function SettingsPage() {
   const [defaultReminderDays, setDefaultReminderDays] = useState("7");
   const { setCurrency: setGlobalCurrency } = usePreferences();
   const [currency, setCurrency] = useState("GBP");
+  // Which shop catalog (/shop-uk vs /shop-us) this browser is sent to
+  // from /shop - auto-detected from country on first visit, stored in
+  // the hd_region cookie by proxy.js. This is the manual override,
+  // replacing the inline "Switch to..." link that used to sit on the
+  // shop page itself - same cookie, same effect, just living
+  // somewhere a person actually goes looking for a preference instead
+  // of cluttering the shop page for the (usual) case where
+  // auto-detection already got it right.
+  const [shopRegion, setShopRegion] = useState(() => {
+    if (typeof document === "undefined") return DEFAULT_REGION;
+    const match = document.cookie.match(new RegExp(`(?:^|; )${REGION_COOKIE}=([^;]*)`));
+    const cookieRegion = match ? decodeURIComponent(match[1]) : "";
+    return isValidRegion(cookieRegion) ? cookieRegion : DEFAULT_REGION;
+  });
   const [interests, setInterests] = useState(["Travel", "Food"]);
   const [otherInterest, setOtherInterest] = useState("");
   const [userId, setUserId] = useState("");
@@ -107,6 +122,15 @@ export default function SettingsPage() {
   useEffect(() => {
     getPushSubscriptionStatus().then(setPushStatus);
   }, []);
+
+  function handleShopRegionChange(nextRegion) {
+    if (!isValidRegion(nextRegion)) return;
+    setShopRegion(nextRegion);
+    if (typeof document !== "undefined") {
+      const oneYearSeconds = 60 * 60 * 24 * 365;
+      document.cookie = `${REGION_COOKIE}=${nextRegion}; path=/; max-age=${oneYearSeconds}; samesite=lax`;
+    }
+  }
 
   async function handleTogglePush() {
     if (!userId || pushBusy) return;
@@ -430,6 +454,33 @@ export default function SettingsPage() {
                 <option value="USD">USD — US Dollar</option>
                 <option value="AUD">AUD — Australian Dollar</option>
                 <option value="CAD">CAD — Canadian Dollar</option>
+              </select>
+            </div>
+          </section>
+
+          <section className="rounded-[28px] border border-[#eddacf] bg-white p-6 shadow-sm">
+            <h2 className="text-[20px] font-semibold text-slate-900">Shop region</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Which gift shop catalogue you see by default. We detect this automatically from your
+              location on your first visit - change it here if that ever needs overriding, for
+              example if you are shopping for someone in a different country.
+            </p>
+
+            <div className="mt-6 max-w-[360px]">
+              <label htmlFor="shopRegion" className="block text-sm font-medium text-slate-900">
+                Default shop
+              </label>
+              <select
+                id="shopRegion"
+                value={shopRegion}
+                onChange={(e) => handleShopRegionChange(e.target.value)}
+                className="mt-2 h-[54px] w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
+              >
+                {Object.values(REGIONS).map((region) => (
+                  <option key={region.code} value={region.code}>
+                    {region.label} — {region.currency}
+                  </option>
+                ))}
               </select>
             </div>
           </section>
