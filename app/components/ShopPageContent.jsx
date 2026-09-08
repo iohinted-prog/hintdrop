@@ -247,7 +247,19 @@ function ShopCard({
   const retailerLabel = product.retailer || normaliseRetailer(getOutboundUrl(product));
 
   const rawRatio = imageRatios[product.id];
-  const cardAspectRatio = rawRatio && Number.isFinite(rawRatio) ? Math.min(0.85, rawRatio) : 0.85;
+  // Clamped to a range, not capped at a single ceiling - the previous
+  // Math.min(0.85, rawRatio) forced every square-or-wider image
+  // (ratio >= 0.85) to the exact same 0.85 value, indistinguishable
+  // from a card with no measured ratio at all. Real product
+  // photography spans portrait through landscape; a lot of it is
+  // square-ish (mugs, boxed sets, appliances shot from above), so
+  // that single ceiling was flattening a large share of the grid to
+  // one uniform height regardless of any other fix. 0.55-1.35 keeps
+  // genuinely extreme outliers from breaking the column layout while
+  // letting square and landscape shots actually look different from
+  // portrait ones.
+  const cardAspectRatio =
+    rawRatio && Number.isFinite(rawRatio) ? Math.min(1.35, Math.max(0.55, rawRatio)) : 0.85;
   // HintDrop's own indexable product page (see app/gift-shop/ProductPageContent.js),
   // not the retailer link - this is what actually drives traffic back
   // to HintDrop when someone shares a gift idea, and it's the URL

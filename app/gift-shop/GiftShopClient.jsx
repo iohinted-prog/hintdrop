@@ -132,7 +132,11 @@ function GiftCard({ product, region, imageRatios, onViewItem, isOpeningLink, for
   const retailerLabel = product.retailer || normaliseRetailer(getOutboundUrl(product));
 
   const rawRatio = imageRatios[product.id];
-  const cardAspectRatio = rawRatio && Number.isFinite(rawRatio) ? Math.min(0.85, rawRatio) : 0.85;
+  // Same fix as ShopPageContent.jsx's identical line - see that file
+  // for the full reasoning. Was capping every square-or-wider image
+  // to one uniform 0.85 value instead of letting it vary.
+  const cardAspectRatio =
+    rawRatio && Number.isFinite(rawRatio) ? Math.min(1.35, Math.max(0.55, rawRatio)) : 0.85;
   // A real, crawlable link to this product's own indexable page - see
   // app/gift-shop/ProductPageContent.js. Kept separate from the
   // onViewItem handler (which goes straight to the retailer): this is
