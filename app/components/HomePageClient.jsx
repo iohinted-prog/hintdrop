@@ -211,9 +211,9 @@ function LandingLogo() {
       {/* Back to the gift box icon - the H-letterform trials felt too
           corporate. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/illustrations/giftbox-icon-v2.png" alt="" width={44} height={52} className="object-contain" />
+      <img src="/illustrations/giftbox-icon-v2.png" alt="" width={32} height={38} className="object-contain" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/illustrations/wordmark-final.png" alt="HintDrop" className="h-8 w-auto" />
+      <img src="/illustrations/wordmark-final.png" alt="HintDrop" className="h-6 w-auto" />
     </div>
   );
 }
