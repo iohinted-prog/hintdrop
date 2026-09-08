@@ -27,6 +27,7 @@ async function getSampleProducts() {
       .from("shop_products")
       .select("*")
       .eq("is_active", true)
+      .eq("region", "uk")
       .order("created_at", { ascending: false })
       .limit(24);
 
