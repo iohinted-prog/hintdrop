@@ -20,7 +20,7 @@ export const metadata = {
   description:
     "Partner with HintDrop to place thoughtful products into gifting, reminder, and shared planning moments.",
   openGraph: {
-    images: ["https://hintdrop.app/og-default.png"],
+    images: ["https://hintdrop.app/og-default-v2.png"],
     title: "For Brands | HintDrop",
     description:
       "Partner with HintDrop to place thoughtful products into gifting, reminder, and shared planning moments.",

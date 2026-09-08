@@ -4,7 +4,7 @@ export const metadata = {
   title: "HintDrop Browser Extension",
   description: "Save gift ideas straight from any product page, without leaving your browser.",
   openGraph: {
-    images: ["https://hintdrop.app/og-default.png"],
+    images: ["https://hintdrop.app/og-default-v2.png"],
     title: "HintDrop Browser Extension",
     description: "Save gift ideas straight from any product page, without leaving your browser.",
     url: "https://hintdrop.app/extension",

@@ -18,7 +18,7 @@ export const metadata = {
   description:
     "Read HintDrop's Privacy Policy, including what information we collect, how we use it, and your choices.",
   openGraph: {
-    images: ["https://hintdrop.app/og-default.png"],
+    images: ["https://hintdrop.app/og-default-v2.png"],
     title: "Privacy Policy | HintDrop",
     description:
       "Read HintDrop's Privacy Policy, including what information we collect, how we use it, and your choices.",
