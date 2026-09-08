@@ -20,6 +20,30 @@
 const BASE64_PREFIX = "base64-";
 
 async function getCookieValue(name) {
+  // Safari-specific workaround for a real, documented WebKit bug (Safari
+  // 17.5-18.1+, confirmed on Apple's own developer forums, FB15232764):
+  // browser.cookies.get()/getAll() silently returns nothing in a Safari
+  // extension's background/popup context - UNTIL the extension's Web
+  // Inspector has been opened at least once, after which it starts
+  // working. Obviously not viable to ask real users to open dev tools,
+  // so this uses the community-confirmed fix instead: querying by
+  // explicit storeId (iterating every cookie store) reliably works
+  // around it, where a plain cookies.get({url, name}) does not.
+  // Harmless no-op on Chrome/Firefox/Edge, which don't have this bug -
+  // getAllCookieStores() there just returns the one normal store, so
+  // this resolves in a single extra call rather than behaving
+  // differently.
+  try {
+    const stores = await browser.cookies.getAllCookieStores();
+    for (const store of stores) {
+      const cookie = await browser.cookies.get({ url: "https://hintdrop.app", name, storeId: store.id });
+      if (cookie) return cookie.value;
+    }
+  } catch {
+    // getAllCookieStores may not exist on every target - fall through
+    // to the plain lookup below rather than failing outright.
+  }
+
   const cookie = await browser.cookies.get({ url: "https://hintdrop.app", name });
   return cookie?.value || null;
 }
