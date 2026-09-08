@@ -30,11 +30,29 @@ export async function generateMetadata({ params }) {
   const title = `${board.title} — ${ownerName}'s Hints 👀 | HintDrop`;
   const description = `Take a look at ${ownerName}'s "${board.title}" Hints on HintDrop.`;
 
+  // Boards had no OG image at all previously - sharing one showed a
+  // text-only card. Use a representative hint's own photo the same way
+  // /h/[hintId] already does, rather than inventing a separate pattern.
+  // A board can be public while individual hints inside it are marked
+  // private, so that's excluded here too - same privacy-through-metadata
+  // gap as the is_private check above, just one level down.
+  const { data: coverHint } = await supabase
+    .from("hints")
+    .select("image_url")
+    .eq("board_id", boardId)
+    .eq("is_private", false)
+    .not("image_url", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const ogImage = coverHint?.image_url || "https://hintdrop.app/og-default-v2.png";
+
   return {
     title,
     description,
-    openGraph: { title, description, type: "website" },
-    twitter: { card: "summary", title, description },
+    openGraph: { title, description, images: [ogImage], type: "website" },
+    twitter: { card: "summary_large_image", title, description, images: [ogImage] },
     alternates: {
       canonical: `https://hintdrop.app/b/${boardId}`,
     },

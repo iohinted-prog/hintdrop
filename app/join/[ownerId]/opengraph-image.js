@@ -9,16 +9,17 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 // Needed for fs access to the bundled font files below — see the same
 // fix and explanation in app/opengraph-image.js. This file previously
-// fetched Arimo live from Google Fonts on every request; that failed in
+// fetched a Google Font live on every request; that failed in
 // production ("Could not find a TTF font URL in the Google Fonts CSS
-// response") because it was requesting a weight-800 Arimo, which
-// doesn't exist for this font. Bundling the real files removes the
-// live network dependency and the possibility of requesting a
-// nonexistent weight entirely.
+// response") because it was requesting an unavailable weight. Bundling
+// the real files removes the live network dependency and the
+// possibility of requesting a nonexistent weight entirely. Later
+// swapped the bundled font from Arimo to Inter to match the sitewide
+// font choice.
 export const runtime = "nodejs";
 
-const arimo600 = fs.readFileSync(path.join(process.cwd(), "lib/fonts/arimo-600.ttf"));
-const arimo700 = fs.readFileSync(path.join(process.cwd(), "lib/fonts/arimo-700.ttf"));
+const inter600 = fs.readFileSync(path.join(process.cwd(), "lib/fonts/inter-600.ttf"));
+const inter700 = fs.readFileSync(path.join(process.cwd(), "lib/fonts/inter-700.ttf"));
 
 export default async function Image({ params }) {
   const { ownerId } = await params;
@@ -33,8 +34,8 @@ export default async function Image({ params }) {
   const initials = ownerName.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() || "").join("") || "?";
 
   const fonts = [
-    { name: "Arimo", data: arimo600, weight: 600, style: "normal" },
-    { name: "Arimo", data: arimo700, weight: 700, style: "normal" },
+    { name: "Inter", data: inter600, weight: 600, style: "normal" },
+    { name: "Inter", data: inter700, weight: 700, style: "normal" },
   ];
 
   return new ImageResponse(
@@ -47,7 +48,7 @@ export default async function Image({ params }) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "Arimo",
+          fontFamily: "Inter",
           // The site's actual pearly background color, matching the
           // main opengraph-image.js and PublicShell.jsx — was a peach
           // gradient, replaced per direct feedback to stick to one
@@ -82,7 +83,7 @@ export default async function Image({ params }) {
               style={{ objectFit: "cover", borderRadius: "50%" }}
             />
           ) : (
-            // fontWeight 700, not 800 — Arimo's actual heaviest weight.
+            // fontWeight 700 - the heaviest bundled here.
             <div style={{ display: "flex", fontSize: 56, fontWeight: 700, color: "white" }}>{initials}</div>
           )}
         </div>
@@ -128,13 +129,10 @@ export default async function Image({ params }) {
               boxShadow: "0 6px 16px rgba(255, 135, 93, 0.35)",
             }}
           >
-            {/* The new standalone icon (see lib/brandIcon.js) — swapped
-                for consistency with the main opengraph-image.js update.
-                objectFit switched from cover to contain: the icon isn't
-                square (491x577), and cover was cropping the bottom of
-                the box off inside this fixed 48x48 container — caught by
-                actually rendering this file through Satori and zooming
-                in, not just from reading the code. */}
+            {/* The current icon (see lib/brandIcon.js). objectFit set to
+                contain rather than cover: the icon isn't square (its
+                current source is 1772x1971), and cover would crop it
+                inside this fixed 48x48 container. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={BRAND_ICON_OG_DATA_URI} width={48} height={48} style={{ objectFit: "contain" }} />
           </div>
