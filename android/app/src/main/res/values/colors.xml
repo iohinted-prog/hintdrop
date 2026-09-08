@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Was missing entirely - styles.xml referenced colorPrimary,
+         colorPrimaryDark, and colorAccent, but nothing anywhere in
+         the generated Android project actually defined them, which
+         would fail to build the moment anyone opened this in Android
+         Studio. Values match the site's own brand palette - coral
+         (#ff875d, the same theme_color used in public/manifest.json
+         and app/layout.js's viewport export) for the primary color,
+         a darker coral for the status bar tint, cream (#fffaf7,
+         matching the site's own background and the splash screens
+         generated alongside this) for the window background. -->
+    <color name="colorPrimary">#ff875d</color>
+    <color name="colorPrimaryDark">#e37b57</color>
+    <color name="colorAccent">#ff875d</color>
+    <color name="windowBackground">#fffaf7</color>
+</resources>
