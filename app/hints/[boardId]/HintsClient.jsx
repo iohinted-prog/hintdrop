@@ -1359,7 +1359,7 @@ const MobileHintCard = memo(function MobileHintCard({ hint, imageRatios, onEdit,
           <div className="absolute top-2 left-2 text-[13px]">{hint.private ? "🔒" : ""}</div>
           {hint.starred && <div className="absolute top-2 right-2 text-[13px]" >⭐</div>}
           <div className="absolute bottom-0 left-0 right-0 p-3">
-            <p className="text-[19px] font-extrabold text-white leading-tight line-clamp-1 mb-1" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.6)" }}>{hint.title || "Hint"}</p>
+            <p className="text-[19px] font-bold text-white leading-tight line-clamp-1 mb-1" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.6)" }}>{hint.title || "Hint"}</p>
             {(hint.rawPrice || hint.numericPrice > 0) && <span className="inline-block text-[12px] font-bold text-white rounded-full px-2.5 py-0.5" style={{ background: "#ff875d" }}>{hint.rawPrice || new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numericPrice)}</span>}
           </div>
         </div>
@@ -2773,7 +2773,7 @@ export default function HintsClient({ boardId }) {
                 {board.is_default ? "My Hints" : board.title}
               </div>
             )}
-            <h1 className="text-[32px] font-extrabold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
+            <h1 className="text-[32px] font-bold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
               Drop a Hint here...
             </h1>
             {boardId && !boardLoading && board && currentUser && (

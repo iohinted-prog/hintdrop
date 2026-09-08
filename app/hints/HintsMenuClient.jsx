@@ -197,7 +197,7 @@ export default function HintsMenuClient() {
     <main className="min-h-screen bg-[#fffaf7] text-slate-800">
       <div className="mx-auto max-w-[1100px] px-5 py-10 md:px-8">
         <section className="text-center">
-          <h1 className="text-[32px] font-extrabold tracking-[-0.06em] text-[#f19a78] sm:text-[44px]">
+          <h1 className="text-[32px] font-bold tracking-[-0.06em] text-[#f19a78] sm:text-[44px]">
             Your Hints
           </h1>
           <p className="mx-auto mt-3 max-w-[52ch] text-[15px] leading-7 text-slate-500">
