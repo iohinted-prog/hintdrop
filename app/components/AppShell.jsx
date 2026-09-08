@@ -495,8 +495,9 @@ export default function AppShell({ children }) {
         <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
           <Link href="/feed" className="flex items-center gap-3">
             <LogoMark />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/illustrations/wordmark-final.png" alt="HintDrop" className="h-8 w-auto" />
+            <div className="text-[22px] font-bold tracking-[-0.01em] text-slate-900">
+              Hint<span className="text-[#ff875d]">Drop</span>
+            </div>
           </Link>
 
           <div className="flex items-center gap-3 sm:gap-4">

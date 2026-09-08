@@ -207,13 +207,14 @@ const shopTiles = [
 
 function LandingLogo() {
   return (
-    <div className="flex items-center gap-3.5">
+    <div className="flex items-center gap-3">
       {/* Back to the gift box icon - the H-letterform trials felt too
           corporate. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/illustrations/giftbox-icon-v2.png" alt="" width={32} height={38} className="object-contain" />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/illustrations/wordmark-final.png" alt="HintDrop" className="h-6 w-auto" />
+      <div className="text-[20px] font-bold tracking-[-0.01em] text-slate-900">
+        Hint<span className="text-[#ff875d]">Drop</span>
+      </div>
     </div>
   );
 }
@@ -583,7 +584,7 @@ export default function HomePageClient() {
               </span>
             </div>
 
-            <h1 className="mt-7 max-w-[580px] text-[48px] font-bold leading-[0.98] tracking-[-0.02em] text-slate-900 sm:text-[64px] lg:text-[82px]" >
+            <h1 className="mt-7 max-w-[580px] text-[48px] font-bold leading-[0.98] tracking-[-0.01em] text-slate-900 sm:text-[64px] lg:text-[82px]" >
               Never forget.
               <br />
               <span className="text-[#ff8060]">Always thoughtful.</span>
