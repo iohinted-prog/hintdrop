@@ -11,6 +11,8 @@ const PRIVATE_ROUTES = [
   "/circles-legacy",
   "/calendar",
   "/shop",
+  "/shop-uk",
+  "/shop-us",
   "/invite",
   "/join",
   "/profile",

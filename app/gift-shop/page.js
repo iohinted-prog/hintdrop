@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { normalizeProductRow } from "@/lib/products";
+import { detectRegionServer } from "@/lib/detectRegionServer";
 import GiftShopClient from "./GiftShopClient";
 
 // The actual interactive shop (filters, search, share buttons, all of
@@ -20,14 +21,14 @@ import GiftShopClient from "./GiftShopClient";
 // as a smaller, safer fix rather than converting the whole page to
 // server-rendering, which is a bigger change - noted as the fuller
 // version worth doing later if this isn't enough on its own.
-async function getSampleProducts() {
+async function getSampleProducts(region) {
   try {
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from("shop_products")
       .select("*")
       .eq("is_active", true)
-      .eq("region", "uk")
+      .eq("region", region)
       .order("created_at", { ascending: false })
       .limit(24);
 
@@ -43,7 +44,13 @@ async function getSampleProducts() {
 }
 
 export default async function GiftShopPage() {
-  const sampleProducts = await getSampleProducts();
+  // This is a fixed, shareable URL (unlike /shop, which redirects to
+  // /shop-uk or /shop-us) - so rather than redirecting it, the region
+  // is detected once per request and used to pick which catalog to
+  // show, both in the noscript sample below and passed through to the
+  // client component's own fetch.
+  const region = await detectRegionServer();
+  const sampleProducts = await getSampleProducts(region);
 
   return (
     <>
@@ -66,7 +73,7 @@ export default async function GiftShopPage() {
           </ul>
         </div>
       </noscript>
-      <GiftShopClient />
+      <GiftShopClient region={region} />
     </>
   );
 }

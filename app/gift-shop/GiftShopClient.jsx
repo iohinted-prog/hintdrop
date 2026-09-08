@@ -349,7 +349,7 @@ function ShopGuide() {
   );
 }
 
-export default function GiftShopClient() {
+export default function GiftShopClient({ region = "uk" }) {
   const { formatCurrency, formatCurrencyIn } = useCurrencyFormatter();
   const [authOpen, setAuthOpen] = useState(false);
   const [products, setProducts] = useState([]);
@@ -385,11 +385,11 @@ export default function GiftShopClient() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/products", { cache: "no-store" })
+    fetch(`/api/products?region=${region}`, { cache: "no-store" })
       .then(r => r.json())
       .then(data => { setProducts(shuffleProducts(Array.isArray(data?.products) ? data.products : [])); setIsLoading(false); })
       .catch((error) => { setPageError(errorToMessage(error)); setIsLoading(false); });
-  }, []);
+  }, [region]);
 
   const measuredIdsRef = useRef(new Set());
 

@@ -5,6 +5,7 @@ export const metadata = {
   description: "Browse US gift ideas by occasion, relationship, and price on HintDrop.",
 };
 
-export default function UsShopPage() {
+// See app/shop-uk/page.js for how visitors land here.
+export default function ShopUsPage() {
   return <ShopPageContent region="us" />;
 }
