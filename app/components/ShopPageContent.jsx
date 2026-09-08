@@ -159,10 +159,18 @@ function buildHintInsertPayload(product, userId, boardId) {
   };
 }
 
+// Below this many natural pixels on either side, a retailer's source
+// image reads as visibly soft/blurry once stretched to fill a
+// masonry column - real product photography is essentially always
+// bigger than this, so it only catches genuinely undersized source
+// images (tiny thumbnails, broken/placeholder assets), not normal
+// smaller-but-legitimate product shots.
+const MIN_IMAGE_DIMENSION = 300;
+
 function loadImageAspectRatio(src) {
   return new Promise((resolve) => {
     if (!src) {
-      resolve(null);
+      resolve({ ratio: null, belowMinimum: false });
       return;
     }
 
@@ -170,13 +178,14 @@ function loadImageAspectRatio(src) {
 
     img.onload = () => {
       if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-        resolve(img.naturalWidth / img.naturalHeight);
+        const belowMinimum = img.naturalWidth < MIN_IMAGE_DIMENSION || img.naturalHeight < MIN_IMAGE_DIMENSION;
+        resolve({ ratio: belowMinimum ? null : img.naturalWidth / img.naturalHeight, belowMinimum });
       } else {
-        resolve(null);
+        resolve({ ratio: null, belowMinimum: false });
       }
     };
 
-    img.onerror = () => resolve(null);
+    img.onerror = () => resolve({ ratio: null, belowMinimum: false });
     img.src = src;
   });
 }
@@ -669,12 +678,24 @@ export default function ShopPageContent({ region = "uk" }) {
 
       const nextEntries = await Promise.all(
         itemsWithImages.map(async (product) => {
-          const ratio = await loadImageAspectRatio(product.image_url);
-          return [product.id, ratio];
+          const { ratio, belowMinimum } = await loadImageAspectRatio(product.image_url);
+          return [product.id, ratio, belowMinimum];
         })
       );
 
       if (cancelled) return;
+
+      // Same treatment as an image that fails to load outright -
+      // excluded from the grid via the existing brokenImageIds
+      // mechanism, rather than shown stretched/blurry.
+      const tooSmallIds = nextEntries.filter(([, , belowMinimum]) => belowMinimum).map(([id]) => id);
+      if (tooSmallIds.length) {
+        setBrokenImageIds((current) => {
+          const next = new Set(current);
+          for (const id of tooSmallIds) next.add(id);
+          return next;
+        });
+      }
 
       captureShopScrollAnchor();
       setImageRatios((current) => {

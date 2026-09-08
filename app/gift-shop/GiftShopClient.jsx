@@ -75,21 +75,27 @@ function getOutboundUrl(product) {
   return affiliate || productUrl || "";
 }
 
+// Same floor as ShopPageContent.jsx's identical check - see that
+// file for the full reasoning. Applied here too since this component
+// is /gift-shop-uk and /gift-shop-us (both territories) equally.
+const MIN_IMAGE_DIMENSION = 300;
+
 function loadImageAspectRatio(src) {
   return new Promise((resolve) => {
     if (!src) {
-      resolve(null);
+      resolve({ ratio: null, belowMinimum: false });
       return;
     }
     const img = new Image();
     img.onload = () => {
       if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-        resolve(img.naturalWidth / img.naturalHeight);
+        const belowMinimum = img.naturalWidth < MIN_IMAGE_DIMENSION || img.naturalHeight < MIN_IMAGE_DIMENSION;
+        resolve({ ratio: belowMinimum ? null : img.naturalWidth / img.naturalHeight, belowMinimum });
       } else {
-        resolve(null);
+        resolve({ ratio: null, belowMinimum: false });
       }
     };
-    img.onerror = () => resolve(null);
+    img.onerror = () => resolve({ ratio: null, belowMinimum: false });
     img.src = src;
   });
 }
@@ -474,12 +480,21 @@ export default function GiftShopClient({ region = "uk" }) {
 
       const nextEntries = await Promise.all(
         itemsWithImages.map(async (product) => {
-          const ratio = await loadImageAspectRatio(product.image_url);
-          return [product.id, ratio];
+          const { ratio, belowMinimum } = await loadImageAspectRatio(product.image_url);
+          return [product.id, ratio, belowMinimum];
         })
       );
 
       if (cancelled) return;
+
+      const tooSmallIds = nextEntries.filter(([, , belowMinimum]) => belowMinimum).map(([id]) => id);
+      if (tooSmallIds.length) {
+        setBrokenImageIds((current) => {
+          const next = new Set(current);
+          for (const id of tooSmallIds) next.add(id);
+          return next;
+        });
+      }
 
       captureShopScrollAnchor();
       setImageRatios((current) => {
