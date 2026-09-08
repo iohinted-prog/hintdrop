@@ -90,6 +90,10 @@ function loadImageAspectRatio(src) {
       return;
     }
     const img = new Image();
+    // Same fix as ShopPageContent.jsx's identical probe - see that
+    // file for the full reasoning. Missing this was why every card
+    // read "no data" instead of a real measured ratio.
+    img.referrerPolicy = "no-referrer";
     img.onload = () => {
       if (img.naturalWidth > 0 && img.naturalHeight > 0) {
         const belowMinimum = img.naturalWidth < MIN_IMAGE_DIMENSION || img.naturalHeight < MIN_IMAGE_DIMENSION;

@@ -188,6 +188,14 @@ function loadImageAspectRatio(src) {
     }
 
     const img = new Image();
+    // The actual displayed photos (HintImage.jsx, via next/image) set
+    // this same override, with the exact same reasoning: several
+    // retailer hosts hotlink-block requests carrying a Referer header
+    // from another site. This probe was missing it - sending the
+    // normal Referer and getting blocked on effectively every image,
+    // which is exactly why every card was reading "no data" rather
+    // than a real measured ratio. Must be set before .src.
+    img.referrerPolicy = "no-referrer";
 
     img.onload = () => {
       if (img.naturalWidth > 0 && img.naturalHeight > 0) {
