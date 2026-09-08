@@ -16,7 +16,7 @@ function LogoMark() {
           reverted per request, only on desktop does the new coral
           badge trial stay. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/illustrations/giftbox-icon-v2.png" alt="" width={38} height={44} className="lg:hidden object-contain" />
+      <img src="/illustrations/giftbox-icon-v2.png" alt="" width={32} height={38} className="lg:hidden object-contain" />
       {/* Desktop: the new coral badge, sized down slightly from the
           original 40px trial per request. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -208,10 +208,9 @@ const shopTiles = [
 function LandingLogo() {
   return (
     <div className="flex items-center gap-3">
-      {/* Back to the gift box icon - the H-letterform trials felt too
-          corporate. */}
+      {/* Coral badge, matching the desktop header version. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/illustrations/giftbox-icon-v2.png" alt="" width={32} height={38} className="object-contain" />
+      <img src="/illustrations/giftbox-badge-coral.png" alt="" width={34} height={34} className="object-contain" />
       <div className="text-[20px] font-bold tracking-[-0.01em] text-slate-900">
         Hint<span className="text-[#ff875d]">Drop</span>
       </div>
