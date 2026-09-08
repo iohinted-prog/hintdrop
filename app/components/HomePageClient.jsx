@@ -590,6 +590,13 @@ export default function HomePageClient() {
               <span className="text-[#ff8060]">Always thoughtful.</span>
             </h1>
 
+            <p className="mt-5 max-w-[520px] text-[18px] leading-7 text-slate-600">
+              <strong className="font-bold text-slate-900">HintDrop</strong> is
+              the gifting app for saving gift ideas, remembering important
+              dates, and planning gifts together with the people you care
+              about.
+            </p>
+
             <div
               id="signup"
               className="mt-8 max-w-[540px] rounded-[28px] border border-slate-200 bg-white p-6 shadow-xl md:p-7"
