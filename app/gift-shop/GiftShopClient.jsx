@@ -113,7 +113,7 @@ function getDisplayPrice(product, formatCurrency, formatCurrencyIn) {
   return product?.price_text || "Price unavailable";
 }
 
-function GiftCard({ product, imageRatios, onViewItem, isOpeningLink, formatCurrency, formatCurrencyIn, onImageError, onRequestSignIn }) {
+function GiftCard({ product, region, imageRatios, onViewItem, isOpeningLink, formatCurrency, formatCurrencyIn, onImageError, onRequestSignIn }) {
   const [showModal, setShowModal] = useState(false);
   const [justShared, setJustShared] = useState(false);
   const interestTags = getTagArray(product.interest_tags);
@@ -124,6 +124,13 @@ function GiftCard({ product, imageRatios, onViewItem, isOpeningLink, formatCurre
 
   const rawRatio = imageRatios[product.id];
   const cardAspectRatio = rawRatio && Number.isFinite(rawRatio) ? Math.min(0.85, rawRatio) : 0.85;
+  // A real, crawlable link to this product's own indexable page - see
+  // app/gift-shop/ProductPageContent.js. Kept separate from the
+  // onViewItem handler (which goes straight to the retailer): this is
+  // what gives Googlebot (and anyone sharing a specific gift) a real
+  // href to follow, rather than every product only existing behind a
+  // client-side click handler.
+  const detailUrl = `/gift-shop-${region}/p/${product.id}`;
 
   async function handleShare(e) {
     e.stopPropagation();
@@ -183,7 +190,9 @@ function GiftCard({ product, imageRatios, onViewItem, isOpeningLink, formatCurre
 
         <div className="shrink-0 p-3">
           <h3 className="text-[13px] font-semibold tracking-[-0.02em] text-slate-900 leading-tight line-clamp-1">
-            {product.title || "Gift idea"}
+            <a href={detailUrl} onClick={(e) => e.stopPropagation()} className="hover:text-[#e37b57]">
+              {product.title || "Gift idea"}
+            </a>
           </h3>
 
           <div className="mt-1 flex items-center justify-between gap-2">
@@ -271,6 +280,12 @@ function GiftCard({ product, imageRatios, onViewItem, isOpeningLink, formatCurre
                   {isOpeningLink ? "Opening..." : "View item →"}
                 </button>
               </div>
+              <a
+                href={detailUrl}
+                className="mt-3 block text-center text-[12px] font-semibold text-slate-400 hover:text-[#e37b57]"
+              >
+                Full details
+              </a>
             </div>
           </div>
         </div>
@@ -665,6 +680,7 @@ export default function GiftShopClient({ region = "uk" }) {
                     <div key={product.id} className="mb-4 break-inside-avoid md:mb-6">
                       <GiftCard
                         product={product}
+                        region={region}
                         imageRatios={imageRatios}
                         onViewItem={handleViewItem}
                         isOpeningLink={openingLinkId === product.id}

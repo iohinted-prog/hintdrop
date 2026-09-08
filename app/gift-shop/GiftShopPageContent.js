@@ -58,11 +58,13 @@ export default async function GiftShopPage({ region }) {
           <ul style={{ listStyle: "none", padding: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 20 }}>
             {sampleProducts.map((product) => (
               <li key={product.id}>
-                {product.image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={product.image_url} alt={product.title || "Gift idea"} style={{ width: "100%", height: 180, objectFit: "cover" }} />
-                ) : null}
-                <p style={{ fontWeight: 600 }}>{product.title || "Gift idea"}</p>
+                <a href={`/gift-shop-${region}/p/${product.id}`}>
+                  {product.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={product.image_url} alt={product.title || "Gift idea"} style={{ width: "100%", height: 180, objectFit: "cover" }} />
+                  ) : null}
+                  <p style={{ fontWeight: 600 }}>{product.title || "Gift idea"}</p>
+                </a>
                 {product.retailer ? <p>{product.retailer}</p> : null}
                 {product.price_text ? <p>{product.price_text}</p> : null}
               </li>

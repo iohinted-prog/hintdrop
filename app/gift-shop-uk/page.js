@@ -1,8 +1,22 @@
 import GiftShopPageContent from "../gift-shop/GiftShopPageContent";
 
+const title = "Gift Shop | HintDrop UK";
+const description = "Curated UK gift ideas by occasion, relationship, and price. Save your favourites to your HintDrop wishlist.";
+
 export const metadata = {
-  title: "Gift Shop | HintDrop UK",
-  description: "Curated UK gift ideas. Save your favourites to your HintDrop wishlist.",
+  title,
+  description,
+  openGraph: {
+    images: ["https://hintdrop.app/og-default-v2.png"],
+    title,
+    description,
+    url: "https://hintdrop.app/gift-shop-uk",
+    siteName: "HintDrop",
+    type: "website",
+  },
+  alternates: {
+    canonical: "https://hintdrop.app/gift-shop-uk",
+  },
 };
 
 // Arrived at directly (manual visit, bookmark, shared link) or via
