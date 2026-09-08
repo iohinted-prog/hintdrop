@@ -20,48 +20,51 @@ function detectCountry(request) {
 // this file already runs on every request. Handled first and
 // returns early - the Supabase session refresh below still runs on
 // every other route via the shared matcher.
+//
+// Covers both /shop and /gift-shop the same way: the un-suffixed
+// path is the "auto detect on arrival" entry point that redirects to
+// -uk or -us based on country/cookie, and landing directly on either
+// suffixed path is treated as a manual override that refreshes the
+// cookie for next time.
+const REGION_ROUTE_BASES = ["/shop", "/gift-shop"];
+
 function handleRegionRouting(request) {
   const { pathname } = request.nextUrl;
+  const normalizedPath = pathname.endsWith("/") && pathname !== "/" ? pathname.slice(0, -1) : pathname;
   const existingRegion = request.cookies.get(REGION_COOKIE)?.value;
 
-  // Someone landed on the un-suffixed /shop - this is the "auto
-  // detect on arrival" entry point. Prefer whatever region they've
-  // already chosen (cookie, set either by a previous visit here or by
-  // manually visiting /shop-uk or /shop-us below); only fall back to
-  // geo-detection for a first-ever visit.
-  if (pathname === "/shop" || pathname === "/shop/") {
-    const region = isValidRegion(existingRegion)
-      ? existingRegion
-      : countryToRegion(detectCountry(request));
+  for (const base of REGION_ROUTE_BASES) {
+    if (normalizedPath === base) {
+      const region = isValidRegion(existingRegion)
+        ? existingRegion
+        : countryToRegion(detectCountry(request));
 
-    const url = request.nextUrl.clone();
-    url.pathname = `/shop-${region}`;
+      const url = request.nextUrl.clone();
+      url.pathname = `${base}-${region}`;
 
-    const response = NextResponse.redirect(url);
-    response.cookies.set(REGION_COOKIE, region, {
-      path: "/",
-      maxAge: ONE_YEAR_SECONDS,
-      sameSite: "lax",
-    });
-    return response;
-  }
-
-  // Someone is on a region-specific shop URL directly (manual choice,
-  // a bookmarked link, or a link shared by someone else) - treat that
-  // as an explicit override and remember it, so the next time they
-  // land on plain /shop they go straight back to this region instead
-  // of being geo-detected again.
-  if (pathname === "/shop-uk" || pathname === "/shop-us") {
-    const region = pathname === "/shop-uk" ? "uk" : "us";
-
-    if (existingRegion !== region) {
-      const response = NextResponse.next({ request });
+      const response = NextResponse.redirect(url);
       response.cookies.set(REGION_COOKIE, region, {
         path: "/",
         maxAge: ONE_YEAR_SECONDS,
         sameSite: "lax",
       });
       return response;
+    }
+
+    if (normalizedPath === `${base}-uk` || normalizedPath === `${base}-us`) {
+      const region = normalizedPath === `${base}-uk` ? "uk" : "us";
+
+      if (existingRegion !== region) {
+        const response = NextResponse.next({ request });
+        response.cookies.set(REGION_COOKIE, region, {
+          path: "/",
+          maxAge: ONE_YEAR_SECONDS,
+          sameSite: "lax",
+        });
+        return response;
+      }
+
+      return null;
     }
   }
 

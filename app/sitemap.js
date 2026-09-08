@@ -13,7 +13,13 @@ export default function sitemap() {
       priority: 0.8,
     },
     {
-      url: "https://hintdrop.app/gift-shop",
+      url: "https://hintdrop.app/gift-shop-uk",
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: "https://hintdrop.app/gift-shop-us",
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
