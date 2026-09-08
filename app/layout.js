@@ -34,19 +34,27 @@ export const metadata = {
     // option here — Google's guidance wants a size that's a multiple of
     // 48px among the available options, and the old declared set
     // topped out at 32x32.
-    // ?v=2 query strings added on the explicit icon/apple/shortcut URLs
-    // below - browsers cache favicons far more aggressively than
-    // regular images (often ignoring normal cache invalidation
-    // entirely), so changing just the file's content wasn't enough to
-    // get some browsers to pick up the new design. A version query
-    // string forces it to be treated as a genuinely different resource.
+    // Previously used ?v=N query strings to bust caches on these -
+    // that worked for regular browser tab favicons, but confirmed NOT
+    // sufficient for Android's native share-sheet icon (still showing
+    // the old design on two different devices after multiple ?v=
+    // bumps). Root cause: Vercel's CDN caches static /public assets
+    // persistently BY EXACT PATH, independent of deploys - a lesson
+    // already learned earlier for the OG image and logo files
+    // (og-default.png -> og-default-v2.png) but not yet applied here.
+    // Android's icon-fetch mechanism most likely requests the bare
+    // path directly, bypassing the query string entirely, so the CDN
+    // kept serving its old cached response no matter how many times
+    // the query string changed. Switched to genuinely renamed files
+    // (icon-192-v2.png etc.) instead - a real rename forces a new CDN
+    // cache entry regardless of how the consumer requests it.
     icon: [
-      { url: "/favicon.svg?v=9", type: "image/svg+xml" },
-      { url: "/favicon.png?v=9", type: "image/png", sizes: "32x32" },
-      { url: "/icon-192.png?v=9", type: "image/png", sizes: "192x192" },
+      { url: "/favicon-v2.svg", type: "image/svg+xml" },
+      { url: "/favicon-v2.png", type: "image/png", sizes: "32x32" },
+      { url: "/icon-192-v2.png", type: "image/png", sizes: "192x192" },
     ],
-    apple: "/apple-touch-icon.png?v=9",
-    shortcut: "/favicon.png?v=9",
+    apple: "/apple-touch-icon-v2.png",
+    shortcut: "/favicon-v2.png",
   },
   title: {
     default: "HintDrop",
