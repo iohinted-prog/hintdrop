@@ -122,6 +122,23 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
     }
   }
 
+  async function handleMicrosoftSignIn() {
+    setError(""); setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "azure",
+        options: {
+          scopes: "email",
+          redirectTo: `${getBaseUrl()}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      setError(getErrorMessage(err, "Microsoft sign in failed."));
+      setLoading(false);
+    }
+  }
+
   async function redirectAfterAuth() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -259,6 +276,15 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
               className="w-full h-12 flex items-center justify-center rounded-full border border-[#ead8ce] bg-white text-[14px] font-semibold text-slate-700 transition hover:bg-[#fff5f0] disabled:cursor-not-allowed disabled:opacity-70"
             >
               Continue with Google
+            </button>
+
+            <button
+              type="button"
+              onClick={handleMicrosoftSignIn}
+              disabled={loading}
+              className="w-full h-12 flex items-center justify-center rounded-full border border-[#ead8ce] bg-white text-[14px] font-semibold text-slate-700 transition hover:bg-[#fff5f0] disabled:cursor-not-allowed disabled:opacity-70 mt-3"
+            >
+              Continue with Microsoft
             </button>
 
             {/* Apple sign-in temporarily hidden - see the matching note

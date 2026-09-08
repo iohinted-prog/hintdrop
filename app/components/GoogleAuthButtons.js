@@ -110,6 +110,17 @@ export default function GoogleAuthButtons({ variant = "hero-primary" }) {
             : "Continue with Google"}
         </button>
 
+        <button
+          type="button"
+          onClick={handleMicrosoftSignIn}
+          disabled={loadingProvider !== null}
+          className="inline-flex h-12 w-full items-center justify-center rounded-full border border-[#ead8ce] bg-white px-5 text-sm font-bold text-slate-700 transition hover:bg-[#fff5f0] disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {loadingProvider === "azure"
+            ? "Connecting Microsoft..."
+            : "Continue with Microsoft"}
+        </button>
+
         {/* Apple sign-in temporarily hidden - working correctly on our
             side (JWT, Client ID, App ID, domain/return URL all verified
             correct), but Apple's own servers are returning invalid_client
