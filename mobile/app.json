@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "HintDrop",
+    "slug": "hintdrop",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#fffaf7",
+    "scheme": "hintdrop",
+    "ios": {
+      "bundleIdentifier": "app.hintdrop.mobile",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "app.hintdrop.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#fffaf7",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#fffaf7"
+        }
+      ]
+    ]
+  }
+}
