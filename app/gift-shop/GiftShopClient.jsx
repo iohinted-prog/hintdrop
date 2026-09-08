@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import PublicShell from "../components/PublicShell";
 import AuthModal from "../components/AuthModal";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
@@ -402,6 +402,44 @@ export default function GiftShopClient({ region = "uk" }) {
     selectedInterests.length;
   const [imageRatios, setImageRatios] = useState({});
   const [brokenImageIds, setBrokenImageIds] = useState(() => new Set());
+  const scrollAnchorRef = useRef(null);
+
+  // Same reflow issue and same fix as ShopPageContent.jsx's identical
+  // scroll-anchor mechanism: this is a CSS multi-column masonry layout
+  // (columns-2/3/4), and product images finish measuring their real
+  // aspect ratio well after the card first renders at a guessed
+  // default - once the real ratio lands, that card's height change can
+  // reshuffle which column every later card lands in, not just push
+  // things down. Capture the topmost visible card's position right
+  // before the resize, restore it right after via useLayoutEffect
+  // (fires synchronously before paint, so no visible flicker). This
+  // component didn't have this fix even though it has the exact same
+  // masonry + async-ratio-measurement setup that made it necessary on
+  // /shop-uk|us - ported over rather than left missing here.
+  function captureShopScrollAnchor() {
+    const cards = document.querySelectorAll("[data-product-id]");
+    for (const card of cards) {
+      const rect = card.getBoundingClientRect();
+      if (rect.bottom > 0) {
+        scrollAnchorRef.current = { id: card.getAttribute("data-product-id"), top: rect.top };
+        return;
+      }
+    }
+    scrollAnchorRef.current = null;
+  }
+
+  useLayoutEffect(() => {
+    const anchor = scrollAnchorRef.current;
+    if (!anchor) return;
+    const el = document.querySelector(`[data-product-id="${anchor.id}"]`);
+    if (!el) return;
+    const newTop = el.getBoundingClientRect().top;
+    const delta = newTop - anchor.top;
+    if (Math.abs(delta) > 1) {
+      window.scrollBy(0, delta);
+    }
+    scrollAnchorRef.current = null;
+  }, [imageRatios]);
 
   const handleImageError = useCallback((productId) => {
     setBrokenImageIds((current) => {
@@ -443,6 +481,7 @@ export default function GiftShopClient({ region = "uk" }) {
 
       if (cancelled) return;
 
+      captureShopScrollAnchor();
       setImageRatios((current) => {
         const next = { ...current };
         for (const [id, ratio] of nextEntries) {
@@ -690,7 +729,7 @@ export default function GiftShopClient({ region = "uk" }) {
               ) : visibleProducts.length ? (
                 <div className="columns-2 gap-4 md:columns-3 md:gap-6 xl:columns-4">
                   {visibleProducts.map((product) => (
-                    <div key={product.id} className="mb-4 break-inside-avoid md:mb-6">
+                    <div key={product.id} data-product-id={product.id} className="mb-4 break-inside-avoid md:mb-6">
                       <GiftCard
                         product={product}
                         region={region}
