@@ -153,6 +153,7 @@ function buildHintInsertPayload(product, userId, boardId) {
     retailer: product?.retailer || normaliseRetailer(outboundUrl),
     price_text: product?.price_text || "",
     numeric_price: parsedNumericPrice,
+    currency: product?.currency || null,
     starred: false,
     position: 0,
   };

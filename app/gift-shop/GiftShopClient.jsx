@@ -94,24 +94,32 @@ function loadImageAspectRatio(src) {
   });
 }
 
-function getDisplayPrice(product, formatCurrency) {
+function getDisplayPrice(product, formatCurrency, formatCurrencyIn) {
   const numericPrice =
     typeof product?.numeric_price === "number"
       ? Number(product.numeric_price)
       : extractNumericPrice(product?.price_text);
   if (typeof numericPrice === "number" && Number.isFinite(numericPrice)) {
-    return formatCurrency(numericPrice, product?.currency || "GBP");
+    const productCurrency = product?.currency || "GBP";
+    // Same fix as ShopPageContent.jsx: signed-out shop prices should
+    // always display in the product's own currency (what the
+    // retailer actually charges), not the viewer's account/default
+    // currency preference.
+    if (typeof formatCurrencyIn === "function") {
+      return formatCurrencyIn(numericPrice, productCurrency, productCurrency);
+    }
+    return formatCurrency(numericPrice, productCurrency);
   }
   return product?.price_text || "Price unavailable";
 }
 
-function GiftCard({ product, imageRatios, onViewItem, isOpeningLink, formatCurrency, onImageError, onRequestSignIn }) {
+function GiftCard({ product, imageRatios, onViewItem, isOpeningLink, formatCurrency, formatCurrencyIn, onImageError, onRequestSignIn }) {
   const [showModal, setShowModal] = useState(false);
   const [justShared, setJustShared] = useState(false);
   const interestTags = getTagArray(product.interest_tags);
   const occasionTags = getTagArray(product.occasion_tags);
   const displayTags = [...interestTags.slice(0, 1), ...occasionTags.slice(0, 1)].slice(0, 2);
-  const displayPrice = getDisplayPrice(product, formatCurrency);
+  const displayPrice = getDisplayPrice(product, formatCurrency, formatCurrencyIn);
   const retailerLabel = product.retailer || normaliseRetailer(getOutboundUrl(product));
 
   const rawRatio = imageRatios[product.id];
@@ -342,7 +350,7 @@ function ShopGuide() {
 }
 
 export default function GiftShopClient() {
-  const { formatCurrency } = useCurrencyFormatter();
+  const { formatCurrency, formatCurrencyIn } = useCurrencyFormatter();
   const [authOpen, setAuthOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -661,6 +669,7 @@ export default function GiftShopClient() {
                         onViewItem={handleViewItem}
                         isOpeningLink={openingLinkId === product.id}
                         formatCurrency={formatCurrency}
+                        formatCurrencyIn={formatCurrencyIn}
                         onImageError={handleImageError}
                         onRequestSignIn={() => setAuthOpen(true)}
                       />
