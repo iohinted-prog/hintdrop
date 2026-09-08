@@ -592,6 +592,17 @@ export default function ShopPageContent({ region = "uk" }) {
     selectedInterests.length;
   const [imageRatios, setImageRatios] = useState({});
   const scrollAnchorRef = useRef(null);
+  // This was never declared in this file at all - referencing it in
+  // measureRatios below threw an uncaught ReferenceError on the very
+  // first line, every single time the effect ran, before a single
+  // image was ever measured. That's the actual, entire explanation
+  // for every card staying at the default 0.85 fallback no matter
+  // what else got fixed downstream (referrer policy, proxied image
+  // URL, resolution threshold, aspect-ratio clamp) - none of that
+  // code ever ran, because this function crashed on line one before
+  // reaching any of it. GiftShopClient.jsx already had this
+  // declaration correctly; this file was just missing it.
+  const measuredIdsRef = useRef(new Set());
 
   // Product images finish measuring their real aspect ratio well after
   // the card first renders at a guessed default (0.85) - see
