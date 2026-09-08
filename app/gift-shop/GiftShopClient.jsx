@@ -205,6 +205,11 @@ function GiftCard({ product, region, imageRatios, onViewItem, isOpeningLink, for
         </div>
 
         <div className="shrink-0 p-3">
+          {/* TEMPORARY diagnostic - see identical comment in
+              ShopPageContent.jsx. Remove once the cause is found. */}
+          <p className="mb-1 rounded bg-black px-1.5 py-0.5 text-[10px] font-bold text-white inline-block">
+            AR: {typeof rawRatio === "number" && Number.isFinite(rawRatio) ? rawRatio.toFixed(2) : "no data"}
+          </p>
           <h3 className="text-[13px] font-semibold tracking-[-0.02em] text-slate-900 leading-tight line-clamp-1">
             <a href={detailUrl} onClick={(e) => e.stopPropagation()} className="hover:text-[#e37b57]">
               {product.title || "Gift idea"}
@@ -503,9 +508,7 @@ export default function GiftShopClient({ region = "uk" }) {
         });
       }
 
-      // TEMPORARILY disabled - see identical comment in
-      // ShopPageContent.jsx.
-      // captureShopScrollAnchor();
+      captureShopScrollAnchor();
       setImageRatios((current) => {
         const next = { ...current };
         for (const [id, ratio] of nextEntries) {
