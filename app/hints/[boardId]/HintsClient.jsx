@@ -936,6 +936,8 @@ function HintFormFields({
   showPrivateToggle = showToggles,
   imageOptions,
   imageHelpText = "No image yet. Upload one here if you want to add a photo.",
+  gradientBatch = 0,
+  setGradientBatch,
 }) {
   const previewImage = form.uploadedImage || form.image;
 
@@ -1242,6 +1244,8 @@ function AddHintModal({
           showToggles
           imageOptions={imageOptions}
           imageHelpText="No image yet. Upload one if you want to add a photo now."
+          gradientBatch={gradientBatch}
+          setGradientBatch={setGradientBatch}
         />
       </div>
     </ModalShell>
