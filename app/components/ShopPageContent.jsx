@@ -180,14 +180,24 @@ function loadImageAspectRatio(src) {
   });
 }
 
-function getDisplayPrice(product, formatCurrency) {
+function getDisplayPrice(product, formatCurrency, formatCurrencyIn) {
   const numericPrice =
     typeof product?.numeric_price === "number"
       ? Number(product.numeric_price)
       : extractNumericPrice(product?.price_text);
 
   if (typeof numericPrice === "number" && Number.isFinite(numericPrice)) {
-    return formatCurrency(numericPrice, product?.currency || "GBP");
+    const productCurrency = product?.currency || "GBP";
+    // Shop prices always display in the product's own currency (what
+    // the retailer actually charges), not the viewer's personal
+    // account currency preference - a $499 US camera should show as
+    // $499, not get converted to whatever currency a UK viewer has
+    // set, even though useCurrencyFormatter defaults to doing that
+    // conversion everywhere else in the app.
+    if (typeof formatCurrencyIn === "function") {
+      return formatCurrencyIn(numericPrice, productCurrency, productCurrency);
+    }
+    return formatCurrency(numericPrice, productCurrency);
   }
 
   return product?.price_text || "Price unavailable";
@@ -201,6 +211,7 @@ function ShopCard({
   isSavingHint,
   isOpeningLink,
   formatCurrency,
+  formatCurrencyIn,
   onImageError,
 }) {
   const [showModal, setShowModal] = useState(false);
@@ -208,7 +219,7 @@ function ShopCard({
   const interestTags = getTagArray(product.interest_tags);
   const occasionTags = getTagArray(product.occasion_tags);
   const displayTags = [...interestTags.slice(0, 1), ...occasionTags.slice(0, 1)].slice(0, 2);
-  const displayPrice = getDisplayPrice(product, formatCurrency);
+  const displayPrice = getDisplayPrice(product, formatCurrency, formatCurrencyIn);
   const retailerLabel = product.retailer || normaliseRetailer(getOutboundUrl(product));
 
   const rawRatio = imageRatios[product.id];
@@ -467,7 +478,7 @@ function ShopGuide() {
 
 export default function ShopPageContent({ region = "uk" }) {
   const supabase = createClient();
-  const { formatCurrency } = useCurrencyFormatter();
+  const { formatCurrency, formatCurrencyIn } = useCurrencyFormatter();
 
   const [currentUser, setCurrentUser] = useState(null);
   const [products, setProducts] = useState([]);
@@ -1098,6 +1109,7 @@ export default function ShopPageContent({ region = "uk" }) {
                         isSavingHint={savingHintId === product.id}
                         isOpeningLink={openingLinkId === product.id}
                         formatCurrency={formatCurrency}
+                        formatCurrencyIn={formatCurrencyIn}
                         onImageError={handleImageError}
                       />
                     </div>
