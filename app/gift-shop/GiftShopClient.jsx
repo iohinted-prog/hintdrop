@@ -91,9 +91,10 @@ function loadImageAspectRatio(src) {
     }
     const img = new Image();
     // Same fix as ShopPageContent.jsx's identical probe - see that
-    // file for the full reasoning. Missing this was why every card
-    // read "no data" instead of a real measured ratio.
-    img.referrerPolicy = "no-referrer";
+    // file for the full reasoning. Measures through the same
+    // same-origin /_next/image proxy path HintImage.jsx already uses
+    // successfully, instead of a separate direct-to-retailer fetch.
+    const proxiedSrc = `/_next/image?url=${encodeURIComponent(src)}&w=750&q=75`;
     img.onload = () => {
       if (img.naturalWidth > 0 && img.naturalHeight > 0) {
         const belowMinimum = img.naturalWidth < MIN_IMAGE_DIMENSION || img.naturalHeight < MIN_IMAGE_DIMENSION;
@@ -103,7 +104,7 @@ function loadImageAspectRatio(src) {
       }
     };
     img.onerror = () => resolve({ ratio: null, belowMinimum: false });
-    img.src = src;
+    img.src = proxiedSrc;
   });
 }
 

@@ -188,14 +188,21 @@ function loadImageAspectRatio(src) {
     }
 
     const img = new Image();
-    // The actual displayed photos (HintImage.jsx, via next/image) set
-    // this same override, with the exact same reasoning: several
-    // retailer hosts hotlink-block requests carrying a Referer header
-    // from another site. This probe was missing it - sending the
-    // normal Referer and getting blocked on effectively every image,
-    // which is exactly why every card was reading "no data" rather
-    // than a real measured ratio. Must be set before .src.
-    img.referrerPolicy = "no-referrer";
+    // Rewritten to measure the SAME request path HintImage.jsx
+    // actually uses, not a parallel one. next/image (confirmed via
+    // next.config.mjs: remotePatterns allows all hosts, no
+    // `unoptimized` flag) doesn't have the browser fetch the raw
+    // retailer URL at all - it proxies through Vercel's own
+    // /_next/image endpoint, which fetches the original server-side.
+    // This probe was creating a second, genuinely different request:
+    // browser directly to the retailer's CDN. Setting
+    // referrerPolicy="no-referrer" on that (previous attempt) didn't
+    // fix it, meaning whatever blocks it isn't Referer-based - could
+    // be CORS, User-Agent, or bot detection on the retailer's end.
+    // Rather than keep guessing at what a raw cross-origin fetch
+    // needs, measure through the exact same same-origin proxied path
+    // the visible image already uses successfully.
+    const proxiedSrc = `/_next/image?url=${encodeURIComponent(src)}&w=750&q=75`;
 
     img.onload = () => {
       if (img.naturalWidth > 0 && img.naturalHeight > 0) {
@@ -207,7 +214,7 @@ function loadImageAspectRatio(src) {
     };
 
     img.onerror = () => resolve({ ratio: null, belowMinimum: false });
-    img.src = src;
+    img.src = proxiedSrc;
   });
 }
 
