@@ -283,12 +283,22 @@ function GiftCard({ product, region, imageRatios, onViewItem, isOpeningLink, for
                   {isOpeningLink ? "Opening..." : "View item →"}
                 </button>
               </div>
-              <a
-                href={detailUrl}
-                className="mt-3 block text-center text-[12px] font-semibold text-slate-400 hover:text-[#e37b57]"
-              >
-                Full details
-              </a>
+              <div className="mt-3 flex items-center justify-center gap-4">
+                <a
+                  href={detailUrl}
+                  className="text-[12px] font-semibold text-slate-400 hover:text-[#e37b57]"
+                >
+                  Full details
+                </a>
+                <span className="text-slate-300">·</span>
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="text-[12px] font-semibold text-slate-400 hover:text-[#e37b57]"
+                >
+                  {justShared ? "Link copied!" : "Share this gift idea"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
