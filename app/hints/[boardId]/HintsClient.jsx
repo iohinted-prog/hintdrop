@@ -61,7 +61,7 @@ const EMPTY_NEW_HINT_FORM = {
   starred: false,
   needsReview: false,
   source: "preview",
-  occasions: ["Birthday", "Christmas"],
+  occasions: ["Birthday"],
 };
 
 const EMPTY_EDIT_FORM = {
@@ -71,7 +71,7 @@ const EMPTY_EDIT_FORM = {
   image: "",
   uploadedImage: null,
   priceInput: "",
-  occasions: ["Birthday", "Christmas"],
+  occasions: ["Birthday"],
   size: "",
   size_type: "",
   colour: "",
