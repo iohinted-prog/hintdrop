@@ -11,11 +11,10 @@ import SocialLinks from "./SocialLinks";
 
 function LogoMark() {
   return (
-    // Back to the gift box icon per request - the H-letterform trials
-    // felt too corporate. Genuine transparency, verified against both
-    // a dark and light background before use.
+    // Trial: reversed coral badge with white icon (uploaded directly),
+    // rounded corners matching app-icon proportions.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/illustrations/giftbox-icon-v2.png" alt="" width={38} height={44} className="object-contain" />
+    <img src="/illustrations/giftbox-badge-coral.png" alt="" width={40} height={40} className="object-contain" />
   );
 }
 function getMetadataName(metadata = {}) {
