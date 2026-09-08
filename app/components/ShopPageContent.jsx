@@ -569,12 +569,18 @@ export default function ShopPageContent({ region = "uk" }) {
         setIsLoading(true);
         setPageError("");
 
+        // Matches the pattern used everywhere else in this codebase
+        // (39 other call sites) - just destructure user and don't
+        // check the error at all. A logged-out visitor makes
+        // getUser() return an error ("Auth session missing") that
+        // isn't a real failure, just the normal signal for
+        // anonymous - checking/throwing on it here (which this file
+        // alone was doing) aborted the whole bootstrap before the
+        // products fetch ever ran, breaking the shop page entirely
+        // for anyone not signed in.
         const {
           data: { user },
-          error: userError,
         } = await supabase.auth.getUser();
-
-        if (userError) throw userError;
         if (!active) return;
 
         setCurrentUser(user || null);
