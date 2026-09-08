@@ -60,12 +60,8 @@ export default async function Image() {
           <img src={BRAND_ICON_OG_DATA_URI} width={187} height={220} style={{ objectFit: "contain" }} />
           {/* fontWeight 700 - the heaviest bundled here, matching the
               sitewide Inter weights actually loaded (400/600/700). */}
-          <div style={{ display: "flex", fontSize: 96, fontWeight: 700, letterSpacing: -4.8 }}>
-            <span style={{ color: "#0f172a" }}>Hint</span>
-            {/* Exact brand coral, #ff875d — no longer needs deepening for
-                readability now that the background is the light site
-                background instead of a peach gradient. */}
-            <span style={{ color: "#ff875d" }}>Drop</span>
+          <div style={{ display: "flex", fontSize: 96, fontWeight: 700, letterSpacing: -4.8, color: "#ff875d" }}>
+            HintDrop
           </div>
         </div>
         <div

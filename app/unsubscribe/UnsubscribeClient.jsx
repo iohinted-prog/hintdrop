@@ -92,8 +92,8 @@ export default function UnsubscribeClient() {
         <div className="flex items-center gap-2 mb-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/illustrations/giftbox-icon-v2.png" alt="" width={28} height={28} className="object-contain" />
-          <span className="text-[18px] font-bold tracking-[-0.01em] text-slate-900">
-            Hint<span className="text-[#ff875d]">Drop</span>
+          <span className="text-[18px] font-bold tracking-[-0.01em] text-[#ff875d]">
+            HintDrop
           </span>
         </div>
 

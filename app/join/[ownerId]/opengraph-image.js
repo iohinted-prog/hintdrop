@@ -136,12 +136,8 @@ export default async function Image({ params }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={BRAND_ICON_OG_DATA_URI} width={48} height={48} style={{ objectFit: "contain" }} />
           </div>
-          <div style={{ display: "flex", fontSize: 32, fontWeight: 700, letterSpacing: -1.6 }}>
-            <span style={{ color: "#0f172a" }}>Hint</span>
-            {/* Exact brand coral now that the background is the light
-                site background instead of the peach gradient — matches
-                the fix already applied to the main opengraph-image.js. */}
-            <span style={{ color: "#ff875d" }}>Drop</span>
+          <div style={{ display: "flex", fontSize: 32, fontWeight: 700, letterSpacing: -1.6, color: "#ff875d" }}>
+            HintDrop
           </div>
         </div>
       </div>
