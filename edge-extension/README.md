@@ -8,7 +8,8 @@ store as the same package, sometimes literally the same zip file.
 
 To publish: zip this folder's contents (not the folder itself - the
 zip root should contain manifest.json directly) and upload through
-the Microsoft Edge Add-ons developer dashboard
-(https://partner.microsoft.com/dashboard/microsoftedge/overview).
-Requires a one-time $19 registration fee for a developer account,
-separate from the Chrome Web Store's own developer account.
+the Microsoft Edge Add-ons developer dashboard at
+https://partner.microsoft.com/dashboard/microsoftedge/overview.
+Registering as a Microsoft Edge extension developer is free (no fee,
+unlike Chrome's one-time $5) - sign in with a Microsoft account
+(Outlook/Live/Hotmail) or a linked GitHub account.
