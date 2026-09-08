@@ -722,7 +722,11 @@ export default function ShopPageContent({ region = "uk" }) {
         });
       }
 
-      captureShopScrollAnchor();
+      // TEMPORARILY disabled to test whether the scroll-anchor
+      // mechanism is somehow suppressing the visible height change
+      // when imageRatios updates - remove this comment and restore
+      // the call once confirmed either way.
+      // captureShopScrollAnchor();
       setImageRatios((current) => {
         const next = { ...current };
 

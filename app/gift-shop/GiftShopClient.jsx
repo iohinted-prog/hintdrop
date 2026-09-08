@@ -503,7 +503,9 @@ export default function GiftShopClient({ region = "uk" }) {
         });
       }
 
-      captureShopScrollAnchor();
+      // TEMPORARILY disabled - see identical comment in
+      // ShopPageContent.jsx.
+      // captureShopScrollAnchor();
       setImageRatios((current) => {
         const next = { ...current };
         for (const [id, ratio] of nextEntries) {
