@@ -1,4 +1,4 @@
-import { Nunito, Quicksand } from "next/font/google";
+import { Nunito, Inter } from "next/font/google";
 import Script from "next/script";
 
 const nunito = Nunito({
@@ -10,14 +10,15 @@ import "./globals.css";
 import { PreferencesProvider } from "./providers/PreferencesProvider";
 import AppShell from "./components/AppShell";
 
-// Sitewide font - chosen from a set of alternatives shown directly
-// (rounded, soft, deliberately not a heavy weight) after both earlier
-// attempts (Poppins at Black/ExtraBold, then Bold) were flagged as too
-// bold and aggressive.
-const quicksand = Quicksand({
+// Sitewide font - switched from Quicksand (which read as too rounded/
+// informal once seen live across the whole site) to Inter, the
+// cleanest, most neutral option from the original comparison. Loaded
+// at 400 (body text), 600 (existing font-semibold usages), and 700
+// (bold headings, wordmark).
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-quicksand",
+  weight: ["400", "600", "700"],
+  variable: "--font-inter",
 });
 
 export const metadata = {
@@ -58,7 +59,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${nunito.variable} ${quicksand.variable} antialiased`}>
+      <body className={`${nunito.variable} ${inter.variable} antialiased`}>
         {/* Auto-affiliate link rewriting (Skimlinks) — was only loaded on
             /shop, meaning every outbound retailer link anywhere else in the
             app (gift-shop, hints, hint detail modals, shared hint/board
