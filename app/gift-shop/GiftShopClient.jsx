@@ -76,9 +76,12 @@ function getOutboundUrl(product) {
 }
 
 // Same floor as ShopPageContent.jsx's identical check - see that
-// file for the full reasoning. Applied here too since this component
-// is /gift-shop-uk and /gift-shop-us (both territories) equally.
-const MIN_IMAGE_DIMENSION = 300;
+// file for the full reasoning (this was originally 300, which
+// silently excluded every Nordstrom product from the grid since
+// Nordstrom's thumbnail URLs request only 240px wide). Applied here
+// too since this component is /gift-shop-uk and /gift-shop-us (both
+// territories) equally.
+const MIN_IMAGE_DIMENSION = 150;
 
 function loadImageAspectRatio(src) {
   return new Promise((resolve) => {

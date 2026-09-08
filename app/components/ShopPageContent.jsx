@@ -165,7 +165,20 @@ function buildHintInsertPayload(product, userId, boardId) {
 // bigger than this, so it only catches genuinely undersized source
 // images (tiny thumbnails, broken/placeholder assets), not normal
 // smaller-but-legitimate product shots.
-const MIN_IMAGE_DIMENSION = 300;
+//
+// Deliberately well below 300 (an earlier version of this constant) -
+// that threshold silently excluded every Nordstrom product from the
+// grid, since Nordstrom's own thumbnail URLs request only 240px wide
+// (?w=240&dpr=2) and this check runs on the browser-reported
+// naturalWidth, which reflects the actual downloaded file - not
+// necessarily scaled up for the dpr hint. 228 of 342 US products are
+// Nordstrom, so that one constant being set higher than a legitimate,
+// currently-in-use retailer width silently hid two-thirds of the US
+// catalog rather than just affecting a few edge-case thumbnails.
+// 150 sits safely under every width currently in use (Nordstrom 240,
+// Walmart ~576, Target ~750, Dyson 400) while still catching genuinely
+// tiny/broken images (favicon-sized placeholders, failed crops).
+const MIN_IMAGE_DIMENSION = 150;
 
 function loadImageAspectRatio(src) {
   return new Promise((resolve) => {
