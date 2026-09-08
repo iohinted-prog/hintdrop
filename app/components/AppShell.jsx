@@ -250,6 +250,31 @@ export default function AppShell({ children }) {
   function closeThread(id) {
     setActiveThreads((prev) => prev.filter((t) => t.id !== id));
   }
+
+  async function handleDeleteConversation(conv, e) {
+    e.stopPropagation();
+    if (!confirm("Delete this conversation? This can't be undone.")) return;
+    // "Delete" here means leaving it - removes your own membership row
+    // only, not the conversation or its messages for other
+    // participants, matching how this behaves in every other messaging
+    // app (WhatsApp, iMessage). Also close the thread if it happens to
+    // be open in a floating chat window right now.
+    closeThread(conv.id);
+    setGroupMessages((prev) => prev.filter((c) => c.id !== conv.id));
+    setUnreadMessageCount((prev) => Math.max(0, prev - (conv.unread || 0)));
+    const { error } = await supabase
+      .from("conversation_members")
+      .delete()
+      .eq("conversation_id", conv.id)
+      .eq("user_id", currentUserId);
+    if (error) {
+      console.error("Failed to delete conversation:", error.message);
+      // Reload the list rather than trying to reconstruct the removed
+      // conversation locally - simplest correct recovery.
+      loadInviteCountRef.current?.();
+    }
+  }
+
   const [inviteActionId, setInviteActionId] = useState(null);
   const [notifActionId, setNotifActionId] = useState(null);
   const notifRef = useRef(null);
@@ -495,8 +520,8 @@ export default function AppShell({ children }) {
         <div className="mx-auto flex max-w-[1380px] items-center justify-between px-5 py-4 md:px-8">
           <Link href="/feed" className="flex items-center gap-3">
             <LogoMark />
-            <div className="hidden lg:block text-[22px] font-bold tracking-[-0.01em] text-slate-900">
-              Hint<span className="text-[#ff875d]">Drop</span>
+            <div className="hidden lg:block text-[22px] font-bold tracking-[-0.01em] text-[#ff875d]">
+              HintDrop
             </div>
           </Link>
 
@@ -591,8 +616,16 @@ export default function AppShell({ children }) {
                       const hint = conv.group_hints?.hints;
                       const title = others.length === 0 ? "Just you" : others.length === 1 ? others[0].profiles?.full_name || "Someone" : others.map(m => m.profiles?.full_name?.split(" ")[0] || "?").join(", ");
                       return (
-                        <div key={conv.id} className="rounded-[18px] border border-[#f0dfd6] bg-white p-4 cursor-pointer hover:bg-[#fff5f0]"
+                        <div key={conv.id} className="group relative rounded-[18px] border border-[#f0dfd6] bg-white p-4 cursor-pointer hover:bg-[#fff5f0]"
                           onClick={async () => { setMessagesOpen(false); openThread(conv); await supabase.from("conversation_members").update({ last_read_at: new Date().toISOString() }).eq("conversation_id", conv.id).eq("user_id", currentUserId); setGroupMessages(prev => prev.map(c => c.id === conv.id ? { ...c, unread: 0 } : c)); setUnreadMessageCount(prev => Math.max(0, prev - (conv.unread || 0))); loadInviteCount(); }}>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteConversation(conv, e)}
+                            title="Delete conversation"
+                            className="absolute right-2 top-2 h-6 w-6 flex items-center justify-center rounded-full text-slate-300 opacity-0 transition group-hover:opacity-100 hover:bg-[#fff0f0] hover:text-[#b14f43] text-[11px] z-10"
+                          >
+                            ✕
+                          </button>
                           <div className="flex items-center gap-3">
                             <div className="flex -space-x-2 shrink-0">
                               {others.slice(0, 2).map(m => (
