@@ -138,6 +138,13 @@ function AvatarFallback({ name = "", email = "", src = "", alt = "Profile" }) {
         className="rounded-full object-cover"
         referrerPolicy="no-referrer"
         onError={() => setImageFailed(true)}
+        // Same fix as HintImage.jsx, same reasoning: an external,
+        // per-user image (a Google/Microsoft avatar URL here)
+        // counts against Vercel's Image Optimization quota just
+        // like a retailer product photo does. Smaller scale (one
+        // per user, once at onboarding) but the same underlying
+        // problem, so fixed the same way.
+        unoptimized
       />
     );
   }
