@@ -238,7 +238,7 @@ export default function PeopleClient() {
     <main className="min-h-screen bg-[#fffaf7]">
       <div className="px-4 pt-6 pb-32 md:px-8 md:max-w-[1380px] md:mx-auto">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-[28px] font-semibold tracking-[-0.04em] text-slate-900">Your Circle</h1>
+          <h1 className="text-[28px] font-bold tracking-[-0.04em] text-slate-900">Your Circle</h1>
           <button type="button" onClick={() => { setAddKey(k => k + 1); setIsAddOpen(true); }}
             className="h-10 px-4 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-sm font-semibold text-white shadow-lg">Add</button>
         </div>

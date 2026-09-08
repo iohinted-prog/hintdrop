@@ -645,7 +645,7 @@ function ModalShell({
                 {eyebrow}
               </p>
             ) : null}
-            <h2 className="mt-1 text-[28px] font-semibold tracking-[-0.05em] text-slate-900">
+            <h2 className="mt-1 text-[28px] font-bold tracking-[-0.05em] text-slate-900">
               {title}
             </h2>
           </div>

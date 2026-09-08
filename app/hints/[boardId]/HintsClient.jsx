@@ -899,7 +899,7 @@ function ModalShell({ isOpen, onClose, eyebrow, title, children, footer }) {
                 <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#e08a67]">
                   {eyebrow}
                 </p>
-                <h2 className="mt-2 text-[28px] font-semibold tracking-[-0.05em] text-slate-900">
+                <h2 className="mt-2 text-[28px] font-bold tracking-[-0.05em] text-slate-900">
                   {title}
                 </h2>
               </div>

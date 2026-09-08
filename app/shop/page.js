@@ -929,7 +929,7 @@ export default function ShopPage() {
                   Curated gifting
                 </div>
 
-                <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.06em] text-slate-900 sm:text-[40px]">
+                <h1 className="mt-3 text-[34px] font-bold tracking-[-0.06em] text-slate-900 sm:text-[40px]">
                   Shop thoughtful gift ideas, then save the good ones to hints.
                 </h1>
 

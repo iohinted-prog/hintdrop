@@ -523,7 +523,7 @@ export default function CalendarClient() {
     <main className="min-h-screen bg-[#fffaf7] pb-24 md:pb-12">
       <div className="px-4 pt-6 pb-2 sm:px-8 md:px-8 md:max-w-[1280px] md:mx-auto md:grid md:grid-cols-[1fr_420px] md:gap-10 md:items-start">
         <div className="max-w-[640px] mx-auto md:max-w-none md:mx-0 w-full">
-        <h1 className="text-[26px] md:text-[32px] font-semibold tracking-[-0.04em] text-slate-900 mb-4">Calendar</h1>
+        <h1 className="text-[26px] md:text-[32px] font-bold tracking-[-0.04em] text-slate-900 mb-4">Calendar</h1>
 
         <div className="flex items-center justify-between mb-4">
           <button onClick={() => { setMonthDirection(-1); setCurrentMonth(new Date(year, month - 1)); }}
