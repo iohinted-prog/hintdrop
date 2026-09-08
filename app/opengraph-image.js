@@ -1,9 +1,9 @@
 import { ImageResponse } from "next/og";
 import fs from "fs";
 import path from "path";
-import { BRAND_ICON_OG_DATA_URI } from "../lib/brandIcon";
+import { BRAND_ICON_WHITE_DATA_URI } from "../lib/brandIcon";
 
-export const alt = "HintDrop — Never forget. Always thoughtful.";
+export const alt = "HintDrop";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 // Needed for fs access to the bundled font files below — the OG image
@@ -40,41 +40,23 @@ export default async function Image() {
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
           fontFamily: "Inter",
-          // The site's actual background color (matches PublicShell.jsx),
-          // not a custom gradient — so the shared preview looks like the
-          // real site people land on, not a separate marketing treatment.
-          background: "#fffaf7",
+          // Flipped per direct feedback: coral background, white
+          // icon+text, no tagline underneath - was the light site
+          // background with a coral wordmark and tagline before.
+          background: "#ff875d",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 28, marginBottom: 40 }}>
-          {/* The new standalone icon (see lib/brandIcon.js), rendered
-              directly with no colored badge/border wrapper around it —
-              the previous rounded-square badge was specifically what
-              needed removing per design feedback. Sized/positioned to
-              match the approved preview (220px height). */}
+        <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={BRAND_ICON_OG_DATA_URI} width={187} height={220} style={{ objectFit: "contain" }} />
+          <img src={BRAND_ICON_WHITE_DATA_URI} width={187} height={220} style={{ objectFit: "contain" }} />
           {/* fontWeight 700 - the heaviest bundled here, matching the
               sitewide Inter weights actually loaded (400/600/700). */}
-          <div style={{ display: "flex", fontSize: 96, fontWeight: 700, letterSpacing: -4.8, color: "#ff875d" }}>
+          <div style={{ display: "flex", fontSize: 96, fontWeight: 700, letterSpacing: -4.8, color: "#ffffff" }}>
             HintDrop
           </div>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            fontSize: 38,
-            fontWeight: 600,
-            color: "#5a4a42",
-            textAlign: "center",
-            maxWidth: 820,
-          }}
-        >
-          Never forget. Always thoughtful.
         </div>
       </div>
     ),
