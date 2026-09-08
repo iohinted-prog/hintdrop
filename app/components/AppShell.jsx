@@ -11,10 +11,17 @@ import SocialLinks from "./SocialLinks";
 
 function LogoMark() {
   return (
-    // Trial: reversed coral badge with white icon (uploaded directly),
-    // rounded corners matching app-icon proportions.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src="/illustrations/giftbox-badge-coral.png" alt="" width={40} height={40} className="object-contain" />
+    <>
+      {/* Mobile/tablet: back to the previous flat icon (no badge) -
+          reverted per request, only on desktop does the new coral
+          badge trial stay. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/illustrations/giftbox-icon-v2.png" alt="" width={38} height={44} className="lg:hidden object-contain" />
+      {/* Desktop: the new coral badge, sized down slightly from the
+          original 40px trial per request. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/illustrations/giftbox-badge-coral.png" alt="" width={34} height={34} className="hidden lg:block object-contain" />
+    </>
   );
 }
 function getMetadataName(metadata = {}) {
