@@ -26,6 +26,55 @@ function extractProductInfo() {
     return el.getAttribute("src") || el.getAttribute("data-src") || "";
   }
 
+  // Ports lib/linkPreview.js's identically-named functions - kept
+  // functionally identical (same params, same order of operations),
+  // just duplicated here rather than imported, since this whole
+  // function is injected to run inside the page's own world
+  // (chrome.scripting.executeScript) and must stay fully
+  // self-contained with no references outside itself. Without these,
+  // extension-captured product images from ASOS (and anything else on
+  // the same Scene7 CDN - John Lewis, Selfridges, etc.) come through
+  // as bare, low-resolution URLs instead of the properly-sized ones
+  // the website's own link-paste flow already produces - confirmed
+  // as the actual cause of an ASOS hint saved via the extension
+  // showing the gradient fallback despite having a real image_url.
+  function upgradeAsosImageResolution(url) {
+    if (!url || !url.includes("images.asos-media.com")) return url;
+    try {
+      const parsed = new URL(url);
+      for (const key of [...parsed.searchParams.keys()]) {
+        if (key.startsWith("$")) parsed.searchParams.delete(key);
+      }
+      parsed.searchParams.set("wid", "750");
+      parsed.searchParams.set("hei", "750");
+      parsed.searchParams.set("fit", "constrain");
+      return parsed.toString();
+    } catch {
+      return url;
+    }
+  }
+
+  function upgradeScene7ImageResolution(url) {
+    if (!url) return url;
+    try {
+      const parsed = new URL(url);
+      if (!parsed.pathname.includes("/is/image/")) return url;
+      for (const key of [...parsed.searchParams.keys()]) {
+        if (key.startsWith("$")) parsed.searchParams.delete(key);
+      }
+      parsed.searchParams.set("wid", "750");
+      parsed.searchParams.set("hei", "750");
+      parsed.searchParams.set("fit", "constrain");
+      return parsed.toString();
+    } catch {
+      return url;
+    }
+  }
+
+  function upgradeImageResolution(url) {
+    return upgradeScene7ImageResolution(upgradeAsosImageResolution(url));
+  }
+
   // Same extraction logic as extractJsonLdProduct() in lib/linkPreview.js,
   // including the hasVariant-nested-offers fallback confirmed necessary for
   // real H&M product pages. Big advantage over the server-side version
@@ -115,6 +164,8 @@ function extractProductInfo() {
     }
     if (best) image = pickBestImageSrc(best);
   }
+
+  image = upgradeImageResolution(image);
 
   return {
     title: title.trim(),

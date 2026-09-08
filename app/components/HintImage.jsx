@@ -30,16 +30,12 @@ export default function HintImage({
   if (showFallback) {
     return (
       <div
-        className={`flex items-center justify-center bg-gradient-to-br from-[#ffe3d1] via-[#ffc7a3] to-[#ff9d73] ${
+        className={`bg-gradient-to-br from-[#ffe3d1] via-[#ffc7a3] to-[#ff9d73] ${
           fill ? "absolute inset-0" : ""
         } ${className} ${fallbackClassName}`}
         style={!fill ? { width, height } : undefined}
         {...rest}
-      >
-        <div className="flex items-center justify-center rounded-[22%] bg-white/35 backdrop-blur-sm" style={{ width: "42%", height: "42%" }}>
-          <span style={{ fontSize: "55%" }}>🎁</span>
-        </div>
-      </div>
+      />
     );
   }
 
