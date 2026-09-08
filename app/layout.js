@@ -22,6 +22,18 @@ const inter = Inter({
 });
 
 export const metadata = {
+  // Cache note: Vercel's CDN caches static /public assets persistently
+  // by exact path, independent of deploys (confirmed the hard way with
+  // the icon files above) - if manifest.json's content ever needs to
+  // change after this is live, rename it (manifest-v2.json) rather
+  // than editing in place, same as icon-192-v2.png etc. Fine as a
+  // bare name for now since this is its first version.
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "HintDrop",
+  },
   icons: {
     // app/favicon.ico (Next.js's own file-convention icon, auto-served
     // at /favicon.ico and auto-linked in every page's <head>) was left
@@ -62,6 +74,17 @@ export const metadata = {
   },
   description: "Save what you actually want. Remember who matters. Plan gifts together. HintDrop is the thoughtful gifting app for hints, reminders, and group gifting.",
   metadataBase: new URL("https://hintdrop.app"),
+};
+
+// Separate from metadata above - themeColor and viewport settings
+// moved to their own export in modern Next.js. themeColor colours
+// the browser's own UI chrome (Android's status bar, installed-PWA
+// title bar) to match the brand instead of defaulting to plain
+// white/black.
+export const viewport = {
+  themeColor: "#ff875d",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }) {
