@@ -206,6 +206,7 @@ function getDisplayPrice(product, formatCurrency, formatCurrencyIn) {
 
 function ShopCard({
   product,
+  region,
   imageRatios,
   onAddToHints,
   onViewItem,
@@ -225,18 +226,25 @@ function ShopCard({
 
   const rawRatio = imageRatios[product.id];
   const cardAspectRatio = rawRatio && Number.isFinite(rawRatio) ? Math.min(0.85, rawRatio) : 0.85;
+  // HintDrop's own indexable product page (see app/gift-shop/ProductPageContent.js),
+  // not the retailer link - this is what actually drives traffic back
+  // to HintDrop when someone shares a gift idea, and it's the URL
+  // that has real title/price/description metadata attached.
+  const shareUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/gift-shop-${region}/p/${product.id}`
+      : `https://hintdrop.app/gift-shop-${region}/p/${product.id}`;
 
   async function handleShare(e) {
     e.stopPropagation();
-    const url = getOutboundUrl(product);
-    const shareData = { title: product.title || "Gift idea", text: displayPrice ? `${product.title} — ${displayPrice}` : product.title, url };
+    const shareData = { title: product.title || "Gift idea", text: displayPrice ? `${product.title} — ${displayPrice}` : product.title, url: shareUrl };
     if (navigator.share) {
       try { await navigator.share(shareData); } catch {}
       return;
     }
     if (navigator.clipboard) {
       try {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(shareUrl);
         setJustShared(true);
         setTimeout(() => setJustShared(false), 1500);
       } catch {}
@@ -387,6 +395,13 @@ function ShopCard({
                   {isOpeningLink ? "Opening..." : "View item →"}
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={handleShare}
+                className="mt-3 block w-full text-center text-[12px] font-semibold text-slate-400 hover:text-[#e37b57]"
+              >
+                {justShared ? "Link copied!" : "Share this gift idea"}
+              </button>
             </div>
           </div>
         </div>
@@ -1117,6 +1132,7 @@ export default function ShopPageContent({ region = "uk" }) {
                     <div key={product.id} data-product-id={product.id} className="mb-4 break-inside-avoid md:mb-6">
                       <ShopCard
                         product={product}
+                        region={region}
                         imageRatios={imageRatios}
                         onAddToHints={handleAddToHints}
                         onViewItem={handleViewItem}

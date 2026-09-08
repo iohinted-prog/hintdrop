@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProductById } from "@/lib/getProductById";
 import ProductSaveButton from "@/app/components/ProductSaveButton";
+import ProductShareButton from "@/app/components/ProductShareButton";
 
 const REGION_LABELS = { uk: "UK", us: "US" };
 
@@ -143,6 +144,13 @@ export default async function ProductPageContent({ region, id }) {
             ) : null}
 
             <ProductSaveButton />
+
+            <ProductShareButton
+              region={region}
+              id={product.id}
+              title={product.title}
+              priceText={product.price_text}
+            />
           </div>
 
           <p className="mt-3 text-[12px] text-slate-400">

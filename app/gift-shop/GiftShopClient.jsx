@@ -134,7 +134,10 @@ function GiftCard({ product, region, imageRatios, onViewItem, isOpeningLink, for
 
   async function handleShare(e) {
     e.stopPropagation();
-    const url = getOutboundUrl(product);
+    const url =
+      typeof window !== "undefined"
+        ? `${window.location.origin}${detailUrl}`
+        : `https://hintdrop.app${detailUrl}`;
     const shareData = { title: product.title || "Gift idea", text: displayPrice ? `${product.title} — ${displayPrice}` : product.title, url };
     if (navigator.share) {
       try { await navigator.share(shareData); } catch {}
