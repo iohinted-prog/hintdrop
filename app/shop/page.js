@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "../../lib/supabase/client";
 import { shuffleProducts } from "../../lib/products";
 import BoardPreviewGrid from "../components/BoardPreviewGrid";
@@ -508,6 +508,48 @@ export default function ShopPage() {
     (selectedPriceBand ? 1 : 0) +
     selectedInterests.length;
   const [imageRatios, setImageRatios] = useState({});
+  const scrollAnchorRef = useRef(null);
+
+  // Product images finish measuring their real aspect ratio well after
+  // the card first renders at a guessed default (0.85) - see
+  // loadImageAspectRatio/measureRatios below. Once the real ratio
+  // lands, the card's height changes to match, and because this is a
+  // CSS multi-column masonry layout (columns-2/3/4, not flexbox/grid),
+  // a single card's height change can reshuffle which column every
+  // later card lands in, not just push things down - which is
+  // presumably why this felt like actual "jumping around" rather than
+  // a normal small reflow. Same fix as the earlier Feed scroll-jump:
+  // capture the topmost visible card's position right before the
+  // resize, restore it right after via useLayoutEffect (fires
+  // synchronously before paint, so no visible flicker). This is
+  // agnostic to *why* the layout shifted, which matters here since a
+  // multi-column reshuffle is harder to reason about directly than a
+  // simple push-down would be.
+  function captureShopScrollAnchor() {
+    const cards = document.querySelectorAll("[data-product-id]");
+    for (const card of cards) {
+      const rect = card.getBoundingClientRect();
+      if (rect.bottom > 0) {
+        scrollAnchorRef.current = { id: card.getAttribute("data-product-id"), top: rect.top };
+        return;
+      }
+    }
+    scrollAnchorRef.current = null;
+  }
+
+  useLayoutEffect(() => {
+    const anchor = scrollAnchorRef.current;
+    if (!anchor) return;
+    const el = document.querySelector(`[data-product-id="${anchor.id}"]`);
+    if (!el) return;
+    const newTop = el.getBoundingClientRect().top;
+    const delta = newTop - anchor.top;
+    if (Math.abs(delta) > 1) {
+      window.scrollBy(0, delta);
+    }
+    scrollAnchorRef.current = null;
+  }, [imageRatios]);
+
   const [brokenImageIds, setBrokenImageIds] = useState(() => new Set());
 
   const handleImageError = useCallback((productId) => {
@@ -603,6 +645,7 @@ export default function ShopPage() {
 
       if (cancelled) return;
 
+      captureShopScrollAnchor();
       setImageRatios((current) => {
         const next = { ...current };
 
@@ -1042,7 +1085,7 @@ export default function ShopPage() {
               ) : visibleProducts.length ? (
                 <div className="columns-2 gap-4 md:columns-3 md:gap-6 xl:columns-4">
                   {visibleProducts.map((product) => (
-                    <div key={product.id} className="mb-4 break-inside-avoid md:mb-6">
+                    <div key={product.id} data-product-id={product.id} className="mb-4 break-inside-avoid md:mb-6">
                       <ShopCard
                         product={product}
                         imageRatios={imageRatios}
