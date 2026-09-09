@@ -26,6 +26,7 @@
   },
   "private": true,
   "devDependencies": {
-    "babel-preset-expo": "^57.0.11"
+    "babel-preset-expo": "^57.0.11",
+    "eas-cli": "^23.2.0"
   }
 }
