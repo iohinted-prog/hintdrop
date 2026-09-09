@@ -26,9 +26,9 @@ export const metadata = {
   // by exact path, independent of deploys (confirmed the hard way with
   // the icon files above) - if manifest.json's content ever needs to
   // change after this is live, rename it (manifest-v2.json) rather
-  // than editing in place, same as icon-192-v2.png etc. Fine as a
+  // than editing in place, same as icon-192-v3.png etc. Fine as a
   // bare name for now since this is its first version.
-  manifest: "/manifest.json",
+  manifest: "/manifest-v2.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -58,12 +58,12 @@ export const metadata = {
     // path directly, bypassing the query string entirely, so the CDN
     // kept serving its old cached response no matter how many times
     // the query string changed. Switched to genuinely renamed files
-    // (icon-192-v2.png etc.) instead - a real rename forces a new CDN
+    // (icon-192-v3.png etc.) instead - a real rename forces a new CDN
     // cache entry regardless of how the consumer requests it.
     icon: [
       { url: "/favicon-v2.svg", type: "image/svg+xml" },
       { url: "/favicon-v2.png", type: "image/png", sizes: "32x32" },
-      { url: "/icon-192-v2.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon-192-v3.png", type: "image/png", sizes: "192x192" },
     ],
     apple: "/apple-touch-icon-v2.png",
     shortcut: "/favicon-v2.png",

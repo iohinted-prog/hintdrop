@@ -15,7 +15,7 @@
     "android": {
       "package": "app.hintdrop.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#fffaf7",
+        "backgroundColor": "#ff875d",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

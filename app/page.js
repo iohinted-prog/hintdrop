@@ -66,7 +66,7 @@ export default async function Page() {
         // Was pointing at the 64x64 favicon — using the new 192x192
         // icon instead, since Google's Organization/Logo guidance wants
         // a reasonably large square image (112x112 minimum).
-        logo: "https://hintdrop.app/icon-192-v2.png",
+        logo: "https://hintdrop.app/icon-192-v3.png",
         // Real, live social/entity profiles — the strongest signal for
         // a Knowledge Panel, per the SocialLinks component (single
         // source of truth, also used for the visible footer/homepage
