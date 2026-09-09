@@ -54,6 +54,23 @@ cp .env.example .env
 npm start
 ```
 
+**Important - this `.env` file only works for local development (`npm start` / Expo Go).** It does NOT carry over to `eas build` - learned this the hard way when the first real builds crashed on launch with "Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY", because `.env` is gitignored (correctly, to keep the real key out of GitHub) and EAS Build's remote servers never had access to it. For any actual `eas build`, these same two values need to be set separately as EAS environment variables:
+
+```
+npx eas env:create
+# name: EXPO_PUBLIC_SUPABASE_URL, type: string, visibility: plain text
+# value: https://egdghdutgjcdvhazmblw.supabase.co
+# environments: select development, preview, and production individually
+# (avoid the "a" select-all shortcut - it also selects "Other" and gets stuck asking for a custom environment name)
+
+npx eas env:create
+# name: EXPO_PUBLIC_SUPABASE_ANON_KEY, type: string, visibility: sensitive
+# value: (the real anon key, same one .env.example references)
+# environments: same as above
+```
+
+This only needs doing once per Expo project (not per build) - already done for this project as of the icon-fix builds.
+
 Then either:
 - Scan the QR code with the Expo Go app on a real phone (fastest way
   to see it running, no build needed)
