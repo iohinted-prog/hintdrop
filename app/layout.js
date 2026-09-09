@@ -60,12 +60,28 @@ export const metadata = {
     // the query string changed. Switched to genuinely renamed files
     // (icon-192-v3.png etc.) instead - a real rename forces a new CDN
     // cache entry regardless of how the consumer requests it.
+    //
+    // favicon-v2.svg removed entirely - confirmed it's not real
+    // vector art, just a 64x64 raster PNG wrapped in <svg><image>
+    // markup. Declaring it as image/svg+xml told browsers/crawlers
+    // it was infinitely scalable, so Google Search (which needs an
+    // icon >=48px and reaches for a larger one than the tiny 32px
+    // favicon) picked this "SVG" and scaled up what's actually a
+    // small, transparent raster - producing exactly the blurry,
+    // white-background look seen in Search results. icon-192-v3.png
+    // (properly sized, coral-filled, no transparency) is now the
+    // only larger option available, so that's what Search should
+    // pick up on its next crawl instead.
     icon: [
-      { url: "/favicon-v2.svg", type: "image/svg+xml" },
       { url: "/favicon-v2.png", type: "image/png", sizes: "32x32" },
       { url: "/icon-192-v3.png", type: "image/png", sizes: "192x192" },
     ],
-    apple: "/apple-touch-icon-v2.png",
+    // v3: the v2 file was transparent (bare glyph, no fill) - fine
+    // for a browser tab, but iOS renders transparent areas of a
+    // home-screen icon as solid black, not see-through. Needed the
+    // same opaque coral+white treatment as every other real app-icon
+    // context, not the tab-only transparent style.
+    apple: "/apple-touch-icon-v3.png",
     shortcut: "/favicon-v2.png",
   },
   title: {
