@@ -43,7 +43,7 @@ export default function SignInScreen() {
     >
       <View style={styles.content}>
         <Image
-          source={require("../assets/icon.png")}
+          source={require("../assets/logo-transparent.png")}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -109,8 +109,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
   },
   logo: {
-    width: 64,
-    height: 64,
+    width: 120,
+    height: 120,
     alignSelf: "center",
     marginBottom: 16,
   },
