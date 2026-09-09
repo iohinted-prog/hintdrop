@@ -121,18 +121,16 @@ export default function GoogleAuthButtons({ variant = "hero-primary" }) {
             : "Continue with Microsoft"}
         </button>
 
-        {/* Apple sign-in temporarily hidden - working correctly on our
-            side (JWT, Client ID, App ID, domain/return URL all verified
-            correct), but Apple's own servers are returning invalid_client
-            for reasons outside our control - a documented, known class of
-            Apple-side bug specifically affecting newly-created/edited
-            Sign in with Apple configurations (confirmed via Apple's own
-            developer forums - other developers hitting the identical
-            symptom with fully-verified-correct setups, sometimes
-            resolving on its own after days, sometimes needing Apple's
-            engineering team to intervene). handleAppleSignIn left intact
-            below - re-adding this button once it's confirmed working
-            again is a one-line change, not a rebuild. */}
+        <button
+          type="button"
+          onClick={handleAppleSignIn}
+          disabled={loadingProvider !== null}
+          className="inline-flex h-12 w-full items-center justify-center rounded-full border border-[#0f172a] bg-[#0f172a] px-5 text-sm font-bold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {loadingProvider === "apple"
+            ? "Connecting Apple..."
+            : "Continue with Apple"}
+        </button>
 
         {pageError ? (
           <p className="rounded-[18px] border border-[#f1d2c6] bg-[#fff4ef] px-4 py-3 text-sm text-[#b85c3e]">

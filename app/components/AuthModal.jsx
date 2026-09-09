@@ -287,12 +287,14 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
               Continue with Microsoft
             </button>
 
-            {/* Apple sign-in temporarily hidden - see the matching note
-                in GoogleAuthButtons.js for the full explanation. Our
-                config is verified correct; this is a known class of
-                Apple-side server bug, not something fixable here.
-                handleAppleSignIn left intact - re-adding this button is
-                a one-line change once it's confirmed working again. */}
+            <button
+              type="button"
+              onClick={handleAppleSignIn}
+              disabled={loading}
+              className="w-full h-12 flex items-center justify-center rounded-full border border-[#0f172a] bg-[#0f172a] text-[14px] font-semibold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-70 mt-3"
+            >
+              Continue with Apple
+            </button>
 
             <div className="flex items-center gap-3 my-5">
               <div className="h-px flex-1 bg-[#ead8ce]" />
