@@ -366,36 +366,6 @@ function EmptyState({ onClear }) {
   );
 }
 
-function ShopGuide() {
-  const [open, setOpen] = useState(false);
-  const steps = [
-    { label: "1. Browse", color: "bg-[#fff4ee] text-[#df7b59]", text: "Gifts are filtered by the interests you choose and the occasion you are shopping for." },
-    { label: "2. Sign in to save", color: "bg-[#eef4ff] text-[#5676b3]", text: "Create a free account to save good finds to your hints for later." },
-    { label: "3. View item", color: "bg-[#edf6eb] text-[#4a7a3a]", text: "View item opens the retailer in a new tab using the affiliate link when one is available." },
-  ];
-  return (
-    <div>
-      <button type="button" onClick={() => setOpen(p => !p)}
-        className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#df7b59] hover:text-[#b14f43] transition">
-        <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[#f0a384] text-[11px]">?</span>
-        How the Gift Shop works
-        <span className="text-[10px]">{open ? "▲" : "▼"}</span>
-      </button>
-      {open && (
-        <div className="mt-3 space-y-3">
-          <p className="text-[12px] font-semibold text-slate-700">Curated first, off-site second</p>
-          {steps.map(s => (
-            <div key={s.label} className="rounded-[18px] bg-[#faf7f4] p-4">
-              <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${s.color}`}>{s.label}</span>
-              <p className="mt-2 text-[13px] leading-6 text-slate-600">{s.text}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function GiftShopClient({ region = "uk" }) {
   const { formatCurrency, formatCurrencyIn } = useCurrencyFormatter();
   const [authOpen, setAuthOpen] = useState(false);
@@ -771,9 +741,6 @@ export default function GiftShopClient({ region = "uk" }) {
                     </button>
                   );
                 })}
-              </div>
-              <div className="mt-5">
-                <ShopGuide />
               </div>
             </div>
           </div>
