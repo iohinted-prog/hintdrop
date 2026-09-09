@@ -278,6 +278,13 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
               Continue with Google
             </button>
 
+            {/* Microsoft sign-in temporarily hidden - see the matching
+                note in GoogleAuthButtons.js for the full explanation.
+                Personal Microsoft accounts are blocked by a confirmed
+                Supabase bug (supabase/auth#1549 and related); work/school
+                accounts likely work fine, but one button that only
+                works for some Microsoft accounts isn't good UX.
+                handleMicrosoftSignIn left intact.
             <button
               type="button"
               onClick={handleMicrosoftSignIn}
@@ -286,7 +293,12 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
             >
               Continue with Microsoft
             </button>
+            */}
 
+            {/* Apple sign-in temporarily hidden again - see the matching
+                note in GoogleAuthButtons.js. Fresh setup verified
+                correct, Feedback Assistant report filed, waiting on
+                Apple. handleAppleSignIn left intact.
             <button
               type="button"
               onClick={handleAppleSignIn}
@@ -295,6 +307,7 @@ export default function AuthModal({ open, onClose, initialMode = "signin" }) {
             >
               Continue with Apple
             </button>
+            */}
 
             <div className="flex items-center gap-3 my-5">
               <div className="h-px flex-1 bg-[#ead8ce]" />

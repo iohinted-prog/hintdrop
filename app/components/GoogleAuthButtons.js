@@ -110,6 +110,22 @@ export default function GoogleAuthButtons({ variant = "hero-primary" }) {
             : "Continue with Google"}
         </button>
 
+        {/* Microsoft sign-in temporarily hidden - button works and
+            calls the correct code, but personal Microsoft accounts
+            (Outlook/Hotmail/Live) are blocked by a real, confirmed
+            bug in Supabase's built-in azure provider: the OAuth flow
+            completes successfully on Microsoft's side, then fails at
+            our callback with "Error getting user profile from
+            external provider" - a known, multi-year-old, still-open
+            issue (supabase/auth#1549 and related). Work/school
+            accounts likely still work fine (that path isn't affected
+            by this bug), but showing one button that only works for
+            some Microsoft accounts and not others, with no way to
+            explain why in the UI, isn't a good experience - hiding
+            both until either Supabase fixes it or a custom OIDC
+            provider workaround gets built for personal accounts
+            specifically. handleMicrosoftSignIn left intact -
+            re-adding this button is a one-line change.
         <button
           type="button"
           onClick={handleMicrosoftSignIn}
@@ -120,7 +136,14 @@ export default function GoogleAuthButtons({ variant = "hero-primary" }) {
             ? "Connecting Microsoft..."
             : "Continue with Microsoft"}
         </button>
+        */}
 
+        {/* Apple sign-in temporarily hidden again - fresh Services ID,
+            key, and JWT all verified correct (see git history for the
+            full rebuild), Feedback Assistant report filed, still
+            waiting on Apple's side. handleAppleSignIn left intact -
+            re-adding this button is a one-line change once it's
+            confirmed working.
         <button
           type="button"
           onClick={handleAppleSignIn}
@@ -131,6 +154,7 @@ export default function GoogleAuthButtons({ variant = "hero-primary" }) {
             ? "Connecting Apple..."
             : "Continue with Apple"}
         </button>
+        */}
 
         {pageError ? (
           <p className="rounded-[18px] border border-[#f1d2c6] bg-[#fff4ef] px-4 py-3 text-sm text-[#b85c3e]">
