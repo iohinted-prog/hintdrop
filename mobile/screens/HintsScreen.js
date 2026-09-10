@@ -44,23 +44,84 @@ function HintCard({ hint }) {
   );
 }
 
+function PreviewCell({ hint }) {
+  return hint?.image_url ? (
+    <Image source={{ uri: hint.image_url }} style={styles.previewCellImage} resizeMode="cover" />
+  ) : (
+    <View style={[styles.previewCellImage, styles.previewCellFallback]} />
+  );
+}
+
+// Mirrors BoardPreviewGrid.jsx's adaptive layout exactly: 1 hint fills
+// the whole banner, 2 split evenly side by side, 3 is one large cell
+// plus two stacked, 4+ is a 2x2 grid. An empty board shows the same
+// gradient-style fallback as a single missing-image cell.
+function BoardPreview({ previewHints = [] }) {
+  const items = previewHints.slice(0, 4);
+  const count = items.length;
+
+  if (count === 0) return <PreviewCell hint={null} />;
+  if (count === 1) return <PreviewCell hint={items[0]} />;
+
+  if (count === 2) {
+    return (
+      <View style={styles.previewRowFlex}>
+        <PreviewCell hint={items[0]} />
+        <PreviewCell hint={items[1]} />
+      </View>
+    );
+  }
+
+  if (count === 3) {
+    return (
+      <View style={styles.previewRowFlex}>
+        <View style={styles.previewColFlex}>
+          <PreviewCell hint={items[0]} />
+        </View>
+        <View style={styles.previewColFlex}>
+          <PreviewCell hint={items[1]} />
+          <PreviewCell hint={items[2]} />
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.previewRowFlex}>
+      <View style={styles.previewColFlex}>
+        <PreviewCell hint={items[0]} />
+        <PreviewCell hint={items[2]} />
+      </View>
+      <View style={styles.previewColFlex}>
+        <PreviewCell hint={items[1]} />
+        <PreviewCell hint={items[3]} />
+      </View>
+    </View>
+  );
+}
+
 function BoardCard({ board, onPress }) {
   return (
     <Pressable
       style={({ pressed }) => [styles.boardCard, pressed && styles.boardCardPressed]}
       onPress={onPress}
     >
-      <View style={styles.boardIconWrap}>
-        <Image
-          source={require("../assets/logo-transparent.png")}
-          style={styles.boardIcon}
-          resizeMode="contain"
-        />
+      <View style={styles.boardPreviewWrap}>
+        <BoardPreview previewHints={board.previewHints} />
       </View>
-      <Text style={styles.boardTitle} numberOfLines={1}>
-        {board.title}
-      </Text>
-      {board.is_default ? <Text style={styles.boardBadge}>Default</Text> : null}
+      <View style={styles.boardCardFooter}>
+        <View style={styles.boardCardText}>
+          <Text style={styles.boardTitle} numberOfLines={1}>
+            {board.is_private ? "🔒 " : ""}
+            {board.title}
+          </Text>
+          <Text style={styles.boardSubtitle}>
+            {board.is_default ? "Personal" : "Hints for someone else"} · {board.hintCount}{" "}
+            {board.hintCount === 1 ? "Hint" : "Hints"}
+          </Text>
+        </View>
+        <Text style={styles.boardArrow}>→</Text>
+      </View>
     </Pressable>
   );
 }
@@ -232,18 +293,38 @@ function BoardListScreen({ onSelectBoard }) {
   const loadBoards = useCallback(async () => {
     if (!user?.id) return;
     setError("");
-    const { data, error } = await supabase
+    const { data: boardRows, error: boardsError } = await supabase
       .from("hint_boards")
       .select("*")
       .eq("user_id", user.id)
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: true });
 
-    if (error) {
-      setError(error.message);
-    } else {
-      setBoards(data || []);
+    if (boardsError) {
+      setError(boardsError.message);
+      return;
     }
+
+    // Same shape as the web app's board menu: an exact count plus up
+    // to 4 preview thumbnails per board, fetched together.
+    const withPreviews = await Promise.all(
+      (boardRows || []).map(async (board) => {
+        const [{ count }, { data: previewHints }] = await Promise.all([
+          supabase
+            .from("hints")
+            .select("id", { count: "exact", head: true })
+            .eq("board_id", board.id),
+          supabase
+            .from("hints")
+            .select("image_url")
+            .eq("board_id", board.id)
+            .order("position", { ascending: true })
+            .limit(4),
+        ]);
+        return { ...board, hintCount: count || 0, previewHints: previewHints || [] };
+      })
+    );
+    setBoards(withPreviews);
   }, [user?.id]);
 
   useEffect(() => {
@@ -276,8 +357,6 @@ function BoardListScreen({ onSelectBoard }) {
       <FlatList
         data={boards}
         keyExtractor={(item) => item.id}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
         renderItem={({ item }) => (
           <BoardCard board={item} onPress={() => onSelectBoard(item)} />
         )}
@@ -485,13 +564,10 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   boardCard: {
-    flex: 1,
     backgroundColor: "#fff",
-    borderRadius: 20,
-    paddingVertical: 24,
-    paddingHorizontal: 16,
+    borderRadius: 22,
     marginBottom: CARD_GAP,
-    alignItems: "center",
+    overflow: "hidden",
     shadowColor: "#0f172a",
     shadowOpacity: 0.07,
     shadowRadius: 12,
@@ -499,32 +575,52 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   boardCardPressed: {
-    opacity: 0.85,
+    opacity: 0.9,
   },
-  boardIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#ffe3d1",
+  boardPreviewWrap: {
+    width: "100%",
+    aspectRatio: 16 / 9,
+    backgroundColor: "#fdf5f0",
+  },
+  previewRowFlex: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 1,
+  },
+  previewColFlex: {
+    flex: 1,
+    gap: 1,
+  },
+  previewCellImage: {
+    flex: 1,
+    width: "100%",
+  },
+  previewCellFallback: {
+    backgroundColor: "#ead8ca",
+  },
+  boardCardFooter: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
+    justifyContent: "space-between",
+    gap: 12,
+    padding: 16,
   },
-  boardIcon: {
-    width: 30,
-    height: 30,
+  boardCardText: {
+    flex: 1,
   },
   boardTitle: {
     fontSize: 15,
     fontWeight: "700",
     color: "#0f172a",
-    textAlign: "center",
   },
-  boardBadge: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#ff875d",
-    marginTop: 4,
+  boardSubtitle: {
+    fontSize: 12,
+    color: "#94a3b8",
+    marginTop: 2,
+  },
+  boardArrow: {
+    fontSize: 16,
+    color: "#cbb8ac",
   },
   emptyText: {
     fontSize: 14,
