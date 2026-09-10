@@ -474,6 +474,7 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
   const [size, setSize] = useState("");
   const [colour, setColour] = useState("");
   const [imageUrl, setImageUrl] = useState(null);
+  const [imageOptions, setImageOptions] = useState([]);
   const [retailer, setRetailer] = useState(null);
   const [numericPrice, setNumericPrice] = useState(null);
   const [currency, setCurrency] = useState(null);
@@ -487,6 +488,7 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
     setSize("");
     setColour("");
     setImageUrl(null);
+    setImageOptions([]);
     setRetailer(null);
     setNumericPrice(null);
     setCurrency(null);
@@ -500,22 +502,45 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
       return;
     }
 
-    // Not a real URL - matches the web app's own behaviour when the
-    // input doesn't look like a link: skip scraping entirely and go
-    // straight to review with the typed text as the title. (The web
-    // version also offers an AI-generated idea/image at this point -
-    // that's a separate, larger feature not built here yet, so this
-    // is a genuine but simpler fallback: the typed text becomes a
-    // real, savable hint rather than erroring out.)
+    // Not a real URL - matches the web app's own behaviour: rather
+    // than scraping, hits the real /api/hint-idea endpoint, which
+    // title-cases the typed text and searches Pexels for up to 3
+    // matching stock photos (needsReview: true means these are
+    // meant to be picked from, not auto-applied).
     if (!isValidHttpUrl(trimmed)) {
-      setTitle(trimmed);
-      setPriceText("");
-      setImageUrl(null);
-      setRetailer(null);
-      setNumericPrice(null);
-      setCurrency(null);
-      setReviewing(true);
+      setFetching(true);
       setError("");
+      try {
+        const res = await fetch("https://hintdrop.app/api/hint-idea", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: trimmed }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Couldn't find images for that.");
+        setTitle(data.title || trimmed);
+        setPriceText("");
+        setImageOptions(data.images || []);
+        setImageUrl(data.images?.[0] || null);
+        setRetailer(data.retailer || null);
+        setNumericPrice(null);
+        setCurrency(null);
+        setReviewing(true);
+      } catch (err) {
+        // Even if Pexels comes back empty/fails, the idea itself is
+        // still worth saving - fall back to no image rather than
+        // blocking the person from adding it at all.
+        setTitle(trimmed);
+        setPriceText("");
+        setImageOptions([]);
+        setImageUrl(null);
+        setRetailer(null);
+        setNumericPrice(null);
+        setCurrency(null);
+        setReviewing(true);
+      } finally {
+        setFetching(false);
+      }
       return;
     }
 
@@ -531,6 +556,7 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
       if (!res.ok) throw new Error(data?.error || "Couldn't fetch that link.");
       setTitle(data.title || "");
       setPriceText(data.priceText || "");
+      setImageOptions([]);
       setImageUrl(data.selectedImage || data.image || null);
       setRetailer(data.siteName || null);
       setNumericPrice(data.numericPrice ?? null);
@@ -623,7 +649,25 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
               />
             ) : (
               <>
-                {imageUrl ? (
+                {imageOptions.length > 1 ? (
+                  <>
+                    <Text style={styles.editLabel}>Choose a photo</Text>
+                    <View style={styles.imageOptionsRow}>
+                      {imageOptions.map((optionUrl) => (
+                        <Pressable key={optionUrl} onPress={() => setImageUrl(optionUrl)}>
+                          <Image
+                            source={{ uri: optionUrl }}
+                            style={[
+                              styles.imageOptionThumb,
+                              optionUrl === imageUrl && styles.imageOptionThumbSelected,
+                            ]}
+                            resizeMode="cover"
+                          />
+                        </Pressable>
+                      ))}
+                    </View>
+                  </>
+                ) : imageUrl ? (
                   <Image source={{ uri: imageUrl }} style={styles.reviewImage} resizeMode="cover" />
                 ) : null}
 
@@ -1392,6 +1436,21 @@ const styles = StyleSheet.create({
     height: 160,
     borderRadius: 16,
     marginBottom: 8,
+  },
+  imageOptionsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 8,
+  },
+  imageOptionThumb: {
+    width: 84,
+    height: 112,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  imageOptionThumbSelected: {
+    borderColor: "#ff875d",
   },
   modalTitle: {
     fontSize: 18,
