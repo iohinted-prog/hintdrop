@@ -36,39 +36,14 @@ export async function generateMetadata({ params }) {
   const title = `${board.title} — ${ownerName}'s Hints 👀 | HintDrop`;
   const description = `Take a look at ${ownerName}'s "${board.title}" Hints on HintDrop.`;
 
-  // Points og:image straight at the board's cover hint photo, proxied
-  // through Next's own image optimizer (so it's served from
-  // hintdrop.app rather than the retailer's own host) - and that's
-  // it. This is deliberately the simple version: a custom-composited
-  // image (branding + photo, via next/og's ImageResponse) required
-  // this server to fetch the retailer image itself first, and real
-  // Vercel logs confirmed that fetch genuinely hangs/aborts from this
-  // function's environment regardless of timeout length, across
-  // multiple unrelated retailers - a pattern consistent with bot-
-  // protection on those CDNs treating datacenter IPs differently than
-  // a real crawler. Pointing WhatsApp's own crawler at the image
-  // directly sidesteps that entirely, since it isn't subject to the
-  // same block. No HintDrop branding overlay as a result - trading
-  // that off for an image that actually, reliably shows.
-  const { data: coverHint } = await supabase
-    .from("hints")
-    .select("image_url")
-    .eq("board_id", boardId)
-    .eq("is_private", false)
-    .not("image_url", "is", null)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const ogImage = coverHint?.image_url
-    ? `https://hintdrop.app/_next/image?url=${encodeURIComponent(coverHint.image_url)}&w=1200&q=75`
-    : "https://hintdrop.app/og-default-v2.png";
-
+  // No images field - Next.js auto-detects the sibling
+  // opengraph-image.jsx (a real headless-browser screenshot of the
+  // collage, not a server-side image fetch) and uses that instead.
   return {
     title,
     description,
-    openGraph: { title, description, images: [ogImage], type: "website" },
-    twitter: { card: "summary_large_image", title, description, images: [ogImage] },
+    openGraph: { title, description, type: "website" },
+    twitter: { card: "summary_large_image", title, description },
     alternates: {
       canonical: `https://hintdrop.app/b/${boardId}`,
     },
