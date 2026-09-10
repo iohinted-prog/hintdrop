@@ -6,7 +6,8 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { supabase } from "./lib/supabase";
 import SignInScreen from "./screens/SignInScreen";
 import FeedScreen from "./screens/FeedScreen";
-import { CircleScreen, HintsScreen, CalendarScreen, ShopScreen } from "./screens/PlaceholderScreens";
+import HintsScreen from "./screens/HintsScreen";
+import { CircleScreen, CalendarScreen, ShopScreen } from "./screens/PlaceholderScreens";
 
 const Tab = createBottomTabNavigator();
 

@@ -1,10 +1,11 @@
 import { View, Text, StyleSheet } from "react-native";
 
 // Genuinely a placeholder, not pretending otherwise - each of these
-// needs the same treatment FeedScreen.js got (real Supabase queries,
-// real UI matching the web app's design). Kept as a named function
-// per screen (rather than one generic component) so each file is
-// the obvious place to build out that screen for real.
+// needs the same treatment FeedScreen.js and HintsScreen.js got:
+// real Supabase queries and real UI, ported from the equivalent web
+// page. Kept as a named function per screen (rather than one generic
+// component) so each file is the obvious place to build out that
+// screen for real.
 function ComingSoon({ label }) {
   return (
     <View style={styles.container}>
@@ -17,10 +18,6 @@ function ComingSoon({ label }) {
 
 export function CircleScreen() {
   return <ComingSoon label="Circle" />;
-}
-
-export function HintsScreen() {
-  return <ComingSoon label="Hints" />;
 }
 
 export function CalendarScreen() {
