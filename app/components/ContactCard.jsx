@@ -64,7 +64,10 @@ export default function ContactCard({ contact, onOpenProfile, onDeleteClick, onM
           {contact.avatarUrl ? (
             <HintImage src={contact.avatarUrl} alt={contact.name || "Contact"} width={56} height={56} className="rounded-full object-cover" />
           ) : (
-            <div className={`flex h-11 w-11 md:h-14 md:w-14 items-center justify-center rounded-full bg-gradient-to-b ${contact.colors || "from-[#efcdbf] to-[#bb8168]"} text-[12px] md:text-[15px] font-bold text-white`}>
+            <div
+              className="flex h-11 w-11 md:h-14 md:w-14 items-center justify-center rounded-full text-[12px] md:text-[15px] font-bold text-white"
+              style={{ background: `linear-gradient(to bottom, ${contact.avatarColorFrom || "#efcdbf"}, ${contact.avatarColorTo || "#bb8168"})` }}
+            >
               {contact.initials || getInitials(contact.name)}
             </div>
           )}

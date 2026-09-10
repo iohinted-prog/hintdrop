@@ -6,6 +6,7 @@ import ContactCard from "../components/ContactCard";
 import { useChatWindows } from "../components/ChatWindowsProvider";
 import UserProfileModal from "../components/UserProfileModal";
 import HintImage from "../components/HintImage";
+import { avatarColorFor, NON_USER_AVATAR_COLOR } from "../../lib/avatarColor";
 
 function getInitials(name) {
   return String(name || "").trim().split(/\s+/).slice(0, 2).map(p => p[0]?.toUpperCase() || "").join("");
@@ -20,25 +21,29 @@ function daysUntilBirthday(birthday) {
   if (next < today) next = new Date(today.getFullYear() + 1, bday.getMonth(), bday.getDate());
   return Math.round((next - today) / (1000 * 60 * 60 * 24));
 }
-function getColors(role) {
-  const r = String(role || "").toLowerCase();
-  if (r === "partner" || r === "spouse") return "from-[#e8b9a7] to-[#bf755f]";
-  if (r === "colleague") return "from-[#b7c8db] to-[#6b88a7]";
-  return "from-[#efcdbf] to-[#bb8168]";
-}
 function buildContact(row) {
   const role = row?.role || "Friend";
+  const matchedProfileId = row.profile_id || row.matched_profile_id || null;
+  // Color now reflects whether this is a real HintDrop account or
+  // just a saved contact who hasn't joined - was previously colored
+  // by relationship role (partner/colleague/other), which didn't
+  // distinguish a registered person from a non-user at all. A
+  // registered person without their own avatar photo gets a real,
+  // consistent color; a non-user (no matched account) keeps the sand
+  // gradient.
+  const colors = matchedProfileId ? avatarColorFor(matchedProfileId) : NON_USER_AVATAR_COLOR;
   return {
     id: row.contact_id || row.id,
     name: row.name || row.email || "Unnamed",
     role,
     initials: getInitials(row.name || row.email || ""),
-    colors: getColors(role),
+    avatarColorFrom: colors.from,
+    avatarColorTo: colors.to,
     email: row.email || "",
     birthday: row.birthday || "",
     avatarUrl: row.avatar_url || null,
-    profileId: row.profile_id || row.matched_profile_id || null,
-    matchedProfileId: row.profile_id || row.matched_profile_id || null,
+    profileId: matchedProfileId,
+    matchedProfileId,
     note: Array.isArray(row.interests) && row.interests.length ? row.interests.slice(0, 3).join(" · ") : role,
     interests: Array.isArray(row.interests) ? row.interests : [],
     status: row.public_state || "contact",

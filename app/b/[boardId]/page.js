@@ -36,16 +36,34 @@ export async function generateMetadata({ params }) {
   const title = `${board.title} — ${ownerName}'s Hints 👀 | HintDrop`;
   const description = `Take a look at ${ownerName}'s "${board.title}" Hints on HintDrop.`;
 
-  // No images field here - Next.js auto-detects the sibling
-  // opengraph-image.jsx file in this same route folder and uses it,
-  // which composes a real multi-hint collage rather than a single
-  // hint's photo. Manually setting images here would conflict with
-  // that file convention rather than combine with it.
+  // A multi-hint collage (via next/og's ImageResponse) was attempted
+  // here and failed twice in real testing - broke the entire preview
+  // rather than degrading gracefully, even after switching to fetching
+  // images server-side as base64 data URIs to avoid Satori's live-fetch
+  // unreliability. Reverted to this simpler, already-confirmed-working
+  // single-image approach (the board's own most recent public hint
+  // photo, proxied through Next's image optimizer since external
+  // retailer hosts often block direct hotlinking) rather than keep
+  // spending rebuild cycles on a fancier version that isn't reliable.
+  const { data: coverHint } = await supabase
+    .from("hints")
+    .select("image_url")
+    .eq("board_id", boardId)
+    .eq("is_private", false)
+    .not("image_url", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const ogImage = coverHint?.image_url
+    ? `https://hintdrop.app/_next/image?url=${encodeURIComponent(coverHint.image_url)}&w=1200&q=75`
+    : "https://hintdrop.app/og-default-v2.png";
+
   return {
     title,
     description,
-    openGraph: { title, description, type: "website" },
-    twitter: { card: "summary_large_image", title, description },
+    openGraph: { title, description, images: [ogImage], type: "website" },
+    twitter: { card: "summary_large_image", title, description, images: [ogImage] },
     alternates: {
       canonical: `https://hintdrop.app/b/${boardId}`,
     },
