@@ -29,6 +29,41 @@ function FallbackImage() {
   );
 }
 
+// Real Vercel logs (confirmed via the dashboard, not a guess) showed
+// Satori's OWN internal fetch failing with a generic "fetch failed"
+// across multiple unrelated retailer hosts (H&M, ASOS) - the common
+// factor is Satori's fetch itself, not any one host blocking us. This
+// fetches the image with Node's own fetch (a completely separate
+// code path from whatever Satori uses internally) and hands Satori a
+// ready-made base64 data URI instead, so Satori never attempts a
+// network request of its own for it.
+async function toDataUri(url) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
+    });
+    clearTimeout(timeout);
+    if (!res.ok) {
+      console.error("cover image fetch non-ok:", url, res.status);
+      return null;
+    }
+    const contentType = res.headers.get("content-type") || "image/jpeg";
+    if (!contentType.startsWith("image/")) {
+      console.error("cover image fetch wrong content-type:", url, contentType);
+      return null;
+    }
+    const buffer = Buffer.from(await res.arrayBuffer());
+    console.error("cover image fetch succeeded:", url, buffer.length, "bytes");
+    return `data:${contentType};base64,${buffer.toString("base64")}`;
+  } catch (err) {
+    console.error("cover image fetch threw:", url, err?.name, err?.message || err);
+    return null;
+  }
+}
+
 export default async function Image({ params }) {
   try {
     const { boardId } = await params;
@@ -40,14 +75,6 @@ export default async function Image({ params }) {
       .eq("id", boardId)
       .maybeSingle();
 
-    // A single cover hint, not a multi-image collage - fetching
-    // several external retailer images during this same render
-    // proved unreliable across multiple attempts (both server-
-    // prefetched and live Satori fetch), while this exact single-
-    // image-via-proxy approach was separately confirmed working when
-    // used as a plain og:image meta value. Simplifying to one image
-    // to actually ship something real rather than keep chasing a
-    // grid that doesn't render reliably.
     const { data: coverHint } = await supabase
       .from("hints")
       .select("image_url")
@@ -60,16 +87,7 @@ export default async function Image({ params }) {
 
     const ownerName = board?.profiles?.full_name?.split(" ")[0] || "Someone";
     const boardTitle = board?.title || "Hints";
-    // Trying the original retailer URL directly this time, not
-    // through /_next/image - every attempt routed through that proxy
-    // (both live-fetched by Satori and pre-fetched server-side) came
-    // back with an empty tile despite the rest of the render
-    // succeeding, which points at that specific proxy hop rather than
-    // image fetching in general. A self-referencing call from this
-    // serverless function back into the same deployment's own image
-    // optimizer is a plausible reason that specific path is the
-    // common failure across every variant tried so far.
-    const imageSrc = coverHint?.image_url || null;
+    const imageSrc = coverHint?.image_url ? await toDataUri(coverHint.image_url) : null;
 
     return new ImageResponse(
       (
@@ -105,7 +123,7 @@ export default async function Image({ params }) {
       { ...size, fonts }
     );
   } catch (err) {
-    console.error("board opengraph-image failed, using fallback:", err);
+    console.error("board opengraph-image failed, using fallback:", err?.name, err?.message || err);
     return FallbackImage();
   }
 }
