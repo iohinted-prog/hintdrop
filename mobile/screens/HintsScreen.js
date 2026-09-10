@@ -45,7 +45,7 @@ function HintCard({ hint, aspectRatio, onPress, onDrag, isActive }) {
       delayLongPress={200}
     >
       {hint.image_url ? (
-        <Image source={{ uri: hint.image_url }} style={styles.cardImage} resizeMode="cover" />
+        <Image source={{ uri: secureImageUrl(hint.image_url) }} style={styles.cardImage} resizeMode="cover" />
       ) : (
         <View style={[styles.cardImage, styles.cardImageFallback]} />
       )}
@@ -117,7 +117,7 @@ function buildShareText({ sharerName, title }) {
 
 function PreviewCell({ hint }) {
   return hint?.image_url ? (
-    <Image source={{ uri: hint.image_url }} style={styles.previewCellImage} resizeMode="cover" />
+    <Image source={{ uri: secureImageUrl(hint.image_url) }} style={styles.previewCellImage} resizeMode="cover" />
   ) : (
     <View style={[styles.previewCellImage, styles.previewCellFallback]} />
   );
@@ -221,7 +221,7 @@ function HintDetailModal({ hint, visible, onClose, onUpdated, onEdit, sharerName
             </View>
 
             {hint.image_url ? (
-              <Image source={{ uri: hint.image_url }} style={styles.detailImage} resizeMode="cover" />
+              <Image source={{ uri: secureImageUrl(hint.image_url) }} style={styles.detailImage} resizeMode="cover" />
             ) : (
               <View style={[styles.detailImage, styles.cardImageFallback]} />
             )}
@@ -482,6 +482,18 @@ const OCCASIONS = [
   "Father's Day",
   "Housewarming",
 ];
+
+// iOS blocks plain http:// image loads by default (App Transport
+// Security) - confirmed via a real ATS error in Console for one of
+// the scraped image URLs. Most sites that serve product images over
+// http:// also serve the identical asset over https:// (it's the
+// same CDN, just an unupgraded stored URL), so upgrading the scheme
+// is a safe, simple fix rather than needing an ATS exception per
+// domain in app.json.
+function secureImageUrl(url) {
+  if (!url) return url;
+  return url.startsWith("http://") ? "https://" + url.slice(7) : url;
+}
 
 function isValidHttpUrl(value = "") {
   const trimmed = String(value || "").trim();
@@ -1037,7 +1049,7 @@ function BoardHintsScreen({ board, onBack }) {
     (data || []).forEach((hint) => {
       if (!hint.image_url) return;
       Image.getSize(
-        hint.image_url,
+        secureImageUrl(hint.image_url),
         (width, height) => {
           if (width > 0 && height > 0) {
             setImageRatios((prev) => ({ ...prev, [hint.id]: width / height }));
