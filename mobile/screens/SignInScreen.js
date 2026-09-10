@@ -69,16 +69,16 @@ export default function SignInScreen() {
         // PKCE flow returns a ?code=... query param on the redirect
         // URL to exchange server-side for the actual session - not
         // tokens directly, unlike the older implicit flow.
-        const { params } = Linking.parse(result.url);
-        if (params.code) {
+        const { queryParams } = Linking.parse(result.url);
+        if (queryParams?.code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(
-            params.code
+            queryParams.code
           );
           if (exchangeError) throw exchangeError;
           // AuthContext's listener picks up the new session from here,
           // same as the email/password path above.
-        } else if (params.error_description) {
-          throw new Error(String(params.error_description));
+        } else if (queryParams?.error_description) {
+          throw new Error(String(queryParams.error_description));
         }
       }
       // result.type === "cancel" or "dismiss" - user backed out of the
