@@ -17,12 +17,30 @@ export const dynamic = "force-dynamic";
 const inter600 = fs.readFileSync(path.join(process.cwd(), "lib/fonts/inter-600.ttf"));
 const inter700 = fs.readFileSync(path.join(process.cwd(), "lib/fonts/inter-700.ttf"));
 
-// Proxied through Next's own image optimizer the same way the
-// metadata images were fixed to be - external retailer hosts often
-// block hotlinking/crawler-style fetches, which would otherwise make
-// this render blank tiles for real product photos.
-function proxied(url) {
-  return `https://hintdrop.app/_next/image?url=${encodeURIComponent(url)}&w=800&q=75`;
+// Satori (next/og's renderer) fetching a remote <img src> live during
+// render proved unreliable - the whole response came back blank
+// rather than degrading gracefully. Fetching each image ourselves
+// first and embedding it as a base64 data URI means Satori never
+// makes a network request of its own; a failure on any one image
+// (blocked host, timeout, non-image response) just drops that tile
+// instead of breaking the entire collage.
+async function toDataUri(url) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; HintDropBot/1.0; +https://hintdrop.app)" },
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const contentType = res.headers.get("content-type") || "image/jpeg";
+    if (!contentType.startsWith("image/")) return null;
+    const buffer = Buffer.from(await res.arrayBuffer());
+    return `data:${contentType};base64,${buffer.toString("base64")}`;
+  } catch {
+    return null;
+  }
 }
 
 function Tile({ src, style }) {
@@ -30,7 +48,7 @@ function Tile({ src, style }) {
     <div style={{ position: "relative", overflow: "hidden", background: "#ead8ca", ...style }}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={proxied(src)} width="100%" height="100%" style={{ objectFit: "cover" }} />
+        <img src={src} width="100%" height="100%" style={{ objectFit: "cover" }} />
       ) : null}
     </div>
   );
@@ -100,7 +118,10 @@ export default async function Image({ params }) {
     .order("position", { ascending: true })
     .limit(4);
 
-  const images = (hints || []).map((h) => h.image_url);
+  const rawImages = (hints || []).map((h) => h.image_url);
+  // Fetched in parallel, then any that failed (null) are filtered out
+  // entirely rather than leaving gaps in the collage layout.
+  const images = (await Promise.all(rawImages.map(toDataUri))).filter(Boolean);
   const ownerName = board?.profiles?.full_name?.split(" ")[0] || "Someone";
   const boardTitle = board?.title || "Hints";
 
