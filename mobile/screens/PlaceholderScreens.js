@@ -17,10 +17,6 @@ function ComingSoon({ label }) {
   );
 }
 
-export function CalendarScreen() {
-  return <ComingSoon label="Calendar" />;
-}
-
 export function ShopScreen() {
   return <ComingSoon label="Shop" />;
 }

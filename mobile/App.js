@@ -15,8 +15,9 @@ import FeedScreen from "./screens/FeedScreen";
 import HintsScreen from "./screens/HintsScreen";
 import CircleScreen from "./screens/CircleScreen";
 import AccountScreen from "./screens/AccountScreen";
+import CalendarScreen from "./screens/CalendarScreen";
 import BottomNav from "./components/BottomNav";
-import { CalendarScreen, ShopScreen } from "./screens/PlaceholderScreens";
+import { ShopScreen } from "./screens/PlaceholderScreens";
 
 const Tab = createBottomTabNavigator();
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, StyleSheet, Pressable, Image, ScrollView, TextInput, Switch, Alert, ActivityIndicator, Platform } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -64,6 +65,7 @@ export default function AccountScreen({ onClose }) {
   const [savingColor, setSavingColor] = useState(false);
 
   const [form, setForm] = useState({ firstName: "", lastName: "", phone: "", birthday: "", bio: "", marketingOptIn: false });
+  const [showBirthdayPicker, setShowBirthdayPicker] = useState(false);
 
   const resolvedName = useMemo(() => buildFullName(form.firstName, form.lastName), [form.firstName, form.lastName]);
   const initials = useMemo(() => getInitials(resolvedName, email), [resolvedName, email]);
@@ -364,7 +366,25 @@ export default function AccountScreen({ onClose }) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.fieldLabel}>Your birthday</Text>
-              <TextInput style={styles.fieldInput} value={form.birthday} onChangeText={(v) => updateField("birthday", v)} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textMuted} />
+              <Pressable style={[styles.fieldInput, { justifyContent: "center" }]} onPress={() => setShowBirthdayPicker(true)}>
+                <Text style={{ fontSize: 14, color: form.birthday ? colors.textPrimary : colors.textMuted }}>
+                  {form.birthday ? new Date(form.birthday + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Select date"}
+                </Text>
+              </Pressable>
+              {showBirthdayPicker ? (
+                <DateTimePicker
+                  value={form.birthday ? new Date(form.birthday + "T00:00:00") : new Date(2000, 0, 1)}
+                  mode="date"
+                  display="default"
+                  onChange={(event, date) => {
+                    setShowBirthdayPicker(false);
+                    if (event.type === "set" && date) {
+                      const y = date.getFullYear(), m = String(date.getMonth() + 1).padStart(2, "0"), d = String(date.getDate()).padStart(2, "0");
+                      updateField("birthday", `${y}-${m}-${d}`);
+                    }
+                  }}
+                />
+              ) : null}
             </View>
           </View>
 
