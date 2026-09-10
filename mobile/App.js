@@ -16,6 +16,7 @@ import HintsScreen from "./screens/HintsScreen";
 import CircleScreen from "./screens/CircleScreen";
 import AccountScreen from "./screens/AccountScreen";
 import CalendarScreen from "./screens/CalendarScreen";
+import OnboardingScreen from "./screens/OnboardingScreen";
 import BottomNav from "./components/BottomNav";
 import { ShopScreen } from "./screens/PlaceholderScreens";
 
@@ -133,9 +134,29 @@ function SignedInApp() {
 }
 
 function RootNavigator() {
-  const { session, loading } = useAuth();
+  const { session, user, loading } = useAuth();
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
-  if (loading) {
+  // Matches web's gate exactly (app/feed/page.js server-redirects to
+  // /onboarding whenever profiles.onboarding_completed isn't true) -
+  // without this check, a new mobile signup would drop straight into
+  // the main app with no profile/interests/birthday ever collected.
+  useEffect(() => {
+    if (!session || !user?.id) {
+      setOnboardingChecked(false);
+      return;
+    }
+    let active = true;
+    supabase.from("profiles").select("onboarding_completed").eq("id", user.id).maybeSingle().then(({ data }) => {
+      if (!active) return;
+      setNeedsOnboarding(data?.onboarding_completed !== true);
+      setOnboardingChecked(true);
+    });
+    return () => { active = false; };
+  }, [session, user?.id]);
+
+  if (loading || (session && !onboardingChecked)) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator color="#ff875d" size="large" />
@@ -145,7 +166,13 @@ function RootNavigator() {
 
   return (
     <NavigationContainer>
-      {session ? <SignedInApp /> : <SignInScreen />}
+      {!session ? (
+        <SignInScreen />
+      ) : needsOnboarding ? (
+        <OnboardingScreen onComplete={() => setNeedsOnboarding(false)} />
+      ) : (
+        <SignedInApp />
+      )}
       <StatusBar style="dark" />
     </NavigationContainer>
   );
