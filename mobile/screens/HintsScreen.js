@@ -19,12 +19,13 @@ import { useAuth } from "../context/AuthContext";
 // Simplified starting point, not the full web version
 // (app/hints/[boardId]/HintsClient.jsx): no drag-to-reorder, no
 // occasions picker, no gradient-fallback stock photo search for
-// non-URL ideas, no editing an existing hint yet, no board switching
-// (shows the user's default board only). What's here is genuinely
-// real though - actual Supabase data, and the add-hint flow calls
-// the exact same /api/link-preview endpoint the website itself uses
-// for scraping a pasted link, rather than reimplementing that logic
-// natively.
+// non-URL ideas, no editing an existing hint, no board creation from
+// this screen (board list is read-only - shows existing boards from
+// hint_boards). What's here is genuinely real though: actual
+// Supabase data for both boards and hints, and the add-hint flow
+// calls the exact same /api/link-preview endpoint the website itself
+// uses for scraping a pasted link, rather than reimplementing that
+// logic natively.
 const CARD_GAP = 12;
 
 function HintCard({ hint }) {
@@ -43,7 +44,24 @@ function HintCard({ hint }) {
   );
 }
 
-function AddHintModal({ visible, onClose, onSaved }) {
+function BoardCard({ board, onPress }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.boardCard, pressed && styles.boardCardPressed]}
+      onPress={onPress}
+    >
+      <View style={styles.boardIconWrap}>
+        <Text style={styles.boardIcon}>🎁</Text>
+      </View>
+      <Text style={styles.boardTitle} numberOfLines={1}>
+        {board.title}
+      </Text>
+      {board.is_default ? <Text style={styles.boardBadge}>Default</Text> : null}
+    </Pressable>
+  );
+}
+
+function AddHintModal({ visible, onClose, onSaved, boardId }) {
   const { user } = useAuth();
   const [url, setUrl] = useState("");
   const [fetching, setFetching] = useState(false);
@@ -97,6 +115,7 @@ function AddHintModal({ visible, onClose, onSaved }) {
 
       const { error: insertError } = await supabase.from("hints").insert({
         user_id: user.id,
+        board_id: boardId,
         title: preview.title || "Shared item",
         url: preview.url || url.trim(),
         image_url: preview.selectedImage || preview.image || null,
@@ -176,11 +195,7 @@ function AddHintModal({ visible, onClose, onSaved }) {
             </Pressable>
 
             {preview ? (
-              <Pressable
-                style={styles.modalButton}
-                onPress={handleSave}
-                disabled={saving}
-              >
+              <Pressable style={styles.modalButton} onPress={handleSave} disabled={saving}>
                 {saving ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
@@ -203,38 +218,38 @@ function AddHintModal({ visible, onClose, onSaved }) {
   );
 }
 
-export default function HintsScreen() {
+function BoardListScreen({ onSelectBoard }) {
   const { user } = useAuth();
-  const [hints, setHints] = useState([]);
+  const [boards, setBoards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [addModalVisible, setAddModalVisible] = useState(false);
   const [error, setError] = useState("");
 
-  const loadHints = useCallback(async () => {
+  const loadBoards = useCallback(async () => {
     if (!user?.id) return;
     setError("");
     const { data, error } = await supabase
-      .from("hints")
+      .from("hint_boards")
       .select("*")
       .eq("user_id", user.id)
-      .order("position", { ascending: false });
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: true });
 
     if (error) {
       setError(error.message);
     } else {
-      setHints(data || []);
+      setBoards(data || []);
     }
   }, [user?.id]);
 
   useEffect(() => {
     setLoading(true);
-    loadHints().finally(() => setLoading(false));
-  }, [loadHints]);
+    loadBoards().finally(() => setLoading(false));
+  }, [loadBoards]);
 
   async function handleRefresh() {
     setRefreshing(true);
-    await loadHints();
+    await loadBoards();
     setRefreshing(false);
   }
 
@@ -250,6 +265,77 @@ export default function HintsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Your Hints</Text>
+      </View>
+
+      {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
+
+      <FlatList
+        data={boards}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        renderItem={({ item }) => (
+          <BoardCard board={item} onPress={() => onSelectBoard(item)} />
+        )}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
+        }
+        ListEmptyComponent={
+          <View style={styles.centered}>
+            <Text style={styles.emptyText}>No lists yet.</Text>
+          </View>
+        }
+      />
+    </View>
+  );
+}
+
+function BoardHintsScreen({ board, onBack }) {
+  const { user } = useAuth();
+  const [hints, setHints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [error, setError] = useState("");
+
+  const loadHints = useCallback(async () => {
+    if (!user?.id) return;
+    setError("");
+    const { data, error } = await supabase
+      .from("hints")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("board_id", board.id)
+      .order("position", { ascending: false });
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setHints(data || []);
+    }
+  }, [user?.id, board.id]);
+
+  useEffect(() => {
+    setLoading(true);
+    loadHints().finally(() => setLoading(false));
+  }, [loadHints]);
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await loadHints();
+    setRefreshing(false);
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Pressable style={styles.backButton} onPress={onBack} hitSlop={12}>
+          <Text style={styles.backButtonText}>‹ Lists</Text>
+        </Pressable>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {board.title}
+        </Text>
         <Pressable style={styles.addButton} onPress={() => setAddModalVisible(true)}>
           <Text style={styles.addButtonText}>+ Add</Text>
         </Pressable>
@@ -257,30 +343,46 @@ export default function HintsScreen() {
 
       {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
 
-      <FlatList
-        data={hints}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        renderItem={({ item }) => <HintCard hint={item} />}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
-        }
-        ListEmptyComponent={
-          <View style={styles.centered}>
-            <Text style={styles.emptyText}>No hints yet - add your first one.</Text>
-          </View>
-        }
-      />
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator color="#ff875d" />
+        </View>
+      ) : (
+        <FlatList
+          data={hints}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+          renderItem={({ item }) => <HintCard hint={item} />}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
+          }
+          ListEmptyComponent={
+            <View style={styles.centered}>
+              <Text style={styles.emptyText}>No hints yet - add your first one.</Text>
+            </View>
+          }
+        />
+      )}
 
       <AddHintModal
         visible={addModalVisible}
         onClose={() => setAddModalVisible(false)}
         onSaved={loadHints}
+        boardId={board.id}
       />
     </View>
   );
+}
+
+export default function HintsScreen() {
+  const [selectedBoard, setSelectedBoard] = useState(null);
+
+  if (selectedBoard) {
+    return <BoardHintsScreen board={selectedBoard} onBack={() => setSelectedBoard(null)} />;
+  }
+  return <BoardListScreen onSelectBoard={setSelectedBoard} />;
 }
 
 const styles = StyleSheet.create({
@@ -300,18 +402,33 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 12,
+    gap: 8,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "700",
     color: "#0f172a",
+    flex: 1,
+  },
+  backButton: {
+    paddingVertical: 4,
+  },
+  backButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#ff875d",
   },
   addButton: {
     backgroundColor: "#ff875d",
     borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 8,
+    shadowColor: "#ff875d",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   addButtonText: {
     color: "#fff",
@@ -335,17 +452,20 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: "#fff",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#f0dfd6",
-    padding: 8,
+    borderRadius: 18,
+    padding: 10,
     marginBottom: CARD_GAP,
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   cardImage: {
     width: "100%",
     aspectRatio: 1,
-    borderRadius: 10,
-    marginBottom: 8,
+    borderRadius: 12,
+    marginBottom: 10,
   },
   cardImageFallback: {
     backgroundColor: "#ffe3d1",
@@ -358,7 +478,48 @@ const styles = StyleSheet.create({
   cardPrice: {
     fontSize: 12,
     color: "#94a3b8",
-    marginTop: 2,
+    marginTop: 3,
+  },
+  boardCard: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    marginBottom: CARD_GAP,
+    alignItems: "center",
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3,
+  },
+  boardCardPressed: {
+    opacity: 0.85,
+  },
+  boardIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#ffe3d1",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  boardIcon: {
+    fontSize: 24,
+  },
+  boardTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0f172a",
+    textAlign: "center",
+  },
+  boardBadge: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#ff875d",
+    marginTop: 4,
   },
   emptyText: {
     fontSize: 14,
