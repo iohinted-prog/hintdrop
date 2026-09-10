@@ -18,6 +18,7 @@ import {
   Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import DraggableFlatList from "react-native-draggable-flatlist";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 
@@ -33,11 +34,16 @@ import { useAuth } from "../context/AuthContext";
 // logic natively.
 const CARD_GAP = 12;
 
-function HintCard({ hint, aspectRatio, onPress }) {
+function HintCard({ hint, aspectRatio, onPress, onDrag, isActive }) {
   const ratio = aspectRatio || 1;
   const priceLabel = hint.price_text || null;
   return (
-    <Pressable style={[styles.card, { aspectRatio: ratio }]} onPress={onPress}>
+    <Pressable
+      style={[styles.card, { aspectRatio: ratio }, isActive && styles.cardDragging]}
+      onPress={onPress}
+      onLongPress={onDrag}
+      delayLongPress={200}
+    >
       {hint.image_url ? (
         <Image source={{ uri: hint.image_url }} style={styles.cardImage} resizeMode="cover" />
       ) : (
@@ -74,6 +80,22 @@ function splitIntoColumns(items, columnCount = 2) {
     columns[index % columnCount].push(item);
   });
   return columns;
+}
+
+// Mirrors rebuildFromColumns in HintsClient.jsx exactly: interleaves
+// columns row-major (col0-row0, col1-row0, col0-row1, ...), which is
+// the same order splitIntoColumns' round-robin expects, so re-
+// splitting this array reproduces the same column layout rather than
+// scrambling it - then reassigns sequential position values.
+function rebuildFromColumns(nextColumns) {
+  const maxLen = Math.max(0, ...nextColumns.map((col) => col.length));
+  const interleaved = [];
+  for (let row = 0; row < maxLen; row++) {
+    for (let col = 0; col < nextColumns.length; col++) {
+      if (nextColumns[col][row]) interleaved.push(nextColumns[col][row]);
+    }
+  }
+  return interleaved.map((hint, index) => ({ ...hint, position: index }));
 }
 
 // Mirrors buildShareUrl/buildShareText in lib/share.js exactly - a
@@ -1051,6 +1073,27 @@ function BoardHintsScreen({ board, onBack }) {
     setRefreshing(false);
   }
 
+  async function handleColumnDragEnd(colIndex, newColumnData) {
+    const currentColumns = splitIntoColumns(hints, 2);
+    currentColumns[colIndex] = newColumnData;
+    const reordered = rebuildFromColumns(currentColumns);
+
+    // Optimistic local update first, same as the web version - the
+    // reorder should feel instant, not wait on a round trip.
+    setHints(reordered);
+
+    if (!user?.id) return;
+    const results = await Promise.all(
+      reordered.map((hint, index) =>
+        supabase.from("hints").update({ position: index }).eq("id", hint.id).eq("user_id", user.id)
+      )
+    );
+    const failed = results.find((r) => r.error);
+    if (failed) {
+      setError(failed.error.message);
+    }
+  }
+
   function handleAddHint() {
     if (!linkValue.trim()) return;
     setModalInitialUrl(linkValue.trim());
@@ -1163,14 +1206,23 @@ function BoardHintsScreen({ board, onBack }) {
               <View style={styles.masonryRow}>
                 {columns.map((columnHints, colIndex) => (
                   <View key={colIndex} style={styles.masonryColumn}>
-                    {columnHints.map((hint) => (
-                      <HintCard
-                        key={hint.id}
-                        hint={hint}
-                        aspectRatio={imageRatios[hint.id]}
-                        onPress={() => setSelectedHint(hint)}
-                      />
-                    ))}
+                    <DraggableFlatList
+                      data={columnHints}
+                      keyExtractor={(hint) => hint.id}
+                      scrollEnabled={false}
+                      activationDistance={0}
+                      onDragEnd={({ data }) => handleColumnDragEnd(colIndex, data)}
+                      ItemSeparatorComponent={() => <View style={{ height: CARD_GAP }} />}
+                      renderItem={({ item: hint, drag, isActive }) => (
+                        <HintCard
+                          hint={hint}
+                          aspectRatio={imageRatios[hint.id]}
+                          onPress={() => setSelectedHint(hint)}
+                          onDrag={drag}
+                          isActive={isActive}
+                        />
+                      )}
+                    />
                   </View>
                 ))}
               </View>
@@ -1423,6 +1475,13 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
+  },
+  cardDragging: {
+    opacity: 0.85,
+    transform: [{ scale: 1.03 }],
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
   },
   cardImage: {
     width: "100%",
