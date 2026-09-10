@@ -53,6 +53,11 @@ export default function ProfileClient({ userId }) {
   const router = useRouter();
   const [profile, setProfile] = useState(null);
   const [boards, setBoards] = useState(null); // null = not loaded yet
+  // Set only when a ?board= link points at a private board not in
+  // `boards` (which deliberately excludes private ones from the menu) -
+  // holds just enough of that board's own row for the header/share
+  // title to resolve correctly without adding it to the visible menu.
+  const [directBoard, setDirectBoard] = useState(null);
   const [selectedBoardId, setSelectedBoardId] = useState(null);
   const [boardHintsLoading, setBoardHintsLoading] = useState(false);
   const [hints, setHints] = useState([]);
@@ -139,8 +144,33 @@ export default function ProfileClient({ userId }) {
       // else always shows the menu first, even for a single-board
       // profile, so "see profile" consistently means the same thing
       // rather than sometimes skipping straight past it.
+      //
+      // This must also work for a private board someone was sent a
+      // direct link to — the boardRows query above deliberately
+      // excludes private boards (so they never show up in the general
+      // menu list), so a private board's id genuinely isn't in
+      // boardsWithPreviews. The link itself is the access control here
+      // (unguessable id, only shared deliberately) rather than the
+      // board being visible to anyone browsing the menu, so a
+      // separate, explicit-id lookup is correct precisely because it
+      // bypasses the privacy filter only for the one id actually
+      // requested, not for browsing.
       const requestedBoardId = searchParams.get("board");
-      const requestedBoardValid = requestedBoardId && boardsWithPreviews.some((b) => b.id === requestedBoardId);
+      let requestedBoardValid = requestedBoardId && boardsWithPreviews.some((b) => b.id === requestedBoardId);
+
+      if (requestedBoardId && !requestedBoardValid) {
+        const { data: directBoardRow } = await supabase
+          .from("hint_boards")
+          .select("id, title, is_default, is_private")
+          .eq("id", requestedBoardId)
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (directBoardRow) {
+          requestedBoardValid = true;
+          setDirectBoard(directBoardRow);
+        }
+      }
+
       if (requestedBoardValid) {
         setSelectedBoardId(requestedBoardId);
       }
@@ -268,6 +298,12 @@ export default function ProfileClient({ userId }) {
 
   const displayName = profile?.full_name || "User";
   const interests = Array.isArray(profile?.interests) ? profile.interests : [];
+  // Falls back to directBoard when the selected board is a privately-
+  // shared one not present in the (deliberately public-only) boards
+  // menu list.
+  const selectedBoardData = selectedBoardId
+    ? boards?.find((b) => b.id === selectedBoardId) || directBoard
+    : null;
 
   const inner = (
     <main className="min-h-screen bg-[#fffaf7]">
@@ -288,9 +324,9 @@ export default function ProfileClient({ userId }) {
                 subjectType={selectedBoardId ? "board" : "profile"}
                 subjectId={selectedBoardId || userId}
                 path={selectedBoardId ? `/profile/${userId}?board=${selectedBoardId}` : `/profile/${userId}`}
-                title={selectedBoardId ? boards?.find(b => b.id === selectedBoardId)?.title : `${displayName}'s Hints`}
+                title={selectedBoardId ? selectedBoardData?.title : `${displayName}'s Hints`}
                 text={selectedBoardId
-                  ? `${displayName}'s hint: "${boards?.find(b => b.id === selectedBoardId)?.title}"`
+                  ? `${displayName}'s hint: "${selectedBoardData?.title}"`
                   : `Check out ${displayName}'s Hints on HintDrop`}
                 currentUserId={currentUser?.id}
                 label="Share"
