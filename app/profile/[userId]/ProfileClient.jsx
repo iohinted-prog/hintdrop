@@ -244,10 +244,33 @@ export default function ProfileClient({ userId }) {
       return;
     }
     setCollabStatus("pending");
+
+    const { data: myProfile } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", currentUser.id).maybeSingle();
+    const myName = myProfile?.full_name || "Someone";
+    const boardTitle = selectedBoardData?.title || "your list";
+
+    // Immediate email (fast) alongside a real bell/push notification
+    // (via the shared /api/notifications/create path) - the board
+    // owner had an email but no way to act on the request in-app,
+    // which is the actual fix here; the email alone left them stuck.
     fetch("/api/collab-notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "request", boardId: selectedBoardId, requesterId: currentUser.id }),
+    }).catch(console.error);
+
+    fetch("/api/notifications/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: userId,
+        actor_user_id: currentUser.id,
+        type: "collab_request",
+        entity_id: selectedBoardId,
+        title: `${myName} wants to collaborate`,
+        notifBody: `On "${boardTitle}"`,
+        data: { actor_name: myName, actor_avatar_url: myProfile?.avatar_url || null, board_id: selectedBoardId, url: `/hints/${selectedBoardId}` },
+      }),
     }).catch(console.error);
   }
 
@@ -350,16 +373,15 @@ export default function ProfileClient({ userId }) {
     <main className="min-h-screen bg-[#fffaf7]">
       <div className="border-b border-[#f0dfd6] bg-white px-4 py-3 sm:px-8 sm:py-4">
         <div className="mx-auto max-w-[1200px]">
-          {/* Row 1: compact actions only - back/share on the left, the
-              filter trigger (a single button, not the full filter bar)
-              on the right. Kept deliberately separate from the identity
-              block below instead of one large wrapping row trying to
-              fit everything at once - that was the actual cause of
-              things stacking awkwardly and the header eating too much
-              vertical space on narrow screens. */}
+          {/* Row 1: back on the left, Share + Filter (icon-only) grouped
+              on the right. Add to circle / Request collaboration moved
+              out of this row entirely - they're about the identity
+              block below, not page-level actions, and reads cleaner
+              placed there instead of crowding this row. */}
           <div className="flex items-center justify-between gap-3">
+            <Link href="/feed" className="h-9 w-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff5f0] shrink-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg></Link>
+
             <div className="flex items-center gap-2">
-              <Link href="/feed" className="h-9 w-9 flex items-center justify-center rounded-full border border-[#ead8ce] text-slate-500 hover:bg-[#fff5f0] shrink-0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg></Link>
               <ShareButton
                 supabase={supabase}
                 subjectType={selectedBoardId ? "board" : "profile"}
@@ -370,51 +392,30 @@ export default function ProfileClient({ userId }) {
                   ? `${displayName}'s hint: "${selectedBoardData?.title}"`
                   : `Check out ${displayName}'s Hints on HintDrop`}
                 currentUserId={currentUser?.id}
+                icon={
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                  </svg>
+                }
                 label="Share"
                 className="h-9 flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-3.5 text-[13px] font-semibold text-white shadow-md hover:brightness-105 shrink-0"
               />
+              {selectedBoardId && (
+                <button
+                  type="button"
+                  onClick={() => setFilterPopupOpen(true)}
+                  aria-label="Filter"
+                  className={`h-9 w-9 flex items-center justify-center rounded-full border shrink-0 transition ${
+                    filter !== "default" || occasionFilter
+                      ? "border-[#ff875d] bg-[#fff4ee] text-[#ff875d]"
+                      : "border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0]"
+                  }`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                </button>
+              )}
             </div>
-
-            {selectedBoardId && !isOwnProfile && !selectedBoardData?.is_default && currentUser && (
-              <div className="relative flex items-center">
-                {collabStatus === "accepted" ? (
-                  <span className="h-9 flex items-center gap-1.5 rounded-full border border-[#bfe4cf] bg-[#e3f5ea] px-3.5 text-[12px] font-semibold text-[#2f8a5f] shrink-0">
-                    👥 Collaborating
-                  </span>
-                ) : collabStatus === "pending" ? (
-                  <span className="h-9 flex items-center gap-1.5 rounded-full border border-[#bfe4cf] bg-[#e3f5ea] px-3.5 text-[12px] font-semibold text-[#2f8a5f] shrink-0">
-                    ✓ Request sent
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleRequestCollab}
-                    disabled={requestingCollab}
-                    className="h-9 flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-3.5 text-[12px] font-semibold text-slate-600 hover:bg-[#fff5f0] shrink-0 disabled:opacity-60"
-                  >
-                    👥 {requestingCollab ? "Sending..." : "Request collaboration"}
-                  </button>
-                )}
-                {collabRequestError && (
-                  <p className="absolute top-full left-0 mt-1 text-[11px] text-[#b14f43] whitespace-nowrap">{collabRequestError}</p>
-                )}
-              </div>
-            )}
-
-            {selectedBoardId && (
-              <button
-                type="button"
-                onClick={() => setFilterPopupOpen(true)}
-                className={`h-9 flex items-center gap-1.5 rounded-full border px-3.5 text-[12px] font-semibold shrink-0 transition ${
-                  filter !== "default" || occasionFilter
-                    ? "border-[#ff875d] bg-[#fff4ee] text-[#ff875d]"
-                    : "border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0]"
-                }`}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
-                Filter
-              </button>
-            )}
           </div>
 
           {/* Row 2: identity - avatar + name/status/interests. Avatar
@@ -436,36 +437,6 @@ export default function ProfileClient({ userId }) {
                     : `${displayName}'s Hints`}
                 </h1>
               </button>
-              {!isOwnProfile && currentUser && (
-                <button type="button" onClick={contactState === "none" ? handleAddToCircle : undefined}
-                  disabled={addingContact || contactState !== "none"}
-                  className={`mt-2 font-semibold rounded-full border transition ${
-                    selectedBoardId && contactState === "none" ? "text-[13px] px-4 py-2 shadow-md" : "text-[12px] px-3 py-1"
-                  } ${
-                    contactState === "active" ? "border-[#c3e0c3] bg-[#f0faf0] text-[#3a7a3a] cursor-default"
-                    : contactState === "pending" ? "border-[#f0dfc9] bg-[#fff8ee] text-[#a87d3a] cursor-default"
-                    : selectedBoardId
-                      ? "border-transparent bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white hover:brightness-105"
-                      : "border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d]"
-                  }`}>
-                  {contactState === "active" ? "✓ In your circle" : contactState === "pending" ? "Request sent — we'll let you know once accepted" : addingContact ? "Sending..." : selectedBoardId ? `+ Add ${displayName.split(" ")[0]} to your circle` : "+ Add to circle"}
-                </button>
-              )}
-              {!isOwnProfile && !currentUser && (
-                <button type="button" onClick={() => setSignUpOpen(true)} className="mt-2 inline-flex text-[12px] font-semibold px-3 py-1 rounded-full border border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d] transition">
-                  Sign up to join {displayName.split(" ")[0]}'s Circle
-                </button>
-              )}
-              {addContactError && <p className="mt-1 text-[11px] text-[#b14f43]">{addContactError}</p>}
-              {contactState === "active" && (() => {
-                const days = daysUntilBirthday(profile?.birthday);
-                if (days === null || days > 30) return null;
-                return (
-                  <p className="mt-1.5 text-[12px] font-semibold text-[#df7b59]">
-                    🎂 {days === 0 ? "Birthday is today!" : days === 1 ? "Birthday is tomorrow" : `Birthday in ${days} days`}
-                  </p>
-                );
-              })()}
               {(!selectedBoardId || selectedBoardData?.is_default) && interests.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1">
                   {interests.slice(0, 6).map(i => <span key={i} className="rounded-full bg-[#fff4ee] px-2.5 py-0.5 text-[11px] font-semibold text-[#df7b59]">{i}</span>)}
@@ -473,6 +444,64 @@ export default function ProfileClient({ userId }) {
               )}
             </div>
           </div>
+
+          {/* Row 3: relationship actions - add to circle and (on a
+              specific board) request collaboration, as an equal-weight
+              pair rather than one buried in the text column and the
+              other crammed into row 1. */}
+          {!isOwnProfile && currentUser && (
+            <div className="mt-3 flex gap-2">
+              <button type="button" onClick={contactState === "none" ? handleAddToCircle : undefined}
+                disabled={addingContact || contactState !== "none"}
+                className={`flex-1 h-10 flex items-center justify-center gap-1.5 text-[13px] font-semibold rounded-full border transition ${
+                  contactState === "active" ? "border-[#c3e0c3] bg-[#f0faf0] text-[#3a7a3a] cursor-default"
+                  : contactState === "pending" ? "border-[#f0dfc9] bg-[#fff8ee] text-[#a87d3a] cursor-default"
+                  : "border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d]"
+                }`}>
+                {contactState === "active" ? "✓ In your circle" : contactState === "pending" ? "Request sent" : addingContact ? "Sending..." : "+ Add to circle"}
+              </button>
+              {selectedBoardId && !selectedBoardData?.is_default && (
+                <div className="relative flex-1">
+                  {collabStatus === "accepted" ? (
+                    <span className="h-10 w-full flex items-center justify-center gap-1.5 rounded-full border border-[#bfe4cf] bg-[#e3f5ea] text-[13px] font-semibold text-[#2f8a5f]">
+                      👥 Collaborating
+                    </span>
+                  ) : collabStatus === "pending" ? (
+                    <span className="h-10 w-full flex items-center justify-center gap-1.5 rounded-full border border-[#bfe4cf] bg-[#e3f5ea] text-[13px] font-semibold text-[#2f8a5f]">
+                      ✓ Request sent
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleRequestCollab}
+                      disabled={requestingCollab}
+                      className="h-10 w-full flex items-center justify-center gap-1.5 rounded-full border border-[#ead8ce] bg-white text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0] disabled:opacity-60"
+                    >
+                      👥 {requestingCollab ? "Sending..." : "Request to collaborate"}
+                    </button>
+                  )}
+                  {collabRequestError && (
+                    <p className="absolute top-full left-0 mt-1 text-[11px] text-[#b14f43] whitespace-nowrap">{collabRequestError}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          {!isOwnProfile && !currentUser && (
+            <button type="button" onClick={() => setSignUpOpen(true)} className="mt-3 inline-flex text-[12px] font-semibold px-3 py-1 rounded-full border border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d] transition">
+              Sign up to join {displayName.split(" ")[0]}'s Circle
+            </button>
+          )}
+          {addContactError && <p className="mt-1 text-[11px] text-[#b14f43]">{addContactError}</p>}
+          {contactState === "active" && (() => {
+            const days = daysUntilBirthday(profile?.birthday);
+            if (days === null || days > 30) return null;
+            return (
+              <p className="mt-1.5 text-[12px] font-semibold text-[#df7b59]">
+                🎂 {days === 0 ? "Birthday is today!" : days === 1 ? "Birthday is tomorrow" : `Birthday in ${days} days`}
+              </p>
+            );
+              })()}
         </div>
       </div>
 
