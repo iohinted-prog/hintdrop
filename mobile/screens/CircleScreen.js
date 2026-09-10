@@ -5,6 +5,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import { resolveAvatarColor, NON_USER_AVATAR_COLOR } from "../lib/avatarColor";
 import { colors, radii, spacing, shadow } from "../lib/theme";
+import ProfileScreen from "./ProfileScreen";
 
 // Mirrors app/circle/PeopleClient.jsx + ContactCard.jsx +
 // AddContactModal.jsx + UserProfileModal.jsx. Built against the real
@@ -168,7 +169,7 @@ function ContactCard({ contact, onOpenProfile, onDelete }) {
   );
 }
 
-function ContactProfileModal({ contact, onClose }) {
+function ContactProfileModal({ contact, onClose, onSeeFullProfile }) {
   const [profile, setProfile] = useState(null);
   const [boards, setBoards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -255,7 +256,9 @@ function ContactProfileModal({ contact, onClose }) {
             )}
           </ScrollView>
 
-          <Text style={styles.profileFooterNote}>Full profile page coming soon to mobile.</Text>
+          <Pressable style={styles.seeFullProfileButton} onPress={() => { onSeeFullProfile(contact.profileId); onClose(); }}>
+            <Text style={styles.seeFullProfileText}>See full profile</Text>
+          </Pressable>
         </Pressable>
       </Pressable>
     </Modal>
@@ -378,6 +381,7 @@ export default function CircleScreen() {
   const [search, setSearch] = useState("");
   const [addVisible, setAddVisible] = useState(false);
   const [profileContact, setProfileContact] = useState(null);
+  const [fullProfileUserId, setFullProfileUserId] = useState(null);
   const [currentUserName, setCurrentUserName] = useState("");
 
   const loadContacts = useCallback(async () => {
@@ -453,6 +457,10 @@ export default function CircleScreen() {
   if (upcoming.length) sections.push({ title: "Upcoming birthdays", data: upcoming });
   if (everyoneElse.length) sections.push({ title: upcoming.length ? "Everyone else" : null, data: everyoneElse });
 
+  if (fullProfileUserId) {
+    return <ProfileScreen userId={fullProfileUserId} onBack={() => setFullProfileUserId(null)} />;
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
@@ -515,7 +523,7 @@ export default function CircleScreen() {
         currentUserName={currentUserName}
       />
 
-      <ContactProfileModal contact={profileContact} onClose={() => setProfileContact(null)} />
+      <ContactProfileModal contact={profileContact} onClose={() => setProfileContact(null)} onSeeFullProfile={setFullProfileUserId} />
     </View>
   );
 }
@@ -602,7 +610,8 @@ const styles = StyleSheet.create({
   profileBoardImage: { width: "100%", aspectRatio: 16 / 9, backgroundColor: "#fdf5f0" },
   profileBoardTitle: { fontSize: 13, fontWeight: "600", color: colors.textPrimary, marginTop: 6, marginHorizontal: 8 },
   profileBoardSubtitle: { fontSize: 11, color: colors.textMuted, marginTop: 2, marginHorizontal: 8, marginBottom: 8 },
-  profileFooterNote: { fontSize: 11, color: colors.textMuted, textAlign: "center", marginTop: 12 },
+  seeFullProfileButton: { marginTop: 14, height: 44, borderRadius: radii.pill, backgroundColor: colors.coral, alignItems: "center", justifyContent: "center", ...shadow },
+  seeFullProfileText: { fontSize: 13, fontWeight: "700", color: "#fff" },
   addOverlay: { flex: 1, backgroundColor: "rgba(42,26,20,0.38)", justifyContent: "flex-end" },
   addCard: { backgroundColor: colors.bg, borderTopLeftRadius: radii.xxl, borderTopRightRadius: radii.xxl, maxHeight: "90%", padding: 20 },
   addHeaderRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
