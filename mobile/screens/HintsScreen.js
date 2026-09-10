@@ -14,6 +14,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Share,
+  Linking,
 } from "react-native";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -30,11 +31,11 @@ import { useAuth } from "../context/AuthContext";
 // logic natively.
 const CARD_GAP = 12;
 
-function HintCard({ hint, aspectRatio }) {
+function HintCard({ hint, aspectRatio, onPress }) {
   const ratio = aspectRatio || 1;
   const priceLabel = hint.price_text || null;
   return (
-    <View style={[styles.card, { aspectRatio: ratio }]}>
+    <Pressable style={[styles.card, { aspectRatio: ratio }]} onPress={onPress}>
       {hint.image_url ? (
         <Image source={{ uri: hint.image_url }} style={styles.cardImage} resizeMode="cover" />
       ) : (
@@ -58,7 +59,7 @@ function HintCard({ hint, aspectRatio }) {
           </View>
         ) : null}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -126,6 +127,104 @@ function BoardPreview({ previewHints = [] }) {
         <PreviewCell hint={items[3]} />
       </View>
     </View>
+  );
+}
+
+function HintDetailModal({ hint, visible, onClose, onUpdated }) {
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [starred, setStarred] = useState(false);
+
+  useEffect(() => {
+    if (hint) {
+      setIsPrivate(Boolean(hint.is_private));
+      setStarred(Boolean(hint.starred));
+    }
+  }, [hint]);
+
+  if (!hint) return null;
+
+  async function updateField(field, value, setLocal) {
+    setLocal(value);
+    const { error } = await supabase.from("hints").update({ [field]: value }).eq("id", hint.id);
+    if (error) {
+      setLocal(!value);
+      return;
+    }
+    onUpdated();
+  }
+
+  async function handleShare() {
+    try {
+      await Share.share({
+        message: `Check out this hint on HintDrop: https://hintdrop.app/h/${hint.id}`,
+      });
+    } catch {
+      // Dismissed - nothing to do.
+    }
+  }
+
+  function handleOpenLink() {
+    if (hint.url) Linking.openURL(hint.url).catch(() => {});
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <Pressable style={styles.detailBackdrop} onPress={onClose}>
+        <Pressable style={styles.detailSheet} onPress={() => {}}>
+          <ScrollView>
+            <View style={styles.detailCloseRow}>
+              <Pressable style={styles.detailCloseButton} onPress={onClose}>
+                <Text style={styles.detailCloseText}>✕</Text>
+              </Pressable>
+            </View>
+
+            {hint.image_url ? (
+              <Image source={{ uri: hint.image_url }} style={styles.detailImage} resizeMode="cover" />
+            ) : (
+              <View style={[styles.detailImage, styles.cardImageFallback]} />
+            )}
+
+            <View style={styles.detailBody}>
+              <Text style={styles.detailTitle}>
+                {isPrivate ? "🔒 " : ""}
+                {hint.title || "Hint"}
+              </Text>
+              {hint.retailer ? <Text style={styles.detailRetailer}>{hint.retailer}</Text> : null}
+              {hint.price_text ? <Text style={styles.detailPrice}>{hint.price_text}</Text> : null}
+
+              <View style={styles.detailToggleRow}>
+                <Pressable
+                  style={styles.detailToggleButton}
+                  onPress={() => updateField("is_private", !isPrivate, setIsPrivate)}
+                >
+                  <Text style={styles.detailToggleText}>{isPrivate ? "🔒 Private" : "Public"}</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.detailToggleButton, starred && styles.detailToggleButtonActive]}
+                  onPress={() => updateField("starred", !starred, setStarred)}
+                >
+                  <Text
+                    style={[styles.detailToggleText, starred && styles.detailToggleTextActive]}
+                  >
+                    {starred ? "★ Top pick" : "☆ Star"}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <Pressable style={styles.detailShareButton} onPress={handleShare}>
+                <Text style={styles.detailShareText}>Share this hint</Text>
+              </Pressable>
+
+              {hint.url ? (
+                <Pressable style={styles.detailOpenButton} onPress={handleOpenLink}>
+                  <Text style={styles.detailOpenText}>Open →</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </ScrollView>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -427,6 +526,7 @@ function BoardHintsScreen({ board, onBack }) {
   const [modalInitialUrl, setModalInitialUrl] = useState(null);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [isPrivate, setIsPrivate] = useState(Boolean(board.is_private));
+  const [selectedHint, setSelectedHint] = useState(null);
   const [error, setError] = useState("");
 
   const loadHints = useCallback(async () => {
@@ -590,7 +690,12 @@ function BoardHintsScreen({ board, onBack }) {
                 {columns.map((columnHints, colIndex) => (
                   <View key={colIndex} style={styles.masonryColumn}>
                     {columnHints.map((hint) => (
-                      <HintCard key={hint.id} hint={hint} aspectRatio={imageRatios[hint.id]} />
+                      <HintCard
+                        key={hint.id}
+                        hint={hint}
+                        aspectRatio={imageRatios[hint.id]}
+                        onPress={() => setSelectedHint(hint)}
+                      />
                     ))}
                   </View>
                 ))}
@@ -612,6 +717,13 @@ function BoardHintsScreen({ board, onBack }) {
         }}
         boardId={board.id}
         initialUrl={modalInitialUrl}
+      />
+
+      <HintDetailModal
+        hint={selectedHint}
+        visible={Boolean(selectedHint)}
+        onClose={() => setSelectedHint(null)}
+        onUpdated={loadHints}
       />
     </View>
   );
@@ -1027,5 +1139,119 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     fontSize: 14,
     fontWeight: "600",
+  },
+  detailBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.4)",
+    justifyContent: "flex-end",
+  },
+  detailSheet: {
+    maxHeight: "92%",
+    backgroundColor: "#fffaf7",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: 1,
+    borderColor: "#efdcd2",
+    overflow: "hidden",
+  },
+  detailCloseRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  detailCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#ead8ce",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  detailCloseText: {
+    fontSize: 16,
+    color: "#94a3b8",
+  },
+  detailImage: {
+    width: "100%",
+    height: 260,
+  },
+  detailBody: {
+    padding: 20,
+  },
+  detailTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0f172a",
+    marginBottom: 4,
+  },
+  detailRetailer: {
+    fontSize: 13,
+    color: "#94a3b8",
+    marginBottom: 4,
+  },
+  detailPrice: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#df7b59",
+    marginBottom: 16,
+  },
+  detailToggleRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 12,
+  },
+  detailToggleButton: {
+    flex: 1,
+    height: 40,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#ead8ce",
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  detailToggleButtonActive: {
+    borderColor: "#ffd8c9",
+    backgroundColor: "#fff2ea",
+  },
+  detailToggleText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#475569",
+  },
+  detailToggleTextActive: {
+    color: "#e27956",
+  },
+  detailShareButton: {
+    height: 44,
+    borderRadius: 999,
+    backgroundColor: "#ff875d",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+    shadowColor: "#ff875d",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  detailShareText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  detailOpenButton: {
+    height: 44,
+    borderRadius: 999,
+    backgroundColor: "#ff875d",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  detailOpenText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#fff",
   },
 });
