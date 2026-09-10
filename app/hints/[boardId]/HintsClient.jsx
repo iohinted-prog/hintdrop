@@ -1957,9 +1957,17 @@ export default function HintsClient({ boardId }) {
 
       let hintsQuery = supabase
         .from("hints")
-        .select("id, title, url, image_url, retailer, price_text, numeric_price, currency, starred, is_private, position, created_at, occasions, size, size_type, colour")
-        .eq("user_id", user.id);
-      if (boardId) hintsQuery = hintsQuery.eq("board_id", boardId);
+        .select("id, title, url, image_url, retailer, price_text, numeric_price, currency, starred, is_private, position, created_at, occasions, size, size_type, colour");
+      if (boardId) {
+        // Scope by board only, not by the viewer's own user_id - a
+        // board's hints always belong to its owner, so filtering by
+        // the current viewer's id as well incorrectly returned zero
+        // rows for an accepted collaborator (their id never matches
+        // hints.user_id, only the owner's does).
+        hintsQuery = hintsQuery.eq("board_id", boardId);
+      } else {
+        hintsQuery = hintsQuery.eq("user_id", user.id);
+      }
       const { data, error } = await hintsQuery
         .order("position", { ascending: true })
         .order("created_at", { ascending: false });
