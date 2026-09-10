@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import Text from "../components/Text";
 import ActionSheet from "../components/ActionSheet";
+import ProfileScreen from "./ProfileScreen";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../lib/supabase";
 import { resolveAvatarColor } from "../lib/avatarColor";
@@ -1075,7 +1076,7 @@ function CollabAvatar({ name, avatarUrl, avatarColor, userId, size = 36 }) {
   );
 }
 
-function CollaborateModal({ visible, onClose, board, currentUserId }) {
+function CollaborateModal({ visible, onClose, board, currentUserId, onViewProfile }) {
   const [circleContacts, setCircleContacts] = useState([]);
   const [collaborators, setCollaborators] = useState([]);
   const [emailInput, setEmailInput] = useState("");
@@ -1230,7 +1231,13 @@ function CollaborateModal({ visible, onClose, board, currentUserId }) {
                           avatarColor={c.profiles?.avatar_color}
                           userId={c.user_id}
                         />
-                        <Text style={styles.collabRowName}>{c.profiles?.full_name || c.invited_email || "Someone"}</Text>
+                        {c.user_id && onViewProfile ? (
+                          <Pressable onPress={() => { onClose(); onViewProfile(c.user_id); }}>
+                            <Text style={[styles.collabRowName, styles.collabRowNameLink]}>{c.profiles?.full_name || c.invited_email || "Someone"}</Text>
+                          </Pressable>
+                        ) : (
+                          <Text style={styles.collabRowName}>{c.profiles?.full_name || c.invited_email || "Someone"}</Text>
+                        )}
                       </View>
                       <View style={{ flexDirection: "row", gap: 8 }}>
                         <Pressable style={styles.collabApproveButton} onPress={() => approveRequest(c.id, c.user_id)}>
@@ -1299,7 +1306,13 @@ function CollaborateModal({ visible, onClose, board, currentUserId }) {
                           avatarColor={c.profiles?.avatar_color}
                           userId={c.user_id}
                         />
-                        <Text style={styles.collabRowName}>{c.profiles?.full_name || c.invited_email || "Someone"}</Text>
+                        {c.user_id && onViewProfile ? (
+                          <Pressable onPress={() => { onClose(); onViewProfile(c.user_id); }}>
+                            <Text style={[styles.collabRowName, styles.collabRowNameLink]}>{c.profiles?.full_name || c.invited_email || "Someone"}</Text>
+                          </Pressable>
+                        ) : (
+                          <Text style={styles.collabRowName}>{c.profiles?.full_name || c.invited_email || "Someone"}</Text>
+                        )}
                       </View>
                       <Pressable onPress={() => declineOrRemove(c.id)}>
                         <Text style={styles.collabRemoveText}>Remove</Text>
@@ -1316,7 +1329,7 @@ function CollaborateModal({ visible, onClose, board, currentUserId }) {
   );
 }
 
-function BoardHintsScreen({ board, onBack }) {
+function BoardHintsScreen({ board, onBack, onViewProfile }) {
   const { user } = useAuth();
   const [hints, setHints] = useState([]);
   const [imageRatios, setImageRatios] = useState({});
@@ -1698,6 +1711,7 @@ function BoardHintsScreen({ board, onBack }) {
         onClose={() => setCollabModalVisible(false)}
         board={board}
         currentUserId={user?.id}
+        onViewProfile={onViewProfile}
       />
     </View>
   );
@@ -1705,9 +1719,13 @@ function BoardHintsScreen({ board, onBack }) {
 
 export default function HintsScreen() {
   const [selectedBoard, setSelectedBoard] = useState(null);
+  const [fullProfileUserId, setFullProfileUserId] = useState(null);
 
+  if (fullProfileUserId) {
+    return <ProfileScreen userId={fullProfileUserId} onBack={() => setFullProfileUserId(null)} />;
+  }
   if (selectedBoard) {
-    return <BoardHintsScreen board={selectedBoard} onBack={() => setSelectedBoard(null)} />;
+    return <BoardHintsScreen board={selectedBoard} onBack={() => setSelectedBoard(null)} onViewProfile={setFullProfileUserId} />;
   }
   return <BoardListScreen onSelectBoard={setSelectedBoard} />;
 }
@@ -2576,6 +2594,10 @@ const styles = StyleSheet.create({
     color: "#1e293b",
     fontWeight: "600",
     flex: 1,
+  },
+  collabRowNameLink: {
+    color: "#df7b59",
+    textDecorationLine: "underline",
   },
   collabApproveButton: {
     backgroundColor: "#ff875d",
