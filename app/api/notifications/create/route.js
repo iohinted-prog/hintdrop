@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { sendPushToUser } from "../../../../lib/pushSend";
+import { sendExpoPushToUser } from "../../../../lib/pushSendExpo";
 
 // Single place to create a notification, so the bell (real-time),
 // push, and eventual email (batched, see app/api/cron/notification-digest)
@@ -47,6 +48,19 @@ export async function POST(req) {
       url: data?.url || "/feed",
     }).catch((err) => {
       console.error("Push send error:", err);
+    });
+
+    // Mobile's own push channel, alongside web's above - see
+    // lib/pushSendExpo.js for why this is a separate function rather
+    // than a shared one (different delivery service, different token
+    // format, different row shape entirely - expo_push_tokens, not
+    // push_subscriptions). Same non-blocking, best-effort behavior.
+    sendExpoPushToUser(supabase, user_id, {
+      title,
+      body: notifBody || "",
+      url: data?.url || "/feed",
+    }).catch((err) => {
+      console.error("Expo push send error:", err);
     });
 
     // Email sending removed from here (Aug 2026) — was firing an email

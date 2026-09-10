@@ -50,7 +50,8 @@
         {
           "photosPermission": "HintDrop needs access to your photos so you can add one to a hint."
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "extra": {
       "eas": {

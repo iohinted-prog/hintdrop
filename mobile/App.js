@@ -9,6 +9,7 @@ import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from "@e
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { supabase } from "./lib/supabase";
 import { resolveAvatarColor } from "./lib/avatarColor";
+import { registerForPushNotifications } from "./lib/pushNotifications";
 import NotificationsPanel from "./components/NotificationsPanel";
 import SignInScreen from "./screens/SignInScreen";
 import FeedScreen from "./screens/FeedScreen";
@@ -87,6 +88,10 @@ function SignedInApp() {
     if (!user?.id) return;
     supabase.from("profiles").select("full_name, avatar_url, avatar_color").eq("id", user.id).maybeSingle().then(({ data }) => setProfile(data));
   }, [user?.id, accountVisible]); // re-fetch after closing Account, in case something changed
+
+  useEffect(() => {
+    if (user?.id) registerForPushNotifications(user.id);
+  }, [user?.id]);
 
   return (
     <>
