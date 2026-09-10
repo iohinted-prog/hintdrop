@@ -36,39 +36,16 @@ export async function generateMetadata({ params }) {
   const title = `${board.title} — ${ownerName}'s Hints 👀 | HintDrop`;
   const description = `Take a look at ${ownerName}'s "${board.title}" Hints on HintDrop.`;
 
-  // Boards had no OG image at all previously - sharing one showed a
-  // text-only card. Use a representative hint's own photo the same way
-  // /h/[hintId] already does, rather than inventing a separate pattern.
-  // A board can be public while individual hints inside it are marked
-  // private, so that's excluded here too - same privacy-through-metadata
-  // gap as the is_private check above, just one level down.
-  const { data: coverHint } = await supabase
-    .from("hints")
-    .select("image_url")
-    .eq("board_id", boardId)
-    .eq("is_private", false)
-    .not("image_url", "is", null)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const ogImage = coverHint?.image_url
-    // Proxied through Next's own image optimizer rather than linked
-    // directly - external retailer image hosts often block hotlinking
-    // or crawler user agents (confirmed: a real H&M image URL from
-    // this exact flow returned blocked/inaccessible when checked),
-    // which explained the preview staying generic even with correct
-    // metadata and a genuinely working image. Routing through
-    // hintdrop.app's own domain means WhatsApp's crawler fetches from
-    // us, not the original retailer, sidestepping that entirely.
-    ? `https://hintdrop.app/_next/image?url=${encodeURIComponent(coverHint.image_url)}&w=1200&q=75`
-    : "https://hintdrop.app/og-default-v2.png";
-
+  // No images field here - Next.js auto-detects the sibling
+  // opengraph-image.jsx file in this same route folder and uses it,
+  // which composes a real multi-hint collage rather than a single
+  // hint's photo. Manually setting images here would conflict with
+  // that file convention rather than combine with it.
   return {
     title,
     description,
-    openGraph: { title, description, images: [ogImage], type: "website" },
-    twitter: { card: "summary_large_image", title, description, images: [ogImage] },
+    openGraph: { title, description, type: "website" },
+    twitter: { card: "summary_large_image", title, description },
     alternates: {
       canonical: `https://hintdrop.app/b/${boardId}`,
     },
