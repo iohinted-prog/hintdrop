@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { View, StyleSheet, FlatList, Pressable, Image, TextInput, ActivityIndicator, ScrollView, Modal, Linking } from "react-native";
+import { View, StyleSheet, Pressable, Image, TextInput, ActivityIndicator, ScrollView, Modal, Linking } from "react-native";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -137,12 +137,17 @@ function FilterChip({ label, selected, onPress }) {
   );
 }
 
-function ShopCard({ product, onPress, onAddToHints, onViewItem, isSavingHint, isOpeningLink }) {
+function ShopCard({ product, imageRatio, onPress, onAddToHints, onViewItem, isSavingHint, isOpeningLink }) {
   const displayPrice = getDisplayPrice(product);
   const retailerLabel = product.retailer || normaliseRetailer(getOutboundUrl(product));
+  // Same clamp range as web's ShopCard (0.55-1.35) - lets genuinely
+  // square/landscape shots read differently from portrait ones
+  // instead of flattening everything to one uniform height, while
+  // still keeping extreme outliers from breaking the column layout.
+  const clampedRatio = imageRatio && Number.isFinite(imageRatio) ? Math.min(1.35, Math.max(0.55, imageRatio)) : 0.85;
   return (
     <Pressable style={styles.card} onPress={onPress}>
-      <View style={styles.cardImageWrap}>
+      <View style={[styles.cardImageWrap, { aspectRatio: clampedRatio }]}>
         {product.image_url ? (
           <Image source={{ uri: product.image_url }} style={styles.cardImage} resizeMode="cover" />
         ) : (
@@ -163,6 +168,7 @@ function ShopCard({ product, onPress, onAddToHints, onViewItem, isSavingHint, is
             <Text style={styles.cardViewButtonText}>{isOpeningLink ? "..." : "View"}</Text>
           </Pressable>
         </View>
+
       </View>
     </Pressable>
   );
@@ -261,6 +267,8 @@ export default function ShopScreen() {
   const [boardsLoading, setBoardsLoading] = useState(false);
   const [newBoardTitle, setNewBoardTitle] = useState("");
   const [isCreatingBoard, setIsCreatingBoard] = useState(false);
+  const [imageRatios, setImageRatios] = useState({});
+  const measuredIdsRef = useRef(new Set());
   const toastTimerRef = useRef(null);
 
   useEffect(() => {
@@ -316,6 +324,40 @@ export default function ShopScreen() {
         return countB - countA;
       });
   }, [products, searchQuery, selectedInterests, selectedOccasion, selectedRelationship, selectedPriceBand]);
+
+  // Measures each product's real image aspect ratio so ShopCard can
+  // size itself accordingly (see the clamp logic there) - same idea
+  // as HintsScreen.js/ProfileScreen.js's own hint-image measurement,
+  // which is what makes those grids read as masonry instead of a
+  // uniform grid. Only measures images not already measured, so
+  // re-filtering doesn't re-trigger a fetch for products already
+  // sized.
+  useEffect(() => {
+    const toMeasure = filteredProducts.filter((p) => p.image_url && !measuredIdsRef.current.has(p.id));
+    if (!toMeasure.length) return;
+    toMeasure.forEach((p) => measuredIdsRef.current.add(p.id));
+    toMeasure.forEach((p) => {
+      Image.getSize(
+        p.image_url,
+        (width, height) => {
+          if (width > 0 && height > 0) setImageRatios((prev) => ({ ...prev, [p.id]: width / height }));
+        },
+        () => {}
+      );
+    });
+  }, [filteredProducts]);
+
+  // Plain round-robin split (item 0 -> col 0, item 1 -> col 1, ...),
+  // same approach as HintsScreen.js's splitIntoColumns - not a
+  // height-balancing algorithm, matching how web's own CSS columns
+  // layout distributes items too.
+  const productColumns = useMemo(() => {
+    const columns = [[], []];
+    filteredProducts.forEach((product, index) => {
+      columns[index % 2].push(product);
+    });
+    return columns;
+  }, [filteredProducts]);
 
   function toggleInterest(interest) {
     setSelectedInterests((current) => {
@@ -466,68 +508,76 @@ export default function ShopScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={filteredProducts}
-        keyExtractor={(item) => String(item.id)}
-        numColumns={2}
-        columnWrapperStyle={{ gap: 12 }}
-        contentContainerStyle={styles.listContent}
-        ListHeaderComponent={
-          <>
-            <Text style={styles.screenTitle}>Shop</Text>
-            <Text style={styles.subtitle}>Curated gift ideas, then save the good ones to hints.</Text>
-            <Text style={styles.affiliateNote}>Some links may be affiliate links. If you buy through them, HintDrop may earn a commission at no extra cost to you.</Text>
+      <ScrollView contentContainerStyle={styles.listContent}>
+        <Text style={styles.screenTitle}>Shop</Text>
+        <Text style={styles.subtitle}>Curated gift ideas, then save the good ones to hints.</Text>
+        <Text style={styles.affiliateNote}>Some links may be affiliate links. If you buy through them, HintDrop may earn a commission at no extra cost to you.</Text>
 
-            <TextInput style={styles.searchInput} value={searchQuery} onChangeText={setSearchQuery} placeholder="Search gifts, retailers, interests..." placeholderTextColor={colors.textMuted} />
+        <TextInput style={styles.searchInput} value={searchQuery} onChangeText={setSearchQuery} placeholder="Search gifts, retailers, interests..." placeholderTextColor={colors.textMuted} />
 
-            <Pressable style={styles.filtersToggle} onPress={() => setFiltersOpen((v) => !v)}>
-              <Text style={styles.filtersToggleText}>Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}</Text>
-            </Pressable>
+        <Pressable style={styles.filtersToggle} onPress={() => setFiltersOpen((v) => !v)}>
+          <Text style={styles.filtersToggleText}>Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}</Text>
+        </Pressable>
 
-            {filtersOpen ? (
-              <View style={styles.filtersPanel}>
-                <Text style={styles.filterLabel}>Interests (pick up to 2)</Text>
-                <View style={styles.chipsRow}>
-                  {interestOptions.map((i) => <FilterChip key={i} label={i} selected={selectedInterests.includes(i)} onPress={() => toggleInterest(i)} />)}
-                </View>
-                {interestLimitMessage ? <Text style={styles.limitMessage}>{interestLimitMessage}</Text> : null}
+        {filtersOpen ? (
+          <View style={styles.filtersPanel}>
+            <Text style={styles.filterLabel}>Interests (pick up to 2)</Text>
+            <View style={styles.chipsRow}>
+              {interestOptions.map((i) => <FilterChip key={i} label={i} selected={selectedInterests.includes(i)} onPress={() => toggleInterest(i)} />)}
+            </View>
+            {interestLimitMessage ? <Text style={styles.limitMessage}>{interestLimitMessage}</Text> : null}
 
-                <Text style={styles.filterLabel}>Occasion</Text>
-                <View style={styles.chipsRow}>
-                  {occasionOptions.map((o) => <FilterChip key={o} label={o} selected={selectedOccasion === o} onPress={() => setSelectedOccasion((v) => (v === o ? "" : o))} />)}
-                </View>
+            <Text style={styles.filterLabel}>Occasion</Text>
+            <View style={styles.chipsRow}>
+              {occasionOptions.map((o) => <FilterChip key={o} label={o} selected={selectedOccasion === o} onPress={() => setSelectedOccasion((v) => (v === o ? "" : o))} />)}
+            </View>
 
-                <Text style={styles.filterLabel}>Relationship</Text>
-                <View style={styles.chipsRow}>
-                  {relationshipOptions.map((r) => <FilterChip key={r} label={r} selected={selectedRelationship === r} onPress={() => setSelectedRelationship((v) => (v === r ? "" : r))} />)}
-                </View>
+            <Text style={styles.filterLabel}>Relationship</Text>
+            <View style={styles.chipsRow}>
+              {relationshipOptions.map((r) => <FilterChip key={r} label={r} selected={selectedRelationship === r} onPress={() => setSelectedRelationship((v) => (v === r ? "" : r))} />)}
+            </View>
 
-                <Text style={styles.filterLabel}>Price</Text>
-                <View style={styles.chipsRow}>
-                  {priceBandOptions.map((p) => <FilterChip key={p.label} label={p.label} selected={selectedPriceBand === p.label} onPress={() => setSelectedPriceBand((v) => (v === p.label ? "" : p.label))} />)}
-                </View>
+            <Text style={styles.filterLabel}>Price</Text>
+            <View style={styles.chipsRow}>
+              {priceBandOptions.map((p) => <FilterChip key={p.label} label={p.label} selected={selectedPriceBand === p.label} onPress={() => setSelectedPriceBand((v) => (v === p.label ? "" : p.label))} />)}
+            </View>
 
-                {activeFilterCount > 0 || searchQuery ? (
-                  <Pressable onPress={clearFilters}><Text style={styles.clearFiltersText}>Clear filters</Text></Pressable>
-                ) : null}
-              </View>
+            {activeFilterCount > 0 || searchQuery ? (
+              <Pressable onPress={clearFilters}><Text style={styles.clearFiltersText}>Clear filters</Text></Pressable>
             ) : null}
+          </View>
+        ) : null}
 
-            {pageError ? <Text style={styles.errorText}>{pageError}</Text> : null}
-          </>
-        }
-        renderItem={({ item }) => (
-          <ShopCard
-            product={item}
-            onPress={() => setDetailProduct(item)}
-            onAddToHints={handleAddToHints}
-            onViewItem={handleViewItem}
-            isSavingHint={savingHintId === item.id}
-            isOpeningLink={openingLinkId === item.id}
-          />
+        {pageError ? <Text style={styles.errorText}>{pageError}</Text> : null}
+
+        {filteredProducts.length === 0 ? (
+          <Text style={styles.emptyText}>No products match those filters yet.</Text>
+        ) : (
+          // Two side-by-side columns of plain Views (not FlatList) -
+          // this IS the masonry: each column stacks its own cards at
+          // their own measured heights, so the two columns naturally
+          // fall out of sync with each other rather than lining up
+          // row by row, matching web's CSS-columns look.
+          <View style={styles.masonryRow}>
+            {productColumns.map((column, colIndex) => (
+              <View key={colIndex} style={styles.masonryColumn}>
+                {column.map((item) => (
+                  <ShopCard
+                    key={item.id}
+                    product={item}
+                    imageRatio={imageRatios[item.id]}
+                    onPress={() => setDetailProduct(item)}
+                    onAddToHints={handleAddToHints}
+                    onViewItem={handleViewItem}
+                    isSavingHint={savingHintId === item.id}
+                    isOpeningLink={openingLinkId === item.id}
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
         )}
-        ListEmptyComponent={<Text style={styles.emptyText}>No products match those filters yet.</Text>}
-      />
+      </ScrollView>
 
       <ProductDetailModal product={detailProduct} onClose={() => setDetailProduct(null)} onAddToHints={handleAddToHints} onViewItem={handleViewItem} isSavingHint={savingHintId === detailProduct?.id} isOpeningLink={openingLinkId === detailProduct?.id} />
 
@@ -572,8 +622,10 @@ const styles = StyleSheet.create({
   clearFiltersText: { fontSize: 12, fontWeight: "700", color: colors.coral, marginTop: 12 },
   errorText: { color: "#b14f43", fontSize: 13, marginTop: 12 },
   emptyText: { textAlign: "center", color: colors.textMuted, marginTop: 30 },
-  card: { flex: 1, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, overflow: "hidden", marginTop: 12 },
-  cardImageWrap: { width: "100%", aspectRatio: 1, backgroundColor: "#fdf5f0" },
+  masonryRow: { flexDirection: "row", gap: 12 },
+  masonryColumn: { flex: 1, minWidth: 0 },
+  card: { width: "100%", borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, overflow: "hidden", marginTop: 12 },
+  cardImageWrap: { width: "100%", backgroundColor: "#fdf5f0" },
   cardImage: { width: "100%", height: "100%" },
   cardBody: { padding: 10 },
   cardTitle: { fontSize: 13, fontWeight: "600", color: colors.textPrimary },

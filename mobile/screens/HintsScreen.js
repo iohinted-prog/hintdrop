@@ -449,7 +449,7 @@ function EditHintModal({ hint, visible, onClose, onSaved, onDeleted }) {
   );
 }
 
-function BoardCard({ board, onPress, ownerName }) {
+function BoardCard({ board, onPress, onDelete, ownerName }) {
   return (
     <Pressable
       style={({ pressed }) => [styles.boardCard, pressed && styles.boardCardPressed]}
@@ -458,6 +458,15 @@ function BoardCard({ board, onPress, ownerName }) {
       <View style={styles.boardPreviewWrap}>
         <BoardPreview previewHints={board.previewHints} />
       </View>
+      {!board.is_default && onDelete ? (
+        <Pressable
+          style={styles.boardDeleteButton}
+          onPress={(e) => { e.stopPropagation?.(); onDelete(board); }}
+          hitSlop={8}
+        >
+          <Text style={styles.boardDeleteButtonText}>✕</Text>
+        </Pressable>
+      ) : null}
       <View style={styles.boardCardFooter}>
         <View style={styles.boardCardText}>
           <Text style={styles.boardTitle} numberOfLines={1}>
@@ -933,6 +942,10 @@ function BoardListScreen({ onSelectBoard }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newBoardTitle, setNewBoardTitle] = useState("");
+  const [newBoardPrivate, setNewBoardPrivate] = useState(false);
+  const [isSavingBoard, setIsSavingBoard] = useState(false);
 
   const loadBoards = useCallback(async () => {
     if (!user?.id) return;
@@ -1006,11 +1019,87 @@ function BoardListScreen({ onSelectBoard }) {
     setRefreshing(false);
   }
 
+  // Mirrors handleCreateBoard in HintsMenuClient.jsx exactly - same
+  // insert shape, same public-list feed announcement (silently
+  // skipped for private lists, same as web), same navigate-into-the-
+  // new-board-on-success behavior. This entry point didn't exist on
+  // mobile at all before - the only way to reach a board was one
+  // already created on web.
+  async function handleCreateBoard() {
+    const title = newBoardTitle.trim();
+    if (!title || !user?.id || isSavingBoard) return;
+    setIsSavingBoard(true);
+    setError("");
+    try {
+      const { data, error: createError } = await supabase
+        .from("hint_boards")
+        .insert({ user_id: user.id, title, is_default: false, is_private: newBoardPrivate })
+        .select("id")
+        .single();
+      if (createError) throw createError;
+
+      if (!newBoardPrivate) {
+        supabase.from("feed_items").insert({
+          owner_user_id: user.id,
+          actor_user_id: user.id,
+          family: "hint",
+          item_type: "board_created",
+          headline: `${user.user_metadata?.full_name || "Someone"} started a new Hints list: ${title}`,
+          body: "",
+          cta_label: "See the list",
+          cta_href: `/hints/${data.id}`,
+          visibility: "contacts",
+          occurred_at: new Date().toISOString(),
+          metadata: {
+            actor_name: user.user_metadata?.full_name || user.email || "You",
+            actor_avatar_url: user.user_metadata?.avatar_url || null,
+            board_title: title,
+          },
+        }).then((r) => { if (r.error) console.error("feed insert error:", r.error.message); });
+      }
+
+      setShowCreateForm(false);
+      setNewBoardTitle("");
+      setNewBoardPrivate(false);
+      onSelectBoard({ id: data.id, title, is_default: false, is_private: newBoardPrivate });
+    } catch (err) {
+      setError(err?.message || "Couldn't create that list. Please try again.");
+    } finally {
+      setIsSavingBoard(false);
+    }
+  }
+
   if (loading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color="#ff875d" />
       </View>
+    );
+  }
+
+  // Mirrors handleDeleteBoard in HintsMenuClient.jsx - same is_default
+  // guard (the auto-created "My Hints" board can't be deleted, other
+  // parts of the app assume it always exists), same confirm copy.
+  function handleDeleteBoard(board) {
+    if (board.is_default) return;
+    Alert.alert(
+      `Delete "${board.title}"?`,
+      `This removes the list and everything saved in it (${board.hintCount} hint${board.hintCount === 1 ? "" : "s"}). This can't be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const { error: deleteError } = await supabase.from("hint_boards").delete().eq("id", board.id);
+            if (deleteError) {
+              setError(deleteError.message);
+              return;
+            }
+            setBoards((prev) => prev.filter((b) => b.id !== board.id));
+          },
+        },
+      ]
     );
   }
 
@@ -1021,8 +1110,9 @@ function BoardListScreen({ onSelectBoard }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Your Hints</Text>
+      <View style={styles.heroHeader}>
+        <Text style={styles.heroTitle}>Your Hints</Text>
+        <Text style={styles.heroSubtitle}>Your personal Hints are just for you. Make more for other people — build a list and share it with anyone, for their birthday, Christmas, or anything else.</Text>
       </View>
 
       {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
@@ -1032,7 +1122,7 @@ function BoardListScreen({ onSelectBoard }) {
         sections={sections}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <BoardCard board={item} onPress={() => onSelectBoard(item)} ownerName={item.ownerName} />
+          <BoardCard board={item} onPress={() => onSelectBoard(item)} onDelete={item.isCollab ? null : handleDeleteBoard} ownerName={item.ownerName} />
         )}
         renderSectionHeader={({ section }) =>
           section.title ? (
@@ -1047,6 +1137,48 @@ function BoardListScreen({ onSelectBoard }) {
           <View style={styles.centered}>
             <Text style={styles.emptyText}>No lists yet.</Text>
           </View>
+        }
+        ListFooterComponent={
+          // Matches web's dashed "+" card at the end of the board
+          // grid, which was missing on mobile entirely - opens the
+          // same inline title/Public-or-Private form as web instead
+          // of navigating to a separate screen.
+          showCreateForm ? (
+            <View style={styles.createBoardForm}>
+              <Text style={styles.createBoardFormTitle}>New list</Text>
+              <TextInput
+                autoFocus
+                style={styles.createBoardInput}
+                value={newBoardTitle}
+                onChangeText={setNewBoardTitle}
+                placeholder="e.g. Mum's Christmas List"
+                placeholderTextColor="#94a3b8"
+              />
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                <Pressable style={[styles.visibilityButton, !newBoardPrivate && styles.visibilityButtonActive]} onPress={() => setNewBoardPrivate(false)}>
+                  <Text style={[styles.visibilityButtonText, !newBoardPrivate && styles.visibilityButtonTextActive]}>Public</Text>
+                </Pressable>
+                <Pressable style={[styles.visibilityButton, newBoardPrivate && styles.visibilityButtonActive]} onPress={() => setNewBoardPrivate(true)}>
+                  <Text style={[styles.visibilityButtonText, newBoardPrivate && styles.visibilityButtonTextActive]}>🔒 Private</Text>
+                </Pressable>
+              </View>
+              <Text style={styles.createBoardHint}>
+                {newBoardPrivate ? "Only you can see this. Anyone with a direct link can still view it." : "Your circle will see you started this list."}
+              </Text>
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 14 }}>
+                <Pressable style={styles.createBoardCancelButton} onPress={() => { setShowCreateForm(false); setNewBoardTitle(""); setNewBoardPrivate(false); }}>
+                  <Text style={styles.createBoardCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable style={[styles.createBoardSaveButton, (!newBoardTitle.trim() || isSavingBoard) && { opacity: 0.6 }]} onPress={handleCreateBoard} disabled={!newBoardTitle.trim() || isSavingBoard}>
+                  <Text style={styles.createBoardSaveText}>{isSavingBoard ? "Creating..." : "Create list"}</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <Pressable style={styles.newListButton} onPress={() => setShowCreateForm(true)}>
+              <Text style={styles.newListButtonText}>+ New list</Text>
+            </Pressable>
+          )
         }
       />
     </View>
@@ -1799,6 +1931,134 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     flex: 1,
   },
+  // Matches web's centered hero title on the board-list page exactly
+  // (text-[32px] font-bold tracking-[-0.06em] text-[#f19a78],
+  // centered, with a subtitle paragraph below) - the previous version
+  // reused a generic left-aligned dark header-bar style that read as
+  // a nav bar title, not the actual hero treatment web uses here.
+  heroHeader: {
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 8,
+  },
+  heroTitle: {
+    fontSize: 32,
+    fontWeight: "700",
+    letterSpacing: -1.9,
+    color: "#f19a78",
+    textAlign: "center",
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: "#64748b",
+    textAlign: "center",
+    marginTop: 10,
+    maxWidth: 420,
+  },
+  newListButton: {
+    marginHorizontal: 20,
+    marginTop: 8,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 2,
+    borderColor: "#f0a384",
+    borderStyle: "dashed",
+    backgroundColor: "#fff7f2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  newListButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#df7b59",
+  },
+  createBoardForm: {
+    marginHorizontal: 20,
+    marginTop: 8,
+    borderRadius: 26,
+    borderWidth: 2,
+    borderColor: "#f0a384",
+    borderStyle: "dashed",
+    backgroundColor: "#fff7f2",
+    padding: 18,
+  },
+  createBoardFormTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0f172a",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  createBoardInput: {
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#ead8ce",
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    fontSize: 14,
+    color: "#334155",
+    textAlign: "center",
+  },
+  visibilityButton: {
+    flex: 1,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#ead8ce",
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  visibilityButtonActive: {
+    backgroundColor: "#e3f5ea",
+    borderColor: "#e3f5ea",
+  },
+  visibilityButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#475569",
+  },
+  visibilityButtonTextActive: {
+    color: "#2f8a5f",
+  },
+  createBoardHint: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: "#94a3b8",
+    textAlign: "center",
+    marginTop: 10,
+  },
+  createBoardCancelButton: {
+    flex: 1,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#ead8ce",
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  createBoardCancelText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#475569",
+  },
+  createBoardSaveButton: {
+    flex: 1,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#ff875d",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  createBoardSaveText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#fff",
+  },
   backButton: {
     paddingVertical: 4,
   },
@@ -2046,7 +2306,7 @@ const styles = StyleSheet.create({
   },
   boardCard: {
     backgroundColor: "#fff",
-    borderRadius: 22,
+    borderRadius: 26,
     borderWidth: 1,
     borderColor: "#f0dfd6",
     marginBottom: CARD_GAP,
@@ -2060,6 +2320,8 @@ const styles = StyleSheet.create({
   boardCardPressed: {
     opacity: 0.9,
   },
+  boardDeleteButton: { position: "absolute", right: 11, top: 11, width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.9)", borderWidth: 1, borderColor: "#ead8ce", alignItems: "center", justifyContent: "center" },
+  boardDeleteButtonText: { fontSize: 12, color: "#94a3b8" },
   boardPreviewWrap: {
     width: "100%",
     aspectRatio: 16 / 9,
