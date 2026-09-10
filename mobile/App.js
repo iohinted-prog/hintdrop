@@ -2,11 +2,13 @@ import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, ActivityIndicator, Pressable, StyleSheet } from "react-native";
+import { useState } from "react";
 import Text from "./components/Text";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { supabase } from "./lib/supabase";
+import NotificationsPanel from "./components/NotificationsPanel";
 import SignInScreen from "./screens/SignInScreen";
 import FeedScreen from "./screens/FeedScreen";
 import HintsScreen from "./screens/HintsScreen";
@@ -26,23 +28,65 @@ function SignOutButton() {
   );
 }
 
-function SignedInApp() {
+// Matches web's header bell (app/components/AppShell.jsx) - a global,
+// always-reachable notification affordance rather than a dedicated
+// screen/tab, since that's genuinely how it works on web (a dropdown
+// off the header, not a page). See NotificationsPanel.js for exactly
+// what's ported vs deferred within the panel itself.
+function NotificationBell({ userId, count, onPress }) {
   return (
-    <Tab.Navigator
-      screenOptions={{
-        tabBarActiveTintColor: "#ff875d",
-        tabBarInactiveTintColor: "#94a3b8",
-        headerRight: () => <SignOutButton />,
-        headerStyle: { backgroundColor: "#fffaf7" },
-        tabBarStyle: { backgroundColor: "#fffaf7" },
-      }}
-    >
-      <Tab.Screen name="Feed" component={FeedScreen} options={{ headerShown: true }} />
-      <Tab.Screen name="Circle" component={CircleScreen} />
-      <Tab.Screen name="Hints" component={HintsScreen} />
-      <Tab.Screen name="Calendar" component={CalendarScreen} />
-      <Tab.Screen name="Shop" component={ShopScreen} />
-    </Tab.Navigator>
+    <Pressable onPress={onPress} style={styles.bellButton}>
+      <Text style={styles.bellIcon}>🔔</Text>
+      {count > 0 ? (
+        <View style={styles.bellBadge}>
+          <Text style={styles.bellBadgeText}>{count > 9 ? "9+" : count}</Text>
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
+
+function SignedInApp() {
+  const { user } = useAuth();
+  const [notifVisible, setNotifVisible] = useState(false);
+  const [notifCount, setNotifCount] = useState(0);
+
+  return (
+    <>
+      <Tab.Navigator
+        screenOptions={{
+          tabBarActiveTintColor: "#ff875d",
+          tabBarInactiveTintColor: "#94a3b8",
+          headerShown: true,
+          // Title text hidden everywhere - Circle and Hints already
+          // build their own in-screen header (title, actions, etc.),
+          // so a default react-navigation title bar on top would be
+          // a redundant, visually broken double-header. This bar's
+          // only job is the global bell + sign-out row.
+          headerTitle: () => null,
+          headerRight: () => (
+            <View style={styles.headerRightRow}>
+              <NotificationBell userId={user?.id} count={notifCount} onPress={() => setNotifVisible(true)} />
+              <SignOutButton />
+            </View>
+          ),
+          headerStyle: { backgroundColor: "#fffaf7", elevation: 0, shadowOpacity: 0 },
+          tabBarStyle: { backgroundColor: "#fffaf7" },
+        }}
+      >
+        <Tab.Screen name="Feed" component={FeedScreen} />
+        <Tab.Screen name="Circle" component={CircleScreen} />
+        <Tab.Screen name="Hints" component={HintsScreen} />
+        <Tab.Screen name="Calendar" component={CalendarScreen} />
+        <Tab.Screen name="Shop" component={ShopScreen} />
+      </Tab.Navigator>
+      <NotificationsPanel
+        visible={notifVisible}
+        onClose={() => setNotifVisible(false)}
+        currentUserId={user?.id}
+        onCountChange={setNotifCount}
+      />
+    </>
   );
 }
 
@@ -102,8 +146,44 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#fffaf7",
   },
+  headerRightRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginRight: 8,
+  },
+  bellButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#ead8ce",
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bellIcon: {
+    fontSize: 15,
+  },
+  bellBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 3,
+    backgroundColor: "#f36f64",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bellBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#fff",
+  },
   signOutButton: {
-    marginRight: 16,
+    marginRight: 8,
   },
   signOutText: {
     color: "#ff875d",

@@ -101,6 +101,7 @@ export default function FeedScreen() {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.screenTitle}>Feed</Text>
       <Text style={styles.header}>Your people, moments, and nudges.</Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <FlatList
@@ -132,12 +133,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingTop: 60,
   },
-  header: {
-    fontSize: 22,
+  screenTitle: {
+    fontSize: 28,
     fontWeight: "700",
+    letterSpacing: -1.1,
     color: "#0f172a",
     paddingHorizontal: 20,
     paddingTop: 16,
+  },
+  header: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#64748b",
+    paddingHorizontal: 20,
+    paddingTop: 4,
     paddingBottom: 8,
   },
   error: {
