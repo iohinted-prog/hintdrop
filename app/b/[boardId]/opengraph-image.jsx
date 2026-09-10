@@ -60,9 +60,16 @@ export default async function Image({ params }) {
 
     const ownerName = board?.profiles?.full_name?.split(" ")[0] || "Someone";
     const boardTitle = board?.title || "Hints";
-    const imageSrc = coverHint?.image_url
-      ? `https://hintdrop.app/_next/image?url=${encodeURIComponent(coverHint.image_url)}&w=800&q=75`
-      : null;
+    // Trying the original retailer URL directly this time, not
+    // through /_next/image - every attempt routed through that proxy
+    // (both live-fetched by Satori and pre-fetched server-side) came
+    // back with an empty tile despite the rest of the render
+    // succeeding, which points at that specific proxy hop rather than
+    // image fetching in general. A self-referencing call from this
+    // serverless function back into the same deployment's own image
+    // optimizer is a plausible reason that specific path is the
+    // common failure across every variant tried so far.
+    const imageSrc = coverHint?.image_url || null;
 
     return new ImageResponse(
       (
