@@ -1,8 +1,9 @@
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { View, ActivityIndicator, Pressable, StyleSheet, Modal, Image } from "react-native";
+import { View, ActivityIndicator, Pressable, StyleSheet, Modal, Image, Alert } from "react-native";
 import { useEffect, useState } from "react";
+import { Feather } from "@expo/vector-icons";
 import Text from "./components/Text";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
@@ -11,11 +12,14 @@ import { supabase } from "./lib/supabase";
 import { resolveAvatarColor } from "./lib/avatarColor";
 import { registerForPushNotifications } from "./lib/pushNotifications";
 import NotificationsPanel from "./components/NotificationsPanel";
+import AccountMenu from "./components/AccountMenu";
 import SignInScreen from "./screens/SignInScreen";
 import FeedScreen from "./screens/FeedScreen";
 import HintsScreen from "./screens/HintsScreen";
 import CircleScreen from "./screens/CircleScreen";
 import AccountScreen from "./screens/AccountScreen";
+import SettingsScreen from "./screens/SettingsScreen";
+import ProfileScreen from "./screens/ProfileScreen";
 import CalendarScreen from "./screens/CalendarScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
 import ShopScreen from "./screens/ShopScreen";
@@ -38,10 +42,8 @@ function HeaderLogo() {
 }
 
 // Matches web's header account avatar button (app/components/
-// AppShell.jsx) - opens the account page directly rather than a
-// dropdown menu (web's dropdown has Profile/Account/Sign out links;
-// mobile's AccountScreen already contains sign-out itself, so one
-// tap goes straight there instead of a two-step menu).
+// AppShell.jsx) - opens the dropdown menu (Profile/Settings/Account),
+// not straight to AccountScreen.
 function AccountButton({ profile, userId, onPress }) {
   const c = resolveAvatarColor({ avatarColor: profile?.avatar_color, id: userId });
   return (
@@ -59,15 +61,17 @@ function AccountButton({ profile, userId, onPress }) {
   );
 }
 
-// Matches web's header bell (app/components/AppShell.jsx) - a global,
-// always-reachable notification affordance rather than a dedicated
-// screen/tab, since that's genuinely how it works on web (a dropdown
-// off the header, not a page). See NotificationsPanel.js for exactly
+// Matches web's header bell exactly (app/components/AppShell.jsx) -
+// same grey vector icon (Feather's "bell", web uses this same
+// rounded-stroke outline shape), same badge. A global, always-
+// reachable notification affordance rather than a dedicated screen/
+// tab, since that's genuinely how it works on web (a dropdown off
+// the header, not a page). See NotificationsPanel.js for exactly
 // what's ported vs deferred within the panel itself.
 function NotificationBell({ userId, count, onPress }) {
   return (
     <Pressable onPress={onPress} style={styles.bellButton}>
-      <Text style={styles.bellIcon}>🔔</Text>
+      <Feather name="bell" size={17} color="#475569" />
       {count > 0 ? (
         <View style={styles.bellBadge}>
           <Text style={styles.bellBadgeText}>{count > 9 ? "9+" : count}</Text>
@@ -77,17 +81,37 @@ function NotificationBell({ userId, count, onPress }) {
   );
 }
 
+// Matches web's header Messages button (app/components/AppShell.jsx)
+// visually - same grey speech-bubble vector, same position beside the
+// bell. Mobile has no messaging system yet (see the earlier session
+// notes on GroupChatWindow deferral), so this is not yet wired to a
+// real inbox - tapping it says so plainly rather than silently doing
+// nothing, which would read as broken rather than "not built yet".
+function MessagesButton() {
+  return (
+    <Pressable
+      onPress={() => Alert.alert("Messages", "Messaging isn't available on mobile yet - coming soon.")}
+      style={styles.bellButton}
+    >
+      <Feather name="message-square" size={17} color="#475569" />
+    </Pressable>
+  );
+}
+
 function SignedInApp() {
   const { user } = useAuth();
   const [notifVisible, setNotifVisible] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
+  const [accountMenuVisible, setAccountMenuVisible] = useState(false);
   const [accountVisible, setAccountVisible] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [profileViewUserId, setProfileViewUserId] = useState(null);
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     if (!user?.id) return;
     supabase.from("profiles").select("full_name, avatar_url, avatar_color").eq("id", user.id).maybeSingle().then(({ data }) => setProfile(data));
-  }, [user?.id, accountVisible]); // re-fetch after closing Account, in case something changed
+  }, [user?.id, accountVisible, settingsVisible]); // re-fetch after closing Account/Settings, in case something changed
 
   useEffect(() => {
     if (user?.id) registerForPushNotifications(user.id);
@@ -103,20 +127,21 @@ function SignedInApp() {
           // build their own in-screen header (title, actions, etc.),
           // so a default react-navigation title bar on top would be
           // a redundant, visually broken double-header. This bar's
-          // only job is the logo + global bell + account row, matching
-          // web's actual header content (its desktop nav links are
-          // hidden on mobile web too - this app's own BottomNav is
-          // the real equivalent of web's mobile bottom nav, a
-          // completely separate element from the header).
+          // only job is the logo + global bell/messages/account row,
+          // matching web's actual header content (its desktop nav
+          // links are hidden on mobile web too - this app's own
+          // BottomNav is the real equivalent of web's mobile bottom
+          // nav, a completely separate element from the header).
           headerTitle: () => null,
           headerLeft: () => <HeaderLogo />,
           headerRight: () => (
             <View style={styles.headerRightRow}>
+              <MessagesButton />
               <NotificationBell userId={user?.id} count={notifCount} onPress={() => setNotifVisible(true)} />
-              <AccountButton profile={profile} userId={user?.id} onPress={() => setAccountVisible(true)} />
+              <AccountButton profile={profile} userId={user?.id} onPress={() => setAccountMenuVisible(true)} />
             </View>
           ),
-          headerStyle: { backgroundColor: "#fffaf7", elevation: 0, shadowOpacity: 0 },
+          headerStyle: { backgroundColor: "#fffaf7", elevation: 0, shadowOpacity: 0, height: 108 },
         }}
       >
         <Tab.Screen name="Feed" component={FeedScreen} />
@@ -131,8 +156,23 @@ function SignedInApp() {
         currentUserId={user?.id}
         onCountChange={setNotifCount}
       />
+      <AccountMenu
+        visible={accountMenuVisible}
+        onClose={() => setAccountMenuVisible(false)}
+        fullName={profile?.full_name}
+        email={user?.email}
+        onSelectProfile={() => setProfileViewUserId(user?.id)}
+        onSelectSettings={() => setSettingsVisible(true)}
+        onSelectAccount={() => setAccountVisible(true)}
+      />
       <Modal visible={accountVisible} animationType="slide" onRequestClose={() => setAccountVisible(false)}>
         <AccountScreen onClose={() => setAccountVisible(false)} />
+      </Modal>
+      <Modal visible={settingsVisible} animationType="slide" onRequestClose={() => setSettingsVisible(false)}>
+        <SettingsScreen onClose={() => setSettingsVisible(false)} />
+      </Modal>
+      <Modal visible={Boolean(profileViewUserId)} animationType="slide" onRequestClose={() => setProfileViewUserId(null)}>
+        <ProfileScreen userId={profileViewUserId} onBack={() => setProfileViewUserId(null)} />
       </Modal>
     </>
   );
@@ -235,9 +275,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
-  },
-  bellIcon: {
-    fontSize: 15,
   },
   bellBadge: {
     position: "absolute",

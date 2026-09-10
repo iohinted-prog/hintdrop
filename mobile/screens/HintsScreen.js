@@ -21,6 +21,7 @@ import Text from "../components/Text";
 import ActionSheet from "../components/ActionSheet";
 import ProfileScreen from "./ProfileScreen";
 import * as ImagePicker from "expo-image-picker";
+import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../lib/supabase";
 import { resolveAvatarColor } from "../lib/avatarColor";
 import { useAuth } from "../context/AuthContext";
@@ -52,12 +53,17 @@ function HintCard({ hint, aspectRatio, onPress, onDrag, isActive }) {
       ) : (
         <View style={[styles.cardImage, styles.cardImageFallback]} />
       )}
-      {/* Approximates the web version's black/60-to-transparent gradient
-          scrim with a flat semi-transparent overlay - true gradient
-          would need expo-linear-gradient, a native package, which
-          would force a rebuild mid Expo-Go session. Worth adding for
-          real once back on a native build. */}
-      <View style={styles.cardScrim} pointerEvents="none" />
+      {/* Matches web's gradient exactly (bg-gradient-to-t from-black/60
+          via-transparent to-transparent) - now that we're on a native
+          build (expo-linear-gradient added), the flat-overlay
+          compromise from the earlier Expo Go session is no longer
+          needed. */}
+      <LinearGradient
+        colors={["transparent", "transparent", "rgba(0,0,0,0.6)"]}
+        locations={[0, 0.5, 1]}
+        style={styles.cardScrim}
+        pointerEvents="none"
+      />
       {hint.is_private ? <Text style={styles.cardBadgeLeft}>🔒</Text> : null}
       {hint.starred ? <Text style={styles.cardBadgeRight}>★</Text> : null}
       <View style={styles.cardOverlayContent}>
@@ -1993,7 +1999,6 @@ const styles = StyleSheet.create({
   },
   cardScrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.28)",
   },
   cardBadgeLeft: {
     position: "absolute",

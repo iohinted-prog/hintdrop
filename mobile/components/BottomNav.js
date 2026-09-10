@@ -1,4 +1,4 @@
-import { View, Pressable, StyleSheet } from "react-native";
+import { View, Pressable, StyleSheet, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import Text from "./Text";
@@ -38,8 +38,14 @@ export default function BottomNav({ state, descriptors, navigation }) {
         if (route.name === "Hints") {
           return (
             <Pressable key={route.key} onPress={onPress} style={styles.hintsTab}>
-              <View style={[styles.hintsButton, isFocused && styles.hintsButtonActive]}>
-                <Feather name="gift" size={24} color="#fff" />
+              <View style={[styles.hintsRing, isFocused && styles.hintsRingActive]}>
+                <View style={styles.hintsButton}>
+                  <Image
+                    source={{ uri: "https://hintdrop.app/illustrations/giftbox-icon-negative.png" }}
+                    style={styles.hintsButtonIcon}
+                    resizeMode="contain"
+                  />
+                </View>
               </View>
               <Text style={[styles.label, { marginTop: 2 }, isFocused ? styles.labelActive : styles.labelInactive]}>{config.label}</Text>
             </Pressable>
@@ -90,8 +96,22 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
-  hintsButtonActive: {
-    borderWidth: 2,
+  hintsButtonIcon: {
+    width: 26,
+    height: 26,
+  },
+  // Matches web's "ring-2 ring-[#ff875d] ring-offset-2" - a coral
+  // ring with a visible gap (the offset) between it and the button
+  // itself, not a border drawn directly on top of the same-colored
+  // button (which would be invisible). Transparent border here is
+  // the offset/gap; the ring color only appears once active.
+  hintsRing: {
+    borderRadius: 32,
+    borderWidth: 3,
+    borderColor: "transparent",
+    padding: 3,
+  },
+  hintsRingActive: {
     borderColor: colors.coral,
   },
   label: {

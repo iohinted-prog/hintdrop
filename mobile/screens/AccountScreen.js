@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, StyleSheet, Pressable, Image, ScrollView, TextInput, Switch, Alert, ActivityIndicator, Platform } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Text from "../components/Text";
@@ -293,7 +294,7 @@ export default function AccountScreen({ onClose }) {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <Pressable onPress={onClose} style={styles.headerBack} hitSlop={8}>
           <Text style={styles.headerBackText}>← Back</Text>
@@ -435,14 +436,14 @@ export default function AccountScreen({ onClose }) {
           </Pressable>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card },
+  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingTop: 18, paddingBottom: 18, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card },
   headerBack: { paddingVertical: 4 },
   headerBackText: { fontSize: 14, fontWeight: "600", color: colors.coral },
   headerTitle: { fontSize: 17, fontWeight: "700", color: colors.textPrimary },

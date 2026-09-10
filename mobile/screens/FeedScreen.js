@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { View, StyleSheet, FlatList, RefreshControl, ActivityIndicator, Pressable, Image, ScrollView, TextInput, Linking, Modal } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -240,7 +241,7 @@ function FeedItemCard({ item, comments, activeComposerId, setActiveComposerId, d
               {metadata.preview_hints.filter((h) => h.image_url).map((hint, i) => (
                 <Pressable key={hint.id || i} style={styles.hintPreviewTile} onPress={() => onOpenHintDetail?.(hint)}>
                   <Image source={{ uri: hint.image_url }} style={styles.hintPreviewImage} />
-                  <View style={styles.hintPreviewOverlay} />
+                  <LinearGradient colors={["transparent", "rgba(0,0,0,0.6)"]} style={styles.hintPreviewOverlay} />
                   <View style={styles.hintPreviewTextWrap}>
                     <Text style={styles.hintPreviewTitle} numberOfLines={1}>{hint.title}</Text>
                     {hint.retailer ? <Text style={styles.hintPreviewRetailer} numberOfLines={1}>{hint.retailer}</Text> : null}
@@ -567,7 +568,7 @@ const styles = StyleSheet.create({
   timestamp: { fontSize: 12, color: colors.textMuted },
   hintPreviewTile: { width: 112, height: 112, borderRadius: radii.md, overflow: "hidden", marginRight: 8, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
   hintPreviewImage: { width: "100%", height: "100%", position: "absolute" },
-  hintPreviewOverlay: { position: "absolute", left: 0, right: 0, bottom: 0, height: "55%", backgroundColor: "rgba(0,0,0,0.35)" },
+  hintPreviewOverlay: { position: "absolute", left: 0, right: 0, bottom: 0, height: "55%" },
   hintPreviewTextWrap: { position: "absolute", left: 0, right: 0, bottom: 0, padding: 8 },
   hintPreviewTitle: { fontSize: 11, fontWeight: "700", color: "#fff" },
   hintPreviewRetailer: { fontSize: 10, color: "rgba(255,255,255,0.7)" },

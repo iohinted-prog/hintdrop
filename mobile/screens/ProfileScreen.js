@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Pressable, Image, ScrollView, Modal, ActivityIndicator, Alert, Linking, Animated, Share } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -330,7 +331,11 @@ export default function ProfileScreen({ userId, onBack }) {
             <Text style={{ fontSize: 32 }}>🎁</Text>
           </View>
         )}
-        <View style={styles.hintTileOverlay} />
+        <LinearGradient
+          colors={["transparent", "transparent", "rgba(0,0,0,0.65)"]}
+          locations={[0, 0.5, 1]}
+          style={styles.hintTileOverlay}
+        />
         {hint.starred ? <Text style={styles.hintTileStar}>⭐</Text> : null}
         <View style={styles.hintTileTextWrap}>
           <Text style={styles.hintTileTitle} numberOfLines={2}>{hint.title || "Hint"}</Text>
@@ -690,7 +695,7 @@ const styles = StyleSheet.create({
   hintsColumnsWrap: { flexDirection: "row", gap: 12 },
   hintTile: { borderRadius: radii.xl, overflow: "hidden", aspectRatio: 3 / 4, position: "relative", ...shadow },
   hintTileImage: { width: "100%", height: "100%", position: "absolute" },
-  hintTileOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.28)" },
+  hintTileOverlay: { ...StyleSheet.absoluteFillObject },
   hintTileStar: { position: "absolute", top: 8, right: 8, fontSize: 16 },
   hintTileTextWrap: { position: "absolute", left: 0, right: 0, bottom: 0, padding: 10 },
   hintTileTitle: { fontSize: 14, fontWeight: "700", color: "#fff" },
