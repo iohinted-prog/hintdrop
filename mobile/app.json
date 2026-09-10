@@ -8,6 +8,7 @@
     "userInterfaceStyle": "light",
     "backgroundColor": "#ff875d",
     "scheme": "hintdrop",
+    "platforms": ["ios", "android"],
     "ios": {
       "bundleIdentifier": "app.hintdrop.mobile",
       "supportsTablet": true,
