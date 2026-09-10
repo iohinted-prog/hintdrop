@@ -40,7 +40,14 @@ function FallbackImage() {
 async function toDataUri(url) {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    // Confirmed via Vercel logs: the fetch itself was working, just
+    // slower than the previous 5s timeout allowed for (AbortError,
+    // not a network/DNS failure) - retailer image hosts responding
+    // from this function's region evidently need more headroom than
+    // that. Raised to 9s, leaving room under typical serverless
+    // function execution limits for the DB queries and Satori render
+    // that still need to happen after this resolves.
+    const timeout = setTimeout(() => controller.abort(), 9000);
     const res = await fetch(url, {
       signal: controller.signal,
       headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
