@@ -18,7 +18,10 @@ import {
   Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import DraggableFlatList from "react-native-draggable-flatlist";
+import {
+  NestableScrollContainer,
+  NestableDraggableFlatList,
+} from "react-native-draggable-flatlist";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 
@@ -1022,7 +1025,6 @@ function BoardHintsScreen({ board, onBack }) {
   const [sharerName, setSharerName] = useState("");
   const [selectedHint, setSelectedHint] = useState(null);
   const [editingHint, setEditingHint] = useState(null);
-  const [isDraggingActive, setIsDraggingActive] = useState(false);
   const [error, setError] = useState("");
 
   const loadHints = useCallback(async () => {
@@ -1087,7 +1089,6 @@ function BoardHintsScreen({ board, onBack }) {
   }
 
   async function handleColumnDragEnd(colIndex, newColumnData) {
-    setIsDraggingActive(false);
     const currentColumns = splitIntoColumns(hints, 2);
     currentColumns[colIndex] = newColumnData;
     const reordered = rebuildFromColumns(currentColumns);
@@ -1149,9 +1150,8 @@ function BoardHintsScreen({ board, onBack }) {
         </Pressable>
       </View>
 
-      <ScrollView
+      <NestableScrollContainer
         contentContainerStyle={styles.boardScrollContent}
-        scrollEnabled={!isDraggingActive}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
         }
@@ -1221,12 +1221,10 @@ function BoardHintsScreen({ board, onBack }) {
               <View style={styles.masonryRow}>
                 {columns.map((columnHints, colIndex) => (
                   <View key={colIndex} style={styles.masonryColumn}>
-                    <DraggableFlatList
+                    <NestableDraggableFlatList
                       data={columnHints}
                       keyExtractor={(hint) => hint.id}
-                      scrollEnabled={false}
                       activationDistance={0}
-                      onDragBegin={() => setIsDraggingActive(true)}
                       onDragEnd={({ data }) => handleColumnDragEnd(colIndex, data)}
                       ItemSeparatorComponent={() => <View style={{ height: CARD_GAP }} />}
                       renderItem={({ item: hint, drag, isActive }) => (
@@ -1245,7 +1243,7 @@ function BoardHintsScreen({ board, onBack }) {
             </View>
           )}
         </View>
-      </ScrollView>
+      </NestableScrollContainer>
 
       <AddHintModal
         visible={addModalVisible}
