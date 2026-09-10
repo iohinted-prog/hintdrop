@@ -18,8 +18,8 @@ import CircleScreen from "./screens/CircleScreen";
 import AccountScreen from "./screens/AccountScreen";
 import CalendarScreen from "./screens/CalendarScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
+import ShopScreen from "./screens/ShopScreen";
 import BottomNav from "./components/BottomNav";
-import { ShopScreen } from "./screens/PlaceholderScreens";
 
 const Tab = createBottomTabNavigator();
 
