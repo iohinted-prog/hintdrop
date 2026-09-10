@@ -32,7 +32,18 @@ export default function ShareButton({
     e.stopPropagation();
     if (typeof navigator !== "undefined" && navigator.share) {
       const { url } = startShare();
-      await nativeShare({ title, text: shareText, url });
+      // Omitting text here on purpose when there's a url to share -
+      // passing both title/text AND url together is what produced
+      // 'Sharing text' with the raw url pasted into the message body
+      // (confirmed via screenshot) instead of a proper link share,
+      // which is why WhatsApp never generated a rich preview from it
+      // even though the destination page's own OG metadata was
+      // correct. url alone reads as a real link share, letting
+      // WhatsApp crawl it and build the preview itself. Also guards
+      // against title ever being null - the share sheet was
+      // literally displaying the string "null" as the title for the
+      // default board (title={board.is_default ? null : ...}).
+      await nativeShare({ title: title || shareText || "HintDrop", url });
       return;
     }
     setOpen((v) => !v);
