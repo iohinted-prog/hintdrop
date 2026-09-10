@@ -51,7 +51,11 @@ function BoardCard({ board, onPress }) {
       onPress={onPress}
     >
       <View style={styles.boardIconWrap}>
-        <Text style={styles.boardIcon}>🎁</Text>
+        <Image
+          source={require("../assets/logo-transparent.png")}
+          style={styles.boardIcon}
+          resizeMode="contain"
+        />
       </View>
       <Text style={styles.boardTitle} numberOfLines={1}>
         {board.title}
@@ -507,7 +511,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   boardIcon: {
-    fontSize: 24,
+    width: 30,
+    height: 30,
   },
   boardTitle: {
     fontSize: 15,
