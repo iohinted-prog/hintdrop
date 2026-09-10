@@ -104,7 +104,6 @@ export default function SignInScreen() {
         <Text style={styles.title}>
           Hint<Text style={styles.titleAccent}>Drop</Text>
         </Text>
-        <Text style={styles.subtitle}>Sign in to see your hints, circle, and calendar.</Text>
 
         <TextInput
           style={styles.input}
@@ -189,16 +188,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#0f172a",
     textAlign: "center",
-    marginBottom: 4,
+    marginBottom: 32,
   },
   titleAccent: {
     color: "#ff875d",
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#64748b",
-    textAlign: "center",
-    marginBottom: 32,
   },
   input: {
     height: 52,
