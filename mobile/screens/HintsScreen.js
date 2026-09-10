@@ -1010,6 +1010,7 @@ function BoardHintsScreen({ board, onBack }) {
   const [sharerName, setSharerName] = useState("");
   const [selectedHint, setSelectedHint] = useState(null);
   const [editingHint, setEditingHint] = useState(null);
+  const [isDraggingActive, setIsDraggingActive] = useState(false);
   const [error, setError] = useState("");
 
   const loadHints = useCallback(async () => {
@@ -1074,6 +1075,7 @@ function BoardHintsScreen({ board, onBack }) {
   }
 
   async function handleColumnDragEnd(colIndex, newColumnData) {
+    setIsDraggingActive(false);
     const currentColumns = splitIntoColumns(hints, 2);
     currentColumns[colIndex] = newColumnData;
     const reordered = rebuildFromColumns(currentColumns);
@@ -1137,6 +1139,7 @@ function BoardHintsScreen({ board, onBack }) {
 
       <ScrollView
         contentContainerStyle={styles.boardScrollContent}
+        scrollEnabled={!isDraggingActive}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
         }
@@ -1211,6 +1214,7 @@ function BoardHintsScreen({ board, onBack }) {
                       keyExtractor={(hint) => hint.id}
                       scrollEnabled={false}
                       activationDistance={0}
+                      onDragBegin={() => setIsDraggingActive(true)}
                       onDragEnd={({ data }) => handleColumnDragEnd(colIndex, data)}
                       ItemSeparatorComponent={() => <View style={{ height: CARD_GAP }} />}
                       renderItem={({ item: hint, drag, isActive }) => (
