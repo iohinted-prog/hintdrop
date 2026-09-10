@@ -374,7 +374,7 @@ export default function ProfileClient({ userId }) {
 
   const inner = (
     <main className="min-h-screen bg-[#fffaf7]">
-      {loading ? (
+      {(loading || collabStatusLoading) ? (
         <div className="border-b border-[#f0dfd6] bg-white px-4 py-3 sm:px-8 sm:py-4">
           <div className="mx-auto max-w-[1200px] animate-pulse">
             <div className="flex items-center justify-between gap-3">
@@ -387,6 +387,10 @@ export default function ProfileClient({ userId }) {
                 <div className="h-5 w-40 rounded-full bg-[#f0e4dd]" />
                 <div className="h-4 w-24 rounded-full bg-[#f0e4dd]" />
               </div>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <div className="h-10 flex-1 rounded-full bg-[#f0e4dd]" />
+              <div className="h-10 flex-1 rounded-full bg-[#f0e4dd]" />
             </div>
           </div>
         </div>
