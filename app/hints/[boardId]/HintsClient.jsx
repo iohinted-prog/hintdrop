@@ -1763,6 +1763,7 @@ export default function HintsClient({ boardId }) {
   const { formatCurrency } = useCurrencyFormatter();
   const { currency: userCurrency } = usePreferences();
   const [board, setBoard] = useState(null);
+  const [isCollaboratorView, setIsCollaboratorView] = useState(false);
   const [boardLoading, setBoardLoading] = useState(true);
   const [togglingBoardPrivacy, setTogglingBoardPrivacy] = useState(false);
   const [collaborateOpen, setCollaborateOpen] = useState(false);
@@ -1919,10 +1920,29 @@ export default function HintsClient({ boardId }) {
           .eq("id", boardId)
           .maybeSingle();
         if (cancelled) return;
-        // Boards are owner-only workspaces (sharing is via the separate
-        // public /b/[boardId] page) — if this board isn't ours, or doesn't
-        // exist, don't fall through to loading unscoped hints
-        if (!boardRow || boardRow.user_id !== user.id) {
+
+        let hasAccess = Boolean(boardRow) && boardRow.user_id === user.id;
+        let asCollaborator = false;
+        if (boardRow && !hasAccess) {
+          // Not the owner - check for accepted collaborator access
+          // before giving up. Collaborators already have full RLS
+          // read/write on this board's hints; this is the missing
+          // piece that actually let them reach the editing UI itself
+          // rather than just holding permission with nowhere to use it.
+          const { data: collabRow } = await supabase
+            .from("board_collaborators")
+            .select("status")
+            .eq("board_id", boardId)
+            .eq("user_id", user.id)
+            .eq("status", "accepted")
+            .maybeSingle();
+          if (collabRow) {
+            hasAccess = true;
+            asCollaborator = true;
+          }
+        }
+
+        if (!boardRow || !hasAccess) {
           setBoard(null);
           setHints([]);
           setIsLoading(false);
@@ -1930,6 +1950,7 @@ export default function HintsClient({ boardId }) {
           return;
         }
         setBoard(boardRow);
+        setIsCollaboratorView(asCollaborator);
         recordBoardVisit(supabase, user.id, boardId);
       }
       setBoardLoading(false);
@@ -2885,12 +2906,12 @@ export default function HintsClient({ boardId }) {
                 <button
                   type="button"
                   onClick={toggleBoardPrivate}
-                  disabled={togglingBoardPrivacy}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-4 py-2 text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0] disabled:opacity-60"
+                  disabled={togglingBoardPrivacy || isCollaboratorView}
+                  className={`inline-flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-4 py-2 text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0] disabled:opacity-60 ${isCollaboratorView ? "cursor-default" : ""}`}
                 >
                   {board.is_private ? "🔒 Private" : "Public"}
                 </button>
-                {!board.is_default && (
+                {!board.is_default && !isCollaboratorView && (
                   <button
                     type="button"
                     onClick={() => setBoardMenuOpen((v) => !v)}

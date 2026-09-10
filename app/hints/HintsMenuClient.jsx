@@ -13,7 +13,7 @@ function errorToMessage(value) {
   return String(value);
 }
 
-function BoardCard({ board, onDelete }) {
+function BoardCard({ board, onDelete, ownerName }) {
   return (
     <Link
       href={`/hints/${board.id}`}
@@ -29,7 +29,7 @@ function BoardCard({ board, onDelete }) {
             {board.title}
           </p>
           <p className="mt-0.5 text-[12px] text-slate-400">
-            {board.is_default ? "Personal" : "Hints for someone else"} · {board.hintCount} Hint{board.hintCount === 1 ? "" : "s"}
+            {ownerName ? `Collaborating with ${ownerName}` : board.is_default ? "Personal" : "Hints for someone else"} · {board.hintCount} Hint{board.hintCount === 1 ? "" : "s"}
           </p>
         </div>
         <span className="shrink-0 text-slate-300 transition group-hover:text-[#df7b59]">→</span>
@@ -56,6 +56,7 @@ export default function HintsMenuClient() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState(null);
   const [boards, setBoards] = useState([]);
+  const [collabBoards, setCollabBoards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -123,6 +124,30 @@ export default function HintsMenuClient() {
 
       if (cancelled) return;
       setBoards(boardsWithPreviews);
+
+      // Boards this person collaborates on but doesn't own - the only
+      // way to find one again previously was the original shared
+      // link, with nowhere in their own Hints menu to see it.
+      const { data: collabRows } = await supabase
+        .from("board_collaborators")
+        .select("board_id, hint_boards(id, title, is_default, is_private, user_id, profiles:user_id(full_name))")
+        .eq("user_id", user.id)
+        .eq("status", "accepted");
+
+      const collabBoardsWithPreviews = await Promise.all(
+        (collabRows || [])
+          .filter(row => row.hint_boards)
+          .map(async (row) => {
+            const board = row.hint_boards;
+            const [{ count }, { data: previewHints }] = await Promise.all([
+              supabase.from("hints").select("id", { count: "exact", head: true }).eq("board_id", board.id),
+              supabase.from("hints").select("image_url").eq("board_id", board.id).order("position", { ascending: true }).limit(4),
+            ]);
+            return { ...board, hintCount: count || 0, previewHints: previewHints || [], ownerName: board.profiles?.full_name || "Someone" };
+          })
+      );
+      if (cancelled) return;
+      setCollabBoards(collabBoardsWithPreviews);
       setIsLoading(false);
     }
 
@@ -229,6 +254,7 @@ export default function HintsMenuClient() {
                 <BoardCard key={board.id} board={board} onDelete={handleDeleteBoard} />
               ))}
 
+
               {showCreateForm ? (
                 <form
                   onSubmit={handleCreateBoard}
@@ -292,6 +318,19 @@ export default function HintsMenuClient() {
                   <span className="text-[13px] font-semibold">New Hints list</span>
                 </button>
               )}
+            </div>
+          )}
+
+          {!isLoading && collabBoards.length > 0 && (
+            <div className="mt-10">
+              <p className="mb-4 text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                Collaborating on
+              </p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {collabBoards.map((board) => (
+                  <BoardCard key={board.id} board={board} ownerName={board.ownerName} />
+                ))}
+              </div>
             </div>
           )}
         </div>
