@@ -10,7 +10,8 @@ import { supabase } from "./lib/supabase";
 import SignInScreen from "./screens/SignInScreen";
 import FeedScreen from "./screens/FeedScreen";
 import HintsScreen from "./screens/HintsScreen";
-import { CircleScreen, CalendarScreen, ShopScreen } from "./screens/PlaceholderScreens";
+import CircleScreen from "./screens/CircleScreen";
+import { CalendarScreen, ShopScreen } from "./screens/PlaceholderScreens";
 
 const Tab = createBottomTabNavigator();
 

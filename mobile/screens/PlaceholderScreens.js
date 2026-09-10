@@ -17,10 +17,6 @@ function ComingSoon({ label }) {
   );
 }
 
-export function CircleScreen() {
-  return <ComingSoon label="Circle" />;
-}
-
 export function CalendarScreen() {
   return <ComingSoon label="Calendar" />;
 }
