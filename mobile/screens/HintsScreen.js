@@ -355,6 +355,7 @@ function BoardListScreen({ onSelectBoard }) {
       {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
 
       <FlatList
+        key="board-list"
         data={boards}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -432,6 +433,7 @@ function BoardHintsScreen({ board, onBack }) {
         </View>
       ) : (
         <FlatList
+          key="hints-grid"
           data={hints}
           keyExtractor={(item) => item.id}
           numColumns={2}
