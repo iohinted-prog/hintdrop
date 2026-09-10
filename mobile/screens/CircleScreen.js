@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { View, FlatList, StyleSheet, RefreshControl, ActivityIndicator, TextInput, Pressable, Image, Modal, ScrollView, Share, Alert } from "react-native";
+import { useCallback, useEffect, useState, useRef } from "react";
+import { View, FlatList, StyleSheet, RefreshControl, ActivityIndicator, TextInput, Pressable, Image, Modal, ScrollView, Share, Alert, Animated } from "react-native";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -84,6 +84,36 @@ function buildContact(row) {
     note: Array.isArray(row.interests) && row.interests.length ? row.interests.slice(0, 3).join(" · ") : role,
     status: row.public_state || "contact",
   };
+}
+
+// Simple opacity pulse, matching web's animate-pulse loading rows
+// (avatar circle + two text-line placeholders, 3 rows) rather than a
+// plain spinner.
+function Pulse({ style }) {
+  const opacity = useRef(new Animated.Value(0.5)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.5, duration: 700, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
+  return <Animated.View style={[style, { opacity }]} />;
+}
+
+function ContactSkeletonRow() {
+  return (
+    <View style={styles.skeletonRow}>
+      <Pulse style={styles.skeletonAvatar} />
+      <View style={{ flex: 1, gap: 8 }}>
+        <Pulse style={styles.skeletonLineWide} />
+        <Pulse style={styles.skeletonLineNarrow} />
+      </View>
+    </View>
+  );
 }
 
 function ContactAvatar({ contact, size = 44 }) {
@@ -364,6 +394,22 @@ export default function CircleScreen() {
     }
   }, [loadContacts, user?.id]);
 
+  // Live-update, matching web: a friend request being accepted (by
+  // either side), a new contact being added, or an existing one
+  // changing now refreshes the list immediately rather than needing
+  // a manual pull-to-refresh to see any of it.
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`circle-live-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "contacts", filter: `user_id=eq.${user.id}` }, () => loadContacts())
+      .on("postgres_changes", { event: "*", schema: "public", table: "circle_invites" }, () => loadContacts())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, loadContacts]);
+
   async function handleRefresh() {
     setRefreshing(true);
     await loadContacts();
@@ -425,10 +471,14 @@ export default function CircleScreen() {
       />
 
       {loading ? (
-        <ActivityIndicator color={colors.coral} style={{ marginTop: 24 }} />
+        <View>
+          <ContactSkeletonRow />
+          <ContactSkeletonRow />
+          <ContactSkeletonRow />
+        </View>
       ) : filtered.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyEmoji}>🎁</Text>
+          <Image source={{ uri: "https://hintdrop.app/illustrations/hero-character.png" }} style={styles.emptyIllustration} resizeMode="contain" />
           <Text style={styles.emptyTitle}>No contacts yet</Text>
           <Text style={styles.emptySubtitle}>Add the people you'd like to remember birthdays and gift ideas for.</Text>
           <Pressable style={styles.addButton} onPress={() => setAddVisible(true)}>
@@ -441,7 +491,12 @@ export default function CircleScreen() {
           keyExtractor={(s, i) => s.title || `section-${i}`}
           renderItem={({ item }) => (
             <View>
-              {item.title ? <Text style={styles.sectionHeader}>{item.title.toUpperCase()}</Text> : null}
+              {item.title ? (
+                <View style={styles.sectionHeaderRow}>
+                  {item.title === "Upcoming birthdays" ? <Text style={styles.sectionHeaderIcon}>🎂</Text> : null}
+                  <Text style={styles.sectionHeader}>{item.title.toUpperCase()}</Text>
+                </View>
+              ) : null}
               {item.data.map((contact) => (
                 <ContactCard key={contact.id} contact={contact} onOpenProfile={setProfileContact} onDelete={handleDelete} />
               ))}
@@ -483,11 +538,27 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   listContent: { paddingBottom: 40 },
-  sectionHeader: { fontSize: 12, fontWeight: "700", color: colors.textSecondary, letterSpacing: 0.6, marginTop: 20, marginBottom: 10 },
-  emptyState: { alignItems: "center", paddingTop: 60, gap: 6 },
-  emptyEmoji: { fontSize: 40, marginBottom: 8 },
+  sectionHeaderRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 20, marginBottom: 10 },
+  sectionHeaderIcon: { fontSize: 15 },
+  sectionHeader: { fontSize: 12, fontWeight: "700", color: colors.textSecondary, letterSpacing: 0.6 },
+  emptyState: { alignItems: "center", paddingTop: 40, gap: 6 },
+  emptyIllustration: { width: 160, height: 160, marginBottom: 8, opacity: 0.9 },
   emptyTitle: { fontSize: 14, fontWeight: "600", color: colors.textSecondary },
   emptySubtitle: { fontSize: 13, color: colors.textMuted, textAlign: "center", paddingHorizontal: 32, marginBottom: 8 },
+  skeletonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.card,
+    padding: 16,
+    marginBottom: 10,
+  },
+  skeletonAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#f0e4dd" },
+  skeletonLineWide: { height: 14, width: 130, borderRadius: 999, backgroundColor: "#f0e4dd" },
+  skeletonLineNarrow: { height: 12, width: 80, borderRadius: 999, backgroundColor: "#f5ede8" },
   contactCard: {
     flexDirection: "row",
     alignItems: "flex-start",
