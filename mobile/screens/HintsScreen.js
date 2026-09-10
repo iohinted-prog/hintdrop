@@ -74,6 +74,23 @@ function splitIntoColumns(items, columnCount = 2) {
   return columns;
 }
 
+// Mirrors buildShareUrl/buildShareText in lib/share.js exactly - a
+// random 8-char token appended as ?s=, and "{name}'s hint: \"title\""
+// (or just "{name}'s hint" with no title) as the share text. Skips
+// trackShareEvent's analytics write - that's a pure tracking side
+// effect, not something the shared link/text depends on.
+function buildShareUrl(path) {
+  const token = Math.random().toString(36).slice(2, 10);
+  const url = new URL(path, "https://hintdrop.app");
+  url.searchParams.set("s", token);
+  return url.toString();
+}
+
+function buildShareText({ sharerName, title }) {
+  const name = (sharerName || "").trim() || "Someone";
+  return title ? `${name}'s hint: "${title}"` : `${name}'s hint`;
+}
+
 function PreviewCell({ hint }) {
   return hint?.image_url ? (
     <Image source={{ uri: hint.image_url }} style={styles.previewCellImage} resizeMode="cover" />
@@ -130,7 +147,7 @@ function BoardPreview({ previewHints = [] }) {
   );
 }
 
-function HintDetailModal({ hint, visible, onClose, onUpdated, onEdit }) {
+function HintDetailModal({ hint, visible, onClose, onUpdated, onEdit, sharerName }) {
   const [isPrivate, setIsPrivate] = useState(false);
   const [starred, setStarred] = useState(false);
 
@@ -154,9 +171,10 @@ function HintDetailModal({ hint, visible, onClose, onUpdated, onEdit }) {
   }
 
   async function handleShare() {
+    const url = buildShareUrl(`/h/${hint.id}`);
     try {
       await Share.share({
-        message: `Check out this hint on HintDrop: https://hintdrop.app/h/${hint.id}`,
+        message: `${buildShareText({ sharerName, title: hint.title })} ${url}`,
       });
     } catch {
       // Dismissed - nothing to do.
@@ -190,6 +208,13 @@ function HintDetailModal({ hint, visible, onClose, onUpdated, onEdit }) {
                 {hint.title || "Hint"}
               </Text>
               {hint.retailer ? <Text style={styles.detailRetailer}>{hint.retailer}</Text> : null}
+              {hint.size || hint.colour ? (
+                <Text style={styles.detailSizeColour}>
+                  {hint.size ? `📏 Size: ${hint.size}${hint.size_type ? ` (${hint.size_type})` : ""}` : ""}
+                  {hint.size && hint.colour ? "  ·  " : ""}
+                  {hint.colour ? `🎨 Colour: ${hint.colour}` : ""}
+                </Text>
+              ) : null}
               {hint.price_text ? <Text style={styles.detailPrice}>{hint.price_text}</Text> : null}
 
               <View style={styles.detailToggleRow}>
@@ -211,7 +236,7 @@ function HintDetailModal({ hint, visible, onClose, onUpdated, onEdit }) {
                 </Pressable>
               </View>
 
-              <Pressable style={styles.detailShareButton} onPress={handleShare}>
+              <Pressable style={styles.detailShareButton} onPress={() => handleShare()}>
                 <Text style={styles.detailShareText}>Share this hint</Text>
               </Pressable>
 
@@ -289,54 +314,68 @@ function EditHintModal({ hint, visible, onClose, onSaved }) {
         style={styles.modalBackdrop}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.modalSheet}>
-          <Text style={styles.modalTitle}>Edit hint</Text>
+        <View style={[styles.modalSheet, styles.editSheet]}>
+          <ScrollView keyboardShouldPersistTaps="handled">
+            <Text style={styles.modalTitle}>Edit hint</Text>
 
-          <Text style={styles.editLabel}>Link</Text>
-          <TextInput
-            style={styles.modalInput}
-            value={url}
-            onChangeText={setUrl}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-          />
+            <Text style={styles.editLabel}>Link</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={url}
+              onChangeText={setUrl}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
 
-          <Text style={styles.editLabel}>Name</Text>
-          <TextInput style={styles.modalInput} value={title} onChangeText={setTitle} />
+            <Text style={styles.editLabel}>Name</Text>
+            <TextInput style={styles.modalInput} value={title} onChangeText={setTitle} />
 
-          <Text style={styles.editLabel}>Price</Text>
-          <TextInput style={styles.modalInput} value={priceText} onChangeText={setPriceText} />
+            <Text style={styles.editLabel}>Price</Text>
+            <TextInput style={styles.modalInput} value={priceText} onChangeText={setPriceText} />
 
-          <View style={styles.editRow}>
-            <View style={styles.editRowItem}>
-              <Text style={styles.editLabel}>Size</Text>
-              <TextInput style={styles.modalInput} value={size} onChangeText={setSize} />
+            <View style={styles.editRow}>
+              <View style={styles.editRowItem}>
+                <Text style={styles.editLabel}>Size</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={size}
+                  onChangeText={setSize}
+                  placeholder='M, 12 1/2'
+                  placeholderTextColor="#c9b8ab"
+                />
+              </View>
+              <View style={styles.editRowItem}>
+                <Text style={styles.editLabel}>Colour</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={colour}
+                  onChangeText={setColour}
+                  placeholder="Navy"
+                  placeholderTextColor="#c9b8ab"
+                />
+              </View>
             </View>
-            <View style={styles.editRowItem}>
-              <Text style={styles.editLabel}>Colour</Text>
-              <TextInput style={styles.modalInput} value={colour} onChangeText={setColour} />
+
+            {error ? <Text style={styles.modalError}>{error}</Text> : null}
+
+            <View style={styles.modalButtonRow}>
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={onClose}
+                disabled={saving}
+              >
+                <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
+              </Pressable>
+              <Pressable style={styles.modalButton} onPress={handleSave} disabled={saving}>
+                {saving ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.modalButtonText}>Save</Text>
+                )}
+              </Pressable>
             </View>
-          </View>
-
-          {error ? <Text style={styles.modalError}>{error}</Text> : null}
-
-          <View style={styles.modalButtonRow}>
-            <Pressable
-              style={[styles.modalButton, styles.modalButtonSecondary]}
-              onPress={onClose}
-              disabled={saving}
-            >
-              <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
-            </Pressable>
-            <Pressable style={styles.modalButton} onPress={handleSave} disabled={saving}>
-              {saving ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.modalButtonText}>Save</Text>
-              )}
-            </Pressable>
-          </View>
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -641,6 +680,7 @@ function BoardHintsScreen({ board, onBack }) {
   const [modalInitialUrl, setModalInitialUrl] = useState(null);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [isPrivate, setIsPrivate] = useState(Boolean(board.is_private));
+  const [sharerName, setSharerName] = useState("");
   const [selectedHint, setSelectedHint] = useState(null);
   const [editingHint, setEditingHint] = useState(null);
   const [error, setError] = useState("");
@@ -688,6 +728,18 @@ function BoardHintsScreen({ board, onBack }) {
     loadHints().finally(() => setLoading(false));
   }, [loadHints]);
 
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.full_name) setSharerName(data.full_name);
+      });
+  }, [user?.id]);
+
   async function handleRefresh() {
     setRefreshing(true);
     await loadHints();
@@ -714,10 +766,11 @@ function BoardHintsScreen({ board, onBack }) {
   }
 
   async function handleShare() {
-    const label = board.is_default ? "my Hints" : `"${board.title}"`;
+    const url = buildShareUrl(`/profile/${user?.id}?board=${board.id}`);
+    const title = board.is_default ? null : board.title;
     try {
       await Share.share({
-        message: `Check out ${label} on HintDrop: https://hintdrop.app/profile/${user?.id}?board=${board.id}`,
+        message: `${buildShareText({ sharerName, title })} ${url}`,
       });
     } catch {
       // User dismissed the share sheet - nothing to do.
@@ -841,6 +894,7 @@ function BoardHintsScreen({ board, onBack }) {
         onClose={() => setSelectedHint(null)}
         onUpdated={loadHints}
         onEdit={setEditingHint}
+        sharerName={sharerName}
       />
 
       <EditHintModal
@@ -1191,6 +1245,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: 24,
   },
+  editSheet: {
+    maxHeight: "85%",
+  },
   modalTitle: {
     fontSize: 18,
     fontWeight: "700",
@@ -1327,6 +1384,11 @@ const styles = StyleSheet.create({
   detailRetailer: {
     fontSize: 13,
     color: "#94a3b8",
+    marginBottom: 4,
+  },
+  detailSizeColour: {
+    fontSize: 13,
+    color: "#475569",
     marginBottom: 4,
   },
   detailPrice: {
