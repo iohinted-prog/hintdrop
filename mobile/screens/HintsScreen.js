@@ -573,9 +573,8 @@ function BoardHintsScreen({ board, onBack }) {
 
         <View style={styles.masonryFrame}>
           <Image
-            source={require("../assets/grid-pattern-tile.png")}
-            style={StyleSheet.absoluteFillObject}
-            resizeMode="repeat"
+            source={require("../assets/grid-pattern-tall.png")}
+            style={styles.gridPatternImage}
           />
           {loading ? (
             <View style={styles.frameCentered}>
@@ -778,6 +777,13 @@ const styles = StyleSheet.create({
     borderColor: "#efe0d7",
     backgroundColor: "#fffdfb",
     overflow: "hidden",
+  },
+  gridPatternImage: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: 4000,
   },
   boardScrollContent: {
     flexGrow: 1,
