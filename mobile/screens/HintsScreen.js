@@ -3,6 +3,7 @@ import {
   View,
   Text,
   FlatList,
+  SectionList,
   ScrollView,
   Image,
   StyleSheet,
@@ -439,7 +440,7 @@ function EditHintModal({ hint, visible, onClose, onSaved, onDeleted }) {
   );
 }
 
-function BoardCard({ board, onPress }) {
+function BoardCard({ board, onPress, ownerName }) {
   return (
     <Pressable
       style={({ pressed }) => [styles.boardCard, pressed && styles.boardCardPressed]}
@@ -455,7 +456,7 @@ function BoardCard({ board, onPress }) {
             {board.title}
           </Text>
           <Text style={styles.boardSubtitle}>
-            {board.is_default ? "Personal" : "Hints for someone else"} · {board.hintCount}{" "}
+            {ownerName ? `Collaborating with ${ownerName}` : board.is_default ? "Personal" : "Hints for someone else"} · {board.hintCount}{" "}
             {board.hintCount === 1 ? "Hint" : "Hints"}
           </Text>
         </View>
@@ -919,6 +920,7 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
 function BoardListScreen({ onSelectBoard }) {
   const { user } = useAuth();
   const [boards, setBoards] = useState([]);
+  const [collabBoards, setCollabBoards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -958,6 +960,30 @@ function BoardListScreen({ onSelectBoard }) {
       })
     );
     setBoards(withPreviews);
+
+    // Boards this person collaborates on but doesn't own - matches
+    // the same "Collaborating on" section added to the web app's
+    // Hints menu earlier today, so a collaborator has somewhere to
+    // find a board again beyond the original shared link.
+    const { data: collabRows } = await supabase
+      .from("board_collaborators")
+      .select("board_id, hint_boards(id, title, is_default, is_private, user_id, profiles:user_id(full_name))")
+      .eq("user_id", user.id)
+      .eq("status", "accepted");
+
+    const collabWithPreviews = await Promise.all(
+      (collabRows || [])
+        .filter((row) => row.hint_boards)
+        .map(async (row) => {
+          const cb = row.hint_boards;
+          const [{ count }, { data: previewHints }] = await Promise.all([
+            supabase.from("hints").select("id", { count: "exact", head: true }).eq("board_id", cb.id),
+            supabase.from("hints").select("image_url").eq("board_id", cb.id).order("position", { ascending: true }).limit(4),
+          ]);
+          return { ...cb, hintCount: count || 0, previewHints: previewHints || [], ownerName: cb.profiles?.full_name || "Someone", isCollab: true };
+        })
+    );
+    setCollabBoards(collabWithPreviews);
   }, [user?.id]);
 
   useEffect(() => {
@@ -979,6 +1005,11 @@ function BoardListScreen({ onSelectBoard }) {
     );
   }
 
+  const sections = [
+    { title: null, data: boards },
+    ...(collabBoards.length > 0 ? [{ title: "Collaborating on", data: collabBoards }] : []),
+  ];
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -987,13 +1018,18 @@ function BoardListScreen({ onSelectBoard }) {
 
       {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
 
-      <FlatList
+      <SectionList
         key="board-list"
-        data={boards}
+        sections={sections}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <BoardCard board={item} onPress={() => onSelectBoard(item)} />
+          <BoardCard board={item} onPress={() => onSelectBoard(item)} ownerName={item.ownerName} />
         )}
+        renderSectionHeader={({ section }) =>
+          section.title ? (
+            <Text style={styles.collabSectionHeader}>{section.title.toUpperCase()}</Text>
+          ) : null
+        }
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
@@ -1008,6 +1044,208 @@ function BoardListScreen({ onSelectBoard }) {
   );
 }
 
+// Mobile version of app/components/CollaborateModal.jsx - owner
+// invites Circle contacts or by email, sees/approves pending
+// requests, and can remove an accepted collaborator. Simplified vs
+// the web version (no share-invite-link button, no avatar photos -
+// initials only), but the real data flow is the same: board_
+// collaborators rows, the collab-notify API for email + bell
+// notification on both request and accept.
+function CollaborateModal({ visible, onClose, board, currentUserId }) {
+  const [circleContacts, setCircleContacts] = useState([]);
+  const [collaborators, setCollaborators] = useState([]);
+  const [emailInput, setEmailInput] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadData = useCallback(async () => {
+    if (!board?.id) return;
+    setError("");
+    const [{ data: contactRows }, { data: collabRows }] = await Promise.all([
+      supabase
+        .from("contacts")
+        .select("id, name, email, profile_id, profiles:profile_id(full_name)")
+        .eq("user_id", currentUserId)
+        .not("profile_id", "is", null),
+      supabase
+        .from("board_collaborators")
+        .select("id, user_id, invited_email, status, profiles:user_id(full_name)")
+        .eq("board_id", board.id),
+    ]);
+    setCircleContacts(contactRows || []);
+    setCollaborators(collabRows || []);
+  }, [board?.id, currentUserId]);
+
+  useEffect(() => {
+    if (visible) {
+      setLoading(true);
+      loadData().finally(() => setLoading(false));
+    }
+  }, [visible, loadData]);
+
+  const invitedProfileIds = new Set(collaborators.map((c) => c.user_id).filter(Boolean));
+  const availableContacts = circleContacts.filter((c) => !invitedProfileIds.has(c.profile_id));
+  const pending = collaborators.filter((c) => c.status === "pending");
+  const accepted = collaborators.filter((c) => c.status === "accepted");
+
+  async function inviteContact(contact) {
+    setError("");
+    const { error: insertError } = await supabase.from("board_collaborators").insert({
+      board_id: board.id,
+      user_id: contact.profile_id,
+      status: "pending",
+      requested_by: currentUserId,
+    });
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+    fetch("https://hintdrop.app/api/collab-notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "request", boardId: board.id, requesterId: contact.profile_id }),
+    }).catch(() => {});
+    loadData();
+  }
+
+  async function inviteByEmail() {
+    const email = emailInput.trim().toLowerCase();
+    if (!email) return;
+    setError("");
+    const { data: profileMatchRows } = await supabase.rpc("get_profile_id_by_email", { target_email: email });
+    const profileMatch = profileMatchRows?.[0]?.id;
+    if (!profileMatch) {
+      setError("No HintDrop account found for that email yet.");
+      return;
+    }
+    const { error: insertError } = await supabase.from("board_collaborators").insert({
+      board_id: board.id,
+      user_id: profileMatch,
+      invited_email: email,
+      status: "pending",
+      requested_by: currentUserId,
+    });
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+    fetch("https://hintdrop.app/api/collab-notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "request", boardId: board.id, requesterId: profileMatch }),
+    }).catch(() => {});
+    setEmailInput("");
+    loadData();
+  }
+
+  async function approveRequest(collabId, requesterId) {
+    const { error: updateError } = await supabase.from("board_collaborators").update({ status: "accepted" }).eq("id", collabId);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    fetch("https://hintdrop.app/api/collab-notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "accepted", boardId: board.id, requesterId }),
+    }).catch(() => {});
+    loadData();
+  }
+
+  async function declineOrRemove(collabId) {
+    await supabase.from("board_collaborators").delete().eq("id", collabId);
+    loadData();
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.collabOverlay}>
+        <View style={styles.collabCard}>
+          <View style={styles.collabHeaderRow}>
+            <Text style={styles.collabHeaderTitle}>Collaborate on "{board?.title}"</Text>
+            <Pressable onPress={onClose} hitSlop={12}>
+              <Text style={styles.collabCloseText}>✕</Text>
+            </Pressable>
+          </View>
+
+          {loading ? (
+            <ActivityIndicator color="#ff875d" style={{ marginTop: 24 }} />
+          ) : (
+            <ScrollView style={{ maxHeight: "100%" }}>
+              {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
+
+              {pending.length > 0 && (
+                <View style={styles.collabSection}>
+                  <Text style={styles.collabSectionTitle}>Pending requests</Text>
+                  {pending.map((c) => (
+                    <View key={c.id} style={styles.collabRow}>
+                      <Text style={styles.collabRowName}>{c.profiles?.full_name || c.invited_email || "Someone"}</Text>
+                      <View style={{ flexDirection: "row", gap: 8 }}>
+                        <Pressable style={styles.collabApproveButton} onPress={() => approveRequest(c.id, c.user_id)}>
+                          <Text style={styles.collabApproveText}>Approve</Text>
+                        </Pressable>
+                        <Pressable style={styles.collabDeclineButton} onPress={() => declineOrRemove(c.id)}>
+                          <Text style={styles.collabDeclineText}>Decline</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {accepted.length > 0 && (
+                <View style={styles.collabSection}>
+                  <Text style={styles.collabSectionTitle}>Collaborating</Text>
+                  {accepted.map((c) => (
+                    <View key={c.id} style={styles.collabRow}>
+                      <Text style={styles.collabRowName}>{c.profiles?.full_name || "Someone"}</Text>
+                      <Pressable onPress={() => declineOrRemove(c.id)}>
+                        <Text style={styles.collabRemoveText}>Remove</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              <View style={styles.collabSection}>
+                <Text style={styles.collabSectionTitle}>Invite from your circle</Text>
+                {availableContacts.length === 0 ? (
+                  <Text style={styles.collabEmptyText}>Nobody left to invite from your circle.</Text>
+                ) : (
+                  availableContacts.map((contact) => (
+                    <Pressable key={contact.id} style={styles.collabRow} onPress={() => inviteContact(contact)}>
+                      <Text style={styles.collabRowName}>{contact.profiles?.full_name || contact.name}</Text>
+                      <Text style={styles.collabInviteText}>Invite</Text>
+                    </Pressable>
+                  ))
+                )}
+              </View>
+
+              <View style={styles.collabSection}>
+                <Text style={styles.collabSectionTitle}>Invite by email</Text>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <TextInput
+                    style={styles.collabEmailInput}
+                    value={emailInput}
+                    onChangeText={setEmailInput}
+                    placeholder="their@email.com"
+                    placeholderTextColor="#94a3b8"
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                  />
+                  <Pressable style={styles.collabInviteEmailButton} onPress={inviteByEmail}>
+                    <Text style={styles.collabApproveText}>Send</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </ScrollView>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function BoardHintsScreen({ board, onBack }) {
   const { user } = useAuth();
   const [hints, setHints] = useState([]);
@@ -1018,6 +1256,19 @@ function BoardHintsScreen({ board, onBack }) {
   const [modalInitialUrl, setModalInitialUrl] = useState(null);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [isPrivate, setIsPrivate] = useState(Boolean(board.is_private));
+  // Set when this board was opened from the "Collaborating on"
+  // section rather than the owner's own list - gates owner-only
+  // actions (privacy toggle, the 3-dot menu) the same way the
+  // isCollaboratorView flag does on web, since RLS already allows a
+  // collaborator to read/write hints here but shouldn't imply they
+  // can rename, delete, or manage collaborators on someone else's
+  // board.
+  const isCollaboratorView = Boolean(board.isCollab);
+  const [collabModalVisible, setCollabModalVisible] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [renameModalVisible, setRenameModalVisible] = useState(false);
+  const [renameDraft, setRenameDraft] = useState(board.title);
+  const [boardTitle, setBoardTitle] = useState(board.title);
   const [sharerName, setSharerName] = useState("");
   const [selectedHint, setSelectedHint] = useState(null);
   const [editingHint, setEditingHint] = useState(null);
@@ -1026,10 +1277,14 @@ function BoardHintsScreen({ board, onBack }) {
   const loadHints = useCallback(async () => {
     if (!user?.id) return;
     setError("");
+    // Scoped by board only, not the viewer's own user_id - a board's
+    // hints always belong to its owner, so also filtering by the
+    // current viewer's id breaks collaborator access entirely (their
+    // id never matches hints.user_id, only the owner's does). Same
+    // bug fixed on web earlier today.
     const { data, error } = await supabase
       .from("hints")
       .select("*")
-      .eq("user_id", user.id)
       .eq("board_id", board.id)
       .order("position", { ascending: false });
 
@@ -1131,7 +1386,13 @@ function BoardHintsScreen({ board, onBack }) {
   }
 
   async function handleShare() {
-    const url = buildShareUrl(`/profile/${user?.id}?board=${board.id}`);
+    // board.user_id (the actual owner), not the current viewer's own
+    // id - those differ for a collaborator, who'd otherwise build a
+    // profile link to their own account instead of the board owner's.
+    // Routed through /b/... rather than /profile/...?board=... so the
+    // link gets a real preview image, matching the fix already made
+    // on web.
+    const url = buildShareUrl(`/b/${board.id}`);
     const title = board.is_default ? null : board.title;
     try {
       await Share.share({
@@ -1142,6 +1403,57 @@ function BoardHintsScreen({ board, onBack }) {
     }
   }
 
+  async function handleSaveBoardName() {
+    const trimmed = renameDraft.trim();
+    if (!trimmed || trimmed === boardTitle) {
+      setRenameModalVisible(false);
+      return;
+    }
+    const { error: renameError } = await supabase
+      .from("hint_boards")
+      .update({ title: trimmed })
+      .eq("id", board.id);
+    if (renameError) {
+      Alert.alert("Couldn't rename", renameError.message);
+    } else {
+      board.title = trimmed;
+      setBoardTitle(trimmed);
+    }
+    setRenameModalVisible(false);
+  }
+
+  function handleDeleteBoard() {
+    Alert.alert(
+      "Delete this list?",
+      "This can't be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const { error: deleteError } = await supabase.from("hint_boards").delete().eq("id", board.id);
+            if (deleteError) {
+              Alert.alert("Couldn't delete", deleteError.message);
+            } else {
+              onBack();
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  function handleMenuPress() {
+    if (board.is_default) return;
+    Alert.alert("List options", undefined, [
+      { text: "Rename list", onPress: () => { setRenameDraft(board.title); setRenameModalVisible(true); } },
+      { text: "Collaborate", onPress: () => setCollabModalVisible(true) },
+      { text: "Delete list", style: "destructive", onPress: handleDeleteBoard },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }
+
   const columns = splitIntoColumns(hints, 2);
 
   return (
@@ -1150,6 +1462,11 @@ function BoardHintsScreen({ board, onBack }) {
         <Pressable style={styles.backButton} onPress={onBack} hitSlop={12}>
           <Text style={styles.backButtonText}>‹ Lists</Text>
         </Pressable>
+        {!board.is_default && !isCollaboratorView && (
+          <Pressable style={styles.menuButton} onPress={handleMenuPress} hitSlop={12}>
+            <Text style={styles.menuButtonText}>⋯</Text>
+          </Pressable>
+        )}
       </View>
 
       <ScrollView
@@ -1162,21 +1479,27 @@ function BoardHintsScreen({ board, onBack }) {
           <View style={styles.boardPillWrap}>
             <Text style={styles.boardPillText}>
               {isPrivate ? "🔒 " : ""}
-              {board.is_default ? "My Hints" : board.title}
+              {board.is_default ? "My Hints" : boardTitle}
             </Text>
           </View>
+
+          {isCollaboratorView && (
+            <Text style={styles.collabBadgeText}>Collaborating with {board.ownerName || "someone"}</Text>
+          )}
 
           <Text style={styles.heroTitle}>Drop a Hint here...</Text>
 
           <View style={styles.heroActionsRow}>
             <Pressable style={styles.shareButton} onPress={handleShare}>
               <Text style={styles.shareButtonText}>
-                {board.is_default ? "Share my Hints" : `Share "${board.title}"`}
+                {board.is_default ? "Share my Hints" : `Share "${boardTitle}"`}
               </Text>
             </Pressable>
-            <Pressable style={styles.privacyButton} onPress={handleTogglePrivate}>
-              <Text style={styles.privacyButtonText}>{isPrivate ? "🔒 Private" : "Public"}</Text>
-            </Pressable>
+            {!isCollaboratorView && (
+              <Pressable style={styles.privacyButton} onPress={handleTogglePrivate}>
+                <Text style={styles.privacyButtonText}>{isPrivate ? "🔒 Private" : "Public"}</Text>
+              </Pressable>
+            )}
           </View>
 
           <View style={styles.heroInputRow}>
@@ -1268,6 +1591,37 @@ function BoardHintsScreen({ board, onBack }) {
         onClose={() => setEditingHint(null)}
         onSaved={loadHints}
         onDeleted={loadHints}
+      />
+
+      <Modal visible={renameModalVisible} transparent animationType="fade" onRequestClose={() => setRenameModalVisible(false)}>
+        <View style={styles.renameOverlay}>
+          <View style={styles.renameCard}>
+            <Text style={styles.renameTitle}>Rename list</Text>
+            <TextInput
+              style={styles.renameInput}
+              value={renameDraft}
+              onChangeText={setRenameDraft}
+              autoFocus
+              placeholder="List name"
+              placeholderTextColor="#94a3b8"
+            />
+            <View style={styles.renameActionsRow}>
+              <Pressable style={styles.renameCancelButton} onPress={() => setRenameModalVisible(false)}>
+                <Text style={styles.renameCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable style={styles.renameSaveButton} onPress={handleSaveBoardName}>
+                <Text style={styles.renameSaveText}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <CollaborateModal
+        visible={collabModalVisible}
+        onClose={() => setCollabModalVisible(false)}
+        board={board}
+        currentUserId={user?.id}
       />
     </View>
   );
@@ -1460,6 +1814,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 24,
     flexGrow: 1,
+  },
+  collabSectionHeader: {
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    color: "#94a3b8",
+    marginTop: 24,
+    marginBottom: 12,
   },
   masonryContent: {
     padding: 16,
@@ -1962,5 +2324,201 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: "#fff",
+  },
+  menuButton: {
+    marginLeft: "auto",
+    height: 32,
+    width: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ead8ce",
+  },
+  menuButtonText: {
+    fontSize: 18,
+    color: "#64748b",
+    fontWeight: "700",
+  },
+  collabBadgeText: {
+    fontSize: 12,
+    color: "#2f8a5f",
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  renameOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  renameCard: {
+    width: "100%",
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 20,
+  },
+  renameTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1e293b",
+    marginBottom: 12,
+  },
+  renameInput: {
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#ead8ce",
+    paddingHorizontal: 14,
+    fontSize: 15,
+    color: "#1e293b",
+  },
+  renameActionsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 16,
+  },
+  renameCancelButton: {
+    flex: 1,
+    height: 44,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#ead8ce",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  renameCancelText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#64748b",
+  },
+  renameSaveButton: {
+    flex: 1,
+    height: 44,
+    borderRadius: 999,
+    backgroundColor: "#ff875d",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  renameSaveText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  collabOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  collabCard: {
+    backgroundColor: "#fffaf7",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: "85%",
+  },
+  collabHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  collabHeaderTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1e293b",
+    flex: 1,
+    marginRight: 12,
+  },
+  collabCloseText: {
+    fontSize: 18,
+    color: "#94a3b8",
+  },
+  collabSection: {
+    marginTop: 16,
+  },
+  collabSectionTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#94a3b8",
+    letterSpacing: 0.6,
+    marginBottom: 8,
+    textTransform: "uppercase",
+  },
+  collabRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#f0dfd6",
+    marginBottom: 8,
+  },
+  collabRowName: {
+    fontSize: 14,
+    color: "#1e293b",
+    fontWeight: "600",
+    flex: 1,
+  },
+  collabApproveButton: {
+    backgroundColor: "#ff875d",
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  collabApproveText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  collabDeclineButton: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#ead8ce",
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  collabDeclineText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#64748b",
+  },
+  collabRemoveText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#c9633f",
+  },
+  collabInviteText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#ff875d",
+  },
+  collabEmailInput: {
+    flex: 1,
+    height: 40,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#ead8ce",
+    paddingHorizontal: 14,
+    fontSize: 13,
+    color: "#1e293b",
+    backgroundColor: "#fff",
+  },
+  collabInviteEmailButton: {
+    height: 40,
+    borderRadius: 999,
+    backgroundColor: "#ff875d",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  collabEmptyText: {
+    fontSize: 13,
+    color: "#94a3b8",
   },
 });
