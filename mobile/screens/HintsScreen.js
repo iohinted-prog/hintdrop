@@ -1404,6 +1404,43 @@ function BoardHintsScreen({ board, onBack, onViewProfile }) {
     loadHints().finally(() => setLoading(false));
   }, [loadHints]);
 
+  // Mirrors app/hints/[boardId]/HintsClient.jsx's own realtime
+  // subscription: a hint added from elsewhere (the browser extension,
+  // or another device/tab) while this screen is open now appears
+  // immediately, no manual refresh needed. Mobile's loadHints already
+  // uses the raw hints row shape directly (no transformation like
+  // web's newHint object construction), so the insert handler is
+  // simpler here - just prepend the row and measure its image size,
+  // same as loadHints does for every hint on initial load.
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`hints-live-${user.id}-${board.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "hints", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const row = payload.new;
+          if (row.board_id !== board.id) return;
+          setHints((current) => {
+            if (current.some((h) => h.id === row.id)) return current;
+            return [row, ...current];
+          });
+          if (row.image_url) {
+            Image.getSize(
+              secureImageUrl(row.image_url),
+              (width, height) => {
+                if (width > 0 && height > 0) setImageRatios((prev) => ({ ...prev, [row.id]: width / height }));
+              },
+              () => {}
+            );
+          }
+        }
+      )
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [user?.id, board.id]);
+
   useEffect(() => {
     if (!user?.id) return;
     supabase

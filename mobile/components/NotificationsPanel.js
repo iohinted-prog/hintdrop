@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { View, Modal, Pressable, ScrollView, ActivityIndicator, Image, StyleSheet } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Text from "./Text";
 import { supabase } from "../lib/supabase";
 import { resolveAvatarColor } from "../lib/avatarColor";
@@ -10,6 +11,17 @@ import { colors, radii, spacing, shadow } from "../lib/theme";
 // (collab_request, collab_accepted, birthday_reminder, generic
 // reaction/comment) plus pending circle/contact invites, which share
 // the same dropdown on web.
+//
+// Badge-count semantics match web exactly, not simplified to "how
+// many items are still pending": web tracks a persisted
+// "last seen" timestamp (AsyncStorage here, localStorage on web) and
+// only counts items created since then, resetting to 0 the moment
+// the bell opens - not when items are individually resolved. A
+// naive "still pending" count would leave the badge permanently
+// non-zero even after the user has already looked at everything in
+// the dropdown. Web also polls every 10s for the badge count
+// independent of whether the dropdown is open, which this mirrors
+// too, rather than only refreshing on open.
 //
 // Explicitly deferred, not silently dropped:
 // - group_hint_response notifications and circle_notifications
@@ -26,6 +38,29 @@ import { colors, radii, spacing, shadow } from "../lib/theme";
 //   into the Hints tab's specific board (no shared cross-tab
 //   navigation context exists yet) - marks read and closes the panel
 //   with a note instead of a broken or half-working navigation.
+
+const NOTIF_LAST_SEEN_KEY = "hintdrop_notif_seen_at";
+
+async function getNotifLastSeen() {
+  try {
+    return await AsyncStorage.getItem(NOTIF_LAST_SEEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+async function setNotifLastSeen(iso) {
+  try {
+    await AsyncStorage.setItem(NOTIF_LAST_SEEN_KEY, iso);
+  } catch {
+    // best-effort, same as web's try/catch around localStorage
+  }
+}
+
+function countUnseenSince(items, lastSeen) {
+  if (!lastSeen) return items.length;
+  return items.filter((i) => i.created_at && i.created_at > lastSeen).length;
+}
 
 function NotifAvatar({ name, avatarUrl, avatarColor, userId, size = 36 }) {
   const c = resolveAvatarColor({ avatarColor, id: userId });
@@ -71,16 +106,29 @@ export default function NotificationsPanel({ visible, onClose, currentUserId, on
     const knownTypes = ["collab_request", "collab_accepted", "birthday_reminder"];
     const relevant = (notifData || []).filter((n) => knownTypes.includes(n.type) || n.type === "reaction" || n.type === "comment");
     setActivityNotifs(relevant);
-    onCountChange?.(merged.length + relevant.length);
+    const lastSeen = await getNotifLastSeen();
+    onCountChange?.(countUnseenSince(merged, lastSeen) + countUnseenSince(relevant, lastSeen));
     setLoading(false);
   }, [currentUserId, onCountChange]);
 
   useEffect(() => {
+    if (!currentUserId) return;
+    load();
+    // Poll every 10 seconds for new notifications, independent of
+    // whether the dropdown is open - matches web exactly.
+    const interval = setInterval(load, 10000);
+    return () => clearInterval(interval);
+  }, [currentUserId, load]);
+
+  useEffect(() => {
     if (visible) {
       setLoading(true);
-      load();
+      setNotifLastSeen(new Date().toISOString()).then(() => {
+        onCountChange?.(0);
+        load();
+      });
     }
-  }, [visible, load]);
+  }, [visible]);
 
   async function handleAcceptInvite(invite) {
     setInviteActionId(invite.id);
