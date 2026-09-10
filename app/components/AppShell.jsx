@@ -300,6 +300,7 @@ export default function AppShell({ children }) {
   }
 
   const [inviteActionId, setInviteActionId] = useState(null);
+  const [collabActionId, setCollabActionId] = useState(null);
   const [notifActionId, setNotifActionId] = useState(null);
   const notifRef = useRef(null);
   const messagesRef = useRef(null);
@@ -474,6 +475,24 @@ export default function AppShell({ children }) {
     );
   }
 
+
+  async function handleCollabAction(notif, decision) {
+    setCollabActionId(notif.id);
+    try {
+      const boardId = notif.data?.board_id || notif.entity_id;
+      const requesterId = notif.actor_user_id;
+      if (decision === "accept") {
+        await supabase.from("board_collaborators").update({ status: "accepted" }).eq("board_id", boardId).eq("user_id", requesterId);
+      } else {
+        await supabase.from("board_collaborators").delete().eq("board_id", boardId).eq("user_id", requesterId);
+      }
+      await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", notif.id);
+      setActivityNotifs(prev => prev.filter(n => n.id !== notif.id));
+      setInviteCount(prev => Math.max(0, prev - 1));
+    } finally {
+      setCollabActionId(null);
+    }
+  }
 
   async function handleAcceptInvite(invite) {
     setInviteActionId(invite.id);
@@ -725,17 +744,18 @@ export default function AppShell({ children }) {
             </div>
             <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#ffe2d3] text-[#c9633f]">Request</span>
           </div>
-          <button type="button"
-            onClick={async () => {
-              await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", notif.id);
-              setActivityNotifs(prev => prev.filter(n => n.id !== notif.id));
-              setInviteCount(prev => Math.max(0, prev - 1));
-              setNotifOpen(false);
-              window.location.href = notif.data?.url || `/hints/${notif.data?.board_id}`;
-            }}
-            className="mt-1 w-full h-9 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[12px] font-semibold text-white">
-            View request
-          </button>
+          <div className="flex gap-2">
+            <button type="button" disabled={collabActionId === notif.id}
+              onClick={() => handleCollabAction(notif, "accept")}
+              className="flex-1 h-9 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[12px] font-semibold text-white disabled:opacity-60">
+              {collabActionId === notif.id ? "..." : "Approve"}
+            </button>
+            <button type="button" disabled={collabActionId === notif.id}
+              onClick={() => handleCollabAction(notif, "decline")}
+              className="flex-1 h-9 rounded-full border border-[#ead8ce] bg-white text-[12px] font-semibold text-slate-600 disabled:opacity-60">
+              Decline
+            </button>
+          </div>
         </div>
       ))}
       {activityNotifs.filter(n => n.type === "group_hint_response").slice(0, 5).map(notif => {

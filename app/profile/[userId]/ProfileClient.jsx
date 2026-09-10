@@ -376,6 +376,23 @@ export default function ProfileClient({ userId }) {
 
   const inner = (
     <main className="min-h-screen bg-[#fffaf7]">
+      {loading ? (
+        <div className="border-b border-[#f0dfd6] bg-white px-4 py-3 sm:px-8 sm:py-4">
+          <div className="mx-auto max-w-[1200px] animate-pulse">
+            <div className="flex items-center justify-between gap-3">
+              <div className="h-9 w-9 rounded-full bg-[#f0e4dd]" />
+              <div className="h-9 w-24 rounded-full bg-[#f0e4dd]" />
+            </div>
+            <div className="mt-3 flex items-center gap-4">
+              <div className="h-14 w-14 rounded-full bg-[#f0e4dd] shrink-0" />
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="h-5 w-40 rounded-full bg-[#f0e4dd]" />
+                <div className="h-4 w-24 rounded-full bg-[#f0e4dd]" />
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="border-b border-[#f0dfd6] bg-white px-4 py-3 sm:px-8 sm:py-4">
         <div className="mx-auto max-w-[1200px]">
           {/* Row 1: back on the left, Share + Filter (icon-only) grouped
@@ -509,6 +526,7 @@ export default function ProfileClient({ userId }) {
               })()}
         </div>
       </div>
+      )}
 
       {selectedBoardId && filterPopupOpen && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center bg-[rgba(33,24,20,0.42)] backdrop-blur-sm min-[480px]:items-center min-[480px]:px-4" onClick={() => setFilterPopupOpen(false)}>

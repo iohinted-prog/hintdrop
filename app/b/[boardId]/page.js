@@ -14,18 +14,15 @@ export async function generateMetadata({ params }) {
     return { title: "Hints | HintDrop" };
   }
 
-  // Same gap as /h/[hintId] - is_private was fetched but never actually
-  // checked before generating the title/description. Metadata
-  // generation happens before any client-side privacy check can run,
-  // and it's what search engines, AI crawlers, and link-preview bots
-  // actually read.
-  if (board.is_private) {
-    return {
-      title: "Hints | HintDrop",
-      description: "This board is private.",
-    };
-  }
-
+  // Deliberate product decision (confirmed explicitly, not a default):
+  // a private board still gets its own title/description/cover image
+  // in the preview card, same as a public one. The link itself is
+  // already the access control (unguessable id, only reaches someone
+  // because it was deliberately shared) - the earlier text-only
+  // fallback here was extra caution beyond that, and the person
+  // decided the richer preview is worth the tradeoff (anyone who sees
+  // the link forwarded elsewhere also sees the image, not just the
+  // intended recipient).
   const ownerName = board.profiles?.full_name?.split(" ")[0] || "Someone";
   const title = `${board.title} — ${ownerName}'s Hints 👀 | HintDrop`;
   const description = `Take a look at ${ownerName}'s "${board.title}" Hints on HintDrop.`;
