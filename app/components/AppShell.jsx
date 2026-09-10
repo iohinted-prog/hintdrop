@@ -7,6 +7,7 @@ import { createClient } from "../../lib/supabase/client";
 import GroupChatWindow from "./GroupChatWindow";
 import { ChatWindowsContext } from "./ChatWindowsProvider";
 import HintImage from "./HintImage";
+import { avatarColorFor } from "../../lib/avatarColor";
 import SocialLinks from "./SocialLinks";
 
 function LogoMark() {
@@ -485,6 +486,11 @@ export default function AppShell({ children }) {
       const requesterId = notif.actor_user_id;
       if (decision === "accept") {
         await supabase.from("board_collaborators").update({ status: "accepted" }).eq("board_id", boardId).eq("user_id", requesterId);
+        fetch("/api/collab-notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "accepted", boardId, requesterId }),
+        }).catch(console.error);
       } else {
         await supabase.from("board_collaborators").delete().eq("board_id", boardId).eq("user_id", requesterId);
       }
@@ -732,10 +738,12 @@ export default function AppShell({ children }) {
                     <h3 className="mt-0.5 text-[17px] font-semibold text-slate-900">Pending invites</h3>
                   </div>
                   <div className="max-h-[400px] overflow-y-auto p-4 space-y-3">
-      {activityNotifs.filter(n => n.type === "collab_request").slice(0, 5).map(notif => (
+      {activityNotifs.filter(n => n.type === "collab_request").slice(0, 5).map(notif => {
+        const color = avatarColorFor(notif.actor_user_id || notif.data?.actor_name);
+        return (
         <div key={notif.id} className="rounded-[18px] border border-[#ffd8c9] bg-[#fff4ee] p-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white overflow-hidden" style={{ background: `linear-gradient(to bottom, ${color.from}, ${color.to})` }}>
               {notif.data?.actor_avatar_url
                 ? <HintImage src={notif.data.actor_avatar_url} fill className="object-cover" sizes="36px" alt="" fallbackClassName="hidden" />
                 : (notif.data?.actor_name || "?")[0]?.toUpperCase()}
@@ -759,7 +767,8 @@ export default function AppShell({ children }) {
             </button>
           </div>
         </div>
-      ))}
+        );
+      })}
       {activityNotifs.filter(n => n.type === "group_hint_response").slice(0, 5).map(notif => {
         const hintImage = notif.data?.hint_image;
         const recipientId = notif.data?.recipient_user_id;
@@ -829,7 +838,37 @@ export default function AppShell({ children }) {
           </button>
         </div>
       ))}
-      {activityNotifs.filter(n => n.type !== "group_hint_response" && n.type !== "birthday_reminder" && n.type !== "collab_request").slice(0, 5).map(notif => (
+      {activityNotifs.filter(n => n.type === "collab_accepted").slice(0, 5).map(notif => {
+        const color = avatarColorFor(notif.actor_user_id || notif.data?.actor_name);
+        return (
+        <div key={notif.id} className="rounded-[18px] border border-[#bfe4cf] bg-[#e3f5ea] p-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white overflow-hidden" style={{ background: `linear-gradient(to bottom, ${color.from}, ${color.to})` }}>
+              {notif.data?.actor_avatar_url
+                ? <HintImage src={notif.data.actor_avatar_url} fill className="object-cover" sizes="36px" alt="" fallbackClassName="hidden" />
+                : (notif.data?.actor_name || "?")[0]?.toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-semibold text-slate-900 leading-tight">{notif.title}</p>
+              {notif.body && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{notif.body}</p>}
+            </div>
+            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#bfe4cf] text-[#2f8a5f]">Accepted</span>
+          </div>
+          <button type="button"
+            onClick={async () => {
+              await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", notif.id);
+              setActivityNotifs(prev => prev.filter(n => n.id !== notif.id));
+              setInviteCount(prev => Math.max(0, prev - 1));
+              setNotifOpen(false);
+              window.location.href = notif.data?.url || `/hints/${notif.data?.board_id}`;
+            }}
+            className="w-full h-9 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[12px] font-semibold text-white">
+            Start adding hints
+          </button>
+        </div>
+        );
+      })}
+      {activityNotifs.filter(n => n.type !== "group_hint_response" && n.type !== "birthday_reminder" && n.type !== "collab_request" && n.type !== "collab_accepted").slice(0, 5).map(notif => (
         <div key={notif.id} className="rounded-[18px] border border-[#e6ddd7] bg-white p-4">
           <div className="flex items-center gap-3">
             <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">

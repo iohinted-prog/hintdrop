@@ -82,5 +82,47 @@ export async function POST(req) {
     return Response.json({ ok: true, notifError: notifError?.message || null });
   }
 
+  if (type === "accepted") {
+    const { data: board } = await supabase
+      .from("hint_boards")
+      .select("id, title, user_id")
+      .eq("id", boardId)
+      .maybeSingle();
+    if (!board) return Response.json({ error: "Not found" }, { status: 404 });
+
+    const { data: ownerProfile } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", board.user_id).maybeSingle();
+    const ownerName = ownerProfile?.full_name || "Someone";
+
+    const { data: requesterAuth } = await supabase.auth.admin.getUserById(requesterId);
+    const requesterEmail = requesterAuth?.user?.email;
+
+    if (requesterEmail) {
+      await sendEmail({
+        to: requesterEmail,
+        subject: `${ownerName} accepted your collaboration request`,
+        html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+          <h2 style="color:#2f8a5f">🎉 You're in!</h2>
+          <p><strong>${ownerName}</strong> accepted your request to collaborate on <strong>"${board.title}"</strong>.</p>
+          <a href="https://hintdrop.app/hints/${board.id}" style="display:inline-block;margin-top:20px;background:linear-gradient(to bottom,#ff966f,#ff7e54);color:white;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:bold">Start adding hints</a>
+        </div>`,
+      });
+    }
+
+    const { error: notifError } = await supabase.from("notifications").insert({
+      user_id: requesterId,
+      actor_user_id: board.user_id,
+      type: "collab_accepted",
+      entity_id: boardId,
+      title: `${ownerName} accepted your request`,
+      body: `You can now collaborate on "${board.title}"`,
+      data: { actor_name: ownerName, actor_avatar_url: ownerProfile?.avatar_url || null, board_id: boardId, url: `/hints/${boardId}` },
+    });
+    if (notifError) {
+      console.error("collab_accepted notification insert failed:", notifError);
+    }
+
+    return Response.json({ ok: true, notifError: notifError?.message || null });
+  }
+
   return Response.json({ error: "Unknown type" }, { status: 400 });
 }

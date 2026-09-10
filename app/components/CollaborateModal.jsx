@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "../../lib/supabase/client";
 import ShareButton from "./ShareButton";
+import { avatarColorFor } from "../../lib/avatarColor";
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim().toLowerCase());
@@ -96,6 +97,14 @@ export default function CollaborateModal({ open, onClose, boardId, boardTitle, s
     const { error: updateError } = await supabase.from("board_collaborators").update({ status: "accepted" }).eq("id", collabId);
     if (updateError) { setError(updateError.message); return; }
     setCollaborators((prev) => prev.map((c) => (c.id === collabId ? { ...c, status: "accepted" } : c)));
+    const approved = collaborators.find((c) => c.id === collabId);
+    if (approved?.user_id) {
+      fetch("/api/collab-notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "accepted", boardId, requesterId: approved.user_id }),
+      }).catch(console.error);
+    }
   }
 
   async function removeCollaborator(collabId) {
@@ -186,7 +195,7 @@ export default function CollaborateModal({ open, onClose, boardId, boardTitle, s
                       {contact.profiles?.avatar_url ? (
                         <img src={contact.profiles.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover border border-[#f0dfd6]" />
                       ) : (
-                        <div className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[12px] font-bold text-white">
+                        <div className="h-9 w-9 shrink-0 rounded-full flex items-center justify-center text-[12px] font-bold text-white" style={{ background: `linear-gradient(to bottom, ${avatarColorFor(contact.profile_id).from}, ${avatarColorFor(contact.profile_id).to})` }}>
                           {(contact.profiles?.full_name || contact.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
                         </div>
                       )}
