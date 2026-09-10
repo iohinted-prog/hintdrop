@@ -1914,33 +1914,29 @@ export default function HintsClient({ boardId }) {
         .then(({ data }) => setCurrentUserName(data?.full_name || user.user_metadata?.full_name || ""));
 
       if (boardId) {
-        const { data: boardRow } = await supabase
-          .from("hint_boards")
-          .select("id, title, user_id, is_default, is_private")
-          .eq("id", boardId)
-          .maybeSingle();
-        if (cancelled) return;
-
-        let hasAccess = Boolean(boardRow) && boardRow.user_id === user.id;
-        let asCollaborator = false;
-        if (boardRow && !hasAccess) {
-          // Not the owner - check for accepted collaborator access
-          // before giving up. Collaborators already have full RLS
-          // read/write on this board's hints; this is the missing
-          // piece that actually let them reach the editing UI itself
-          // rather than just holding permission with nowhere to use it.
-          const { data: collabRow } = await supabase
+        const [{ data: boardRow }, { data: collabRow }] = await Promise.all([
+          supabase
+            .from("hint_boards")
+            .select("id, title, user_id, is_default, is_private")
+            .eq("id", boardId)
+            .maybeSingle(),
+          // Run alongside the board fetch rather than only after an
+          // owner check fails - for anyone who isn't the owner this
+          // used to be a second, sequential round trip on top of the
+          // first, adding real latency to every non-owner page load.
+          supabase
             .from("board_collaborators")
             .select("status")
             .eq("board_id", boardId)
             .eq("user_id", user.id)
             .eq("status", "accepted")
-            .maybeSingle();
-          if (collabRow) {
-            hasAccess = true;
-            asCollaborator = true;
-          }
-        }
+            .maybeSingle(),
+        ]);
+        if (cancelled) return;
+
+        const isOwner = Boolean(boardRow) && boardRow.user_id === user.id;
+        const asCollaborator = Boolean(boardRow) && !isOwner && Boolean(collabRow);
+        const hasAccess = isOwner || asCollaborator;
 
         if (!boardRow || !hasAccess) {
           setBoard(null);
