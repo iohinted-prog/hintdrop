@@ -48,7 +48,7 @@ function HintCard({ hint, aspectRatio, onPress }) {
           real once back on a native build. */}
       <View style={styles.cardScrim} pointerEvents="none" />
       {hint.is_private ? <Text style={styles.cardBadgeLeft}>🔒</Text> : null}
-      {hint.starred ? <Text style={styles.cardBadgeRight}>⭐</Text> : null}
+      {hint.starred ? <Text style={styles.cardBadgeRight}>★</Text> : null}
       <View style={styles.cardOverlayContent}>
         <Text style={styles.cardOverlayTitle} numberOfLines={1}>
           {hint.title || "Hint"}
@@ -1139,7 +1139,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 8,
     right: 8,
-    fontSize: 13,
+    fontSize: 16,
+    color: "#ff875d",
+    textShadowColor: "rgba(0,0,0,0.4)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   cardOverlayContent: {
     position: "absolute",
