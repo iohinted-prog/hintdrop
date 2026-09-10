@@ -423,12 +423,16 @@ export default function ProfileClient({ userId }) {
               {!isOwnProfile && currentUser && (
                 <button type="button" onClick={contactState === "none" ? handleAddToCircle : undefined}
                   disabled={addingContact || contactState !== "none"}
-                  className={`mt-2 text-[12px] font-semibold px-3 py-1 rounded-full border transition ${
+                  className={`mt-2 font-semibold rounded-full border transition ${
+                    selectedBoardId && contactState === "none" ? "text-[13px] px-4 py-2 shadow-md" : "text-[12px] px-3 py-1"
+                  } ${
                     contactState === "active" ? "border-[#c3e0c3] bg-[#f0faf0] text-[#3a7a3a] cursor-default"
                     : contactState === "pending" ? "border-[#f0dfc9] bg-[#fff8ee] text-[#a87d3a] cursor-default"
-                    : "border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d]"
+                    : selectedBoardId
+                      ? "border-transparent bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white hover:brightness-105"
+                      : "border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d]"
                   }`}>
-                  {contactState === "active" ? "✓ In your circle" : contactState === "pending" ? "Request sent — we'll let you know once accepted" : addingContact ? "Sending..." : "+ Add to circle"}
+                  {contactState === "active" ? "✓ In your circle" : contactState === "pending" ? "Request sent — we'll let you know once accepted" : addingContact ? "Sending..." : selectedBoardId ? `+ Add ${displayName.split(" ")[0]} to your circle` : "+ Add to circle"}
                 </button>
               )}
               {!isOwnProfile && !currentUser && (
