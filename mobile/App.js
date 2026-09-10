@@ -15,9 +15,24 @@ import FeedScreen from "./screens/FeedScreen";
 import HintsScreen from "./screens/HintsScreen";
 import CircleScreen from "./screens/CircleScreen";
 import AccountScreen from "./screens/AccountScreen";
+import BottomNav from "./components/BottomNav";
 import { CalendarScreen, ShopScreen } from "./screens/PlaceholderScreens";
 
 const Tab = createBottomTabNavigator();
+
+// Matches web's header logo (app/components/AppShell.jsx's LogoMark)
+// - on mobile web this is icon-only, no "HintDrop" wordmark (that's
+// desktop-only there too), so this matches that exactly rather than
+// adding a wordmark web itself doesn't show at this size.
+function HeaderLogo() {
+  return (
+    <Image
+      source={{ uri: "https://hintdrop.app/illustrations/giftbox-icon-v2.png" }}
+      style={{ width: 28, height: 33, marginLeft: 16 }}
+      resizeMode="contain"
+    />
+  );
+}
 
 // Matches web's header account avatar button (app/components/
 // AppShell.jsx) - opens the account page directly rather than a
@@ -74,16 +89,20 @@ function SignedInApp() {
   return (
     <>
       <Tab.Navigator
+        tabBar={(props) => <BottomNav {...props} />}
         screenOptions={{
-          tabBarActiveTintColor: "#ff875d",
-          tabBarInactiveTintColor: "#94a3b8",
           headerShown: true,
           // Title text hidden everywhere - Circle and Hints already
           // build their own in-screen header (title, actions, etc.),
           // so a default react-navigation title bar on top would be
           // a redundant, visually broken double-header. This bar's
-          // only job is the global bell + account row.
+          // only job is the logo + global bell + account row, matching
+          // web's actual header content (its desktop nav links are
+          // hidden on mobile web too - this app's own BottomNav is
+          // the real equivalent of web's mobile bottom nav, a
+          // completely separate element from the header).
           headerTitle: () => null,
+          headerLeft: () => <HeaderLogo />,
           headerRight: () => (
             <View style={styles.headerRightRow}>
               <NotificationBell userId={user?.id} count={notifCount} onPress={() => setNotifVisible(true)} />
@@ -91,7 +110,6 @@ function SignedInApp() {
             </View>
           ),
           headerStyle: { backgroundColor: "#fffaf7", elevation: 0, shadowOpacity: 0 },
-          tabBarStyle: { backgroundColor: "#fffaf7" },
         }}
       >
         <Tab.Screen name="Feed" component={FeedScreen} />
