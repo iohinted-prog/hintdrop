@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import BoardRedirectClient from "./BoardRedirectClient";
 import { createClient } from "../../../lib/supabase/server";
 
 // Board metadata (title, cover image) depends on the board's most
@@ -75,12 +75,21 @@ export async function generateMetadata({ params }) {
   };
 }
 
-// /b/[boardId] no longer has its own page — every board lives on its
-// owner's profile now (deep-linked via ?board=), so this just forwards
-// old and new links there rather than maintaining a second, near-
-// identical page. generateMetadata above still runs for this URL first,
-// so a shared /b/... link still gets a proper preview card before the
-// redirect happens.
+// This previously used Next's server-side redirect() here, which
+// turned out to be the actual bug behind the preview never showing
+// real content: redirect() sends a genuine HTTP 307 response, so a
+// crawler requesting this URL never receives the HTML this file's
+// generateMetadata built at all - it just follows the redirect
+// straight to /profile/...?board=..., a client page with no board-
+// specific metadata of its own, and previews the generic fallback
+// from there instead. Confirmed by testing a genuinely fresh,
+// never-shared board and still getting the generic card.
+//
+// Rendering a real (if minimal) page here instead, with a client-
+// side redirect, means the initial server response is the full HTML
+// - metadata included - that a crawler actually reads and stops at,
+// while a real browser's JS still carries it on to the profile page
+// exactly as before.
 export default async function BoardPreviewPage({ params }) {
   const { boardId } = await params;
   const supabase = await createClient();
@@ -90,9 +99,6 @@ export default async function BoardPreviewPage({ params }) {
     .eq("id", boardId)
     .maybeSingle();
 
-  if (!board) {
-    redirect("/");
-  }
-  redirect(`/profile/${board.user_id}?board=${boardId}`);
+  return <BoardRedirectClient to={board ? `/profile/${board.user_id}?board=${boardId}` : "/"} />;
 }
 
