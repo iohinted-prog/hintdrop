@@ -3,6 +3,7 @@ import {
   View,
   Text,
   FlatList,
+  ScrollView,
   Image,
   StyleSheet,
   Pressable,
@@ -28,20 +29,47 @@ import { useAuth } from "../context/AuthContext";
 // logic natively.
 const CARD_GAP = 12;
 
-function HintCard({ hint }) {
+function HintCard({ hint, aspectRatio }) {
+  const ratio = aspectRatio || 1;
+  const priceLabel = hint.price_text || null;
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { aspectRatio: ratio }]}>
       {hint.image_url ? (
         <Image source={{ uri: hint.image_url }} style={styles.cardImage} resizeMode="cover" />
       ) : (
         <View style={[styles.cardImage, styles.cardImageFallback]} />
       )}
-      <Text style={styles.cardTitle} numberOfLines={2}>
-        {hint.title}
-      </Text>
-      {hint.price_text ? <Text style={styles.cardPrice}>{hint.price_text}</Text> : null}
+      {/* Approximates the web version's black/60-to-transparent gradient
+          scrim with a flat semi-transparent overlay - true gradient
+          would need expo-linear-gradient, a native package, which
+          would force a rebuild mid Expo-Go session. Worth adding for
+          real once back on a native build. */}
+      <View style={styles.cardScrim} pointerEvents="none" />
+      {hint.is_private ? <Text style={styles.cardBadgeLeft}>🔒</Text> : null}
+      {hint.starred ? <Text style={styles.cardBadgeRight}>⭐</Text> : null}
+      <View style={styles.cardOverlayContent}>
+        <Text style={styles.cardOverlayTitle} numberOfLines={1}>
+          {hint.title || "Hint"}
+        </Text>
+        {priceLabel ? (
+          <View style={styles.cardPricePill}>
+            <Text style={styles.cardPriceText}>{priceLabel}</Text>
+          </View>
+        ) : null}
+      </View>
     </View>
   );
+}
+
+// Mirrors splitIntoColumns in HintsClient.jsx exactly: plain
+// round-robin (item 0 -> col 0, item 1 -> col 1, item 2 -> col 0...),
+// not a height-balancing algorithm.
+function splitIntoColumns(items, columnCount = 2) {
+  const columns = Array.from({ length: columnCount }, () => []);
+  items.forEach((item, index) => {
+    columns[index % columnCount].push(item);
+  });
+  return columns;
 }
 
 function PreviewCell({ hint }) {
@@ -378,6 +406,7 @@ function BoardListScreen({ onSelectBoard }) {
 function BoardHintsScreen({ board, onBack }) {
   const { user } = useAuth();
   const [hints, setHints] = useState([]);
+  const [imageRatios, setImageRatios] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
@@ -395,9 +424,30 @@ function BoardHintsScreen({ board, onBack }) {
 
     if (error) {
       setError(error.message);
-    } else {
-      setHints(data || []);
+      return;
     }
+    setHints(data || []);
+
+    // Same idea as loadImageAspectRatio on web: measure each hint's
+    // actual image so the card height reflects its real proportions
+    // (a tall product photo gets a taller card) rather than forcing
+    // every card into a uniform square - that variation is what makes
+    // it read as masonry instead of a plain grid.
+    (data || []).forEach((hint) => {
+      if (!hint.image_url) return;
+      Image.getSize(
+        hint.image_url,
+        (width, height) => {
+          if (width > 0 && height > 0) {
+            setImageRatios((prev) => ({ ...prev, [hint.id]: width / height }));
+          }
+        },
+        () => {
+          // Couldn't measure it (broken URL, etc.) - HintCard already
+          // falls back to a 1:1 square via aspectRatio's own default.
+        }
+      );
+    });
   }, [user?.id, board.id]);
 
   useEffect(() => {
@@ -410,6 +460,8 @@ function BoardHintsScreen({ board, onBack }) {
     await loadHints();
     setRefreshing(false);
   }
+
+  const columns = splitIntoColumns(hints, 2);
 
   return (
     <View style={styles.container}>
@@ -431,24 +483,32 @@ function BoardHintsScreen({ board, onBack }) {
         <View style={styles.centered}>
           <ActivityIndicator color="#ff875d" />
         </View>
-      ) : (
-        <FlatList
-          key="hints-grid"
-          data={hints}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
-          renderItem={({ item }) => <HintCard hint={item} />}
-          contentContainerStyle={styles.listContent}
+      ) : hints.length === 0 ? (
+        <ScrollView
+          contentContainerStyle={styles.centered}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
           }
-          ListEmptyComponent={
-            <View style={styles.centered}>
-              <Text style={styles.emptyText}>No hints yet - add your first one.</Text>
-            </View>
+        >
+          <Text style={styles.emptyText}>No hints yet - add your first one.</Text>
+        </ScrollView>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.masonryContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
           }
-        />
+        >
+          <View style={styles.masonryRow}>
+            {columns.map((columnHints, colIndex) => (
+              <View key={colIndex} style={styles.masonryColumn}>
+                {columnHints.map((hint) => (
+                  <HintCard key={hint.id} hint={hint} aspectRatio={imageRatios[hint.id]} />
+                ))}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       )}
 
       <AddHintModal
@@ -531,39 +591,78 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     flexGrow: 1,
   },
-  row: {
+  masonryContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+  masonryRow: {
+    flexDirection: "row",
+    gap: CARD_GAP,
+  },
+  masonryColumn: {
+    flex: 1,
     gap: CARD_GAP,
   },
   card: {
-    flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 10,
-    marginBottom: CARD_GAP,
+    width: "100%",
+    borderRadius: 20,
+    overflow: "hidden",
+    backgroundColor: "#ffe3d1",
     shadowColor: "#0f172a",
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.1,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
   cardImage: {
-    width: "100%",
-    aspectRatio: 1,
-    borderRadius: 12,
-    marginBottom: 10,
+    ...StyleSheet.absoluteFillObject,
   },
   cardImageFallback: {
     backgroundColor: "#ffe3d1",
   },
-  cardTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#0f172a",
+  cardScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.28)",
   },
-  cardPrice: {
+  cardBadgeLeft: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    fontSize: 13,
+  },
+  cardBadgeRight: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    fontSize: 13,
+  },
+  cardOverlayContent: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: 12,
+  },
+  cardOverlayTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 6,
+    textShadowColor: "rgba(0,0,0,0.6)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  cardPricePill: {
+    alignSelf: "flex-start",
+    backgroundColor: "#ff875d",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  cardPriceText: {
     fontSize: 12,
-    color: "#94a3b8",
-    marginTop: 3,
+    fontWeight: "700",
+    color: "#fff",
   },
   boardCard: {
     backgroundColor: "#fff",
