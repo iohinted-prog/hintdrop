@@ -518,86 +518,83 @@ function BoardHintsScreen({ board, onBack }) {
         </Pressable>
       </View>
 
-      <View style={styles.heroWrap}>
-        <View style={styles.boardPillWrap}>
-          <Text style={styles.boardPillText}>
-            {isPrivate ? "🔒 " : ""}
-            {board.is_default ? "My Hints" : board.title}
-          </Text>
-        </View>
-
-        <Text style={styles.heroTitle}>Drop a Hint here...</Text>
-
-        <View style={styles.heroActionsRow}>
-          <Pressable style={styles.shareButton} onPress={handleShare}>
-            <Text style={styles.shareButtonText}>
-              {board.is_default ? "Share my Hints" : `Share "${board.title}"`}
+      <ScrollView
+        contentContainerStyle={styles.boardScrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
+        }
+      >
+        <View style={styles.heroWrap}>
+          <View style={styles.boardPillWrap}>
+            <Text style={styles.boardPillText}>
+              {isPrivate ? "🔒 " : ""}
+              {board.is_default ? "My Hints" : board.title}
             </Text>
-          </Pressable>
-          <Pressable style={styles.privacyButton} onPress={handleTogglePrivate}>
-            <Text style={styles.privacyButtonText}>{isPrivate ? "🔒 Private" : "Public"}</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.heroInputRow}>
-          <TextInput
-            style={styles.heroInput}
-            placeholder="Paste a URL or describe an experience..."
-            placeholderTextColor="#94a3b8"
-            value={linkValue}
-            onChangeText={setLinkValue}
-            autoCapitalize="none"
-            autoCorrect={false}
-            onSubmitEditing={handleAddHint}
-            returnKeyType="done"
-          />
-          <Pressable style={styles.heroButton} onPress={handleAddHint}>
-            <Text style={styles.heroButtonText}>Add hint</Text>
-          </Pressable>
-        </View>
-
-        {error ? (
-          <Text style={styles.errorBanner}>{error}</Text>
-        ) : (
-          <Text style={styles.heroHelperText}>
-            We'll try our best to pull the title, image, and price before you review it.
-          </Text>
-        )}
-      </View>
-
-      <View style={styles.masonryFrame}>
-        {loading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator color="#ff875d" />
           </View>
-        ) : hints.length === 0 ? (
-          <ScrollView
-            contentContainerStyle={styles.centered}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
-            }
-          >
-            <Text style={styles.emptyText}>No hints yet - add your first one.</Text>
-          </ScrollView>
-        ) : (
-          <ScrollView
-            contentContainerStyle={styles.masonryContent}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
-            }
-          >
-            <View style={styles.masonryRow}>
-              {columns.map((columnHints, colIndex) => (
-                <View key={colIndex} style={styles.masonryColumn}>
-                  {columnHints.map((hint) => (
-                    <HintCard key={hint.id} hint={hint} aspectRatio={imageRatios[hint.id]} />
-                  ))}
-                </View>
-              ))}
+
+          <Text style={styles.heroTitle}>Drop a Hint here...</Text>
+
+          <View style={styles.heroActionsRow}>
+            <Pressable style={styles.shareButton} onPress={handleShare}>
+              <Text style={styles.shareButtonText}>
+                {board.is_default ? "Share my Hints" : `Share "${board.title}"`}
+              </Text>
+            </Pressable>
+            <Pressable style={styles.privacyButton} onPress={handleTogglePrivate}>
+              <Text style={styles.privacyButtonText}>{isPrivate ? "🔒 Private" : "Public"}</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.heroInputRow}>
+            <TextInput
+              style={styles.heroInput}
+              placeholder="Paste a URL or describe an experience..."
+              placeholderTextColor="#94a3b8"
+              value={linkValue}
+              onChangeText={setLinkValue}
+              autoCapitalize="none"
+              autoCorrect={false}
+              onSubmitEditing={handleAddHint}
+              returnKeyType="done"
+            />
+            <Pressable style={styles.heroButton} onPress={handleAddHint}>
+              <Text style={styles.heroButtonText}>Add hint</Text>
+            </Pressable>
+          </View>
+
+          {error ? (
+            <Text style={styles.errorBanner}>{error}</Text>
+          ) : (
+            <Text style={styles.heroHelperText}>
+              We'll try our best to pull the title, image, and price before you review it.
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.masonryFrame}>
+          {loading ? (
+            <View style={styles.frameCentered}>
+              <ActivityIndicator color="#ff875d" />
             </View>
-          </ScrollView>
-        )}
-      </View>
+          ) : hints.length === 0 ? (
+            <View style={styles.frameCentered}>
+              <Text style={styles.emptyText}>No hints yet - add your first one.</Text>
+            </View>
+          ) : (
+            <View style={styles.masonryContent}>
+              <View style={styles.masonryRow}>
+                {columns.map((columnHints, colIndex) => (
+                  <View key={colIndex} style={styles.masonryColumn}>
+                    {columnHints.map((hint) => (
+                      <HintCard key={hint.id} hint={hint} aspectRatio={imageRatios[hint.id]} />
+                    ))}
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+      </ScrollView>
 
       <AddHintModal
         visible={addModalVisible}
@@ -769,7 +766,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   masonryFrame: {
-    flex: 1,
     marginHorizontal: 16,
     marginBottom: 16,
     borderRadius: 28,
@@ -777,6 +773,15 @@ const styles = StyleSheet.create({
     borderColor: "#efe0d7",
     backgroundColor: "#fffdfb",
     overflow: "hidden",
+  },
+  boardScrollContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
+  },
+  frameCentered: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
   },
   errorBanner: {
     color: "#c9633f",
