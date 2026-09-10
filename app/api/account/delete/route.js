@@ -3,33 +3,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 
-export async function POST() {
-  const cookieStore = await cookies();
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        get(name) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    }
-  );
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return NextResponse.json(
-      { error: "You must be signed in to delete your account." },
-      { status: 401 }
-    );
-  }
-
+export async function POST(request) {
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -41,6 +15,43 @@ export async function POST() {
       },
     }
   );
+
+  // Mobile has no cookie jar shared with its Supabase client's own
+  // session the way a browser does, so it sends the access token as
+  // a Bearer header instead - validated here with the service-role
+  // client (auth.getUser accepts an explicit JWT for exactly this).
+  // Cookie-based auth (the original, web) path is unchanged and
+  // still checked first.
+  const authHeader = request.headers.get("authorization") || "";
+  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+  let user = null;
+  if (bearerToken) {
+    const { data, error } = await admin.auth.getUser(bearerToken);
+    if (!error) user = data.user;
+  } else {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        cookies: {
+          get(name) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
+    const { data, error: userError } = await supabase.auth.getUser();
+    if (!userError) user = data.user;
+  }
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "You must be signed in to delete your account." },
+      { status: 401 }
+    );
+  }
 
   const { data: profile, error: profileError } = await admin
     .from("profiles")

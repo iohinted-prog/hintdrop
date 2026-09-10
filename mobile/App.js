@@ -1,29 +1,42 @@
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { View, ActivityIndicator, Pressable, StyleSheet } from "react-native";
-import { useState } from "react";
+import { View, ActivityIndicator, Pressable, StyleSheet, Modal, Image } from "react-native";
+import { useEffect, useState } from "react";
 import Text from "./components/Text";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { supabase } from "./lib/supabase";
+import { resolveAvatarColor } from "./lib/avatarColor";
 import NotificationsPanel from "./components/NotificationsPanel";
 import SignInScreen from "./screens/SignInScreen";
 import FeedScreen from "./screens/FeedScreen";
 import HintsScreen from "./screens/HintsScreen";
 import CircleScreen from "./screens/CircleScreen";
+import AccountScreen from "./screens/AccountScreen";
 import { CalendarScreen, ShopScreen } from "./screens/PlaceholderScreens";
 
 const Tab = createBottomTabNavigator();
 
-// Temporary, visible sign-out affordance for testing before a real
-// Profile/Settings screen exists - not meant to be the permanent
-// home for this, just needed somewhere reachable right now.
-function SignOutButton() {
+// Matches web's header account avatar button (app/components/
+// AppShell.jsx) - opens the account page directly rather than a
+// dropdown menu (web's dropdown has Profile/Account/Sign out links;
+// mobile's AccountScreen already contains sign-out itself, so one
+// tap goes straight there instead of a two-step menu).
+function AccountButton({ profile, userId, onPress }) {
+  const c = resolveAvatarColor({ avatarColor: profile?.avatar_color, id: userId });
   return (
-    <Pressable onPress={() => supabase.auth.signOut()} style={styles.signOutButton}>
-      <Text style={styles.signOutText}>Sign out</Text>
+    <Pressable onPress={onPress} style={styles.accountButton}>
+      {profile?.avatar_url ? (
+        <Image source={{ uri: profile.avatar_url }} style={styles.accountAvatarImage} />
+      ) : (
+        <View style={[styles.accountAvatarImage, { alignItems: "center", justifyContent: "center", backgroundColor: c.to }]}>
+          <Text style={styles.accountInitialsText}>
+            {(profile?.full_name || "U").trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("")}
+          </Text>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -50,6 +63,13 @@ function SignedInApp() {
   const { user } = useAuth();
   const [notifVisible, setNotifVisible] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
+  const [accountVisible, setAccountVisible] = useState(false);
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles").select("full_name, avatar_url, avatar_color").eq("id", user.id).maybeSingle().then(({ data }) => setProfile(data));
+  }, [user?.id, accountVisible]); // re-fetch after closing Account, in case something changed
 
   return (
     <>
@@ -62,12 +82,12 @@ function SignedInApp() {
           // build their own in-screen header (title, actions, etc.),
           // so a default react-navigation title bar on top would be
           // a redundant, visually broken double-header. This bar's
-          // only job is the global bell + sign-out row.
+          // only job is the global bell + account row.
           headerTitle: () => null,
           headerRight: () => (
             <View style={styles.headerRightRow}>
               <NotificationBell userId={user?.id} count={notifCount} onPress={() => setNotifVisible(true)} />
-              <SignOutButton />
+              <AccountButton profile={profile} userId={user?.id} onPress={() => setAccountVisible(true)} />
             </View>
           ),
           headerStyle: { backgroundColor: "#fffaf7", elevation: 0, shadowOpacity: 0 },
@@ -86,6 +106,9 @@ function SignedInApp() {
         currentUserId={user?.id}
         onCountChange={setNotifCount}
       />
+      <Modal visible={accountVisible} animationType="slide" onRequestClose={() => setAccountVisible(false)}>
+        <AccountScreen onClose={() => setAccountVisible(false)} />
+      </Modal>
     </>
   );
 }
@@ -182,12 +205,21 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#fff",
   },
-  signOutButton: {
-    marginRight: 8,
+  accountButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#ead8ce",
   },
-  signOutText: {
-    color: "#ff875d",
-    fontSize: 14,
-    fontWeight: "600",
+  accountAvatarImage: {
+    width: "100%",
+    height: "100%",
+  },
+  accountInitialsText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
   },
 });
