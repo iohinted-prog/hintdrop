@@ -2,12 +2,12 @@
 import ContactCard from "../components/ContactCard";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import HintImage from "../components/HintImage";
 import ShareButton from "../components/ShareButton";
 import HintDetailModal from "../components/HintDetailModal";
 import { trackRetailerClick } from "../../lib/trackRetailerClick";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import UserProfileModal from "../components/UserProfileModal";
 import { createClient } from "../../lib/supabase/client";
 import AvatarMenu from "../components/AvatarMenu";
 import AddContactModal from "../components/AddContactModal";
@@ -1600,6 +1600,7 @@ function buildGenericCalendarEvents() {
 
 export default function FeedClient() {
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
   const [sessionUser, setSessionUser] = useState(null);
 
   const [contacts, setContacts] = useState([]);
@@ -1619,7 +1620,6 @@ export default function FeedClient() {
   const [deleteContactError, setDeleteContactError] = useState("");
 
   const [feedItems, setFeedItems] = useState([]);
-  const [profileModal, setProfileModal] = useState(null);
   const [feedHintDetail, setFeedHintDetail] = useState(null); // a single hint object
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState("");
@@ -2674,7 +2674,7 @@ export default function FeedClient() {
                           onSubmitComment={handleSubmitComment}
                           demoReactionsState={demoReactionsByFeedId[item.id]}
                           onToggleDemoReaction={handleToggleDemoReaction}
-                          onOpenProfile={setProfileModal}
+                          onOpenProfile={(p) => router.push(`/profile/${p.userId}`)}
                           onOpenHintDetail={(hint) => setFeedHintDetail({
                             ...hint,
                             ownerName: hint.ownerName || item.metadata?.actor_name || item.actor_name || null,
@@ -2752,7 +2752,7 @@ export default function FeedClient() {
         onAdd={() => { setIsContactsManagerOpen(false); setIsAddContactOpen(true); }}
         onRefresh={() => loadContacts(sessionUser.id)}
         onDelete={(c) => { setIsContactsManagerOpen(false); openDeleteContactModal(c); }}
-        onOpenProfile={(p) => { setIsContactsManagerOpen(false); setProfileModal(p); }}
+        onOpenProfile={(p) => { setIsContactsManagerOpen(false); router.push(`/profile/${p.userId}`); }}
       />
       <AddContactModal
         open={isAddContactOpen}
@@ -2779,25 +2779,6 @@ export default function FeedClient() {
           supabase={supabase}
           currentUserId={sessionUser?.id}
           source="feed"
-        />
-      )}
-      {profileModal && (
-        <UserProfileModal
-          userId={profileModal.userId}
-          name={profileModal.name}
-          avatarUrl={profileModal.avatarUrl}
-          initials={profileModal.initials}
-          onClose={() => setProfileModal(null)}
-          currentUserId={sessionUser?.id}
-          isContact={contacts.some(c => c.profileId === profileModal.userId)}
-          onAddContact={async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            await supabase.functions.invoke('send-contact-invite', {
-              body: { target_user_id: profileModal.userId, name: profileModal.name, role: 'Friend' },
-            });
-            setProfileModal(null);
-            if (sessionUser?.id) await loadContacts(sessionUser.id);
-          }}
         />
       )}
     </main>

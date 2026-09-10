@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
 import AddContactModal from "../components/AddContactModal";
 import ContactCard from "../components/ContactCard";
 import { useChatWindows } from "../components/ChatWindowsProvider";
-import UserProfileModal from "../components/UserProfileModal";
 import HintImage from "../components/HintImage";
 import { resolveAvatarColor, NON_USER_AVATAR_COLOR } from "../../lib/avatarColor";
 
@@ -94,11 +94,11 @@ function HintsPreview({ userId, supabase }) {
 
 export default function PeopleClient() {
   const supabase = createClient();
+  const router = useRouter();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [addKey, setAddKey] = useState(0);
-  const [profileModal, setProfileModal] = useState(null);
   const [search, setSearch] = useState("");
 
   const [sessionUser, setSessionUser] = useState(null);
@@ -282,7 +282,7 @@ export default function PeopleClient() {
                 </div>
                 <div className="space-y-3">
                   {upcomingBirthdays.map(contact => (
-                    <ContactCard key={contact.id} contact={contact} onOpenProfile={setProfileModal}
+                    <ContactCard key={contact.id} contact={contact} onOpenProfile={(p) => router.push(`/profile/${p.userId}`)}
                       onDeleteClick={handleDelete}
                       onMessageClick={handleMessageContact}
                       previewBoards={contactHints[contact.profileId] || []} />
@@ -297,7 +297,7 @@ export default function PeopleClient() {
                 )}
                 <div className="space-y-3">
                   {everyoneElse.map(contact => (
-                    <ContactCard key={contact.id} contact={contact} onOpenProfile={setProfileModal}
+                    <ContactCard key={contact.id} contact={contact} onOpenProfile={(p) => router.push(`/profile/${p.userId}`)}
                       onDeleteClick={handleDelete}
                       onMessageClick={handleMessageContact}
                       previewBoards={contactHints[contact.profileId] || []} />
@@ -310,21 +310,6 @@ export default function PeopleClient() {
       </div>
       <AddContactModal key={addKey} modalKey={addKey} open={isAddOpen} onClose={() => setIsAddOpen(false)}
         onSave={async (payload) => { await handleSaveContact(payload); setIsAddOpen(false); }} supabase={supabase} />
-      {profileModal && (
-        <UserProfileModal
-          userId={profileModal.userId}
-          name={profileModal.name}
-          avatarUrl={profileModal.avatarUrl}
-          initials={profileModal.initials}
-          onClose={() => setProfileModal(null)}
-          currentUserId={sessionUser?.id}
-          isContact={contacts.some(c => c.profileId === profileModal.userId)}
-          onAddContact={async () => {
-            await handleSaveContact({ name: profileModal.name, email: "" });
-            setProfileModal(null);
-          }}
-        />
-      )}
     </main>
   );
 }

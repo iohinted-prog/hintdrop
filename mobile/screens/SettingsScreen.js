@@ -6,6 +6,7 @@ import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import { colors, radii, spacing, shadow } from "../lib/theme";
+import { REGIONS, getStoredRegion, setStoredRegion } from "../lib/region";
 
 // Mirrors app/settings/SettingsClient.jsx - same profiles fields,
 // same defaults, written directly via Supabase rather than calling
@@ -92,6 +93,7 @@ export default function SettingsScreen({ onClose }) {
   const [defaultReminderDays, setDefaultReminderDays] = useState("7");
   const [currency, setCurrency] = useState("GBP");
   const [interests, setInterests] = useState(["Travel", "Food"]);
+  const [shopRegion, setShopRegion] = useState("uk");
   const [pushGranted, setPushGranted] = useState(null);
 
   useEffect(() => {
@@ -113,6 +115,7 @@ export default function SettingsScreen({ onClose }) {
       setDefaultReminderDays(String(data?.default_reminder_days ?? 7));
       setCurrency(data?.currency ?? "GBP");
       setInterests(Array.isArray(data?.interests) && data.interests.length >= 2 ? data.interests : ["Travel", "Food"]);
+      setShopRegion(await getStoredRegion());
       setLoading(false);
 
       const { status } = await Notifications.getPermissionsAsync();
@@ -121,6 +124,14 @@ export default function SettingsScreen({ onClose }) {
     load();
     return () => { active = false; };
   }, [user?.id]);
+
+  // Mirrors handleShopRegionChange in SettingsClient.jsx - same
+  // effect (which catalog /api/products?region= pulls from), stored
+  // via AsyncStorage instead of web's cookie.
+  async function handleShopRegionChange(nextRegion) {
+    setShopRegion(nextRegion);
+    await setStoredRegion(nextRegion);
+  }
 
   function toggleInterest(interest) {
     setError("");
@@ -219,6 +230,17 @@ export default function SettingsScreen({ onClose }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Currency</Text>
           <SelectRow label="Preferred currency" value={currency} options={currencyOptions} onSelect={setCurrency} />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Shop region</Text>
+          <Text style={styles.sectionSubtitle}>Which gift shop catalogue you see by default. Change it here if you're shopping for someone in a different country.</Text>
+          <SelectRow
+            label="Default shop"
+            value={shopRegion}
+            options={Object.values(REGIONS).map((r) => ({ code: r.code, label: `${r.label} — ${r.currency}` }))}
+            onSelect={handleShopRegionChange}
+          />
         </View>
 
         {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View> : null}

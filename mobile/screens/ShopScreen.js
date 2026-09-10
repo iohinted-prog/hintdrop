@@ -1,14 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, StyleSheet, Pressable, Image, TextInput, ActivityIndicator, ScrollView, Modal, Linking } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import { colors, radii, spacing, shadow } from "../lib/theme";
+import { getStoredRegion } from "../lib/region";
 
-// Mirrors app/components/ShopPageContent.jsx (region="uk", matching
-// web's own default region param). Built against the real file -
-// same shop_products data (fetched from the same public /api/products
-// endpoint web itself calls, so no separate mobile data path), same
+// Mirrors app/components/ShopPageContent.jsx. Built against the real
+// file - same shop_products data (fetched from the same public
+// /api/products endpoint web itself calls, so no separate mobile
+// data path), same region switching as web's own Settings "Shop
+// region" section (lib/region.js mirrors web's, AsyncStorage instead
+// of a cookie - see there for why this was missing initially), same
 // filter set (interests capped at 2, occasion, relationship, price
 // band, search), same Add-to-hints board-picker flow including the
 // live image-refetch-before-save behavior, same View-item affiliate-
@@ -268,36 +272,57 @@ export default function ShopScreen() {
   const [newBoardTitle, setNewBoardTitle] = useState("");
   const [isCreatingBoard, setIsCreatingBoard] = useState(false);
   const [imageRatios, setImageRatios] = useState({});
+  const [region, setRegion] = useState("uk");
   const measuredIdsRef = useRef(new Set());
   const toastTimerRef = useRef(null);
 
+  // Loads the shop catalog for the given region. Pulled out of the
+  // mount-time effect so it can also be re-run from useFocusEffect
+  // below whenever the region changes in Settings and the person
+  // comes back to this tab - React Navigation tabs stay mounted, so
+  // without this a region change made in Settings wouldn't show up
+  // here until the app restarted.
+  const loadProducts = useCallback(async (forRegion) => {
+    setLoading(true);
+    setPageError("");
+    try {
+      if (user?.id) {
+        const { data: profileData } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+        const tags = getProfileInterestTags(profileData);
+        if (tags.length) setSelectedInterests(tags.slice(0, 2));
+      }
+      const response = await fetch(`https://hintdrop.app/api/products?region=${forRegion}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "Failed to load shop products.");
+      setProducts(shuffleProducts(Array.isArray(data?.products) ? data.products : []));
+    } catch (err) {
+      setPageError(err?.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
   useEffect(() => {
     let active = true;
-    async function bootstrap() {
-      setLoading(true);
-      setPageError("");
-      try {
-        if (user?.id) {
-          const { data: profileData } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-          if (active) {
-            const tags = getProfileInterestTags(profileData);
-            if (tags.length) setSelectedInterests(tags.slice(0, 2));
-          }
-        }
-        const response = await fetch("https://hintdrop.app/api/products?region=uk");
-        const data = await response.json();
-        if (!response.ok) throw new Error(data?.error || "Failed to load shop products.");
-        if (!active) return;
-        setProducts(shuffleProducts(Array.isArray(data?.products) ? data.products : []));
-      } catch (err) {
-        if (active) setPageError(err?.message || "Something went wrong.");
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-    bootstrap();
+    getStoredRegion().then((stored) => {
+      if (!active) return;
+      setRegion(stored);
+      loadProducts(stored);
+    });
     return () => { active = false; };
-  }, [user?.id]);
+  }, [loadProducts]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      getStoredRegion().then((stored) => {
+        if (!active || stored === region) return;
+        setRegion(stored);
+        loadProducts(stored);
+      });
+      return () => { active = false; };
+    }, [region, loadProducts])
+  );
 
   const activeFilterCount = (selectedOccasion ? 1 : 0) + (selectedRelationship ? 1 : 0) + (selectedPriceBand ? 1 : 0) + selectedInterests.length;
 
