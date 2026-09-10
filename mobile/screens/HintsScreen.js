@@ -13,6 +13,7 @@ import {
   RefreshControl,
   KeyboardAvoidingView,
   Platform,
+  Share,
 } from "react-native";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -425,6 +426,7 @@ function BoardHintsScreen({ board, onBack }) {
   const [linkValue, setLinkValue] = useState("");
   const [modalInitialUrl, setModalInitialUrl] = useState(null);
   const [addModalVisible, setAddModalVisible] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(Boolean(board.is_private));
   const [error, setError] = useState("");
 
   const loadHints = useCallback(async () => {
@@ -482,6 +484,30 @@ function BoardHintsScreen({ board, onBack }) {
     setAddModalVisible(true);
   }
 
+  async function handleTogglePrivate() {
+    const nextValue = !isPrivate;
+    setIsPrivate(nextValue);
+    const { error: updateError } = await supabase
+      .from("hint_boards")
+      .update({ is_private: nextValue })
+      .eq("id", board.id);
+    if (updateError) {
+      setIsPrivate(!nextValue);
+      setError(updateError.message);
+    }
+  }
+
+  async function handleShare() {
+    const label = board.is_default ? "my Hints" : `"${board.title}"`;
+    try {
+      await Share.share({
+        message: `Check out ${label} on HintDrop: https://hintdrop.app/profile/${user?.id}?board=${board.id}`,
+      });
+    } catch {
+      // User dismissed the share sheet - nothing to do.
+    }
+  }
+
   const columns = splitIntoColumns(hints, 2);
 
   return (
@@ -490,13 +516,29 @@ function BoardHintsScreen({ board, onBack }) {
         <Pressable style={styles.backButton} onPress={onBack} hitSlop={12}>
           <Text style={styles.backButtonText}>‹ Lists</Text>
         </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {board.title}
-        </Text>
       </View>
 
       <View style={styles.heroWrap}>
+        <View style={styles.boardPillWrap}>
+          <Text style={styles.boardPillText}>
+            {isPrivate ? "🔒 " : ""}
+            {board.is_default ? "My Hints" : board.title}
+          </Text>
+        </View>
+
         <Text style={styles.heroTitle}>Drop a Hint here...</Text>
+
+        <View style={styles.heroActionsRow}>
+          <Pressable style={styles.shareButton} onPress={handleShare}>
+            <Text style={styles.shareButtonText}>
+              {board.is_default ? "Share my Hints" : `Share "${board.title}"`}
+            </Text>
+          </Pressable>
+          <Pressable style={styles.privacyButton} onPress={handleTogglePrivate}>
+            <Text style={styles.privacyButtonText}>{isPrivate ? "🔒 Private" : "Public"}</Text>
+          </Pressable>
+        </View>
+
         <View style={styles.heroInputRow}>
           <TextInput
             style={styles.heroInput}
@@ -513,15 +555,21 @@ function BoardHintsScreen({ board, onBack }) {
             <Text style={styles.heroButtonText}>Add hint</Text>
           </Pressable>
         </View>
-      </View>
 
-      {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
+        {error ? (
+          <Text style={styles.errorBanner}>{error}</Text>
+        ) : (
+          <Text style={styles.heroHelperText}>
+            We'll try our best to pull the title, image, and price before you review it.
+          </Text>
+        )}
+      </View>
 
       <View style={styles.masonryFrame}>
         <Image
-          source={require("../assets/grid-pattern-tile.png")}
+          source={require("../assets/grid-pattern-large.png")}
           style={StyleSheet.absoluteFillObject}
-          resizeMode="repeat"
+          resizeMode="cover"
         />
         {loading ? (
           <View style={styles.centered}>
@@ -635,6 +683,56 @@ const styles = StyleSheet.create({
   heroWrap: {
     paddingHorizontal: 20,
     paddingBottom: 16,
+    alignItems: "center",
+  },
+  boardPillWrap: {
+    backgroundColor: "#fff4ee",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    marginBottom: 10,
+  },
+  boardPillText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#e37b57",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  heroActionsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16,
+  },
+  shareButton: {
+    backgroundColor: "#ff875d",
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  shareButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  privacyButton: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ead8ce",
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  privacyButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#475569",
+  },
+  heroHelperText: {
+    fontSize: 12,
+    color: "#94a3b8",
+    textAlign: "center",
+    marginTop: 4,
   },
   heroTitle: {
     fontSize: 28,
@@ -645,6 +743,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   heroInputRow: {
+    width: "100%",
     gap: 10,
   },
   heroInput: {
