@@ -17,6 +17,7 @@ import {
   Linking,
   Alert,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 
@@ -513,6 +514,32 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
     });
   }
 
+  async function handlePickImage() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setError("Photo library access is needed to upload a photo.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets?.[0]?.uri) return;
+    // An uploaded photo replaces whatever scraped/Pexels options were
+    // showing - same priority as the web version's
+    // uploadedImage || image, a manual choice always wins.
+    setImageUrl(result.assets[0].uri);
+    setImageOptions([]);
+    // Starting fresh from "Upload a photo instead" (reviewing was
+    // still false) means there's no URL to scrape - same "idea"
+    // shape as the non-URL text flow, so Link/Size/Colour stay
+    // hidden until/unless they also type a real link.
+    if (!reviewing) {
+      setIsIdea(true);
+      setReviewing(true);
+    }
+  }
+
   function reset() {
     setUrl("");
     setReviewing(false);
@@ -677,17 +704,31 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
             </Text>
 
             {!reviewing ? (
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Paste a link or describe an experience"
-                placeholderTextColor="#94a3b8"
-                value={url}
-                onChangeText={setUrl}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+              <>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="Paste a link or describe an experience"
+                  placeholderTextColor="#94a3b8"
+                  value={url}
+                  onChangeText={setUrl}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <View style={styles.orDivider}>
+                  <View style={styles.orDividerLine} />
+                  <Text style={styles.orDividerText}>or</Text>
+                  <View style={styles.orDividerLine} />
+                </View>
+                <Pressable style={styles.uploadButton} onPress={handlePickImage}>
+                  <Text style={styles.uploadButtonText}>📷 Upload a photo instead</Text>
+                </Pressable>
+              </>
             ) : (
               <>
+                <Pressable style={styles.uploadButton} onPress={handlePickImage}>
+                  <Text style={styles.uploadButtonText}>📷 Upload a photo</Text>
+                </Pressable>
+
                 {imageUrl ? (
                   <Image source={{ uri: imageUrl }} style={styles.reviewImageLarge} resizeMode="cover" />
                 ) : (
@@ -1516,6 +1557,37 @@ const styles = StyleSheet.create({
   },
   editSheet: {
     maxHeight: "85%",
+  },
+  uploadButton: {
+    height: 48,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#eadcd3",
+    backgroundColor: "#fcfaf8",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  uploadButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#df7c59",
+  },
+  orDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 10,
+  },
+  orDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#ead8ce",
+  },
+  orDividerText: {
+    marginHorizontal: 10,
+    fontSize: 12,
+    color: "#94a3b8",
   },
   reviewImageLarge: {
     width: "100%",

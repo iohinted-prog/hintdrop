@@ -43,6 +43,12 @@
           "resizeMode": "contain",
           "backgroundColor": "#ff875d"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "HintDrop needs access to your photos so you can add one to a hint."
+        }
       ]
     ],
     "extra": {
