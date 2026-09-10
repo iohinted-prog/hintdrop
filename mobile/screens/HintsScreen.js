@@ -130,7 +130,7 @@ function BoardPreview({ previewHints = [] }) {
   );
 }
 
-function HintDetailModal({ hint, visible, onClose, onUpdated }) {
+function HintDetailModal({ hint, visible, onClose, onUpdated, onEdit }) {
   const [isPrivate, setIsPrivate] = useState(false);
   const [starred, setStarred] = useState(false);
 
@@ -215,15 +215,130 @@ function HintDetailModal({ hint, visible, onClose, onUpdated }) {
                 <Text style={styles.detailShareText}>Share this hint</Text>
               </Pressable>
 
-              {hint.url ? (
-                <Pressable style={styles.detailOpenButton} onPress={handleOpenLink}>
-                  <Text style={styles.detailOpenText}>Open →</Text>
+              <View style={styles.detailToggleRow}>
+                <Pressable
+                  style={styles.detailToggleButton}
+                  onPress={() => {
+                    onClose();
+                    onEdit(hint);
+                  }}
+                >
+                  <Text style={styles.detailToggleText}>Edit</Text>
                 </Pressable>
-              ) : null}
+                {hint.url ? (
+                  <Pressable style={styles.detailOpenButton} onPress={handleOpenLink}>
+                    <Text style={styles.detailOpenText}>Open →</Text>
+                  </Pressable>
+                ) : null}
+              </View>
             </View>
           </ScrollView>
         </Pressable>
       </Pressable>
+    </Modal>
+  );
+}
+
+function EditHintModal({ hint, visible, onClose, onSaved }) {
+  const [title, setTitle] = useState("");
+  const [url, setUrl] = useState("");
+  const [priceText, setPriceText] = useState("");
+  const [size, setSize] = useState("");
+  const [colour, setColour] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (hint) {
+      setTitle(hint.title || "");
+      setUrl(hint.url || "");
+      setPriceText(hint.price_text || "");
+      setSize(hint.size || "");
+      setColour(hint.colour || "");
+      setError("");
+    }
+  }, [hint]);
+
+  if (!hint) return null;
+
+  async function handleSave() {
+    setSaving(true);
+    setError("");
+    const { error: updateError } = await supabase
+      .from("hints")
+      .update({
+        title: title.trim() || "Hint",
+        url: url.trim() || null,
+        price_text: priceText.trim() || null,
+        size: size.trim() || null,
+        colour: colour.trim() || null,
+      })
+      .eq("id", hint.id);
+    setSaving(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    onSaved();
+    onClose();
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={styles.modalBackdrop}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <View style={styles.modalSheet}>
+          <Text style={styles.modalTitle}>Edit hint</Text>
+
+          <Text style={styles.editLabel}>Link</Text>
+          <TextInput
+            style={styles.modalInput}
+            value={url}
+            onChangeText={setUrl}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+          />
+
+          <Text style={styles.editLabel}>Name</Text>
+          <TextInput style={styles.modalInput} value={title} onChangeText={setTitle} />
+
+          <Text style={styles.editLabel}>Price</Text>
+          <TextInput style={styles.modalInput} value={priceText} onChangeText={setPriceText} />
+
+          <View style={styles.editRow}>
+            <View style={styles.editRowItem}>
+              <Text style={styles.editLabel}>Size</Text>
+              <TextInput style={styles.modalInput} value={size} onChangeText={setSize} />
+            </View>
+            <View style={styles.editRowItem}>
+              <Text style={styles.editLabel}>Colour</Text>
+              <TextInput style={styles.modalInput} value={colour} onChangeText={setColour} />
+            </View>
+          </View>
+
+          {error ? <Text style={styles.modalError}>{error}</Text> : null}
+
+          <View style={styles.modalButtonRow}>
+            <Pressable
+              style={[styles.modalButton, styles.modalButtonSecondary]}
+              onPress={onClose}
+              disabled={saving}
+            >
+              <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
+            </Pressable>
+            <Pressable style={styles.modalButton} onPress={handleSave} disabled={saving}>
+              {saving ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.modalButtonText}>Save</Text>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -527,6 +642,7 @@ function BoardHintsScreen({ board, onBack }) {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [isPrivate, setIsPrivate] = useState(Boolean(board.is_private));
   const [selectedHint, setSelectedHint] = useState(null);
+  const [editingHint, setEditingHint] = useState(null);
   const [error, setError] = useState("");
 
   const loadHints = useCallback(async () => {
@@ -724,6 +840,14 @@ function BoardHintsScreen({ board, onBack }) {
         visible={Boolean(selectedHint)}
         onClose={() => setSelectedHint(null)}
         onUpdated={loadHints}
+        onEdit={setEditingHint}
+      />
+
+      <EditHintModal
+        hint={editingHint}
+        visible={Boolean(editingHint)}
+        onClose={() => setEditingHint(null)}
+        onSaved={loadHints}
       />
     </View>
   );
@@ -1140,6 +1264,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
+  editLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#475569",
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  editRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  editRowItem: {
+    flex: 1,
+  },
   detailBackdrop: {
     flex: 1,
     backgroundColor: "rgba(15, 23, 42, 0.4)",
@@ -1243,6 +1381,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   detailOpenButton: {
+    flex: 1,
     height: 44,
     borderRadius: 999,
     backgroundColor: "#ff875d",
