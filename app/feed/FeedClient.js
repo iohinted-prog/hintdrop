@@ -859,17 +859,14 @@ function FeedItem({
               {formatRelativeFromDate(item.occurred_at || item.created_at)}
             </span>
           </div>
-            {bucket === "hint" && metadata.preview_hints?.length > 0 && (
+            {bucket === "hint" && metadata.preview_hints?.filter(h => h.image_url).length > 0 && (
               <div className="mt-4">
                 <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                  {metadata.preview_hints.map((hint, i) => (
+                  {metadata.preview_hints.filter(hint => hint.image_url).map((hint, i) => (
                     <div key={hint.id || i}
                       className="relative aspect-square w-28 shrink-0 overflow-hidden rounded-[18px] border border-[#f0dfd6] bg-[#fffaf7] cursor-pointer"
                       onClick={e => { e.stopPropagation(); e.preventDefault(); onOpenHintDetail && onOpenHintDetail(hint); }}>
-                      {hint.image_url
-                        ? <HintImage src={hint.image_url} alt={hint.title} fill sizes="112px" className="object-cover" fallbackClassName="hidden" />
-                        : <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-[#ead8ca] to-[#c4a17f]">🎁</div>
-                      }
+                      <HintImage src={hint.image_url} alt={hint.title} fill sizes="112px" className="object-cover" fallbackClassName="hidden" />
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
                         <p className="text-[11px] font-semibold text-white truncate">{hint.title}</p>
                         {hint.retailer && <p className="text-[10px] text-white/70 truncate">{hint.retailer}</p>}
