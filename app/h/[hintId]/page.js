@@ -38,6 +38,12 @@ export async function generateMetadata({ params }) {
   const ownerName = hint.profiles?.full_name?.split(" ")[0] || "Someone";
   const title = `${ownerName}'s Hint 👀 | HintDrop`;
   const description = hint.title || "Take a look at this gift idea on HintDrop.";
+  // Same reasoning as /b/[boardId] - proxied through Next's own image
+  // optimizer rather than linked directly, since external retailer
+  // image hosts often block hotlinking/crawler user agents.
+  const ogImage = hint.image_url
+    ? `https://hintdrop.app/_next/image?url=${encodeURIComponent(hint.image_url)}&w=1200&q=75`
+    : undefined;
 
   return {
     title,
@@ -45,14 +51,14 @@ export async function generateMetadata({ params }) {
     openGraph: {
       title,
       description,
-      images: hint.image_url ? [hint.image_url] : undefined,
+      images: ogImage ? [ogImage] : undefined,
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: hint.image_url ? [hint.image_url] : undefined,
+      images: ogImage ? [ogImage] : undefined,
     },
     alternates: {
       canonical: `https://hintdrop.app/h/${hintId}`,

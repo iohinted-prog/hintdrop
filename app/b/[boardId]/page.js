@@ -52,7 +52,17 @@ export async function generateMetadata({ params }) {
     .limit(1)
     .maybeSingle();
 
-  const ogImage = coverHint?.image_url || "https://hintdrop.app/og-default-v2.png";
+  const ogImage = coverHint?.image_url
+    // Proxied through Next's own image optimizer rather than linked
+    // directly - external retailer image hosts often block hotlinking
+    // or crawler user agents (confirmed: a real H&M image URL from
+    // this exact flow returned blocked/inaccessible when checked),
+    // which explained the preview staying generic even with correct
+    // metadata and a genuinely working image. Routing through
+    // hintdrop.app's own domain means WhatsApp's crawler fetches from
+    // us, not the original retailer, sidestepping that entirely.
+    ? `https://hintdrop.app/_next/image?url=${encodeURIComponent(coverHint.image_url)}&w=1200&q=75`
+    : "https://hintdrop.app/og-default-v2.png";
 
   return {
     title,
