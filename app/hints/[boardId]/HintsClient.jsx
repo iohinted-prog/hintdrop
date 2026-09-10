@@ -28,6 +28,7 @@ import { createClient } from "../../../lib/supabase/client";
 import { trackRetailerClick } from "../../../lib/trackRetailerClick";
 import HintImage from "../../components/HintImage";
 import ShareButton from "../../components/ShareButton";
+import CollaborateModal from "../../components/CollaborateModal";
 import { useCurrencyFormatter } from "../../../lib/useCurrencyFormatter";
 import { usePreferences } from "../../providers/PreferencesProvider";
 import AvatarMenu from "../../components/AvatarMenu";
@@ -1764,6 +1765,7 @@ export default function HintsClient({ boardId }) {
   const [board, setBoard] = useState(null);
   const [boardLoading, setBoardLoading] = useState(true);
   const [togglingBoardPrivacy, setTogglingBoardPrivacy] = useState(false);
+  const [collaborateOpen, setCollaborateOpen] = useState(false);
 
   const [hints, setHints] = useState([]);
   // Demo hints (shown on an empty board) are draggable for
@@ -2827,6 +2829,15 @@ export default function HintsClient({ boardId }) {
                 {!board.is_default && (
                   <button
                     type="button"
+                    onClick={() => setCollaborateOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-4 py-2 text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0]"
+                  >
+                    👥 Collaborate
+                  </button>
+                )}
+                {!board.is_default && (
+                  <button
+                    type="button"
                     onClick={handleDeleteBoard}
                     className="inline-flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-4 py-2 text-[13px] font-semibold text-slate-500 hover:bg-[#fff0f0] hover:text-[#b14f43]"
                   >
@@ -3097,6 +3108,16 @@ export default function HintsClient({ boardId }) {
       />
 
       <BusyOverlay open={busyState.open} title={busyState.title} message={busyState.message} />
+
+      {board && !board.is_default && (
+        <CollaborateModal
+          open={collaborateOpen}
+          onClose={() => setCollaborateOpen(false)}
+          boardId={boardId}
+          boardTitle={board.title}
+          sharerName={currentUserName}
+        />
+      )}
     </main>
   );
 }

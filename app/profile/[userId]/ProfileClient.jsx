@@ -70,6 +70,8 @@ export default function ProfileClient({ userId }) {
   const [occasionFilter, setOccasionFilter] = useState("");
   const [claimingId, setClaimingId] = useState(null);
   const [contactState, setContactState] = useState("none"); // "none" | "pending" | "active"
+  const [collabStatus, setCollabStatus] = useState("none"); // "none" | "pending" | "accepted"
+  const [requestingCollab, setRequestingCollab] = useState(false);
   const [contactSince, setContactSince] = useState(null);
   const [selectedHint, setSelectedHint] = useState(null);
   const [groupHint, setGroupHint] = useState(null);
@@ -210,6 +212,34 @@ export default function ProfileClient({ userId }) {
     return () => { cancelled = true; };
   }, [selectedBoardId]);
 
+  useEffect(() => {
+    setCollabStatus("none");
+    if (!selectedBoardId || !currentUser || currentUser.id === userId) return;
+    let cancelled = false;
+    supabase.from("board_collaborators")
+      .select("status")
+      .eq("board_id", selectedBoardId)
+      .eq("user_id", currentUser.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setCollabStatus(data?.status || "none");
+      });
+    return () => { cancelled = true; };
+  }, [selectedBoardId, currentUser, userId]);
+
+  async function handleRequestCollab() {
+    if (!currentUser || !selectedBoardId || requestingCollab) return;
+    setRequestingCollab(true);
+    const { error } = await supabase.from("board_collaborators").insert({
+      board_id: selectedBoardId,
+      user_id: currentUser.id,
+      status: "pending",
+      requested_by: currentUser.id,
+    });
+    setRequestingCollab(false);
+    if (!error) setCollabStatus("pending");
+  }
+
   async function handleToggleClaim(hint) {
     if (!currentUser || currentUser.id === userId) return;
     const myClaim = claims.find(c => c.hint_id === hint.id && c.claimed_by === currentUser.id);
@@ -333,6 +363,27 @@ export default function ProfileClient({ userId }) {
                 className="h-9 flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-3.5 text-[13px] font-semibold text-white shadow-md hover:brightness-105 shrink-0"
               />
             </div>
+
+            {selectedBoardId && !isOwnProfile && !selectedBoardData?.is_default && currentUser && (
+              collabStatus === "accepted" ? (
+                <span className="h-9 flex items-center gap-1.5 rounded-full border border-[#bfe4cf] bg-[#e3f5ea] px-3.5 text-[12px] font-semibold text-[#2f8a5f] shrink-0">
+                  👥 Collaborating
+                </span>
+              ) : collabStatus === "pending" ? (
+                <span className="h-9 flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-3.5 text-[12px] font-semibold text-slate-500 shrink-0">
+                  Request sent
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleRequestCollab}
+                  disabled={requestingCollab}
+                  className="h-9 flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-3.5 text-[12px] font-semibold text-slate-600 hover:bg-[#fff5f0] shrink-0 disabled:opacity-60"
+                >
+                  👥 Request collaboration
+                </button>
+              )
+            )}
 
             {selectedBoardId && (
               <button
