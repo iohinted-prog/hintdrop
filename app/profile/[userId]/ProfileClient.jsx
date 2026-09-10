@@ -244,6 +244,7 @@ export default function ProfileClient({ userId }) {
       return;
     }
     setCollabStatus("pending");
+    console.log("[collab] insert succeeded, about to fetch collab-notify", { selectedBoardId, requesterId: currentUser.id });
 
     // Email and the in-app bell notification are both created here in
     // one call (the route fetches the requester's own profile itself)
@@ -255,6 +256,7 @@ export default function ProfileClient({ userId }) {
       body: JSON.stringify({ type: "request", boardId: selectedBoardId, requesterId: currentUser.id }),
     }).then(async (res) => {
       const body = await res.json().catch(() => null);
+      console.log("[collab] collab-notify response", res.status, body);
       if (!res.ok || body?.notifError) {
         console.error("collab-notify issue:", res.status, body);
       }
