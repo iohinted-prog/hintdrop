@@ -1894,9 +1894,13 @@ export default function HintsClient({ boardId }) {
       setCurrentUser(user || null);
 
       if (!user) {
-        setHints([]);
-        setIsLoading(false);
-        setBoardLoading(false);
+        // This is an owner-only editing page - there's nothing useful
+        // to show a signed-out visitor (e.g. someone who clicked a
+        // "review request" email link while logged out), and leaving
+        // them on an empty version of this page reads as broken rather
+        // than as a sign-in prompt. Send them to the homepage to log
+        // in instead.
+        router.replace("/");
         return;
       }
 

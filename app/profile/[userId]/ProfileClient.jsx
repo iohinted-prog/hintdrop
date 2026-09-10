@@ -271,6 +271,11 @@ export default function ProfileClient({ userId }) {
         notifBody: `On "${boardTitle}"`,
         data: { actor_name: myName, actor_avatar_url: myProfile?.avatar_url || null, board_id: selectedBoardId, url: `/hints/${selectedBoardId}` },
       }),
+    }).then(async (res) => {
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        console.error("notifications/create failed:", res.status, body);
+      }
     }).catch(console.error);
   }
 
@@ -456,7 +461,7 @@ export default function ProfileClient({ userId }) {
                 className={`flex-1 h-10 flex items-center justify-center gap-1.5 text-[13px] font-semibold rounded-full border transition ${
                   contactState === "active" ? "border-[#c3e0c3] bg-[#f0faf0] text-[#3a7a3a] cursor-default"
                   : contactState === "pending" ? "border-[#f0dfc9] bg-[#fff8ee] text-[#a87d3a] cursor-default"
-                  : "border-[#ead8ce] bg-white text-slate-600 hover:bg-[#fff5f0] hover:border-[#ff875d] hover:text-[#ff875d]"
+                  : "border-transparent bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white shadow-md hover:brightness-105"
                 }`}>
                 {contactState === "active" ? "✓ In your circle" : contactState === "pending" ? "Request sent" : addingContact ? "Sending..." : "+ Add to circle"}
               </button>
