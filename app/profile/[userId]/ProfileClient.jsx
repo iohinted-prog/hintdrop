@@ -469,9 +469,9 @@ export default function ProfileClient({ userId }) {
               {selectedBoardId && !selectedBoardData?.is_default && (
                 <div className="relative flex-1">
                   {collabStatus === "accepted" ? (
-                    <span className="h-10 w-full flex items-center justify-center gap-1.5 rounded-full border border-[#bfe4cf] bg-[#e3f5ea] text-[13px] font-semibold text-[#2f8a5f]">
-                      👥 Collaborating
-                    </span>
+                    <Link href={`/hints/${selectedBoardId}`} className="h-10 w-full flex items-center justify-center gap-1.5 rounded-full border border-[#bfe4cf] bg-[#e3f5ea] text-[13px] font-semibold text-[#2f8a5f] hover:brightness-105">
+                      ✏️ Add or edit hints
+                    </Link>
                   ) : collabStatus === "pending" ? (
                     <span className="h-10 w-full flex items-center justify-center gap-1.5 rounded-full border border-[#bfe4cf] bg-[#e3f5ea] text-[13px] font-semibold text-[#2f8a5f]">
                       ✓ Request sent
