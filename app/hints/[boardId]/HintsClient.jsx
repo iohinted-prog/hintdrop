@@ -1767,6 +1767,9 @@ export default function HintsClient({ boardId }) {
   const [togglingBoardPrivacy, setTogglingBoardPrivacy] = useState(false);
   const [collaborateOpen, setCollaborateOpen] = useState(false);
   const [boardMenuOpen, setBoardMenuOpen] = useState(false);
+  const [editingBoardName, setEditingBoardName] = useState(false);
+  const [boardNameDraft, setBoardNameDraft] = useState("");
+  const [savingBoardName, setSavingBoardName] = useState(false);
 
   const [hints, setHints] = useState([]);
   // Demo hints (shown on an empty board) are draggable for
@@ -2308,6 +2311,35 @@ export default function HintsClient({ boardId }) {
     setTogglingBoardPrivacy(false);
   }
 
+  function startEditingBoardName() {
+    setBoardNameDraft(board?.title || "");
+    setEditingBoardName(true);
+  }
+
+  async function handleSaveBoardName() {
+    const trimmed = boardNameDraft.trim();
+    if (!currentUser || !board || !trimmed || savingBoardName) return;
+    setSavingBoardName(true);
+    const supabase = createClient();
+    const previousTitle = board.title;
+
+    setBoard((current) => ({ ...current, title: trimmed }));
+
+    const { error } = await supabase
+      .from("hint_boards")
+      .update({ title: trimmed })
+      .eq("id", boardId)
+      .eq("user_id", currentUser.id);
+
+    if (error) {
+      setBoard((current) => ({ ...current, title: previousTitle }));
+      setError(errorToMessage(error));
+    } else {
+      setEditingBoardName(false);
+    }
+    setSavingBoardName(false);
+  }
+
   async function handleDeleteBoard() {
     if (!currentUser || !board || board.is_default) return;
     const confirmed = window.confirm(
@@ -2798,10 +2830,31 @@ export default function HintsClient({ boardId }) {
 
           <div className="flex flex-col items-center gap-3">
             {boardId && !boardLoading && board && (
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-[#fff4ee] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.1em] text-[#e37b57]">
-                {board.is_private && <span title="Private">🔒</span>}
-                {board.is_default ? "My Hints" : board.title}
-              </div>
+              editingBoardName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={boardNameDraft}
+                    onChange={(e) => setBoardNameDraft(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSaveBoardName(); if (e.key === "Escape") setEditingBoardName(false); }}
+                    autoFocus
+                    className="h-9 rounded-full border border-[#ead8ce] bg-white px-4 text-[13px] font-semibold text-slate-700 outline-none focus:border-[#f19a78]"
+                  />
+                  <button type="button" onClick={handleSaveBoardName} disabled={savingBoardName || !boardNameDraft.trim()}
+                    className="inline-flex h-9 items-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 text-[13px] font-semibold text-white disabled:opacity-60">
+                    Save
+                  </button>
+                  <button type="button" onClick={() => setEditingBoardName(false)}
+                    className="inline-flex h-9 items-center rounded-full border border-[#ead8ce] bg-white px-4 text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0]">
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-[#fff4ee] px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.1em] text-[#e37b57]">
+                  {board.is_private && <span title="Private">🔒</span>}
+                  {board.is_default ? "My Hints" : board.title}
+                </div>
+              )
             )}
             <h1 className="text-[32px] font-bold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
               Drop a Hint here...
@@ -2816,7 +2869,8 @@ export default function HintsClient({ boardId }) {
                   title={board.is_default ? null : board.title}
                   sharerName={currentUserName}
                   currentUserId={currentUser.id}
-                  label={board.is_default ? "Share my Hints" : `Share "${board.title}"`}
+                  icon="🔗"
+                  label="Share"
                   className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-4 py-2 text-[13px] font-semibold text-white shadow-md hover:brightness-105"
                 />
                 <button
@@ -2843,6 +2897,14 @@ export default function HintsClient({ boardId }) {
                     <div className="absolute right-0 top-11 z-20 min-w-[180px] rounded-[16px] border border-[#efe0d7] bg-white p-1.5 shadow-[0_8px_24px_rgba(88,46,31,0.14)]">
                       <button
                         type="button"
+                        onClick={() => { setBoardMenuOpen(false); startEditingBoardName(); }}
+                        className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left text-[13px] text-slate-700 hover:bg-[#fff5f0]"
+                      >
+                        ✏️ Edit name
+                      </button>
+                      <div className="my-1 h-px bg-[#f0dfd6]" />
+                      <button
+                        type="button"
                         onClick={() => { setBoardMenuOpen(false); setCollaborateOpen(true); }}
                         className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left text-[13px] text-slate-700 hover:bg-[#fff5f0]"
                       >
@@ -2863,7 +2925,7 @@ export default function HintsClient({ boardId }) {
             )}
             {boardId && !boardLoading && board?.is_private && (
               <p className="max-w-[36ch] text-[12px] leading-5 text-slate-400">
-                Hidden from your Hints menu and anyone browsing your profile — but still viewable by anyone you send the direct link to.
+                Hidden from your menu, but viewable by anyone with the link.
               </p>
             )}
           </div>
