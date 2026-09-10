@@ -202,13 +202,20 @@ export default function ProfileClient({ userId }) {
           .in("hint_id", hintsList.map(h => h.id));
         if (!cancelled) setClaims(claimsData || []);
       }
-      setBoardHintsLoading(false);
+      // Measure image aspect ratios BEFORE revealing the cards, not
+      // after - doing it after meant the skeleton disappeared and
+      // cards appeared at a default aspect ratio, then visibly
+      // resized once ratios came in a moment later, on top of each
+      // image's own normal load time. Keeping the skeleton up through
+      // this step means cards appear already correctly sized.
       const ratios = {};
       await Promise.all(hintsList.filter(h => h.image_url).map(async h => {
         const r = await loadRatio(h.image_url).catch(() => null);
         if (r) ratios[h.id] = r;
       }));
-      if (!cancelled) setImageRatios(ratios);
+      if (cancelled) return;
+      setImageRatios(ratios);
+      setBoardHintsLoading(false);
     }
     loadBoardHints();
     return () => { cancelled = true; };
