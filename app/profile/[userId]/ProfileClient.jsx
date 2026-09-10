@@ -245,36 +245,18 @@ export default function ProfileClient({ userId }) {
     }
     setCollabStatus("pending");
 
-    const { data: myProfile } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", currentUser.id).maybeSingle();
-    const myName = myProfile?.full_name || "Someone";
-    const boardTitle = selectedBoardData?.title || "your list";
-
-    // Immediate email (fast) alongside a real bell/push notification
-    // (via the shared /api/notifications/create path) - the board
-    // owner had an email but no way to act on the request in-app,
-    // which is the actual fix here; the email alone left them stuck.
+    // Email and the in-app bell notification are both created here in
+    // one call (the route fetches the requester's own profile itself)
+    // - see the route for why the bell insert moved out of the
+    // separate /api/notifications/create path.
     fetch("/api/collab-notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "request", boardId: selectedBoardId, requesterId: currentUser.id }),
-    }).catch(console.error);
-
-    fetch("/api/notifications/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: userId,
-        actor_user_id: currentUser.id,
-        type: "collab_request",
-        entity_id: selectedBoardId,
-        title: `${myName} wants to collaborate`,
-        notifBody: `On "${boardTitle}"`,
-        data: { actor_name: myName, actor_avatar_url: myProfile?.avatar_url || null, board_id: selectedBoardId, url: `/hints/${selectedBoardId}` },
-      }),
     }).then(async (res) => {
       if (!res.ok) {
         const body = await res.text().catch(() => "");
-        console.error("notifications/create failed:", res.status, body);
+        console.error("collab-notify failed:", res.status, body);
       }
     }).catch(console.error);
   }

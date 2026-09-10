@@ -52,6 +52,30 @@ export async function POST(req) {
         </div>`,
       });
     }
+
+    // In-app bell notification. Deliberately a direct insert here
+    // rather than going through the separate /api/notifications/create
+    // path - that route consistently 500'd for this specific call
+    // despite the exact same insert succeeding when run directly
+    // against the database (confirmed both with matching and with the
+    // real production ids), suggesting the failure is something in
+    // that shared route's own execution (its push-notification side
+    // effect is the most likely culprit) rather than the insert
+    // itself. This route already reliably sends the email above using
+    // the identical service-role pattern, so reusing it for the bell
+    // row too avoids depending on a route that's demonstrably not
+    // working for this case.
+    const { data: requesterProfileFull } = await supabase.from("profiles").select("avatar_url").eq("id", requesterId).maybeSingle();
+    await supabase.from("notifications").insert({
+      user_id: board.user_id,
+      actor_user_id: requesterId,
+      type: "collab_request",
+      entity_id: boardId,
+      title: `${requesterName} wants to collaborate`,
+      body: `On "${board.title}"`,
+      data: { actor_name: requesterName, actor_avatar_url: requesterProfileFull?.avatar_url || null, board_id: boardId, url: `/hints/${boardId}` },
+    });
+
     return Response.json({ ok: true });
   }
 
