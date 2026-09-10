@@ -32,7 +32,7 @@ export default function CollaborateModal({ open, onClose, boardId, boardTitle, s
 
       const [{ data: contactRows }, { data: collabRows }] = await Promise.all([
         supabase.from("contacts")
-          .select("id, name, email, profile_id")
+          .select("id, name, email, profile_id, profiles:profile_id(full_name, avatar_url)")
           .eq("user_id", user.id).eq("status", "active").not("profile_id", "is", null),
         supabase.from("board_collaborators")
           .select("id, user_id, invited_email, status, profiles:user_id(full_name, avatar_url)")
@@ -179,15 +179,22 @@ export default function CollaborateModal({ open, onClose, boardId, boardTitle, s
               {loading ? (
                 <p className="mt-4 text-xs text-slate-500">Loading...</p>
               ) : circleAvailable.length > 0 ? (
-                <div className="mt-4 overflow-hidden rounded-[20px] border border-[#efe1d9] bg-white">
+                <div className="mt-4 max-h-[280px] overflow-y-auto overflow-x-hidden rounded-[20px] border border-[#efe1d9] bg-white">
                   {circleAvailable.map((contact) => (
                     <button key={contact.id} type="button" onClick={() => inviteCircleMember(contact)}
-                      className="flex w-full items-center justify-between border-b border-slate-100 px-4 py-3 text-left last:border-b-0 hover:bg-slate-50">
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">{contact.name || "No name"}</p>
-                        {contact.email && <p className="text-xs text-slate-500">{contact.email}</p>}
+                      className="flex w-full items-center gap-3 border-b border-slate-100 px-4 py-3 text-left last:border-b-0 hover:bg-slate-50">
+                      {contact.profiles?.avatar_url ? (
+                        <img src={contact.profiles.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover border border-[#f0dfd6]" />
+                      ) : (
+                        <div className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[12px] font-bold text-white">
+                          {(contact.profiles?.full_name || contact.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-slate-900 truncate">{contact.profiles?.full_name || contact.name || "No name"}</p>
+                        {contact.email && <p className="text-xs text-slate-500 truncate">{contact.email}</p>}
                       </div>
-                      <span className="text-xs font-semibold text-[#ea7451]">Invite</span>
+                      <span className="shrink-0 text-xs font-semibold text-[#ea7451]">Invite</span>
                     </button>
                   ))}
                 </div>
@@ -200,8 +207,18 @@ export default function CollaborateModal({ open, onClose, boardId, boardTitle, s
               <div className="mt-5">
                 <span className="block text-sm font-medium text-slate-900">Or invite by email</span>
                 <div className="mt-2 flex gap-2">
-                  <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)}
+                  <input
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
                     placeholder="someone@example.com"
+                    name="collab-invite-email-field"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck="false"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
                     className="h-[46px] flex-1 rounded-full border border-[#ead8ce] bg-white px-5 text-sm text-slate-700 outline-none transition focus:border-[#f19b7e]" />
                   <button type="button" onClick={inviteByEmail} disabled={inviting || !inviteEmail.trim()}
                     className={"h-[46px] shrink-0 rounded-full px-5 text-sm font-semibold text-white " + (inviting || !inviteEmail.trim() ? "cursor-not-allowed bg-[#e9a48d]" : "bg-gradient-to-b from-[#ff946d] to-[#f36f64]")}>
