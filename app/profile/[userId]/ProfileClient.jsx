@@ -71,6 +71,7 @@ export default function ProfileClient({ userId }) {
   const [claimingId, setClaimingId] = useState(null);
   const [contactState, setContactState] = useState("none"); // "none" | "pending" | "active"
   const [collabStatus, setCollabStatus] = useState("none"); // "none" | "pending" | "accepted"
+  const [collabStatusLoading, setCollabStatusLoading] = useState(true);
   const [requestingCollab, setRequestingCollab] = useState(false);
   const [collabRequestError, setCollabRequestError] = useState("");
   const [contactSince, setContactSince] = useState(null);
@@ -215,7 +216,11 @@ export default function ProfileClient({ userId }) {
 
   useEffect(() => {
     setCollabStatus("none");
-    if (!selectedBoardId || !currentUser || currentUser.id === userId) return;
+    if (!selectedBoardId || !currentUser || currentUser.id === userId) {
+      setCollabStatusLoading(false);
+      return;
+    }
+    setCollabStatusLoading(true);
     let cancelled = false;
     supabase.from("board_collaborators")
       .select("status")
@@ -223,7 +228,9 @@ export default function ProfileClient({ userId }) {
       .eq("user_id", currentUser.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (!cancelled) setCollabStatus(data?.status || "none");
+        if (cancelled) return;
+        setCollabStatus(data?.status || "none");
+        setCollabStatusLoading(false);
       });
     return () => { cancelled = true; };
   }, [selectedBoardId, currentUser, userId]);
@@ -468,7 +475,9 @@ export default function ProfileClient({ userId }) {
               </button>
               {selectedBoardId && !selectedBoardData?.is_default && (
                 <div className="relative flex-1">
-                  {collabStatus === "accepted" ? (
+                  {collabStatusLoading ? (
+                    <div className="h-10 w-full rounded-full bg-[#f0e4dd] animate-pulse" />
+                  ) : collabStatus === "accepted" ? (
                     <Link href={`/hints/${selectedBoardId}`} className="h-10 w-full flex items-center justify-center gap-1.5 rounded-full border border-[#bfe4cf] bg-[#e3f5ea] text-[13px] font-semibold text-[#2f8a5f] hover:brightness-105">
                       ✏️ Add or edit hints
                     </Link>

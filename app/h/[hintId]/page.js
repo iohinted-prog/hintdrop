@@ -1,6 +1,12 @@
 import { createClient } from "../../../lib/supabase/server";
 import HintPreviewClient from "./HintPreviewClient";
 
+// Same reasoning as /b/[boardId] - a hint's image/title can change
+// (edited, image re-scraped) and privacy can be toggled, so this must
+// regenerate per request rather than risk serving a stale cached
+// metadata response.
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }) {
   const { hintId } = await params;
   const supabase = await createClient();

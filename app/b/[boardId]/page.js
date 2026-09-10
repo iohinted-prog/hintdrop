@@ -1,6 +1,15 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
 
+// Board metadata (title, cover image) depends on the board's most
+// recently added hint - genuinely dynamic data that changes as often
+// as someone adds a hint. Without this, Next.js can statically cache
+// the generated metadata from whenever this URL was first requested
+// and never regenerate it, so a board's preview image could keep
+// showing stale (or missing) data indefinitely regardless of later
+// changes.
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }) {
   const { boardId } = await params;
   const supabase = await createClient();
