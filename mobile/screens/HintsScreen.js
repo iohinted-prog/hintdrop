@@ -604,6 +604,7 @@ const styles = StyleSheet.create({
     gap: CARD_GAP,
   },
   card: {
+    position: "relative",
     width: "100%",
     borderRadius: 20,
     overflow: "hidden",
@@ -615,7 +616,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardImage: {
-    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
   },
   cardImageFallback: {
     backgroundColor: "#ffe3d1",
@@ -667,6 +669,8 @@ const styles = StyleSheet.create({
   boardCard: {
     backgroundColor: "#fff",
     borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#f0dfd6",
     marginBottom: CARD_GAP,
     overflow: "hidden",
     shadowColor: "#0f172a",
