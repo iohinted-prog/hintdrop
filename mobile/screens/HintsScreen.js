@@ -518,6 +518,11 @@ function BoardHintsScreen({ board, onBack }) {
       {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
 
       <View style={styles.masonryFrame}>
+        <Image
+          source={require("../assets/grid-pattern-tile.png")}
+          style={StyleSheet.absoluteFillObject}
+          resizeMode="repeat"
+        />
         {loading ? (
           <View style={styles.centered}>
             <ActivityIndicator color="#ff875d" />
@@ -637,6 +642,7 @@ const styles = StyleSheet.create({
     color: "#f19a78",
     letterSpacing: -0.5,
     marginBottom: 14,
+    textAlign: "center",
   },
   heroInputRow: {
     gap: 10,
@@ -690,8 +696,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   masonryContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
+    padding: 16,
   },
   masonryRow: {
     flexDirection: "row",
