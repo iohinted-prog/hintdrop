@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../lib/supabase";
+import { resolveAvatarColor } from "../lib/avatarColor";
 import { useAuth } from "../context/AuthContext";
 
 // Simplified starting point, not the full web version
@@ -1051,6 +1052,28 @@ function BoardListScreen({ onSelectBoard }) {
 // initials only), but the real data flow is the same: board_
 // collaborators rows, the collab-notify API for email + bell
 // notification on both request and accept.
+// Mobile version of app/components/CollaborateModal.jsx - owner
+// shares an invite link, invites Circle contacts or by email (both
+// go straight to status "accepted" - the owner is granting access
+// directly, there's no separate approval step for someone THEY
+// chose to add), sees/approves pending requests that came in from
+// someone else requesting access (rare from mobile today since there's
+// no "request to collaborate" entry point here yet, but these can
+// still arrive from the web app's profile page, same database), and
+// can remove an accepted collaborator.
+function CollabAvatar({ name, avatarUrl, avatarColor, userId, size = 36 }) {
+  const colors = resolveAvatarColor({ avatarColor, id: userId });
+  if (avatarUrl) {
+    return <Image source={{ uri: avatarUrl }} style={{ width: size, height: size, borderRadius: size / 2 }} />;
+  }
+  const initials = String(name || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() || "").join("");
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, alignItems: "center", justifyContent: "center", backgroundColor: colors.to }}>
+      <Text style={{ color: "#fff", fontSize: size * 0.38, fontWeight: "700" }}>{initials || "?"}</Text>
+    </View>
+  );
+}
+
 function CollaborateModal({ visible, onClose, board, currentUserId }) {
   const [circleContacts, setCircleContacts] = useState([]);
   const [collaborators, setCollaborators] = useState([]);
@@ -1064,12 +1087,13 @@ function CollaborateModal({ visible, onClose, board, currentUserId }) {
     const [{ data: contactRows }, { data: collabRows }] = await Promise.all([
       supabase
         .from("contacts")
-        .select("id, name, email, profile_id, profiles:profile_id(full_name)")
+        .select("id, name, email, profile_id, profiles:profile_id(full_name, avatar_url, avatar_color)")
         .eq("user_id", currentUserId)
+        .eq("status", "active")
         .not("profile_id", "is", null),
       supabase
         .from("board_collaborators")
-        .select("id, user_id, invited_email, status, profiles:user_id(full_name)")
+        .select("id, user_id, invited_email, status, profiles:user_id(full_name, avatar_url, avatar_color)")
         .eq("board_id", board.id),
     ]);
     setCircleContacts(contactRows || []);
@@ -1088,24 +1112,39 @@ function CollaborateModal({ visible, onClose, board, currentUserId }) {
   const pending = collaborators.filter((c) => c.status === "pending");
   const accepted = collaborators.filter((c) => c.status === "accepted");
 
+  async function handleShareLink() {
+    const url = buildShareUrl(`/b/${board.id}`);
+    try {
+      await Share.share({
+        message: `Collaborate on "${board.title}" Hints with me ${url}`,
+      });
+    } catch {
+      // dismissed
+    }
+  }
+
   async function inviteContact(contact) {
     setError("");
-    const { error: insertError } = await supabase.from("board_collaborators").insert({
-      board_id: board.id,
-      user_id: contact.profile_id,
-      status: "pending",
-      requested_by: currentUserId,
-    });
+    // Straight to "accepted" - the owner picked this person
+    // themselves, so there's no approval step needed (matches the
+    // web app exactly). "pending" is reserved for someone else
+    // requesting access that the owner then has to approve.
+    const { data, error: insertError } = await supabase
+      .from("board_collaborators")
+      .insert({
+        board_id: board.id,
+        user_id: contact.profile_id,
+        invited_email: contact.email || null,
+        status: "accepted",
+        requested_by: currentUserId,
+      })
+      .select("id, user_id, invited_email, status, profiles:user_id(full_name, avatar_url, avatar_color)")
+      .single();
     if (insertError) {
       setError(insertError.message);
       return;
     }
-    fetch("https://hintdrop.app/api/collab-notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "request", boardId: board.id, requesterId: contact.profile_id }),
-    }).catch(() => {});
-    loadData();
+    setCollaborators((prev) => [...prev, data]);
   }
 
   async function inviteByEmail() {
@@ -1113,29 +1152,24 @@ function CollaborateModal({ visible, onClose, board, currentUserId }) {
     if (!email) return;
     setError("");
     const { data: profileMatchRows } = await supabase.rpc("get_profile_id_by_email", { target_email: email });
-    const profileMatch = profileMatchRows?.[0]?.id;
-    if (!profileMatch) {
-      setError("No HintDrop account found for that email yet.");
-      return;
-    }
-    const { error: insertError } = await supabase.from("board_collaborators").insert({
-      board_id: board.id,
-      user_id: profileMatch,
-      invited_email: email,
-      status: "pending",
-      requested_by: currentUserId,
-    });
+    const matchedProfileId = profileMatchRows?.[0]?.id || null;
+    const { data, error: insertError } = await supabase
+      .from("board_collaborators")
+      .insert({
+        board_id: board.id,
+        user_id: matchedProfileId,
+        invited_email: email,
+        status: "accepted",
+        requested_by: currentUserId,
+      })
+      .select("id, user_id, invited_email, status, profiles:user_id(full_name, avatar_url, avatar_color)")
+      .single();
     if (insertError) {
       setError(insertError.message);
       return;
     }
-    fetch("https://hintdrop.app/api/collab-notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "request", boardId: board.id, requesterId: profileMatch }),
-    }).catch(() => {});
+    setCollaborators((prev) => [...prev, data]);
     setEmailInput("");
-    loadData();
   }
 
   async function approveRequest(collabId, requesterId) {
@@ -1144,17 +1178,17 @@ function CollaborateModal({ visible, onClose, board, currentUserId }) {
       setError(updateError.message);
       return;
     }
+    setCollaborators((prev) => prev.map((c) => (c.id === collabId ? { ...c, status: "accepted" } : c)));
     fetch("https://hintdrop.app/api/collab-notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "accepted", boardId: board.id, requesterId }),
     }).catch(() => {});
-    loadData();
   }
 
   async function declineOrRemove(collabId) {
     await supabase.from("board_collaborators").delete().eq("id", collabId);
-    loadData();
+    setCollaborators((prev) => prev.filter((c) => c.id !== collabId));
   }
 
   return (
@@ -1162,7 +1196,7 @@ function CollaborateModal({ visible, onClose, board, currentUserId }) {
       <View style={styles.collabOverlay}>
         <View style={styles.collabCard}>
           <View style={styles.collabHeaderRow}>
-            <Text style={styles.collabHeaderTitle}>Collaborate on "{board?.title}"</Text>
+            <Text style={styles.collabHeaderTitle}>Invite people to "{board?.title}"</Text>
             <Pressable onPress={onClose} hitSlop={12}>
               <Text style={styles.collabCloseText}>✕</Text>
             </Pressable>
@@ -1174,12 +1208,29 @@ function CollaborateModal({ visible, onClose, board, currentUserId }) {
             <ScrollView style={{ maxHeight: "100%" }}>
               {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
 
+              <View style={styles.collabShareBox}>
+                <Text style={styles.collabShareEyebrow}>FASTEST WAY</Text>
+                <Text style={styles.collabShareTitle}>Share an invite link</Text>
+                <Text style={styles.collabShareSubtitle}>Anyone with this link can view the list and request to collaborate.</Text>
+                <Pressable style={styles.collabShareButton} onPress={handleShareLink}>
+                  <Text style={styles.collabApproveText}>Share invite link</Text>
+                </Pressable>
+              </View>
+
               {pending.length > 0 && (
                 <View style={styles.collabSection}>
-                  <Text style={styles.collabSectionTitle}>Pending requests</Text>
+                  <Text style={styles.collabSectionTitle}>{pending.length} pending request{pending.length === 1 ? "" : "s"}</Text>
                   {pending.map((c) => (
                     <View key={c.id} style={styles.collabRow}>
-                      <Text style={styles.collabRowName}>{c.profiles?.full_name || c.invited_email || "Someone"}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+                        <CollabAvatar
+                          name={c.profiles?.full_name || c.invited_email}
+                          avatarUrl={c.profiles?.avatar_url}
+                          avatarColor={c.profiles?.avatar_color}
+                          userId={c.user_id}
+                        />
+                        <Text style={styles.collabRowName}>{c.profiles?.full_name || c.invited_email || "Someone"}</Text>
+                      </View>
                       <View style={{ flexDirection: "row", gap: 8 }}>
                         <Pressable style={styles.collabApproveButton} onPress={() => approveRequest(c.id, c.user_id)}>
                           <Text style={styles.collabApproveText}>Approve</Text>
@@ -1193,28 +1244,24 @@ function CollaborateModal({ visible, onClose, board, currentUserId }) {
                 </View>
               )}
 
-              {accepted.length > 0 && (
-                <View style={styles.collabSection}>
-                  <Text style={styles.collabSectionTitle}>Collaborating</Text>
-                  {accepted.map((c) => (
-                    <View key={c.id} style={styles.collabRow}>
-                      <Text style={styles.collabRowName}>{c.profiles?.full_name || "Someone"}</Text>
-                      <Pressable onPress={() => declineOrRemove(c.id)}>
-                        <Text style={styles.collabRemoveText}>Remove</Text>
-                      </Pressable>
-                    </View>
-                  ))}
-                </View>
-              )}
-
               <View style={styles.collabSection}>
                 <Text style={styles.collabSectionTitle}>Invite from your circle</Text>
                 {availableContacts.length === 0 ? (
-                  <Text style={styles.collabEmptyText}>Nobody left to invite from your circle.</Text>
+                  <Text style={styles.collabEmptyText}>
+                    {circleContacts.length ? "Everyone in your Circle is already invited." : "Nobody in your Circle is on HintDrop yet."}
+                  </Text>
                 ) : (
                   availableContacts.map((contact) => (
                     <Pressable key={contact.id} style={styles.collabRow} onPress={() => inviteContact(contact)}>
-                      <Text style={styles.collabRowName}>{contact.profiles?.full_name || contact.name}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+                        <CollabAvatar
+                          name={contact.profiles?.full_name || contact.name}
+                          avatarUrl={contact.profiles?.avatar_url}
+                          avatarColor={contact.profiles?.avatar_color}
+                          userId={contact.profile_id}
+                        />
+                        <Text style={styles.collabRowName}>{contact.profiles?.full_name || contact.name}</Text>
+                      </View>
                       <Text style={styles.collabInviteText}>Invite</Text>
                     </Pressable>
                   ))
@@ -1238,6 +1285,28 @@ function CollaborateModal({ visible, onClose, board, currentUserId }) {
                   </Pressable>
                 </View>
               </View>
+
+              {accepted.length > 0 && (
+                <View style={styles.collabSection}>
+                  <Text style={styles.collabSectionTitle}>Collaborating ({accepted.length})</Text>
+                  {accepted.map((c) => (
+                    <View key={c.id} style={styles.collabRow}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+                        <CollabAvatar
+                          name={c.profiles?.full_name || c.invited_email}
+                          avatarUrl={c.profiles?.avatar_url}
+                          avatarColor={c.profiles?.avatar_color}
+                          userId={c.user_id}
+                        />
+                        <Text style={styles.collabRowName}>{c.profiles?.full_name || c.invited_email || "Someone"}</Text>
+                      </View>
+                      <Pressable onPress={() => declineOrRemove(c.id)}>
+                        <Text style={styles.collabRemoveText}>Remove</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              )}
             </ScrollView>
           )}
         </View>
@@ -2435,6 +2504,42 @@ const styles = StyleSheet.create({
   collabCloseText: {
     fontSize: 18,
     color: "#94a3b8",
+  },
+  collabShareBox: {
+    backgroundColor: "#fff7f2",
+    borderWidth: 1,
+    borderColor: "#f0dfd6",
+    borderRadius: 20,
+    padding: 16,
+    marginTop: 12,
+  },
+  collabShareEyebrow: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#df7b59",
+    letterSpacing: 0.6,
+  },
+  collabShareTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1e293b",
+    marginTop: 6,
+  },
+  collabShareSubtitle: {
+    fontSize: 12,
+    color: "#64748b",
+    marginTop: 4,
+    lineHeight: 17,
+  },
+  collabShareButton: {
+    marginTop: 12,
+    height: 42,
+    borderRadius: 999,
+    backgroundColor: "#ff875d",
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "flex-start",
+    paddingHorizontal: 18,
   },
   collabSection: {
     marginTop: 16,
