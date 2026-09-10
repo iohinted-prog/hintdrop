@@ -254,9 +254,9 @@ export default function ProfileClient({ userId }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "request", boardId: selectedBoardId, requesterId: currentUser.id }),
     }).then(async (res) => {
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        console.error("collab-notify failed:", res.status, body);
+      const body = await res.json().catch(() => null);
+      if (!res.ok || body?.notifError) {
+        console.error("collab-notify issue:", res.status, body);
       }
     }).catch(console.error);
   }

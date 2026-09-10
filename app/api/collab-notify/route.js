@@ -66,7 +66,7 @@ export async function POST(req) {
     // row too avoids depending on a route that's demonstrably not
     // working for this case.
     const { data: requesterProfileFull } = await supabase.from("profiles").select("avatar_url").eq("id", requesterId).maybeSingle();
-    await supabase.from("notifications").insert({
+    const { error: notifError } = await supabase.from("notifications").insert({
       user_id: board.user_id,
       actor_user_id: requesterId,
       type: "collab_request",
@@ -75,8 +75,11 @@ export async function POST(req) {
       body: `On "${board.title}"`,
       data: { actor_name: requesterName, actor_avatar_url: requesterProfileFull?.avatar_url || null, board_id: boardId, url: `/hints/${boardId}` },
     });
+    if (notifError) {
+      console.error("collab_request notification insert failed:", notifError);
+    }
 
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, notifError: notifError?.message || null });
   }
 
   return Response.json({ error: "Unknown type" }, { status: 400 });
