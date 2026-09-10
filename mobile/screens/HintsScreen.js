@@ -1818,9 +1818,9 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     fontSize: 28,
-    fontWeight: "800",
+    fontWeight: "700",
     color: "#f19a78",
-    letterSpacing: -0.5,
+    letterSpacing: -1.7,
     marginBottom: 14,
     textAlign: "center",
   },
