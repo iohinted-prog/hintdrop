@@ -72,6 +72,7 @@ export default function ProfileClient({ userId }) {
   const [contactState, setContactState] = useState("none"); // "none" | "pending" | "active"
   const [collabStatus, setCollabStatus] = useState("none"); // "none" | "pending" | "accepted"
   const [requestingCollab, setRequestingCollab] = useState(false);
+  const [collabRequestError, setCollabRequestError] = useState("");
   const [contactSince, setContactSince] = useState(null);
   const [selectedHint, setSelectedHint] = useState(null);
   const [groupHint, setGroupHint] = useState(null);
@@ -230,6 +231,7 @@ export default function ProfileClient({ userId }) {
   async function handleRequestCollab() {
     if (!currentUser || !selectedBoardId || requestingCollab) return;
     setRequestingCollab(true);
+    setCollabRequestError("");
     const { error } = await supabase.from("board_collaborators").insert({
       board_id: selectedBoardId,
       user_id: currentUser.id,
@@ -237,7 +239,16 @@ export default function ProfileClient({ userId }) {
       requested_by: currentUser.id,
     });
     setRequestingCollab(false);
-    if (!error) setCollabStatus("pending");
+    if (error) {
+      setCollabRequestError(error.message);
+      return;
+    }
+    setCollabStatus("pending");
+    fetch("/api/collab-notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "request", boardId: selectedBoardId, requesterId: currentUser.id }),
+    }).catch(console.error);
   }
 
   async function handleToggleClaim(hint) {
@@ -365,24 +376,29 @@ export default function ProfileClient({ userId }) {
             </div>
 
             {selectedBoardId && !isOwnProfile && !selectedBoardData?.is_default && currentUser && (
-              collabStatus === "accepted" ? (
-                <span className="h-9 flex items-center gap-1.5 rounded-full border border-[#bfe4cf] bg-[#e3f5ea] px-3.5 text-[12px] font-semibold text-[#2f8a5f] shrink-0">
-                  👥 Collaborating
-                </span>
-              ) : collabStatus === "pending" ? (
-                <span className="h-9 flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-3.5 text-[12px] font-semibold text-slate-500 shrink-0">
-                  Request sent
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleRequestCollab}
-                  disabled={requestingCollab}
-                  className="h-9 flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-3.5 text-[12px] font-semibold text-slate-600 hover:bg-[#fff5f0] shrink-0 disabled:opacity-60"
-                >
-                  👥 Request collaboration
-                </button>
-              )
+              <div className="relative flex items-center">
+                {collabStatus === "accepted" ? (
+                  <span className="h-9 flex items-center gap-1.5 rounded-full border border-[#bfe4cf] bg-[#e3f5ea] px-3.5 text-[12px] font-semibold text-[#2f8a5f] shrink-0">
+                    👥 Collaborating
+                  </span>
+                ) : collabStatus === "pending" ? (
+                  <span className="h-9 flex items-center gap-1.5 rounded-full border border-[#bfe4cf] bg-[#e3f5ea] px-3.5 text-[12px] font-semibold text-[#2f8a5f] shrink-0">
+                    ✓ Request sent
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleRequestCollab}
+                    disabled={requestingCollab}
+                    className="h-9 flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-3.5 text-[12px] font-semibold text-slate-600 hover:bg-[#fff5f0] shrink-0 disabled:opacity-60"
+                  >
+                    👥 {requestingCollab ? "Sending..." : "Request collaboration"}
+                  </button>
+                )}
+                {collabRequestError && (
+                  <p className="absolute top-full left-0 mt-1 text-[11px] text-[#b14f43] whitespace-nowrap">{collabRequestError}</p>
+                )}
+              </div>
             )}
 
             {selectedBoardId && (
@@ -450,7 +466,7 @@ export default function ProfileClient({ userId }) {
                   </p>
                 );
               })()}
-              {interests.length > 0 && (
+              {(!selectedBoardId || selectedBoardData?.is_default) && interests.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1">
                   {interests.slice(0, 6).map(i => <span key={i} className="rounded-full bg-[#fff4ee] px-2.5 py-0.5 text-[11px] font-semibold text-[#df7b59]">{i}</span>)}
                 </div>

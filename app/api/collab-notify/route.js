@@ -1,0 +1,59 @@
+import { createClient } from "@supabase/supabase-js";
+
+let supabase;
+function getSupabase() {
+  if (!supabase) {
+    supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+  }
+  return supabase;
+}
+
+async function sendEmail({ to, subject, html }) {
+  if (!to) return;
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+    },
+    body: JSON.stringify({ from: "HintDrop <hello@hintdrop.app>", to, subject, html }),
+  });
+}
+
+export async function POST(req) {
+  const supabase = getSupabase();
+  const { type, boardId, requesterId } = await req.json();
+
+  if (type === "request") {
+    const { data: board } = await supabase
+      .from("hint_boards")
+      .select("id, title, user_id")
+      .eq("id", boardId)
+      .maybeSingle();
+    if (!board) return Response.json({ error: "Not found" }, { status: 404 });
+
+    const { data: requesterProfile } = await supabase.from("profiles").select("full_name").eq("id", requesterId).maybeSingle();
+    const requesterName = requesterProfile?.full_name || "Someone";
+
+    const { data: ownerAuth } = await supabase.auth.admin.getUserById(board.user_id);
+    const ownerEmail = ownerAuth?.user?.email;
+
+    if (ownerEmail) {
+      await sendEmail({
+        to: ownerEmail,
+        subject: `${requesterName} wants to collaborate on "${board.title}"`,
+        html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+          <h2 style="color:#df7b59">👥 New collaboration request</h2>
+          <p><strong>${requesterName}</strong> would like to collaborate on your list <strong>"${board.title}"</strong>.</p>
+          <a href="https://hintdrop.app/hints/${board.id}" style="display:inline-block;margin-top:20px;background:linear-gradient(to bottom,#ff966f,#ff7e54);color:white;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:bold">Review request</a>
+        </div>`,
+      });
+    }
+    return Response.json({ ok: true });
+  }
+
+  return Response.json({ error: "Unknown type" }, { status: 400 });
+}

@@ -138,9 +138,9 @@ export default function CollaborateModal({ open, onClose, boardId, boardTitle, s
                     supabase={supabase}
                     subjectType="board"
                     subjectId={boardId}
-                    path={`/profile/${currentUserId}?board=${boardId}`}
+                    path={`/b/${boardId}`}
                     title={boardTitle}
-                    text={`${sharerName || "Someone"}'s hint: "${boardTitle}"`}
+                    text={`Collaborate on "${boardTitle}" Hints with me`}
                     currentUserId={currentUserId}
                     label="Share invite link"
                     className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-5 text-[13px] font-semibold text-white shadow-md hover:brightness-105"
