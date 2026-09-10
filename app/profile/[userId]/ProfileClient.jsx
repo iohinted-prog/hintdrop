@@ -414,7 +414,11 @@ export default function ProfileClient({ userId }) {
             }
             <div className="flex-1 min-w-0">
               <button type="button" onClick={goToMenu} className={`block text-left ${selectedBoardId ? "cursor-pointer hover:underline" : "cursor-default"}`}>
-                <h1 className="text-[20px] sm:text-[22px] font-semibold tracking-[-0.04em] text-slate-900">{displayName}'s Hints</h1>
+                <h1 className="text-[20px] sm:text-[22px] font-semibold tracking-[-0.04em] text-slate-900">
+                  {selectedBoardId && selectedBoardData && !selectedBoardData.is_default
+                    ? selectedBoardData.title
+                    : `${displayName}'s Hints`}
+                </h1>
               </button>
               {!isOwnProfile && currentUser && (
                 <button type="button" onClick={contactState === "none" ? handleAddToCircle : undefined}
