@@ -1,5 +1,5 @@
 import { Text as RNText, StyleSheet } from "react-native";
-import { fonts } from "./theme";
+import { fonts } from "../lib/theme";
 
 // Existing screens (HintsScreen.js, FeedScreen.js) were written with
 // plain fontWeight: "700"/"600" style values, relying on the OS
