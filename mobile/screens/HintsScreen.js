@@ -446,6 +446,20 @@ function BoardCard({ board, onPress }) {
 // Mirrors isValidHttpUrl in HintsClient.jsx exactly - used to decide
 // whether typed input goes through the link-preview scraper or
 // becomes a manual (no scraping) hint straight away.
+// Matches the exact list in HintsClient.jsx's occasion picker.
+const OCCASIONS = [
+  "Birthday",
+  "Christmas",
+  "Valentine's Day",
+  "Anniversary",
+  "Wedding",
+  "Graduation",
+  "Just because",
+  "Mother's Day",
+  "Father's Day",
+  "Housewarming",
+];
+
 function isValidHttpUrl(value = "") {
   const trimmed = String(value || "").trim();
   if (!trimmed || /\s/.test(trimmed)) return false;
@@ -469,10 +483,13 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
   const [fetching, setFetching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [reviewing, setReviewing] = useState(false);
+  const [isIdea, setIsIdea] = useState(false);
   const [title, setTitle] = useState("");
   const [priceText, setPriceText] = useState("");
   const [size, setSize] = useState("");
   const [colour, setColour] = useState("");
+  const [occasions, setOccasions] = useState([]);
+  const [occasionLimitMessage, setOccasionLimitMessage] = useState("");
   const [imageUrl, setImageUrl] = useState(null);
   const [imageOptions, setImageOptions] = useState([]);
   const [retailer, setRetailer] = useState(null);
@@ -480,13 +497,32 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
   const [currency, setCurrency] = useState(null);
   const [error, setError] = useState("");
 
+  function toggleOccasion(occasion) {
+    setOccasions((current) => {
+      if (current.includes(occasion)) {
+        setOccasionLimitMessage("");
+        return current.filter((o) => o !== occasion);
+      }
+      if (current.length >= 2) {
+        setOccasionLimitMessage("You can only pick 2 at a time - unclick one first.");
+        setTimeout(() => setOccasionLimitMessage(""), 3000);
+        return current;
+      }
+      setOccasionLimitMessage("");
+      return [...current, occasion];
+    });
+  }
+
   function reset() {
     setUrl("");
     setReviewing(false);
+    setIsIdea(false);
     setTitle("");
     setPriceText("");
     setSize("");
     setColour("");
+    setOccasions([]);
+    setOccasionLimitMessage("");
     setImageUrl(null);
     setImageOptions([]);
     setRetailer(null);
@@ -510,6 +546,7 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
     if (!isValidHttpUrl(trimmed)) {
       setFetching(true);
       setError("");
+      setIsIdea(true);
       try {
         const res = await fetch("https://hintdrop.app/api/hint-idea", {
           method: "POST",
@@ -546,6 +583,7 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
 
     setFetching(true);
     setError("");
+    setIsIdea(false);
     try {
       const res = await fetch("https://hintdrop.app/api/link-preview", {
         method: "POST",
@@ -606,8 +644,9 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
         price_text: priceText.trim() || null,
         numeric_price: numericPrice,
         currency,
-        size: size.trim() || null,
-        colour: colour.trim() || null,
+        size: isIdea ? null : size.trim() || null,
+        colour: isIdea ? null : colour.trim() || null,
+        occasions: occasions.length ? occasions : null,
         source: "preview",
         is_private: false,
         starred: false,
@@ -649,12 +688,24 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
               />
             ) : (
               <>
+                {imageUrl ? (
+                  <Image source={{ uri: imageUrl }} style={styles.reviewImageLarge} resizeMode="cover" />
+                ) : (
+                  <View style={styles.reviewImagePlaceholder}>
+                    <Text style={styles.reviewImagePlaceholderText}>No image yet</Text>
+                  </View>
+                )}
+
                 {imageOptions.length > 1 ? (
                   <>
                     <Text style={styles.editLabel}>Choose a photo</Text>
-                    <View style={styles.imageOptionsRow}>
+                    <View style={styles.imageOptionsGrid}>
                       {imageOptions.map((optionUrl) => (
-                        <Pressable key={optionUrl} onPress={() => setImageUrl(optionUrl)}>
+                        <Pressable
+                          key={optionUrl}
+                          style={styles.imageOptionCell}
+                          onPress={() => setImageUrl(optionUrl)}
+                        >
                           <Image
                             source={{ uri: optionUrl }}
                             style={[
@@ -663,22 +714,29 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
                             ]}
                             resizeMode="cover"
                           />
+                          {optionUrl === imageUrl ? (
+                            <View style={styles.imageOptionCheck}>
+                              <Text style={styles.imageOptionCheckText}>✓</Text>
+                            </View>
+                          ) : null}
                         </Pressable>
                       ))}
                     </View>
                   </>
-                ) : imageUrl ? (
-                  <Image source={{ uri: imageUrl }} style={styles.reviewImage} resizeMode="cover" />
                 ) : null}
 
-                <Text style={styles.editLabel}>Link</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={url}
-                  onChangeText={setUrl}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
+                {!isIdea ? (
+                  <>
+                    <Text style={styles.editLabel}>Link</Text>
+                    <TextInput
+                      style={styles.modalInput}
+                      value={url}
+                      onChangeText={setUrl}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </>
+                ) : null}
 
                 <Text style={styles.editLabel}>Name</Text>
                 <TextInput style={styles.modalInput} value={title} onChangeText={setTitle} />
@@ -692,28 +750,56 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
                   placeholderTextColor="#c9b8ab"
                 />
 
-                <View style={styles.editRow}>
-                  <View style={styles.editRowItem}>
-                    <Text style={styles.editLabel}>Size</Text>
-                    <TextInput
-                      style={styles.modalInput}
-                      value={size}
-                      onChangeText={setSize}
-                      placeholder='M, 12 1/2'
-                      placeholderTextColor="#c9b8ab"
-                    />
+                {!isIdea ? (
+                  <View style={styles.editRow}>
+                    <View style={styles.editRowItem}>
+                      <Text style={styles.editLabel}>Size</Text>
+                      <TextInput
+                        style={styles.modalInput}
+                        value={size}
+                        onChangeText={setSize}
+                        placeholder='M, 12 1/2'
+                        placeholderTextColor="#c9b8ab"
+                      />
+                    </View>
+                    <View style={styles.editRowItem}>
+                      <Text style={styles.editLabel}>Colour</Text>
+                      <TextInput
+                        style={styles.modalInput}
+                        value={colour}
+                        onChangeText={setColour}
+                        placeholder="Navy"
+                        placeholderTextColor="#c9b8ab"
+                      />
+                    </View>
                   </View>
-                  <View style={styles.editRowItem}>
-                    <Text style={styles.editLabel}>Colour</Text>
-                    <TextInput
-                      style={styles.modalInput}
-                      value={colour}
-                      onChangeText={setColour}
-                      placeholder="Navy"
-                      placeholderTextColor="#c9b8ab"
-                    />
-                  </View>
+                ) : null}
+
+                <Text style={styles.editLabel}>Occasions (optional)</Text>
+                <View style={styles.occasionsWrap}>
+                  {OCCASIONS.map((occasion) => {
+                    const selected = occasions.includes(occasion);
+                    return (
+                      <Pressable
+                        key={occasion}
+                        style={[styles.occasionChip, selected && styles.occasionChipSelected]}
+                        onPress={() => toggleOccasion(occasion)}
+                      >
+                        <Text
+                          style={[
+                            styles.occasionChipText,
+                            selected && styles.occasionChipTextSelected,
+                          ]}
+                        >
+                          {occasion}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
+                {occasionLimitMessage ? (
+                  <Text style={styles.modalError}>{occasionLimitMessage}</Text>
+                ) : null}
               </>
             )}
 
@@ -1431,26 +1517,88 @@ const styles = StyleSheet.create({
   editSheet: {
     maxHeight: "85%",
   },
-  reviewImage: {
+  reviewImageLarge: {
     width: "100%",
-    height: 160,
-    borderRadius: 16,
+    height: 220,
+    borderRadius: 20,
+    marginBottom: 12,
+  },
+  reviewImagePlaceholder: {
+    width: "100%",
+    height: 140,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#efe0d7",
+    backgroundColor: "#faf6f3",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  reviewImagePlaceholderText: {
+    fontSize: 13,
+    color: "#94a3b8",
+  },
+  imageOptionsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
     marginBottom: 8,
   },
-  imageOptionsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 8,
+  imageOptionCell: {
+    width: "31%",
+    aspectRatio: 1,
   },
   imageOptionThumb: {
-    width: 84,
-    height: 112,
-    borderRadius: 12,
+    width: "100%",
+    height: "100%",
+    borderRadius: 14,
     borderWidth: 2,
     borderColor: "transparent",
   },
   imageOptionThumbSelected: {
-    borderColor: "#ff875d",
+    borderColor: "#ff946d",
+  },
+  imageOptionCheck: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#ff946d",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  imageOptionCheckText: {
+    fontSize: 11,
+    color: "#fff",
+    fontWeight: "700",
+  },
+  occasionsWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  occasionChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    backgroundColor: "#fff",
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  occasionChipSelected: {
+    borderColor: "#e3f5ea",
+    backgroundColor: "#e3f5ea",
+  },
+  occasionChipText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#475569",
+  },
+  occasionChipTextSelected: {
+    color: "#2f8a5f",
   },
   modalTitle: {
     fontSize: 18,
