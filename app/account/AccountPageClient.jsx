@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
 import HintImage from "../components/HintImage";
+import { AVATAR_PALETTE, resolveAvatarColor } from "../../lib/avatarColor";
 
 function splitName(fullName = "") {
   const trimmed = fullName.trim();
@@ -88,6 +89,8 @@ export default function AccountPageClient() {
 
   const [avatarUrl, setAvatarUrl] = useState("");
   const [photoPreview, setPhotoPreview] = useState("");
+  const [avatarColor, setAvatarColor] = useState("");
+  const [savingColor, setSavingColor] = useState(false);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -125,7 +128,7 @@ export default function AccountPageClient() {
 
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("full_name, avatar_url, birthday, phone, bio, marketing_opt_in")
+          .select("full_name, avatar_url, avatar_color, birthday, phone, bio, marketing_opt_in")
           .eq("id", user.id)
           .maybeSingle();
 
@@ -147,6 +150,7 @@ export default function AccountPageClient() {
         setMemberSince(formatMemberSince(user.created_at));
         setAvatarUrl(savedAvatar);
         setPhotoPreview(savedAvatar);
+        setAvatarColor(profile?.avatar_color || "");
         setForm({
           firstName: nameParts.firstName,
           lastName: nameParts.lastName,
@@ -342,6 +346,21 @@ export default function AccountPageClient() {
     }
   }
 
+  async function handleColorChange(key) {
+    if (!userId || savingColor || key === avatarColor) return;
+    setSavingColor(true);
+    const previous = avatarColor;
+    setAvatarColor(key);
+    const { error } = await supabase.from("profiles").update({ avatar_color: key }).eq("id", userId);
+    if (error) {
+      console.error("Avatar color update error:", error.message);
+      setAvatarColor(previous);
+      setMessageType("error");
+      setMessage("We couldn't save that color right now.");
+    }
+    setSavingColor(false);
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -514,7 +533,10 @@ export default function AccountPageClient() {
             <h2 className="text-[18px] font-semibold text-slate-900">Profile photo</h2>
 
             <div className="mt-5 flex flex-col items-center">
-              <div className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-2xl font-bold text-white ring-4 ring-[#fff4ee]">
+              <div
+                className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full text-2xl font-bold text-white ring-4 ring-[#fff4ee]"
+                style={!photoPreview ? { background: `linear-gradient(to bottom, ${resolveAvatarColor({ avatarColor, id: userId }).from}, ${resolveAvatarColor({ avatarColor, id: userId }).to})` } : undefined}
+              >
                 {photoPreview ? (
                   <HintImage
                     src={photoPreview}
@@ -558,6 +580,25 @@ export default function AccountPageClient() {
               >
                 Remove
               </button>
+
+              {!photoPreview && (
+                <div className="mt-5 w-full">
+                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-400 text-center">Avatar color</p>
+                  <div className="mt-2 flex flex-wrap justify-center gap-2">
+                    {Object.entries(AVATAR_PALETTE).map(([key, colors]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => handleColorChange(key)}
+                        disabled={savingColor}
+                        aria-label={key}
+                        className={`h-8 w-8 rounded-full disabled:cursor-not-allowed ${avatarColor === key ? "ring-2 ring-offset-2 ring-[#2f3b2d]" : ""}`}
+                        style={{ background: `linear-gradient(to bottom, ${colors.from}, ${colors.to})` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-6 rounded-[22px] bg-[#fff7f2] p-4">

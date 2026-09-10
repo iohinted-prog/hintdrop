@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "../../lib/supabase/client";
 import Link from "next/link";
 import { recordProfileVisit } from "../../lib/recentProfiles";
+import { resolveAvatarColor } from "../../lib/avatarColor";
 import HintImage from "./HintImage";
 import BoardPreviewGrid from "./BoardPreviewGrid";
 
@@ -25,7 +26,7 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
     async function load() {
       setLoading(true);
       const [{ data: profileData }, { data: boardRows }] = await Promise.all([
-        supabase.from("profiles").select("full_name, avatar_url, interests").eq("id", userId).maybeSingle(),
+        supabase.from("profiles").select("full_name, avatar_url, avatar_color, interests").eq("id", userId).maybeSingle(),
         supabase.from("hint_boards").select("id, title, is_default")
           .eq("user_id", userId).or("is_private.is.null,is_private.eq.false")
           .order("is_default", { ascending: false }).order("created_at", { ascending: true }),
@@ -66,7 +67,7 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
             <Link href={"/profile/" + userId} onClick={onClose} className="flex items-center gap-4 hover:opacity-80 transition-opacity">
               {displayAvatar
                 ? <HintImage src={displayAvatar} alt={displayName} width={56} height={56} className="rounded-full object-cover" fallbackClassName="hidden" />
-                : <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[14px] font-bold text-white">{displayInitials}</div>
+                : <div className="flex h-14 w-14 items-center justify-center rounded-full text-[14px] font-bold text-white" style={{ background: `linear-gradient(to bottom, ${resolveAvatarColor({ avatarColor: profile?.avatar_color, id: userId }).from}, ${resolveAvatarColor({ avatarColor: profile?.avatar_color, id: userId }).to})` }}>{displayInitials}</div>
               }
               <div>
                 <p className="text-[18px] font-semibold text-slate-900">{displayName}</p>

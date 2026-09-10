@@ -65,7 +65,7 @@ export async function POST(req) {
     // the identical service-role pattern, so reusing it for the bell
     // row too avoids depending on a route that's demonstrably not
     // working for this case.
-    const { data: requesterProfileFull } = await supabase.from("profiles").select("avatar_url").eq("id", requesterId).maybeSingle();
+    const { data: requesterProfileFull } = await supabase.from("profiles").select("avatar_url, avatar_color").eq("id", requesterId).maybeSingle();
     const { error: notifError } = await supabase.from("notifications").insert({
       user_id: board.user_id,
       actor_user_id: requesterId,
@@ -73,7 +73,7 @@ export async function POST(req) {
       entity_id: boardId,
       title: `${requesterName} wants to collaborate`,
       body: `On "${board.title}"`,
-      data: { actor_name: requesterName, actor_avatar_url: requesterProfileFull?.avatar_url || null, board_id: boardId, url: `/hints/${boardId}` },
+      data: { actor_name: requesterName, actor_avatar_url: requesterProfileFull?.avatar_url || null, actor_avatar_color: requesterProfileFull?.avatar_color || null, board_id: boardId, url: `/hints/${boardId}` },
     });
     if (notifError) {
       console.error("collab_request notification insert failed:", notifError);
@@ -90,7 +90,7 @@ export async function POST(req) {
       .maybeSingle();
     if (!board) return Response.json({ error: "Not found" }, { status: 404 });
 
-    const { data: ownerProfile } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", board.user_id).maybeSingle();
+    const { data: ownerProfile } = await supabase.from("profiles").select("full_name, avatar_url, avatar_color").eq("id", board.user_id).maybeSingle();
     const ownerName = ownerProfile?.full_name || "Someone";
 
     const { data: requesterAuth } = await supabase.auth.admin.getUserById(requesterId);
@@ -115,7 +115,7 @@ export async function POST(req) {
       entity_id: boardId,
       title: `${ownerName} accepted your request`,
       body: `You can now collaborate on "${board.title}"`,
-      data: { actor_name: ownerName, actor_avatar_url: ownerProfile?.avatar_url || null, board_id: boardId, url: `/hints/${boardId}` },
+      data: { actor_name: ownerName, actor_avatar_url: ownerProfile?.avatar_url || null, actor_avatar_color: ownerProfile?.avatar_color || null, board_id: boardId, url: `/hints/${boardId}` },
     });
     if (notifError) {
       console.error("collab_accepted notification insert failed:", notifError);

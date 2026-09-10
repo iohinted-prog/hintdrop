@@ -1,5 +1,6 @@
 "use client";
 import PublicShell from "../../components/PublicShell";
+import { resolveAvatarColor } from "../../../lib/avatarColor";
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabase/client";
@@ -130,7 +131,7 @@ export default function ProfileClient({ userId }) {
         console.error("get_public_profile RPC failed, falling back to direct select:", profileRpcError.message);
         const { data: fallbackProfile } = await supabase
           .from("profiles")
-          .select("id, full_name, avatar_url, interests")
+          .select("id, full_name, avatar_url, avatar_color, interests")
           .eq("id", userId)
           .maybeSingle();
         profileData = fallbackProfile;
@@ -462,7 +463,7 @@ export default function ProfileClient({ userId }) {
               ? <button type="button" onClick={goToMenu} className={selectedBoardId ? "cursor-pointer" : "cursor-default"}>
                   <HintImage src={profile.avatar_url} alt={displayName} width={56} height={56} className="rounded-full object-cover border-2 border-[#f0dfd6] shrink-0" fallbackClassName="hidden" />
                 </button>
-              : <button type="button" onClick={goToMenu} className={`h-14 w-14 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[16px] font-bold text-white shrink-0 ${selectedBoardId ? "cursor-pointer" : "cursor-default"}`}>{getInitials(displayName)}</button>
+              : <button type="button" onClick={goToMenu} className={`h-14 w-14 rounded-full flex items-center justify-center text-[16px] font-bold text-white shrink-0 ${selectedBoardId ? "cursor-pointer" : "cursor-default"}`} style={{ background: `linear-gradient(to bottom, ${resolveAvatarColor({ avatarColor: profile?.avatar_color, id: userId }).from}, ${resolveAvatarColor({ avatarColor: profile?.avatar_color, id: userId }).to})` }}>{getInitials(displayName)}</button>
             }
             <div className="flex-1 min-w-0">
               <button type="button" onClick={goToMenu} className={`block text-left ${selectedBoardId ? "cursor-pointer hover:underline" : "cursor-default"}`}>

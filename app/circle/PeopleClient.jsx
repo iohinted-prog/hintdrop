@@ -6,7 +6,7 @@ import ContactCard from "../components/ContactCard";
 import { useChatWindows } from "../components/ChatWindowsProvider";
 import UserProfileModal from "../components/UserProfileModal";
 import HintImage from "../components/HintImage";
-import { avatarColorFor, NON_USER_AVATAR_COLOR } from "../../lib/avatarColor";
+import { resolveAvatarColor, NON_USER_AVATAR_COLOR } from "../../lib/avatarColor";
 
 function getInitials(name) {
   return String(name || "").trim().split(/\s+/).slice(0, 2).map(p => p[0]?.toUpperCase() || "").join("");
@@ -31,7 +31,7 @@ function buildContact(row) {
   // registered person without their own avatar photo gets a real,
   // consistent color; a non-user (no matched account) keeps the sand
   // gradient.
-  const colors = matchedProfileId ? avatarColorFor(matchedProfileId) : NON_USER_AVATAR_COLOR;
+  const colors = matchedProfileId ? resolveAvatarColor({ avatarColor: row.avatar_color, id: matchedProfileId }) : NON_USER_AVATAR_COLOR;
   return {
     id: row.contact_id || row.id,
     name: row.name || row.email || "Unnamed",

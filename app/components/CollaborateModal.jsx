@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "../../lib/supabase/client";
 import ShareButton from "./ShareButton";
-import { avatarColorFor } from "../../lib/avatarColor";
+import { resolveAvatarColor } from "../../lib/avatarColor";
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim().toLowerCase());
@@ -33,10 +33,10 @@ export default function CollaborateModal({ open, onClose, boardId, boardTitle, s
 
       const [{ data: contactRows }, { data: collabRows }] = await Promise.all([
         supabase.from("contacts")
-          .select("id, name, email, profile_id, profiles:profile_id(full_name, avatar_url)")
+          .select("id, name, email, profile_id, profiles:profile_id(full_name, avatar_url, avatar_color)")
           .eq("user_id", user.id).eq("status", "active").not("profile_id", "is", null),
         supabase.from("board_collaborators")
-          .select("id, user_id, invited_email, status, profiles:user_id(full_name, avatar_url)")
+          .select("id, user_id, invited_email, status, profiles:user_id(full_name, avatar_url, avatar_color)")
           .eq("board_id", boardId),
       ]);
       setCircle(contactRows || []);
@@ -59,7 +59,7 @@ export default function CollaborateModal({ open, onClose, boardId, boardTitle, s
       invited_email: contact.email || null,
       status: "accepted",
       requested_by: currentUserId,
-    }).select("id, user_id, invited_email, status, profiles:user_id(full_name, avatar_url)").single();
+    }).select("id, user_id, invited_email, status, profiles:user_id(full_name, avatar_url, avatar_color)").single();
     if (insertError) { setError(insertError.message); return; }
     setCollaborators((prev) => [...prev, data]);
   }
@@ -85,7 +85,7 @@ export default function CollaborateModal({ open, onClose, boardId, boardTitle, s
       invited_email: cleaned,
       status: "accepted",
       requested_by: currentUserId,
-    }).select("id, user_id, invited_email, status, profiles:user_id(full_name, avatar_url)").single();
+    }).select("id, user_id, invited_email, status, profiles:user_id(full_name, avatar_url, avatar_color)").single();
     setInviting(false);
     if (insertError) { setError(insertError.message); return; }
     setCollaborators((prev) => [...prev, data]);
@@ -195,7 +195,7 @@ export default function CollaborateModal({ open, onClose, boardId, boardTitle, s
                       {contact.profiles?.avatar_url ? (
                         <img src={contact.profiles.avatar_url} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover border border-[#f0dfd6]" />
                       ) : (
-                        <div className="h-9 w-9 shrink-0 rounded-full flex items-center justify-center text-[12px] font-bold text-white" style={{ background: `linear-gradient(to bottom, ${avatarColorFor(contact.profile_id).from}, ${avatarColorFor(contact.profile_id).to})` }}>
+                        <div className="h-9 w-9 shrink-0 rounded-full flex items-center justify-center text-[12px] font-bold text-white" style={{ background: `linear-gradient(to bottom, ${resolveAvatarColor({ avatarColor: contact.profiles?.avatar_color, id: contact.profile_id }).from}, ${resolveAvatarColor({ avatarColor: contact.profiles?.avatar_color, id: contact.profile_id }).to})` }}>
                           {(contact.profiles?.full_name || contact.name || "?").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
                         </div>
                       )}

@@ -7,7 +7,7 @@ import { createClient } from "../../lib/supabase/client";
 import GroupChatWindow from "./GroupChatWindow";
 import { ChatWindowsContext } from "./ChatWindowsProvider";
 import HintImage from "./HintImage";
-import { avatarColorFor } from "../../lib/avatarColor";
+import { resolveAvatarColor } from "../../lib/avatarColor";
 import SocialLinks from "./SocialLinks";
 
 function LogoMark() {
@@ -680,7 +680,7 @@ export default function AppShell({ children }) {
                           <div className="flex items-center gap-3">
                             <div className="flex -space-x-2 shrink-0">
                               {others.slice(0, 2).map(m => (
-                                <div key={m.user_id} className="relative h-9 w-9 rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] flex items-center justify-center text-[10px] font-bold text-white overflow-hidden border-2 border-white">
+                                <div key={m.user_id} className="relative h-9 w-9 rounded-full flex items-center justify-center text-[10px] font-bold text-white overflow-hidden border-2 border-white" style={{ background: `linear-gradient(to bottom, ${resolveAvatarColor({ avatarColor: m.profiles?.avatar_color, id: m.user_id }).from}, ${resolveAvatarColor({ avatarColor: m.profiles?.avatar_color, id: m.user_id }).to})` }}>
                                   {m.profiles?.avatar_url ? <HintImage src={m.profiles.avatar_url} fill className="object-cover" sizes="36px" alt="" fallbackClassName="hidden" /> : (m.profiles?.full_name?.[0] || "?")}
                                 </div>
                               ))}
@@ -739,7 +739,7 @@ export default function AppShell({ children }) {
                   </div>
                   <div className="max-h-[400px] overflow-y-auto p-4 space-y-3">
       {activityNotifs.filter(n => n.type === "collab_request").slice(0, 5).map(notif => {
-        const color = avatarColorFor(notif.actor_user_id || notif.data?.actor_name);
+        const color = resolveAvatarColor({ avatarColor: notif.data?.actor_avatar_color, id: notif.actor_user_id || notif.data?.actor_name });
         return (
         <div key={notif.id} className="rounded-[18px] border border-[#ffd8c9] bg-[#fff4ee] p-4">
           <div className="flex items-center gap-3 mb-2">
@@ -775,7 +775,7 @@ export default function AppShell({ children }) {
         return (
         <div key={notif.id} className="rounded-[18px] border border-[#e6ddd7] bg-white p-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white overflow-hidden" style={{ background: `linear-gradient(to bottom, ${resolveAvatarColor({ avatarColor: notif.data?.actor_avatar_color, id: notif.actor_user_id || notif.data?.actor_name }).from}, ${resolveAvatarColor({ avatarColor: notif.data?.actor_avatar_color, id: notif.actor_user_id || notif.data?.actor_name }).to})` }}>
               {notif.data?.actor_avatar_url
                 ? <HintImage src={notif.data.actor_avatar_url} fill className="object-cover" sizes="36px" alt="" fallbackClassName="hidden" />
                 : (notif.data?.actor_name || "?")[0]?.toUpperCase()}
@@ -816,7 +816,7 @@ export default function AppShell({ children }) {
       {activityNotifs.filter(n => n.type === "birthday_reminder").slice(0, 3).map(notif => (
         <div key={notif.id} className="rounded-[18px] border border-[#e6ddd7] bg-white p-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white overflow-hidden" style={{ background: `linear-gradient(to bottom, ${resolveAvatarColor({ avatarColor: notif.data?.actor_avatar_color, id: notif.actor_user_id || notif.data?.actor_name }).from}, ${resolveAvatarColor({ avatarColor: notif.data?.actor_avatar_color, id: notif.actor_user_id || notif.data?.actor_name }).to})` }}>
               {notif.data?.actor_avatar_url
                 ? <HintImage src={notif.data.actor_avatar_url} fill className="object-cover" sizes="36px" alt="" fallbackClassName="hidden" />
                 : (notif.data?.actor_name || "?")[0]?.toUpperCase()}
@@ -839,7 +839,7 @@ export default function AppShell({ children }) {
         </div>
       ))}
       {activityNotifs.filter(n => n.type === "collab_accepted").slice(0, 5).map(notif => {
-        const color = avatarColorFor(notif.actor_user_id || notif.data?.actor_name);
+        const color = resolveAvatarColor({ avatarColor: notif.data?.actor_avatar_color, id: notif.actor_user_id || notif.data?.actor_name });
         return (
         <div key={notif.id} className="rounded-[18px] border border-[#bfe4cf] bg-[#e3f5ea] p-4">
           <div className="flex items-center gap-3 mb-2">
@@ -871,7 +871,7 @@ export default function AppShell({ children }) {
       {activityNotifs.filter(n => n.type !== "group_hint_response" && n.type !== "birthday_reminder" && n.type !== "collab_request" && n.type !== "collab_accepted").slice(0, 5).map(notif => (
         <div key={notif.id} className="rounded-[18px] border border-[#e6ddd7] bg-white p-4">
           <div className="flex items-center gap-3">
-            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[11px] font-bold text-white overflow-hidden">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white overflow-hidden" style={{ background: `linear-gradient(to bottom, ${resolveAvatarColor({ avatarColor: notif.data?.actor_avatar_color, id: notif.actor_user_id || notif.data?.actor_name }).from}, ${resolveAvatarColor({ avatarColor: notif.data?.actor_avatar_color, id: notif.actor_user_id || notif.data?.actor_name }).to})` }}>
               {notif.data?.actor_avatar_url
                 ? <HintImage src={notif.data.actor_avatar_url} fill className="object-cover" sizes="36px" alt="" fallbackClassName="hidden" />
                 : (notif.data?.actor_name || "?")[0]?.toUpperCase()}
