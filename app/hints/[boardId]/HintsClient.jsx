@@ -1766,6 +1766,7 @@ export default function HintsClient({ boardId }) {
   const [boardLoading, setBoardLoading] = useState(true);
   const [togglingBoardPrivacy, setTogglingBoardPrivacy] = useState(false);
   const [collaborateOpen, setCollaborateOpen] = useState(false);
+  const [boardMenuOpen, setBoardMenuOpen] = useState(false);
 
   const [hints, setHints] = useState([]);
   // Demo hints (shown on an empty board) are draggable for
@@ -2806,7 +2807,7 @@ export default function HintsClient({ boardId }) {
               Drop a Hint here...
             </h1>
             {boardId && !boardLoading && board && currentUser && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 relative">
                 <ShareButton
                   supabase={createClient()}
                   subjectType="board"
@@ -2829,20 +2830,34 @@ export default function HintsClient({ boardId }) {
                 {!board.is_default && (
                   <button
                     type="button"
-                    onClick={() => setCollaborateOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-4 py-2 text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0]"
+                    onClick={() => setBoardMenuOpen((v) => !v)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#ead8ce] bg-white text-slate-500 hover:bg-[#fff5f0]"
+                    aria-label="More options"
                   >
-                    👥 Collaborate
+                    ⋯
                   </button>
                 )}
-                {!board.is_default && (
-                  <button
-                    type="button"
-                    onClick={handleDeleteBoard}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-[#ead8ce] bg-white px-4 py-2 text-[13px] font-semibold text-slate-500 hover:bg-[#fff0f0] hover:text-[#b14f43]"
-                  >
-                    Delete list
-                  </button>
+                {boardMenuOpen && !board.is_default && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setBoardMenuOpen(false)} />
+                    <div className="absolute right-0 top-11 z-20 min-w-[180px] rounded-[16px] border border-[#efe0d7] bg-white p-1.5 shadow-[0_8px_24px_rgba(88,46,31,0.14)]">
+                      <button
+                        type="button"
+                        onClick={() => { setBoardMenuOpen(false); setCollaborateOpen(true); }}
+                        className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left text-[13px] text-slate-700 hover:bg-[#fff5f0]"
+                      >
+                        👥 Collaborate
+                      </button>
+                      <div className="my-1 h-px bg-[#f0dfd6]" />
+                      <button
+                        type="button"
+                        onClick={() => { setBoardMenuOpen(false); handleDeleteBoard(); }}
+                        className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left text-[13px] text-[#c9633f] hover:bg-[#fff0f0]"
+                      >
+                        🗑️ Delete list
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
             )}
