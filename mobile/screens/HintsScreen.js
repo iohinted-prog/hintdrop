@@ -15,6 +15,7 @@ import {
   Platform,
   Share,
   Linking,
+  Alert,
 } from "react-native";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -264,13 +265,14 @@ function HintDetailModal({ hint, visible, onClose, onUpdated, onEdit, sharerName
   );
 }
 
-function EditHintModal({ hint, visible, onClose, onSaved }) {
+function EditHintModal({ hint, visible, onClose, onSaved, onDeleted }) {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [priceText, setPriceText] = useState("");
   const [size, setSize] = useState("");
   const [colour, setColour] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -308,6 +310,30 @@ function EditHintModal({ hint, visible, onClose, onSaved }) {
     onClose();
   }
 
+  function confirmDelete() {
+    Alert.alert(
+      "Delete this hint?",
+      `"${hint.title || "This hint"}" will be removed for good. This can't be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: handleDelete },
+      ]
+    );
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    setError("");
+    const { error: deleteError } = await supabase.from("hints").delete().eq("id", hint.id);
+    setDeleting(false);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+    onDeleted();
+    onClose();
+  }
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView
@@ -316,7 +342,16 @@ function EditHintModal({ hint, visible, onClose, onSaved }) {
       >
         <View style={[styles.modalSheet, styles.editSheet]}>
           <ScrollView keyboardShouldPersistTaps="handled">
-            <Text style={styles.modalTitle}>Edit hint</Text>
+            <View style={styles.editHeaderRow}>
+              <Text style={styles.modalTitle}>Edit hint</Text>
+              <Pressable style={styles.deleteButton} onPress={confirmDelete} disabled={deleting}>
+                {deleting ? (
+                  <ActivityIndicator color="#c9633f" size="small" />
+                ) : (
+                  <Text style={styles.deleteButtonText}>Delete</Text>
+                )}
+              </Pressable>
+            </View>
 
             <Text style={styles.editLabel}>Link</Text>
             <TextInput
@@ -436,6 +471,8 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
   const [reviewing, setReviewing] = useState(false);
   const [title, setTitle] = useState("");
   const [priceText, setPriceText] = useState("");
+  const [size, setSize] = useState("");
+  const [colour, setColour] = useState("");
   const [imageUrl, setImageUrl] = useState(null);
   const [retailer, setRetailer] = useState(null);
   const [numericPrice, setNumericPrice] = useState(null);
@@ -447,6 +484,8 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
     setReviewing(false);
     setTitle("");
     setPriceText("");
+    setSize("");
+    setColour("");
     setImageUrl(null);
     setRetailer(null);
     setNumericPrice(null);
@@ -541,6 +580,8 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
         price_text: priceText.trim() || null,
         numeric_price: numericPrice,
         currency,
+        size: size.trim() || null,
+        colour: colour.trim() || null,
         source: "preview",
         is_private: false,
         starred: false,
@@ -586,6 +627,15 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
                   <Image source={{ uri: imageUrl }} style={styles.reviewImage} resizeMode="cover" />
                 ) : null}
 
+                <Text style={styles.editLabel}>Link</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={url}
+                  onChangeText={setUrl}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+
                 <Text style={styles.editLabel}>Name</Text>
                 <TextInput style={styles.modalInput} value={title} onChangeText={setTitle} />
 
@@ -597,6 +647,29 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
                   placeholder="Optional"
                   placeholderTextColor="#c9b8ab"
                 />
+
+                <View style={styles.editRow}>
+                  <View style={styles.editRowItem}>
+                    <Text style={styles.editLabel}>Size</Text>
+                    <TextInput
+                      style={styles.modalInput}
+                      value={size}
+                      onChangeText={setSize}
+                      placeholder='M, 12 1/2'
+                      placeholderTextColor="#c9b8ab"
+                    />
+                  </View>
+                  <View style={styles.editRowItem}>
+                    <Text style={styles.editLabel}>Colour</Text>
+                    <TextInput
+                      style={styles.modalInput}
+                      value={colour}
+                      onChangeText={setColour}
+                      placeholder="Navy"
+                      placeholderTextColor="#c9b8ab"
+                    />
+                  </View>
+                </View>
               </>
             )}
 
@@ -963,6 +1036,7 @@ function BoardHintsScreen({ board, onBack }) {
         visible={Boolean(editingHint)}
         onClose={() => setEditingHint(null)}
         onSaved={loadHints}
+        onDeleted={loadHints}
       />
     </View>
   );
@@ -1398,6 +1472,23 @@ const styles = StyleSheet.create({
     color: "#475569",
     marginBottom: 6,
     marginTop: 12,
+  },
+  editHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  deleteButton: {
+    borderWidth: 1,
+    borderColor: "#f4cdbd",
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  deleteButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#c9633f",
   },
   editRow: {
     flexDirection: "row",
