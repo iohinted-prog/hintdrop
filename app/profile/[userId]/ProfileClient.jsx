@@ -100,12 +100,24 @@ export default function ProfileClient({ userId }) {
       // contact relationship with this profile, enforced at the database
       // level (not just hidden in the UI, which a direct API call could
       // bypass). Returns a single-row array since it's a table function.
-      const [{ data: profileRows, error: profileRpcError }, { data: boardRows }] = await Promise.all([
+      const requestedBoardId = searchParams.get("board");
+
+      const [{ data: profileRows, error: profileRpcError }, { data: boardRows }, directBoardResult] = await Promise.all([
         supabase.rpc("get_public_profile", { target_id: userId }),
         supabase.from("hint_boards")
           .select("id, title, is_default")
           .eq("user_id", userId).or("is_private.is.null,is_private.eq.false")
           .order("is_default", { ascending: false }).order("created_at", { ascending: true }),
+        // Speculatively fetched in parallel with everything else,
+        // rather than only after discovering the requested id isn't
+        // in the public list - that used to be a third, fully
+        // sequential round trip tacked onto the end of the whole
+        // load, adding real wall-clock time to every shared-board
+        // visit (the common case for this page) even when it turns
+        // out not to be needed.
+        requestedBoardId
+          ? supabase.from("hint_boards").select("id, title, is_default, is_private").eq("id", requestedBoardId).eq("user_id", userId).maybeSingle()
+          : Promise.resolve({ data: null }),
       ]);
       let profileData = profileRows?.[0] || null;
       // Fall back to a direct select if the RPC itself isn't available yet
@@ -157,20 +169,11 @@ export default function ProfileClient({ userId }) {
       // separate, explicit-id lookup is correct precisely because it
       // bypasses the privacy filter only for the one id actually
       // requested, not for browsing.
-      const requestedBoardId = searchParams.get("board");
       let requestedBoardValid = requestedBoardId && boardsWithPreviews.some((b) => b.id === requestedBoardId);
 
-      if (requestedBoardId && !requestedBoardValid) {
-        const { data: directBoardRow } = await supabase
-          .from("hint_boards")
-          .select("id, title, is_default, is_private")
-          .eq("id", requestedBoardId)
-          .eq("user_id", userId)
-          .maybeSingle();
-        if (directBoardRow) {
-          requestedBoardValid = true;
-          setDirectBoard(directBoardRow);
-        }
+      if (requestedBoardId && !requestedBoardValid && directBoardResult?.data) {
+        requestedBoardValid = true;
+        setDirectBoard(directBoardResult.data);
       }
 
       if (requestedBoardValid) {
