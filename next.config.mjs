@@ -7,13 +7,6 @@ const nextConfig = {
       { protocol: "http", hostname: "**" },
     ],
   },
-  // playwright-core + @sparticuz/chromium (headless browser screenshot
-  // for the board OG image) must not be bundled by webpack - both
-  // packages do their own native binary/runtime resolution that
-  // breaks if Next tries to bundle them into the serverless function
-  // like ordinary JS. This is the standard, documented requirement
-  // for this exact combination on Vercel.
-  serverExternalPackages: ["playwright-core", "@sparticuz/chromium"],
   // Without this, Vercel's automatic file-tracing doesn't reliably detect
   // that app/opengraph-image.js and app/join/[ownerId]/opengraph-image.js
   // need lib/fonts/*.ttf at runtime (they're read via fs.readFileSync,

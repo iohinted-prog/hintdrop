@@ -36,14 +36,34 @@ export async function generateMetadata({ params }) {
   const title = `${board.title} — ${ownerName}'s Hints 👀 | HintDrop`;
   const description = `Take a look at ${ownerName}'s "${board.title}" Hints on HintDrop.`;
 
-  // No images field - Next.js auto-detects the sibling
-  // opengraph-image.jsx (a real headless-browser screenshot of the
-  // collage, not a server-side image fetch) and uses that instead.
+  // Final decision after extensive testing (both a server-side fetch
+  // of retailer images, confirmed via real Vercel logs to hang/abort
+  // regardless of timeout across multiple retailers, and a headless-
+  // browser screenshot approach, which only loaded 1 of 4 images in
+  // real testing): og:image points straight at the board's cover
+  // hint photo, proxied through Next's own image optimizer, letting
+  // WhatsApp's own crawler fetch it directly. No HintDrop branding
+  // overlay, no multi-image collage - the version that's actually,
+  // reliably worked throughout this whole investigation.
+  const { data: coverHint } = await supabase
+    .from("hints")
+    .select("image_url")
+    .eq("board_id", boardId)
+    .eq("is_private", false)
+    .not("image_url", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const ogImage = coverHint?.image_url
+    ? `https://hintdrop.app/_next/image?url=${encodeURIComponent(coverHint.image_url)}&w=1200&q=75`
+    : "https://hintdrop.app/og-default-v2.png";
+
   return {
     title,
     description,
-    openGraph: { title, description, type: "website" },
-    twitter: { card: "summary_large_image", title, description },
+    openGraph: { title, description, images: [ogImage], type: "website" },
+    twitter: { card: "summary_large_image", title, description, images: [ogImage] },
     alternates: {
       canonical: `https://hintdrop.app/b/${boardId}`,
     },
