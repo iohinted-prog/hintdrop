@@ -408,26 +408,78 @@ function BoardCard({ board, onPress }) {
   );
 }
 
+// Mirrors isValidHttpUrl in HintsClient.jsx exactly - used to decide
+// whether typed input goes through the link-preview scraper or
+// becomes a manual (no scraping) hint straight away.
+function isValidHttpUrl(value = "") {
+  const trimmed = String(value || "").trim();
+  if (!trimmed || /\s/.test(trimmed)) return false;
+  try {
+    const withProtocol =
+      trimmed.startsWith("http://") || trimmed.startsWith("https://")
+        ? trimmed
+        : `https://${trimmed}`;
+    const parsed = new URL(withProtocol);
+    return (
+      ["http:", "https:"].includes(parsed.protocol) && /\.[a-z]{2,}$/i.test(parsed.hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
 function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
   const { user } = useAuth();
   const [url, setUrl] = useState("");
   const [fetching, setFetching] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [preview, setPreview] = useState(null);
+  const [reviewing, setReviewing] = useState(false);
+  const [title, setTitle] = useState("");
+  const [priceText, setPriceText] = useState("");
+  const [imageUrl, setImageUrl] = useState(null);
+  const [retailer, setRetailer] = useState(null);
+  const [numericPrice, setNumericPrice] = useState(null);
+  const [currency, setCurrency] = useState(null);
   const [error, setError] = useState("");
 
   function reset() {
     setUrl("");
-    setPreview(null);
+    setReviewing(false);
+    setTitle("");
+    setPriceText("");
+    setImageUrl(null);
+    setRetailer(null);
+    setNumericPrice(null);
+    setCurrency(null);
     setError("");
   }
 
   async function handleFetch(urlToFetch) {
     const trimmed = (urlToFetch ?? url).trim();
     if (!trimmed) {
-      setError("Paste a link first.");
+      setError("Paste a link, or type what you have in mind.");
       return;
     }
+
+    // Not a real URL - matches the web app's own behaviour when the
+    // input doesn't look like a link: skip scraping entirely and go
+    // straight to review with the typed text as the title. (The web
+    // version also offers an AI-generated idea/image at this point -
+    // that's a separate, larger feature not built here yet, so this
+    // is a genuine but simpler fallback: the typed text becomes a
+    // real, savable hint rather than erroring out.)
+    if (!isValidHttpUrl(trimmed)) {
+      setTitle(trimmed);
+      setPriceText("");
+      setImageUrl(null);
+      setRetailer(null);
+      setNumericPrice(null);
+      setCurrency(null);
+      setReviewing(true);
+      setError("");
+      return;
+    }
+
     setFetching(true);
     setError("");
     try {
@@ -438,7 +490,13 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Couldn't fetch that link.");
-      setPreview(data);
+      setTitle(data.title || "");
+      setPriceText(data.priceText || "");
+      setImageUrl(data.selectedImage || data.image || null);
+      setRetailer(data.siteName || null);
+      setNumericPrice(data.numericPrice ?? null);
+      setCurrency(data.detectedCurrency || null);
+      setReviewing(true);
     } catch (err) {
       setError(err?.message || "Couldn't fetch that link.");
     } finally {
@@ -460,7 +518,7 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
   }, [visible, initialUrl]);
 
   async function handleSave() {
-    if (!preview || !user?.id) return;
+    if (!user?.id) return;
     setSaving(true);
     setError("");
     try {
@@ -476,13 +534,13 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
       const { error: insertError } = await supabase.from("hints").insert({
         user_id: user.id,
         board_id: boardId,
-        title: preview.title || "Shared item",
-        url: preview.url || url.trim(),
-        image_url: preview.selectedImage || preview.image || null,
-        retailer: preview.siteName || null,
-        price_text: preview.priceText || null,
-        numeric_price: preview.numericPrice || null,
-        currency: preview.detectedCurrency || null,
+        title: title.trim() || "Shared item",
+        url: isValidHttpUrl(url) ? url.trim() : null,
+        image_url: imageUrl,
+        retailer,
+        price_text: priceText.trim() || null,
+        numeric_price: numericPrice,
+        currency,
         source: "preview",
         is_private: false,
         starred: false,
@@ -506,72 +564,75 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
         style={styles.modalBackdrop}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.modalSheet}>
-          <Text style={styles.modalTitle}>Add a hint</Text>
+        <View style={[styles.modalSheet, styles.editSheet]}>
+          <ScrollView keyboardShouldPersistTaps="handled">
+            <Text style={styles.modalTitle}>
+              {reviewing ? "Review before saving" : "Add a hint"}
+            </Text>
 
-          <TextInput
-            style={styles.modalInput}
-            placeholder="Paste a product link"
-            placeholderTextColor="#94a3b8"
-            value={url}
-            onChangeText={setUrl}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-          />
-
-          {error ? <Text style={styles.modalError}>{error}</Text> : null}
-
-          {preview ? (
-            <View style={styles.previewRow}>
-              {preview.selectedImage || preview.image ? (
-                <Image
-                  source={{ uri: preview.selectedImage || preview.image }}
-                  style={styles.previewImage}
-                  resizeMode="cover"
-                />
-              ) : null}
-              <View style={styles.previewText}>
-                <Text style={styles.previewTitle} numberOfLines={2}>
-                  {preview.title}
-                </Text>
-                {preview.priceText ? (
-                  <Text style={styles.previewPrice}>{preview.priceText}</Text>
-                ) : null}
-              </View>
-            </View>
-          ) : null}
-
-          <View style={styles.modalButtonRow}>
-            <Pressable
-              style={[styles.modalButton, styles.modalButtonSecondary]}
-              onPress={() => {
-                reset();
-                onClose();
-              }}
-              disabled={fetching || saving}
-            >
-              <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
-            </Pressable>
-
-            {preview ? (
-              <Pressable style={styles.modalButton} onPress={handleSave} disabled={saving}>
-                {saving ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.modalButtonText}>Add to Hints</Text>
-                )}
-              </Pressable>
+            {!reviewing ? (
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Paste a link or describe an experience"
+                placeholderTextColor="#94a3b8"
+                value={url}
+                onChangeText={setUrl}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
             ) : (
-              <Pressable style={styles.modalButton} onPress={handleFetch} disabled={fetching}>
-                {fetching ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.modalButtonText}>Fetch details</Text>
-                )}
-              </Pressable>
+              <>
+                {imageUrl ? (
+                  <Image source={{ uri: imageUrl }} style={styles.reviewImage} resizeMode="cover" />
+                ) : null}
+
+                <Text style={styles.editLabel}>Name</Text>
+                <TextInput style={styles.modalInput} value={title} onChangeText={setTitle} />
+
+                <Text style={styles.editLabel}>Price</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={priceText}
+                  onChangeText={setPriceText}
+                  placeholder="Optional"
+                  placeholderTextColor="#c9b8ab"
+                />
+              </>
             )}
-          </View>
+
+            {error ? <Text style={styles.modalError}>{error}</Text> : null}
+
+            <View style={styles.modalButtonRow}>
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => {
+                  reset();
+                  onClose();
+                }}
+                disabled={fetching || saving}
+              >
+                <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
+              </Pressable>
+
+              {reviewing ? (
+                <Pressable style={styles.modalButton} onPress={handleSave} disabled={saving}>
+                  {saving ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.modalButtonText}>Save hint</Text>
+                  )}
+                </Pressable>
+              ) : (
+                <Pressable style={styles.modalButton} onPress={() => handleFetch()} disabled={fetching}>
+                  {fetching ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.modalButtonText}>Continue</Text>
+                  )}
+                </Pressable>
+              )}
+            </View>
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -1251,6 +1312,12 @@ const styles = StyleSheet.create({
   },
   editSheet: {
     maxHeight: "85%",
+  },
+  reviewImage: {
+    width: "100%",
+    height: 160,
+    borderRadius: 16,
+    marginBottom: 8,
   },
   modalTitle: {
     fontSize: 18,
