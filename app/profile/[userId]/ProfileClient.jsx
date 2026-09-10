@@ -392,7 +392,7 @@ export default function ProfileClient({ userId }) {
                 supabase={supabase}
                 subjectType={selectedBoardId ? "board" : "profile"}
                 subjectId={selectedBoardId || userId}
-                path={selectedBoardId ? `/profile/${userId}?board=${selectedBoardId}` : `/profile/${userId}`}
+                path={selectedBoardId ? `/b/${selectedBoardId}` : `/profile/${userId}`}
                 title={selectedBoardId ? selectedBoardData?.title : `${displayName}'s Hints`}
                 text={selectedBoardId
                   ? `${displayName}'s hint: "${selectedBoardData?.title}"`

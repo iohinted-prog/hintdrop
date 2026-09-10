@@ -2862,6 +2862,11 @@ export default function HintsClient({ boardId }) {
           )}
 
           <div className="flex flex-col items-center gap-3">
+            {boardId && boardLoading && (
+              <div className="w-full max-w-[420px] animate-pulse space-y-3">
+                <div className="mx-auto h-6 w-32 rounded-full bg-[#f0e4dd]" />
+              </div>
+            )}
             {boardId && !boardLoading && board && (
               editingBoardName ? (
                 <div className="flex items-center gap-2">
@@ -2892,13 +2897,19 @@ export default function HintsClient({ boardId }) {
             <h1 className="text-[32px] font-bold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
               Drop a Hint here...
             </h1>
+            {boardId && boardLoading && (
+              <div className="flex items-center gap-2 animate-pulse">
+                <div className="h-9 w-20 rounded-full bg-[#f0e4dd]" />
+                <div className="h-9 w-20 rounded-full bg-[#f0e4dd]" />
+              </div>
+            )}
             {boardId && !boardLoading && board && currentUser && (
               <div className="flex items-center gap-2 relative">
                 <ShareButton
                   supabase={createClient()}
                   subjectType="board"
                   subjectId={boardId}
-                  path={`/profile/${currentUser.id}?board=${boardId}`}
+                  path={`/b/${boardId}`}
                   title={board.is_default ? null : board.title}
                   sharerName={currentUserName}
                   currentUserId={currentUser.id}
