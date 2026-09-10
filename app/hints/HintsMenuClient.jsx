@@ -19,7 +19,7 @@ function BoardCard({ board, onDelete, ownerName }) {
       href={`/hints/${board.id}`}
       className="group relative flex flex-col overflow-hidden rounded-[26px] border border-[#f0dfd6] bg-white transition hover:-translate-y-1 hover:shadow-md"
     >
-      <div className="bg-[#fdf5f0] p-0.5" style={{ aspectRatio: "16/9" }}>
+      <div className="overflow-hidden bg-[#fdf5f0]" style={{ aspectRatio: "16/9" }}>
         <BoardPreviewGrid previewHints={board.previewHints} />
       </div>
       <div className="flex items-center justify-between gap-3 p-4">
