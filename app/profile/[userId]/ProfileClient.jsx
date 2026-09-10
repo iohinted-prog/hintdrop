@@ -141,8 +141,6 @@ export default function ProfileClient({ userId }) {
         setContactSince(contactData?.created_at || null);
       }
 
-      setLoading(false);
-
       // A ?board= link (e.g. from Feed's "Jump back in", or the new /b/
       // redirect) should land directly in that specific list — anything
       // else always shows the menu first, even for a single-board
@@ -178,6 +176,14 @@ export default function ProfileClient({ userId }) {
       if (requestedBoardValid) {
         setSelectedBoardId(requestedBoardId);
       }
+
+      // Only now - after selectedBoardId/directBoard are already set,
+      // not before - does the skeleton come down. Clearing loading
+      // earlier meant the real header rendered for a moment with no
+      // board selected yet (showing the generic "{name}'s Hints" title
+      // as if no board were requested), then immediately re-rendered
+      // with the real board title once these finished a beat later.
+      setLoading(false);
     }
     load();
   }, [userId]);
