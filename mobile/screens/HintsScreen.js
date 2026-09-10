@@ -154,7 +154,7 @@ function BoardCard({ board, onPress }) {
   );
 }
 
-function AddHintModal({ visible, onClose, onSaved, boardId }) {
+function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
   const { user } = useAuth();
   const [url, setUrl] = useState("");
   const [fetching, setFetching] = useState(false);
@@ -168,8 +168,8 @@ function AddHintModal({ visible, onClose, onSaved, boardId }) {
     setError("");
   }
 
-  async function handleFetch() {
-    const trimmed = url.trim();
+  async function handleFetch(urlToFetch) {
+    const trimmed = (urlToFetch ?? url).trim();
     if (!trimmed) {
       setError("Paste a link first.");
       return;
@@ -191,6 +191,19 @@ function AddHintModal({ visible, onClose, onSaved, boardId }) {
       setFetching(false);
     }
   }
+
+  // When opened from the board page's inline "Paste a URL or describe
+  // an experience..." field (the real entry point on web, rather than
+  // a separate trigger button), the URL arrives already typed - kick
+  // the fetch off immediately instead of making the person retype it
+  // into a second field inside the modal.
+  useEffect(() => {
+    if (visible && initialUrl) {
+      setUrl(initialUrl);
+      handleFetch(initialUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, initialUrl]);
 
   async function handleSave() {
     if (!preview || !user?.id) return;
@@ -409,6 +422,8 @@ function BoardHintsScreen({ board, onBack }) {
   const [imageRatios, setImageRatios] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [linkValue, setLinkValue] = useState("");
+  const [modalInitialUrl, setModalInitialUrl] = useState(null);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [error, setError] = useState("");
 
@@ -461,6 +476,12 @@ function BoardHintsScreen({ board, onBack }) {
     setRefreshing(false);
   }
 
+  function handleAddHint() {
+    if (!linkValue.trim()) return;
+    setModalInitialUrl(linkValue.trim());
+    setAddModalVisible(true);
+  }
+
   const columns = splitIntoColumns(hints, 2);
 
   return (
@@ -472,50 +493,76 @@ function BoardHintsScreen({ board, onBack }) {
         <Text style={styles.headerTitle} numberOfLines={1}>
           {board.title}
         </Text>
-        <Pressable style={styles.addButton} onPress={() => setAddModalVisible(true)}>
-          <Text style={styles.addButtonText}>+ Add</Text>
-        </Pressable>
+      </View>
+
+      <View style={styles.heroWrap}>
+        <Text style={styles.heroTitle}>Drop a Hint here...</Text>
+        <View style={styles.heroInputRow}>
+          <TextInput
+            style={styles.heroInput}
+            placeholder="Paste a URL or describe an experience..."
+            placeholderTextColor="#94a3b8"
+            value={linkValue}
+            onChangeText={setLinkValue}
+            autoCapitalize="none"
+            autoCorrect={false}
+            onSubmitEditing={handleAddHint}
+            returnKeyType="done"
+          />
+          <Pressable style={styles.heroButton} onPress={handleAddHint}>
+            <Text style={styles.heroButtonText}>Add hint</Text>
+          </Pressable>
+        </View>
       </View>
 
       {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
 
-      {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator color="#ff875d" />
-        </View>
-      ) : hints.length === 0 ? (
-        <ScrollView
-          contentContainerStyle={styles.centered}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
-          }
-        >
-          <Text style={styles.emptyText}>No hints yet - add your first one.</Text>
-        </ScrollView>
-      ) : (
-        <ScrollView
-          contentContainerStyle={styles.masonryContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
-          }
-        >
-          <View style={styles.masonryRow}>
-            {columns.map((columnHints, colIndex) => (
-              <View key={colIndex} style={styles.masonryColumn}>
-                {columnHints.map((hint) => (
-                  <HintCard key={hint.id} hint={hint} aspectRatio={imageRatios[hint.id]} />
-                ))}
-              </View>
-            ))}
+      <View style={styles.masonryFrame}>
+        {loading ? (
+          <View style={styles.centered}>
+            <ActivityIndicator color="#ff875d" />
           </View>
-        </ScrollView>
-      )}
+        ) : hints.length === 0 ? (
+          <ScrollView
+            contentContainerStyle={styles.centered}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
+            }
+          >
+            <Text style={styles.emptyText}>No hints yet - add your first one.</Text>
+          </ScrollView>
+        ) : (
+          <ScrollView
+            contentContainerStyle={styles.masonryContent}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
+            }
+          >
+            <View style={styles.masonryRow}>
+              {columns.map((columnHints, colIndex) => (
+                <View key={colIndex} style={styles.masonryColumn}>
+                  {columnHints.map((hint) => (
+                    <HintCard key={hint.id} hint={hint} aspectRatio={imageRatios[hint.id]} />
+                  ))}
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        )}
+      </View>
 
       <AddHintModal
         visible={addModalVisible}
-        onClose={() => setAddModalVisible(false)}
-        onSaved={loadHints}
+        onClose={() => {
+          setAddModalVisible(false);
+          setModalInitialUrl(null);
+        }}
+        onSaved={() => {
+          setLinkValue("");
+          loadHints();
+        }}
         boardId={board.id}
+        initialUrl={modalInitialUrl}
       />
     </View>
   );
@@ -579,6 +626,57 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
+  },
+  heroWrap: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  heroTitle: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#f19a78",
+    letterSpacing: -0.5,
+    marginBottom: 14,
+  },
+  heroInputRow: {
+    gap: 10,
+  },
+  heroInput: {
+    height: 56,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#eadcd3",
+    backgroundColor: "#fff",
+    paddingHorizontal: 20,
+    fontSize: 15,
+    color: "#0f172a",
+  },
+  heroButton: {
+    height: 52,
+    borderRadius: 999,
+    backgroundColor: "#ff875d",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#ff875d",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  heroButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  masonryFrame: {
+    flex: 1,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: "#efe0d7",
+    backgroundColor: "#fffdfb",
+    overflow: "hidden",
   },
   errorBanner: {
     color: "#c9633f",
