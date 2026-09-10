@@ -87,6 +87,7 @@ export default function AppShell({ children }) {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const initials = useMemo(() => getInitials(fullName, email), [fullName, email]);
 
@@ -166,6 +167,7 @@ export default function AppShell({ children }) {
         setFullName(getMetadataName(metadata));
         setAvatarUrl(getMetadataAvatar(metadata));
       }
+      if (activeListener) setAuthChecked(true);
 
       const {
         data: { user },

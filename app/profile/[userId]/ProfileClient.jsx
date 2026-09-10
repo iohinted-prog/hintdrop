@@ -65,6 +65,7 @@ export default function ProfileClient({ userId }) {
   const [imageRatios, setImageRatios] = useState({});
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [filter, setFilter] = useState("default");
   const [filterPopupOpen, setFilterPopupOpen] = useState(false);
   const [occasionFilter, setOccasionFilter] = useState("");
@@ -90,6 +91,7 @@ export default function ProfileClient({ userId }) {
       // with the authoritative check once it resolves.
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) setCurrentUser(session.user);
+      setAuthChecked(true);
 
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
@@ -782,6 +784,14 @@ export default function ProfileClient({ userId }) {
       <AuthModal open={signUpOpen} onClose={() => setSignUpOpen(false)} initialMode="signup" />
     </main>
   );
+  // Don't decide between PublicShell and the normal app chrome until
+  // the first auth check has actually resolved - currentUser starts
+  // null for every visitor including a signed-in one, so checking
+  // !currentUser before authChecked is true meant a signed-in visitor
+  // saw the public "Sign in" header flash before the real one took
+  // over. inner already carries its own loading skeleton, so it's
+  // safe to render bare during this window.
+  if (!authChecked) return inner;
   if (!currentUser) return <PublicShell>{inner}</PublicShell>;
   return inner;
 }
