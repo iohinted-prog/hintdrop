@@ -39,8 +39,15 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     // The web app relies on detecting an OAuth redirect in the URL
     // itself (detectSessionInUrl: true is its default) - there's no
     // browser URL bar here, auth redirects come back through a deep
-    // link instead (see lib/authRedirect.js), so this must be off or
-    // the client tries to parse a URL structure that doesn't apply.
+    // link instead (handled directly in SignInScreen.js), so this
+    // must be off or the client tries to parse a URL structure that
+    // doesn't apply.
     detectSessionInUrl: false,
+    // PKCE rather than the implicit flow (the web app's default) -
+    // Supabase's own recommendation for mobile specifically, since it
+    // returns a single ?code= query param to exchange server-side
+    // rather than tokens in a URL fragment, which is awkward to
+    // reliably parse out of a WebBrowser redirect result on native.
+    flowType: "pkce",
   },
 });
