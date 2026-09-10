@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   View,
-  Text,
   FlatList,
   SectionList,
   ScrollView,
@@ -18,6 +17,8 @@ import {
   Linking,
   Alert,
 } from "react-native";
+import Text from "../components/Text";
+import ActionSheet from "../components/ActionSheet";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../lib/supabase";
 import { resolveAvatarColor } from "../lib/avatarColor";
@@ -1515,12 +1516,7 @@ function BoardHintsScreen({ board, onBack }) {
 
   function handleMenuPress() {
     if (board.is_default) return;
-    Alert.alert("List options", undefined, [
-      { text: "Rename list", onPress: () => { setRenameDraft(board.title); setRenameModalVisible(true); } },
-      { text: "Collaborate", onPress: () => setCollabModalVisible(true) },
-      { text: "Delete list", style: "destructive", onPress: handleDeleteBoard },
-      { text: "Cancel", style: "cancel" },
-    ]);
+    setMenuVisible(true);
   }
 
   const columns = splitIntoColumns(hints, 2);
@@ -1660,6 +1656,17 @@ function BoardHintsScreen({ board, onBack }) {
         onClose={() => setEditingHint(null)}
         onSaved={loadHints}
         onDeleted={loadHints}
+      />
+
+      <ActionSheet
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        title="List options"
+        options={[
+          { label: "Rename list", onPress: () => { setRenameDraft(board.title); setRenameModalVisible(true); } },
+          { label: "Collaborate", onPress: () => setCollabModalVisible(true) },
+          { label: "Delete list", destructive: true, onPress: handleDeleteBoard },
+        ]}
       />
 
       <Modal visible={renameModalVisible} transparent animationType="fade" onRequestClose={() => setRenameModalVisible(false)}>

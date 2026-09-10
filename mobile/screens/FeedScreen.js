@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   View,
-  Text,
   FlatList,
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
+import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 

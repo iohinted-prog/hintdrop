@@ -1,8 +1,10 @@
 import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { View, ActivityIndicator, Pressable, Text, StyleSheet } from "react-native";
+import { View, ActivityIndicator, Pressable, StyleSheet } from "react-native";
+import Text from "./components/Text";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { supabase } from "./lib/supabase";
 import SignInScreen from "./screens/SignInScreen";
@@ -63,6 +65,26 @@ function RootNavigator() {
 }
 
 export default function App() {
+  // Web's sitewide font is Inter (400/600/700) - the whole app was
+  // rendering in the OS default system font (San Francisco on iOS,
+  // Roboto on Android) until now, a significant part of why nothing
+  // felt like the website regardless of colors/layout being close.
+  // Gated on fontsLoaded so no screen ever flashes the wrong font
+  // before swapping.
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator color="#ff875d" size="large" />
+      </View>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>

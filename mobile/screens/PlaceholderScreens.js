@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import Text from "../components/Text";
 
 // Genuinely a placeholder, not pretending otherwise - each of these
 // needs the same treatment FeedScreen.js and HintsScreen.js got:

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   View,
-  Text,
   TextInput,
   Pressable,
   StyleSheet,
@@ -12,6 +11,7 @@ import {
 } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
+import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 
 // Required once, at module scope, per expo-web-browser's own docs -
