@@ -81,6 +81,18 @@ export default async function PreviewRenderPage({ params }) {
   const ownerName = board?.profiles?.full_name?.split(" ")[0] || "Someone";
   const boardTitle = board?.title || "Hints";
 
+  // Branding panel only makes sense next to a single photo - with a
+  // real multi-image collage, the grid itself is the point and should
+  // use the full 1200x630 frame rather than being squeezed to half
+  // width to make room for text that isn't needed there.
+  if (images.length > 1) {
+    return (
+      <div style={{ width: 1200, height: 630, display: "flex", background: "#fffaf7", padding: 4 }}>
+        <Collage images={images} />
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: 1200, height: 630, display: "flex", fontFamily: "Arial, sans-serif", background: "#fffaf7" }}>
       <div style={{ width: 630, height: 630, padding: 4, display: "flex" }}>

@@ -35,9 +35,21 @@ export default async function Image({ params }) {
 
     const page = await browser.newPage({ viewport: { width: 1200, height: 630 } });
     await page.goto(`https://hintdrop.app/b/${boardId}/preview-render`, {
-      waitUntil: "networkidle",
+      waitUntil: "domcontentloaded",
       timeout: 20000,
     });
+    // networkidle alone isn't a reliable signal that every <img> has
+    // actually finished rendering (only that network activity quieted
+    // down) - explicitly wait until every image on the page reports
+    // complete=true via the native browser Image API. A given image
+    // can still fail to load (blocked, 404, timeout on the retailer's
+    // end) - that's fine, this just waits for the browser to have
+    // finished trying on all of them rather than racing the
+    // screenshot against images still mid-flight.
+    await page.waitForFunction(
+      () => Array.from(document.images).every((img) => img.complete),
+      { timeout: 15000 }
+    ).catch(() => {}); // don't fail the whole screenshot if one image genuinely never resolves
     const screenshot = await page.screenshot({ type: "png" });
     await browser.close();
 
