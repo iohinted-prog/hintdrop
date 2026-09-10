@@ -18,10 +18,6 @@ import {
   Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import {
-  NestableScrollContainer,
-  NestableDraggableFlatList,
-} from "react-native-draggable-flatlist";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 
@@ -1088,6 +1084,12 @@ function BoardHintsScreen({ board, onBack }) {
     setRefreshing(false);
   }
 
+  // Not currently wired to any UI - drag-and-drop reordering was
+  // reverted (see commit history) after react-native-draggable-
+  // flatlist's Nestable components didn't handle two independent
+  // side-by-side columns correctly. The actual reorder + persist
+  // logic here is still correct and ready to reconnect once a
+  // working two-column drag approach is found.
   async function handleColumnDragEnd(colIndex, newColumnData) {
     const currentColumns = splitIntoColumns(hints, 2);
     currentColumns[colIndex] = newColumnData;
@@ -1150,7 +1152,7 @@ function BoardHintsScreen({ board, onBack }) {
         </Pressable>
       </View>
 
-      <NestableScrollContainer
+      <ScrollView
         contentContainerStyle={styles.boardScrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#ff875d" />
@@ -1221,29 +1223,21 @@ function BoardHintsScreen({ board, onBack }) {
               <View style={styles.masonryRow}>
                 {columns.map((columnHints, colIndex) => (
                   <View key={colIndex} style={styles.masonryColumn}>
-                    <NestableDraggableFlatList
-                      data={columnHints}
-                      keyExtractor={(hint) => hint.id}
-                      activationDistance={0}
-                      onDragEnd={({ data }) => handleColumnDragEnd(colIndex, data)}
-                      ItemSeparatorComponent={() => <View style={{ height: CARD_GAP }} />}
-                      renderItem={({ item: hint, drag, isActive }) => (
-                        <HintCard
-                          hint={hint}
-                          aspectRatio={imageRatios[hint.id]}
-                          onPress={() => setSelectedHint(hint)}
-                          onDrag={drag}
-                          isActive={isActive}
-                        />
-                      )}
-                    />
+                    {columnHints.map((hint) => (
+                      <HintCard
+                        key={hint.id}
+                        hint={hint}
+                        aspectRatio={imageRatios[hint.id]}
+                        onPress={() => setSelectedHint(hint)}
+                      />
+                    ))}
                   </View>
                 ))}
               </View>
             </View>
           )}
         </View>
-      </NestableScrollContainer>
+      </ScrollView>
 
       <AddHintModal
         visible={addModalVisible}
