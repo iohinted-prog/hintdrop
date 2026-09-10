@@ -17,29 +17,36 @@ const fonts = [
   { name: "Inter", data: inter700, weight: 700, style: "normal" },
 ];
 
-// Routed through Next's own image optimizer first (small, w=300) so
-// the fetch here is a small, already-compressed image rather than a
-// full-size, unoptimized retailer photo - a large base64 payload is
-// itself a plausible reason the previous attempt's render failed or
-// timed out, on top of Satori's own live-fetch unreliability that the
-// base64 approach was already meant to route around.
+// Fetches the original image directly rather than routing through
+// Next's own /_next/image first - that self-referencing call (this
+// route calling back into the same deployment's image optimizer)
+// is a plausible source of the tile still coming back empty even
+// though the layout/metadata around it rendered correctly. A direct
+// server-side fetch isn't a browser or crawler, so it may not hit
+// the same hotlinking restrictions those face anyway.
 async function toDataUri(url) {
   try {
-    const proxied = `https://hintdrop.app/_next/image?url=${encodeURIComponent(url)}&w=300&q=60`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch(proxied, {
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(url, {
       signal: controller.signal,
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; HintDropBot/1.0; +https://hintdrop.app)" },
+      headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
     });
     clearTimeout(timeout);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error("collage image fetch non-ok:", url, res.status);
+      return null;
+    }
     const contentType = res.headers.get("content-type") || "image/jpeg";
-    if (!contentType.startsWith("image/")) return null;
+    if (!contentType.startsWith("image/")) {
+      console.error("collage image fetch wrong content-type:", url, contentType);
+      return null;
+    }
     const buffer = Buffer.from(await res.arrayBuffer());
-    if (buffer.length > 400_000) return null; // guard against an unexpectedly large response
+    if (buffer.length > 2_000_000) return null; // guard against an unexpectedly large response
     return `data:${contentType};base64,${buffer.toString("base64")}`;
-  } catch {
+  } catch (err) {
+    console.error("collage image fetch failed:", url, err?.message || err);
     return null;
   }
 }
