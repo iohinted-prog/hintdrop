@@ -566,11 +566,6 @@ function BoardHintsScreen({ board, onBack }) {
       </View>
 
       <View style={styles.masonryFrame}>
-        <Image
-          source={require("../assets/grid-pattern-large.png")}
-          style={StyleSheet.absoluteFillObject}
-          resizeMode="cover"
-        />
         {loading ? (
           <View style={styles.centered}>
             <ActivityIndicator color="#ff875d" />
