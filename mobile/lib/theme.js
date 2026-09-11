@@ -30,6 +30,11 @@ export const colors = {
   successBg: "#e3f5ea",
   successBorder: "#bfe4cf",
   successText: "#2f8a5f",
+  // Info (afternoon greeting pill - no other current use, matches the
+  // success/error triplet's bg/border/text pattern)
+  infoBg: "#e5edf9",
+  infoBorder: "#c3d6ef",
+  infoText: "#3f6fb0",
   // Error
   errorBg: "#fff4f2",
   errorBorder: "#efc0ba",

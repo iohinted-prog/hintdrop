@@ -264,7 +264,7 @@ function SignedInApp() {
           headerStyle: { backgroundColor: "#fffaf7", elevation: 0, shadowOpacity: 0, height: 108 },
         }}
       >
-        <Tab.Screen name="Feed" component={FeedScreen} />
+        <Tab.Screen name="Feed" component={FeedScreen} options={{ headerLeft: () => null }} />
         <Tab.Screen name="Circle" component={CircleScreen} />
         <Tab.Screen name="Hints" component={HintsScreen} />
         <Tab.Screen name="Calendar" component={CalendarScreen} />
