@@ -86,6 +86,7 @@ export default function AppShell({ children }) {
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarColor, setAvatarColor] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -184,7 +185,7 @@ export default function AppShell({ children }) {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, avatar_url")
+        .select("full_name, avatar_url, avatar_color")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -196,6 +197,7 @@ export default function AppShell({ children }) {
         setCurrentUserId(user.id);
       setFullName(profile?.full_name || metadataName || "");
       setAvatarUrl(profile?.avatar_url || metadataAvatar || "");
+      setAvatarColor(profile?.avatar_color || "");
     }
 
     loadHeaderProfile();
@@ -958,8 +960,9 @@ export default function AppShell({ children }) {
                 className={`relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full shadow-sm transition ${
                   avatarUrl
                     ? "border border-[#ead8ce] bg-white hover:bg-[#fff5f0]"
-                    : "bg-gradient-to-b from-[#ff966f] to-[#ff7e54] hover:opacity-90"
+                    : "hover:opacity-90"
                 }`}
+                style={avatarUrl ? undefined : { background: `linear-gradient(to bottom, ${resolveAvatarColor({ avatarColor, id: currentUserId }).from}, ${resolveAvatarColor({ avatarColor, id: currentUserId }).to})` }}
               >
                 {avatarUrl ? (
                   <HintImage
