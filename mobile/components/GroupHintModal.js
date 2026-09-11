@@ -157,6 +157,13 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
           return;
         }
         gh = newGh;
+
+        // The organiser is a real member of their own pot too - not a
+        // special-cased non-member who merely "covers the rest". They
+        // start "in" immediately (no accept step needed, they created
+        // it) so the exact same contribute/tick/progress machinery
+        // every other member uses just works for them as well.
+        await supabase.from("group_hint_members").insert({ group_hint_id: gh.id, user_id: currentUserId, status: "in" });
       }
 
       const { error: memErr } = await supabase.from("group_hint_members").insert(selected.map((uid) => ({ group_hint_id: gh.id, user_id: uid, status: "invited" })));

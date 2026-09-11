@@ -230,7 +230,9 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
               const inMembers = allMembers.filter((m) => m.status === "in");
               const pendingMembers = allMembers.filter((m) => m.status === "invited");
               const target = ph.group_hints?.target_amount;
-              const totalPeople = 1 + allMembers.length; // organiser + everyone invited
+              // The organiser is a real member row now - allMembers
+              // already includes them, no manual +1 needed.
+              const totalPeople = allMembers.length || 1;
               const share = target ? target / totalPeople : null;
               const paidMembers = inMembers.filter((m) => m.paid_amount != null);
               // Only real, actually-marked contributions count toward the

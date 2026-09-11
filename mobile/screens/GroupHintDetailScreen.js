@@ -61,7 +61,10 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
   const inMembers = members.filter((m) => m.status === "in");
   const paidMembers = inMembers.filter((m) => m.paid_amount != null);
   const target = gh?.target_amount;
-  const share = target ? target / (1 + activeMembers.length) : 0;
+  // The organiser is a real member row now (status "in" from the moment
+  // they create the pot), so activeMembers already includes them - no
+  // more manually adding 1 for them on top of it.
+  const share = target && activeMembers.length ? target / activeMembers.length : 0;
   // Only real, actually-marked contributions count toward the pot - no
   // fallback to the theoretical share for members who are merely "in"
   // but haven't contributed yet.
@@ -227,7 +230,7 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
                   <Text style={styles.memberAvatarFallbackText}>{getInitials(m.profiles?.full_name)}</Text>
                 </View>
               )}
-              <Text style={styles.memberName} numberOfLines={1}>{m.profiles?.full_name}</Text>
+              <Text style={styles.memberName} numberOfLines={1}>{m.profiles?.full_name}{m.user_id === gh.organiser_id ? " · Organiser" : ""}</Text>
               <Text style={styles.memberStatus}>
                 {m.status === "in" ? "In" : m.status === "joined" ? "Joined" : "Invited"}
               </Text>

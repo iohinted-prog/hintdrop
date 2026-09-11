@@ -153,7 +153,9 @@ function GroupGiftPotCard({ groupGift, currentUserId, onContributed }) {
   const inMembers = members.filter((m) => m.status === "in");
   const paidMembers = inMembers.filter((m) => m.paid_amount != null);
   const target = groupGift.target_amount;
-  const totalPeople = 1 + members.length;
+  // The organiser is a real member row now - members already includes
+  // them, no manual +1 needed.
+  const totalPeople = members.length || 1;
   const share = target ? target / totalPeople : 0;
   // Only real, actually-marked contributions count toward the pot - no
   // fallback to the theoretical share for members who are merely "in"
