@@ -159,8 +159,8 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
   const fmt = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(n);
 
   const segments = [
-    { name: isOrganiser ? "You" : organiser?.full_name?.split(" ")[0] || "Organiser", amount: share },
-    ...inMembers.map((m) => ({ name: m.user_id === currentUserId ? "You" : m.profiles?.full_name?.split(" ")[0] || "Someone", amount: m.pledged_amount != null ? Number(m.pledged_amount) : share })),
+    { name: isOrganiser ? "You" : organiser?.full_name?.split(" ")[0] || "Organiser", amount: share, paid: false },
+    ...inMembers.map((m) => ({ name: m.user_id === currentUserId ? "You" : m.profiles?.full_name?.split(" ")[0] || "Someone", amount: m.pledged_amount != null ? Number(m.pledged_amount) : share, paid: m.paid_amount != null })),
   ];
   const cx = 44, cy = 44, r = 36, stroke = 13;
   const circ = 2 * Math.PI * r;
@@ -195,12 +195,12 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 }}>
           <View style={{ flexDirection: "row" }}>
             {segments.map((seg, i) => (
-              <View key={i} style={[styles.potAvatarDot, { backgroundColor: POT_MEMBER_COLORS[i % POT_MEMBER_COLORS.length], marginLeft: i > 0 ? -6 : 0 }]}>
+              <View key={i} style={[styles.potAvatarDot, { backgroundColor: POT_MEMBER_COLORS[i % POT_MEMBER_COLORS.length], marginLeft: i > 0 ? -6 : 0 }, seg.paid ? styles.potAvatarDotPaid : null]}>
                 <Text style={styles.potAvatarDotText}>{seg.name[0]?.toUpperCase()}</Text>
               </View>
             ))}
           </View>
-          <Text style={styles.potPledgedText}>{inMembers.length} of {members.length} pledged</Text>
+          <Text style={styles.potPledgedText}>{inMembers.length} of {members.length} pledged{inMembers.filter((m) => m.paid_amount != null).length > 0 ? `, ${inMembers.filter((m) => m.paid_amount != null).length} paid` : ""}</Text>
         </View>
       </View>
     </View>
@@ -410,12 +410,12 @@ export default function CircleScreen() {
   // loadGroupGifts exactly.
   async function loadGroupGifts(userId) {
     const [{ data: organising }, { data: memberRows }] = await Promise.all([
-      supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, profiles(full_name, avatar_url, avatar_color))").eq("organiser_id", userId),
+      supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, paid_amount, profiles(full_name, avatar_url, avatar_color))").eq("organiser_id", userId),
       supabase.from("group_hint_members").select("group_hint_id").eq("user_id", userId),
     ]);
     const memberGroupHintIds = (memberRows || []).map((r) => r.group_hint_id);
     const { data: invitedInto } = memberGroupHintIds.length
-      ? await supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, profiles(full_name, avatar_url, avatar_color))").in("id", memberGroupHintIds)
+      ? await supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, paid_amount, profiles(full_name, avatar_url, avatar_color))").in("id", memberGroupHintIds)
       : { data: [] };
     const merged = [...(organising || []), ...(invitedInto || [])].filter(
       (gh, i, self) => self.findIndex((g) => g.id === gh.id) === i
@@ -619,6 +619,7 @@ const styles = StyleSheet.create({
   potTitle: { flex: 1, fontSize: 13, fontWeight: "700", color: colors.textPrimary },
   potSubtext: { fontSize: 12, color: colors.textSecondary },
   potAvatarDot: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.card, alignItems: "center", justifyContent: "center" },
+  potAvatarDotPaid: { borderColor: colors.successText },
   potAvatarDotText: { fontSize: 7, fontWeight: "700", color: "#fff" },
   potPledgedText: { fontSize: 10, color: colors.textMuted },
   emptyState: { alignItems: "center", paddingTop: 40, gap: 6 },

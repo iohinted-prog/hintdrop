@@ -42,6 +42,8 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
   const [myProfile, setMyProfile] = useState(null);
   const [pledgingId, setPledgingId] = useState(null);
   const [pledgeAmount, setPledgeAmount] = useState("");
+  const [payingId, setPayingId] = useState(null);
+  const [payAmount, setPayAmount] = useState("");
   const listRef = useRef(null);
 
   const members = conversation?.conversation_members || [];
@@ -69,7 +71,7 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
     const loadPinnedHints = () => {
       supabase
         .from("conversation_hints")
-        .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, profiles(full_name, avatar_url, avatar_color)))")
+        .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, paid_amount, profiles(full_name, avatar_url, avatar_color)))")
         .eq("conversation_id", conversation.id)
         .eq("dismissed", false)
         .then(({ data }) => setPinnedHints(data || []));
@@ -179,6 +181,30 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
     }).catch(() => {});
   }
 
+  // Second, separate step from pledging - pledging is a stated intent,
+  // marking as paid confirms the money actually changed hands (outside
+  // the app). Only the member themselves can mark their own as paid.
+  async function markAsPaid(ph, amount) {
+    const gh = ph.group_hints;
+    const myMember = (gh?.group_hint_members || []).find((m) => m.user_id === currentUserId);
+    if (!myMember) return;
+
+    await supabase.from("group_hint_members").update({ paid_amount: amount }).eq("id", myMember.id);
+
+    const myName = myProfile?.full_name || "Someone";
+    const currency = gh?.hints?.currency || "GBP";
+    const announceBody = `${myName} marked ${new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(amount)} as paid ✅`;
+    await supabase.from("messages").insert({ conversation_id: conversation.id, sender_id: currentUserId, body: announceBody, type: "system" });
+
+    setPinnedHints((prev) =>
+      prev.map((p) =>
+        p.id !== ph.id
+          ? p
+          : { ...p, group_hints: { ...p.group_hints, group_hint_members: (p.group_hints.group_hint_members || []).map((m) => (m.id === myMember.id ? { ...m, paid_amount: amount } : m)) } }
+      )
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={0}>
@@ -242,12 +268,12 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
                       <View style={styles.pinnedMembersRow}>
                         <View style={{ flexDirection: "row" }}>
                           {allMembers.slice(0, 4).map((m, i) => (
-                            <View key={m.id} style={[styles.pinnedMemberAvatarWrap, { marginLeft: i > 0 ? -8 : 0 }, m.status === "in" ? styles.pinnedRingIn : m.status === "declined" ? styles.pinnedRingDeclined : styles.pinnedRingInvited]}>
+                            <View key={m.id} style={[styles.pinnedMemberAvatarWrap, { marginLeft: i > 0 ? -8 : 0 }, m.paid_amount != null ? styles.pinnedRingPaid : m.status === "in" ? styles.pinnedRingIn : m.status === "declined" ? styles.pinnedRingDeclined : styles.pinnedRingInvited]}>
                               <Avatar profile={m.profiles} userId={m.user_id} size={16} />
                             </View>
                           ))}
                         </View>
-                        <Text style={styles.pinnedMembersText}>{inMembers.length} in{pendingMembers.length > 0 ? `, ${pendingMembers.length} pending` : ""}</Text>
+                        <Text style={styles.pinnedMembersText}>{inMembers.length} in{pendingMembers.length > 0 ? `, ${pendingMembers.length} pending` : ""}{allMembers.filter((m) => m.paid_amount != null).length > 0 ? `, ${allMembers.filter((m) => m.paid_amount != null).length} paid` : ""}</Text>
                       </View>
                     ) : null}
                     {pct != null ? (
@@ -300,6 +326,46 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
                         </Pressable>
                       </View>
                     )
+                  ) : payingId === ph.id ? (
+                    <View style={{ gap: 4, alignItems: "flex-end" }}>
+                      <TextInput
+                        style={styles.pledgeInput}
+                        value={payAmount}
+                        onChangeText={setPayAmount}
+                        keyboardType="decimal-pad"
+                        autoFocus
+                      />
+                      <View style={{ flexDirection: "row", gap: 4 }}>
+                        <Pressable
+                          style={styles.pinnedPayButton}
+                          onPress={() => {
+                            markAsPaid(ph, parseFloat(payAmount) || 0);
+                            setPayingId(null);
+                          }}
+                        >
+                          <Text style={styles.pinnedAcceptText}>Confirm</Text>
+                        </Pressable>
+                        <Pressable style={styles.pinnedDeclineButton} onPress={() => setPayingId(null)}>
+                          <Text style={styles.pinnedDeclineText}>✕</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ) : myMember?.status === "in" && myMember.paid_amount == null ? (
+                    <View style={{ gap: 4 }}>
+                      <Pressable
+                        style={styles.pinnedPayButton}
+                        onPress={() => {
+                          setPayAmount(myMember.pledged_amount != null ? Number(myMember.pledged_amount).toFixed(2) : "");
+                          setPayingId(ph.id);
+                        }}
+                      >
+                        <Text style={styles.pinnedAcceptText}>Mark as paid</Text>
+                      </Pressable>
+                    </View>
+                  ) : myMember?.status === "in" && myMember.paid_amount != null ? (
+                    <View style={styles.pinnedPaidBadge}>
+                      <Text style={styles.pinnedPaidBadgeText}>✓ Paid</Text>
+                    </View>
                   ) : (
                     <View style={{ gap: 4 }}>
                       <Pressable
@@ -389,6 +455,7 @@ const styles = StyleSheet.create({
   pinnedMembersRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
   pinnedMemberAvatarWrap: { borderRadius: 10, borderWidth: 2, borderColor: "#fff" },
   pinnedRingIn: { borderColor: "#8fc98f" },
+  pinnedRingPaid: { borderColor: colors.successText },
   pinnedRingDeclined: { borderColor: "#e2e8f0", opacity: 0.5 },
   pinnedRingInvited: { borderColor: "#ffcaa8" },
   pinnedMembersText: { fontSize: 10, color: colors.textMuted },
@@ -396,6 +463,9 @@ const styles = StyleSheet.create({
   pinnedProgressFill: { height: "100%", borderRadius: 3, backgroundColor: colors.coral },
   pinnedProgressText: { fontSize: 10, color: colors.textMuted, marginTop: 3 },
   pinnedAcceptButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: colors.coral },
+  pinnedPayButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: colors.successText },
+  pinnedPaidBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: colors.successBg },
+  pinnedPaidBadgeText: { fontSize: 10, fontWeight: "700", color: colors.successText },
   pledgeInput: { width: 64, height: 28, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff", paddingHorizontal: 10, fontSize: 12, color: colors.textPrimary },
   pinnedAcceptText: { fontSize: 10, fontWeight: "700", color: "#fff" },
   pinnedDeclineButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border },
