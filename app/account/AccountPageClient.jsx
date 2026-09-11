@@ -91,6 +91,10 @@ export default function AccountPageClient() {
   const [photoPreview, setPhotoPreview] = useState("");
   const [avatarColor, setAvatarColor] = useState("");
   const [savingColor, setSavingColor] = useState(false);
+  const [usernameSuffix, setUsernameSuffix] = useState("");
+  const [usernamePrefix, setUsernamePrefix] = useState("");
+  const [savingUsername, setSavingUsername] = useState(false);
+  const [usernameError, setUsernameError] = useState("");
 
   const [form, setForm] = useState({
     firstName: "",
@@ -128,7 +132,7 @@ export default function AccountPageClient() {
 
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .select("full_name, avatar_url, avatar_color, birthday, phone, bio, marketing_opt_in")
+          .select("full_name, avatar_url, avatar_color, birthday, phone, bio, marketing_opt_in, username")
           .eq("id", user.id)
           .maybeSingle();
 
@@ -151,6 +155,16 @@ export default function AccountPageClient() {
         setAvatarUrl(savedAvatar);
         setPhotoPreview(savedAvatar);
         setAvatarColor(profile?.avatar_color || "");
+        // The suffix (last 6 chars after the final hyphen - always
+        // generated exactly this shape, see generate_profile_slug())
+        // stays fixed and isn't user-editable, so the url can't
+        // become guessable just from someone's name. Only the
+        // readable prefix in front of it is.
+        if (profile?.username) {
+          const lastDash = profile.username.lastIndexOf("-");
+          setUsernamePrefix(lastDash > -1 ? profile.username.slice(0, lastDash) : profile.username);
+          setUsernameSuffix(lastDash > -1 ? profile.username.slice(lastDash + 1) : "");
+        }
         setForm({
           firstName: nameParts.firstName,
           lastName: nameParts.lastName,
@@ -359,6 +373,46 @@ export default function AccountPageClient() {
       setMessage("We couldn't save that color right now.");
     }
     setSavingColor(false);
+  }
+
+  async function handleSaveUsername() {
+    if (!userId || savingUsername) return;
+    const sanitized = usernamePrefix
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 20);
+    if (!sanitized) {
+      setUsernameError("Enter at least one letter or number.");
+      return;
+    }
+    setSavingUsername(true);
+    setUsernameError("");
+    const candidate = `${sanitized}-${usernameSuffix}`;
+    // The random suffix (unchanged, never regenerated here) already
+    // makes collisions on the full candidate extremely unlikely, but
+    // this still checks properly rather than relying on that alone -
+    // the db's own unique index is the real backstop either way.
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", candidate)
+      .neq("id", userId)
+      .maybeSingle();
+    if (existing) {
+      setUsernameError("That link is already taken - try adding a number or word.");
+      setSavingUsername(false);
+      return;
+    }
+    const { error } = await supabase.from("profiles").update({ username: candidate }).eq("id", userId);
+    if (error) {
+      console.error("Username update error:", error.message);
+      setUsernameError("We couldn't save that right now.");
+    } else {
+      setUsernamePrefix(sanitized);
+    }
+    setSavingUsername(false);
   }
 
   async function handleSubmit(event) {
@@ -640,6 +694,35 @@ export default function AccountPageClient() {
                     className="mt-2 h-[54px] w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-900" htmlFor="usernamePrefix">
+                  Your profile link
+                </label>
+                <p className="mt-1 text-xs text-slate-500">
+                  The random part at the end stays fixed so your link can't be guessed just from your name.
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="hidden shrink-0 text-sm text-slate-400 sm:block">hintdrop.app/profile/</span>
+                  <input
+                    id="usernamePrefix"
+                    type="text"
+                    value={usernamePrefix}
+                    onChange={(e) => { setUsernamePrefix(e.target.value); setUsernameError(""); }}
+                    className="h-[54px] w-full rounded-[18px] border border-slate-300 bg-white px-4 text-sm text-slate-900 outline-none focus:border-[#f36f64]/50 focus:ring-4 focus:ring-[#f36f64]/10"
+                  />
+                  <span className="shrink-0 text-sm text-slate-400">-{usernameSuffix}</span>
+                  <button
+                    type="button"
+                    onClick={handleSaveUsername}
+                    disabled={savingUsername}
+                    className="h-[54px] shrink-0 rounded-[18px] border border-[#ead8ce] bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-[#fff5f0] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {savingUsername ? "Saving..." : "Save"}
+                  </button>
+                </div>
+                {usernameError && <p className="mt-1.5 text-xs text-[#b14f43]">{usernameError}</p>}
               </div>
 
               <div>
