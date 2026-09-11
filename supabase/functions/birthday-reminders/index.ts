@@ -32,10 +32,10 @@ function birthdayEmailHtml(ownerName: string, recipientName: string, daysUntil: 
 <div style="background:#f5ede8;padding:40px 20px;">
   <div style="max-width:520px;margin:0 auto;">
     <div style="text-align:center;margin-bottom:28px;">
-      <div style="display:inline-flex;align-items:center;gap:10px;">
-        ${LOGO}
-        <span style="font-size:22px;font-weight:800;color:#2d2d2d;letter-spacing:-0.5px;">Hint<span style="color:#ff8060;">Drop</span></span>
-      </div>
+      <table cellpadding="0" cellspacing="0" style="display:inline-table;"><tr>
+        <td style="vertical-align:middle;padding-right:10px;">${LOGO}</td>
+        <td style="vertical-align:middle;"><span style="font-size:22px;font-weight:800;color:#2d2d2d;letter-spacing:-0.5px;">Hint<span style="color:#ff8060;">Drop</span></span></td>
+      </tr></table>
     </div>
     <div style="background:#fffaf7;border-radius:28px;border:1px solid #efdcd2;box-shadow:0 20px 60px rgba(88,46,31,0.12);overflow:hidden;">
       <div style="background:linear-gradient(135deg,#ff966f,#ff7e54);padding:36px 40px 32px;">
