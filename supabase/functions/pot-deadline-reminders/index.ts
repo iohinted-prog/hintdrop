@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
 
   const { data: pots } = await supabase
     .from('group_hints')
-    .select('id, organiser_id, target_amount, deadline_date, title, hints(title, currency), group_hint_members(id, user_id, status, pledged_amount)')
+    .select('id, organiser_id, target_amount, deadline_date, title, hints(title, currency), group_hint_members(id, user_id, status, paid_amount)')
     .not('deadline_date', 'is', null)
 
   for (const pot of pots || []) {
@@ -95,8 +95,16 @@ Deno.serve(async (req) => {
 
     if (daysUntil === 0) {
       const inMembers = members.filter((m: any) => m.status === 'in')
-      const share = target ? target / (1 + members.filter((m: any) => m.status !== 'declined' && m.status !== 'requested').length) : 0
-      const raised = inMembers.reduce((sum: number, m: any) => sum + (m.pledged_amount != null ? Number(m.pledged_amount) : share), 0)
+      const paidMembers = inMembers.filter((m: any) => m.paid_amount != null)
+      // The organiser is a real member row now (status 'in' from the
+      // moment they create the pot), so members already includes them -
+      // no more manually adding 1 for them on top of it. Raised is
+      // strictly real paid_amount, not a fallback to a theoretical
+      // share - pledged_amount is no longer set by anything since
+      // accepting stopped asking for an amount.
+      const activeCount = members.filter((m: any) => m.status !== 'declined' && m.status !== 'requested').length
+      const share = target && activeCount ? target / activeCount : 0
+      const raised = paidMembers.reduce((sum: number, m: any) => sum + Number(m.paid_amount), 0)
       const success = target ? raised >= target : true
       const recipients = new Set<string>([pot.organiser_id, ...inMembers.map((m: any) => m.user_id)])
 
