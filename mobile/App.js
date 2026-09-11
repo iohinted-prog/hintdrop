@@ -2,7 +2,7 @@ import { StatusBar } from "expo-status-bar";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, ActivityIndicator, Pressable, StyleSheet, Modal, Image, Alert } from "react-native";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import Text from "./components/Text";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -21,6 +21,7 @@ import CircleScreen from "./screens/CircleScreen";
 import AccountScreen from "./screens/AccountScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import ProfileScreen from "./screens/ProfileScreen";
+import MessagesScreen from "./screens/MessagesScreen";
 import CalendarScreen from "./screens/CalendarScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
 import ShopScreen from "./screens/ShopScreen";
@@ -88,13 +89,21 @@ function NotificationBell({ userId, count, onPress }) {
 // notes on GroupChatWindow deferral), so this is not yet wired to a
 // real inbox - tapping it says so plainly rather than silently doing
 // nothing, which would read as broken rather than "not built yet".
-function MessagesButton() {
+// Matches web's header Messages button (app/components/AppShell.jsx)
+// - same grey speech-bubble vector, same position beside the bell.
+// Unlike web (a dropdown, capped at 8 conversations, opening floating
+// chat windows), this navigates to a real full-screen conversation
+// list - see MessagesScreen.js for why that's the better mobile
+// pattern, not a corner cut.
+function MessagesButton({ unreadCount, onPress }) {
   return (
-    <Pressable
-      onPress={() => Alert.alert("Messages", "Messaging isn't available on mobile yet - coming soon.")}
-      style={styles.bellButton}
-    >
+    <Pressable onPress={onPress} style={styles.bellButton}>
       <Feather name="message-square" size={17} color="#475569" />
+      {unreadCount > 0 ? (
+        <View style={styles.bellBadge}>
+          <Text style={styles.bellBadgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -108,6 +117,8 @@ function SignedInApp() {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [profileViewUserId, setProfileViewUserId] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [messagesVisible, setMessagesVisible] = useState(false);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -117,6 +128,47 @@ function SignedInApp() {
   useEffect(() => {
     if (user?.id) registerForPushNotifications(user.id);
   }, [user?.id]);
+
+  // Matches web's badge logic exactly (AppShell.jsx's loadGroupMessages
+  // + its "new-messages-global" realtime channel) - same real per-
+  // conversation unread counting (not just "has any conversation with
+  // unread"), same combination of an initial load, a realtime INSERT
+  // subscription for instant updates, and periodic polling as a
+  // fallback for anything the realtime channel misses.
+  const loadUnreadMessageCount = useCallback(async () => {
+    if (!user?.id) return;
+    const { data: myMemberships } = await supabase.from("conversation_members").select("conversation_id, last_read_at").eq("user_id", user.id);
+    const convIds = (myMemberships || []).map((m) => m.conversation_id);
+    if (!convIds.length) {
+      setUnreadMessageCount(0);
+      return;
+    }
+    const { data: msgs } = await supabase.from("messages").select("conversation_id, sender_id, created_at").in("conversation_id", convIds);
+    const lastReadMap = {};
+    (myMemberships || []).forEach((m) => { lastReadMap[m.conversation_id] = m.last_read_at; });
+    let total = 0;
+    (msgs || []).forEach((m) => {
+      if (m.sender_id === user.id) return;
+      const lastRead = lastReadMap[m.conversation_id];
+      if (!lastRead || new Date(m.created_at) > new Date(lastRead)) total += 1;
+    });
+    setUnreadMessageCount(total);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    loadUnreadMessageCount();
+    const interval = setInterval(loadUnreadMessageCount, 10000);
+    const channel = supabase
+      .channel("new-messages-global")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, loadUnreadMessageCount)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "conversation_members" }, loadUnreadMessageCount)
+      .subscribe();
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, loadUnreadMessageCount]);
 
   return (
     <>
@@ -137,7 +189,7 @@ function SignedInApp() {
           headerLeft: () => <HeaderLogo />,
           headerRight: () => (
             <View style={styles.headerRightRow}>
-              <MessagesButton />
+              <MessagesButton unreadCount={unreadMessageCount} onPress={() => setMessagesVisible(true)} />
               <NotificationBell userId={user?.id} count={notifCount} onPress={() => setNotifVisible(true)} />
               <AccountButton profile={profile} userId={user?.id} onPress={() => setAccountMenuVisible(true)} />
             </View>
@@ -189,6 +241,11 @@ function SignedInApp() {
       <Modal visible={Boolean(profileViewUserId)} animationType="slide" onRequestClose={() => setProfileViewUserId(null)}>
         <SafeAreaProvider>
           <ProfileScreen userId={profileViewUserId} onBack={() => setProfileViewUserId(null)} insideModal />
+        </SafeAreaProvider>
+      </Modal>
+      <Modal visible={messagesVisible} animationType="slide" onRequestClose={() => setMessagesVisible(false)}>
+        <SafeAreaProvider>
+          <MessagesScreen onBack={() => { setMessagesVisible(false); loadUnreadMessageCount(); }} />
         </SafeAreaProvider>
       </Modal>
     </>

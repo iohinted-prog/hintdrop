@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { resolveAvatarColor, NON_USER_AVATAR_COLOR } from "../lib/avatarColor";
 import { colors, radii, spacing, shadow } from "../lib/theme";
 import ProfileScreen from "./ProfileScreen";
+import ChatThreadScreen from "./ChatThreadScreen";
 
 // Mirrors app/circle/PeopleClient.jsx + ContactCard.jsx +
 // AddContactModal.jsx + UserProfileModal.jsx. Built against the real
@@ -128,7 +129,7 @@ function ContactAvatar({ contact, size = 44 }) {
   );
 }
 
-function ContactCard({ contact, onOpenProfile, onDelete }) {
+function ContactCard({ contact, onOpenProfile, onDelete, onMessage }) {
   const isClickable = Boolean(contact.profileId);
   const rc = roleColor(contact.role);
   const days = daysUntilBirthday(contact.birthday);
@@ -160,6 +161,11 @@ function ContactCard({ contact, onOpenProfile, onDelete }) {
         ) : null}
         {isClickable ? <Text style={styles.seeHintsText}>👁 See hints</Text> : null}
       </View>
+      {isClickable && onMessage ? (
+        <Pressable style={styles.messageButton} onPress={(e) => { e.stopPropagation?.(); onMessage(contact); }} hitSlop={8}>
+          <Text style={styles.messageButtonText}>💬</Text>
+        </Pressable>
+      ) : null}
       {onDelete ? (
         <Pressable style={styles.deleteButton} onPress={() => onDelete(contact)} hitSlop={8}>
           <Text style={styles.deleteButtonText}>✕</Text>
@@ -285,6 +291,37 @@ export default function CircleScreen() {
   const [search, setSearch] = useState("");
   const [addVisible, setAddVisible] = useState(false);
   const [fullProfileUserId, setFullProfileUserId] = useState(null);
+  const [openChatConversation, setOpenChatConversation] = useState(null);
+
+  // Mirrors handleMessageContact in app/circle/PeopleClient.jsx exactly
+  // - find an existing direct conversation with this contact, or
+  // create one, then open it. Same find-or-create logic, adapted to
+  // open the full-screen ChatThreadScreen (see MessagesScreen.js's
+  // header comment for why that's the mobile equivalent of web's
+  // floating chat windows) instead of the shared desktop chat-windows
+  // system.
+  async function handleMessageContact(contact) {
+    if (!user?.id || !contact.profileId) return;
+    const { data: myMemberships } = await supabase.from("conversation_members").select("conversation_id").eq("user_id", user.id);
+    const { data: theirMemberships } = await supabase.from("conversation_members").select("conversation_id").eq("user_id", contact.profileId);
+    const myIds = new Set((myMemberships || []).map((m) => m.conversation_id));
+    const sharedId = (theirMemberships || []).map((m) => m.conversation_id).find((id) => myIds.has(id));
+
+    let convId = sharedId;
+    if (!convId) {
+      const { data: newConv, error } = await supabase.from("conversations").insert({ type: "direct" }).select("id").single();
+      if (error || !newConv) return;
+      convId = newConv.id;
+      await supabase.from("conversation_members").insert([
+        { conversation_id: convId, user_id: user.id },
+        { conversation_id: convId, user_id: contact.profileId },
+      ]);
+    }
+
+    const { data: convData } = await supabase.from("conversations").select("id, type").eq("id", convId).maybeSingle();
+    const { data: members } = await supabase.from("conversation_members").select("conversation_id, user_id, profiles(full_name, avatar_url, avatar_color)").eq("conversation_id", convId);
+    setOpenChatConversation({ ...convData, conversation_members: members || [] });
+  }
   const [currentUserName, setCurrentUserName] = useState("");
 
   const loadContacts = useCallback(async () => {
@@ -364,6 +401,10 @@ export default function CircleScreen() {
     return <ProfileScreen userId={fullProfileUserId} onBack={() => setFullProfileUserId(null)} />;
   }
 
+  if (openChatConversation) {
+    return <ChatThreadScreen conversation={openChatConversation} currentUserId={user?.id} onBack={() => setOpenChatConversation(null)} />;
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
@@ -409,7 +450,7 @@ export default function CircleScreen() {
                 </View>
               ) : null}
               {item.data.map((contact) => (
-                <ContactCard key={contact.id} contact={contact} onOpenProfile={(c) => c.profileId && setFullProfileUserId(c.profileId)} onDelete={handleDelete} />
+                <ContactCard key={contact.id} contact={contact} onOpenProfile={(c) => c.profileId && setFullProfileUserId(c.profileId)} onDelete={handleDelete} onMessage={handleMessageContact} />
               ))}
             </View>
           )}
@@ -492,6 +533,8 @@ const styles = StyleSheet.create({
   daysBadge: { backgroundColor: "#fdece0", borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 2 },
   daysBadgeText: { fontSize: 10, fontWeight: "700", color: "#c9633f" },
   seeHintsText: { fontSize: 11, color: colors.coralDeep, marginTop: 2 },
+  messageButton: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center", marginRight: 6 },
+  messageButtonText: { fontSize: 14 },
   deleteButton: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   deleteButtonText: { fontSize: 12, color: colors.textMuted },
   addOverlay: { flex: 1, backgroundColor: "rgba(42,26,20,0.38)", justifyContent: "flex-end" },
