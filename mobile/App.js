@@ -380,10 +380,21 @@ export default function App() {
   // felt like the website regardless of colors/layout being close.
   // Gated on fontsLoaded so no screen ever flashes the wrong font
   // before swapping.
+  //
+  // Feather's own icon font (...Feather.font, shape { feather:
+  // <asset> } per @expo/vector-icons' own createIconSet) is loaded
+  // here too now, explicitly and up front, rather than relying on
+  // each <Feather> instance's own internal self-load-on-mount (it
+  // does call Font.loadAsync itself and re-render once ready, per
+  // the package's own source - so this isn't fixing a bug in that
+  // mechanism, it's removing any reliance on it entirely, the same
+  // "gate the whole app on fontsLoaded" approach already used for
+  // Inter, for the same reason).
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_600SemiBold,
     Inter_700Bold,
+    ...Feather.font,
   });
 
   if (!fontsLoaded) {

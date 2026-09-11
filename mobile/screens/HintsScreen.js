@@ -1117,7 +1117,7 @@ function BoardListScreen({ onSelectBoard }) {
     <View style={styles.container}>
       <View style={styles.heroHeader}>
         <Text style={styles.heroTitle}>Your Hints</Text>
-        <Text style={styles.heroSubtitle}>Your personal Hints are just for you. Make more for other people — build a list and share it with anyone, for their birthday, Christmas, or anything else.</Text>
+        <Text style={styles.heroSubtitle}>Save gift ideas for yourself, or build lists to share with others.</Text>
       </View>
 
       {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
@@ -1745,7 +1745,7 @@ function BoardHintsScreen({ board, onBack, onViewProfile }) {
             <Text style={styles.collabBadgeText}>Collaborating with {board.ownerName || "someone"}</Text>
           )}
 
-          <Text style={styles.heroTitle}>Drop a Hint here...</Text>
+          <Text style={styles.addHintPromptTitle}>Drop a Hint</Text>
 
           <View style={styles.heroActionsRow}>
             <Pressable style={styles.shareButton} onPress={handleShare}>
@@ -1948,19 +1948,19 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   heroTitle: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: "700",
     letterSpacing: -1.9,
     color: "#f19a78",
     textAlign: "center",
   },
   heroSubtitle: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 11,
+    lineHeight: 15,
     color: "#64748b",
     textAlign: "center",
     marginTop: 8,
-    maxWidth: 340,
+    maxWidth: 300,
   },
   newListButton: {
     marginHorizontal: 20,
@@ -2142,7 +2142,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 4,
   },
-  heroTitle: {
+  addHintPromptTitle: {
     fontSize: 28,
     fontWeight: "700",
     color: "#f19a78",

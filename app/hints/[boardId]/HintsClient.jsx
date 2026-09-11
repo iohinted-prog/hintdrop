@@ -2891,7 +2891,7 @@ export default function HintsClient({ boardId }) {
               )
             )}
             <h1 className="text-[32px] font-bold tracking-[-0.06em] text-[#f19a78] sm:text-[44px] md:text-[56px]">
-              Drop a Hint here...
+              Drop a Hint
             </h1>
             {boardId && boardLoading && (
               <div className="flex items-center gap-2 animate-pulse">
