@@ -6,6 +6,7 @@ import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { resolveAvatarColor } from "../lib/avatarColor";
 import { colors, radii, shadow } from "../lib/theme";
+import GroupHintDetailScreen from "./GroupHintDetailScreen";
 
 // Mirrors app/components/GroupChatWindow.jsx, adapted from a floating
 // desktop window into a full-screen thread (see MessagesScreen.js for
@@ -42,6 +43,7 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
   const [sending, setSending] = useState(false);
   const [myProfile, setMyProfile] = useState(null);
   const [payingId, setPayingId] = useState(null);
+  const [openPotId, setOpenPotId] = useState(null);
   const [payAmount, setPayAmount] = useState("");
   const listRef = useRef(null);
 
@@ -197,6 +199,10 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
     );
   }
 
+  if (openPotId) {
+    return <GroupHintDetailScreen groupHintId={openPotId} currentUserId={currentUserId} onClose={() => setOpenPotId(null)} />;
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={0}>
@@ -277,7 +283,10 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
                       <Image source={{ uri: hint.image_url }} style={styles.pinnedImage} />
                     </Pressable>
                   ) : null}
-                  <View style={{ flex: 1, minWidth: 0 }}>
+                  <Pressable
+                    style={{ flex: 1, minWidth: 0 }}
+                    onPress={() => { if (target != null) setOpenPotId(ph.group_hints.id); }}
+                  >
                     <Text style={styles.pinnedTitle} numberOfLines={1}>{hint?.title || "Group gift"}</Text>
                     {price ? <Text style={styles.pinnedPrice}>{price}</Text> : null}
                     {organiser ? <Text style={styles.pinnedOrganiser}>by {organiser.full_name?.split(" ")[0]}</Text> : null}
@@ -301,7 +310,7 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
                         <Text style={styles.pinnedProgressText}>{fmt(raised)} of {fmt(target)} pledged</Text>
                       </View>
                     ) : null}
-                  </View>
+                  </Pressable>
                   {isPending ? (
                     <View style={{ gap: 4 }}>
                       <Pressable
