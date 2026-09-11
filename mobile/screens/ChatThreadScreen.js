@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, FlatList, Pressable, Image, TextInput, KeyboardAvoidingView, Platform, Alert, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Circle } from "react-native-svg";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { resolveAvatarColor } from "../lib/avatarColor";
@@ -40,8 +41,6 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [myProfile, setMyProfile] = useState(null);
-  const [pledgingId, setPledgingId] = useState(null);
-  const [pledgeAmount, setPledgeAmount] = useState("");
   const [payingId, setPayingId] = useState(null);
   const [payAmount, setPayAmount] = useState("");
   const listRef = useRef(null);
@@ -135,24 +134,16 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
     setPinnedHints((prev) => prev.filter((h) => h.id !== pinnedHintId));
   }
 
-  async function respondToGroupHint(ph, action, amount) {
+  async function respondToGroupHint(ph, action) {
     const gh = ph.group_hints;
     const myMember = (gh?.group_hint_members || []).find((m) => m.user_id === currentUserId);
     if (!myMember) return;
 
     const status = action === "accept" ? "in" : "declined";
-    const updatePayload = action === "accept" ? { status, pledged_amount: amount ?? null } : { status };
-    await supabase.from("group_hint_members").update(updatePayload).eq("id", myMember.id);
+    await supabase.from("group_hint_members").update({ status }).eq("id", myMember.id);
 
     const myName = myProfile?.full_name || "Someone";
-    const hintTitle = gh?.hints?.title || "a hint";
-    const currency = gh?.hints?.currency || "GBP";
-    const announceBody =
-      action === "accept"
-        ? amount != null
-          ? `${myName} pledged ${new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(amount)} 🎉`
-          : `${myName} is in! 🎉`
-        : `${myName} declined`;
+    const announceBody = action === "accept" ? `${myName} is in! 🎉` : `${myName} declined`;
 
     if (action === "decline") {
       // Post the decline notice first, while still a member (RLS
@@ -169,7 +160,7 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
       prev.map((p) =>
         p.id !== ph.id
           ? p
-          : { ...p, group_hints: { ...p.group_hints, group_hint_members: (p.group_hints.group_hint_members || []).map((m) => (m.id === myMember.id ? { ...m, status: "in", pledged_amount: amount ?? m.pledged_amount } : m)) } }
+          : { ...p, group_hints: { ...p.group_hints, group_hint_members: (p.group_hints.group_hint_members || []).map((m) => (m.id === myMember.id ? { ...m, status: "in" } : m)) } }
       )
     );
 
@@ -177,13 +168,14 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
     fetch("https://hintdrop.app/api/group-hint-notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "response", memberId: myMember.id, responderId: currentUserId, response: status, amount }),
+      body: JSON.stringify({ type: "response", memberId: myMember.id, responderId: currentUserId, response: status }),
     }).catch(() => {});
   }
 
-  // Second, separate step from pledging - pledging is a stated intent,
-  // marking as paid confirms the money actually changed hands (outside
-  // the app). Only the member themselves can mark their own as paid.
+  // Second, separate step from accepting - accepting ("I'm in") is just
+  // saying you're in; marking a contribution confirms the money has
+  // actually changed hands (outside the app). Only the member themselves
+  // can mark their own contribution.
   async function markAsPaid(ph, amount) {
     const gh = ph.group_hints;
     const myMember = (gh?.group_hint_members || []).find((m) => m.user_id === currentUserId);
@@ -193,7 +185,7 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
 
     const myName = myProfile?.full_name || "Someone";
     const currency = gh?.hints?.currency || "GBP";
-    const announceBody = `${myName} marked ${new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(amount)} as paid ✅`;
+    const announceBody = `${myName} contributed ${new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(amount)} 🎉`;
     await supabase.from("messages").insert({ conversation_id: conversation.id, sender_id: currentUserId, body: announceBody, type: "system" });
 
     setPinnedHints((prev) =>
@@ -240,17 +232,40 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
               const target = ph.group_hints?.target_amount;
               const totalPeople = 1 + allMembers.length; // organiser + everyone invited
               const share = target ? target / totalPeople : null;
-              // Real pledged amounts, not an assumed equal split - falls
-              // back to the theoretical share only for members who
-              // accepted before pledge amounts existed.
-              const raised = inMembers.length
-                ? inMembers.reduce((sum, m) => sum + (m.pledged_amount != null ? Number(m.pledged_amount) : (share || 0)), 0)
-                : null;
-              const pct = target && raised != null ? Math.min(100, Math.round((raised / target) * 100)) : null;
+              const paidMembers = inMembers.filter((m) => m.paid_amount != null);
+              // Only real, actually-marked contributions count toward the
+              // pot - no fallback to the theoretical share for members
+              // who are merely "in" but haven't contributed yet.
+              const raised = paidMembers.reduce((sum, m) => sum + Number(m.paid_amount), 0);
+              const pct = target ? Math.min(100, Math.round((raised / target) * 100)) : 0;
               const fmt = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(n);
               return (
                 <View key={ph.id} style={styles.pinnedCard}>
-                  {hint?.image_url ? (
+                  {target != null ? (
+                    // Mini version of the donut used on the Circle tile - a
+                    // single overall-progress ring (not per-member segments,
+                    // no room at this size) wrapping the hint thumbnail
+                    // instead of sitting beside it.
+                    <Pressable
+                      onPress={() => {
+                        const dest = ph.group_hints?.recipient_user_id || ph.group_hints?.organiser_id;
+                        if (dest && onViewProfile) onViewProfile(dest);
+                      }}
+                      style={{ width: 44, height: 44 }}
+                    >
+                      <Svg width={44} height={44} viewBox="0 0 44 44" style={{ position: "absolute", transform: [{ rotate: "-90deg" }] }}>
+                        <Circle cx={22} cy={22} r={18} fill="none" stroke="#f1e3db" strokeWidth={4} />
+                        <Circle
+                          cx={22} cy={22} r={18} fill="none" stroke="#ff875d" strokeWidth={4}
+                          strokeDasharray={`${(pct / 100) * (2 * Math.PI * 18)} ${2 * Math.PI * 18}`}
+                          strokeLinecap="round"
+                        />
+                      </Svg>
+                      <View style={styles.pinnedDonutImageWrap}>
+                        {hint?.image_url ? <Image source={{ uri: hint.image_url }} style={styles.pinnedDonutImage} /> : null}
+                      </View>
+                    </Pressable>
+                  ) : hint?.image_url ? (
                     <Pressable
                       onPress={() => {
                         const dest = ph.group_hints?.recipient_user_id || ph.group_hints?.organiser_id;
@@ -273,7 +288,7 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
                             </View>
                           ))}
                         </View>
-                        <Text style={styles.pinnedMembersText}>{inMembers.length} in{pendingMembers.length > 0 ? `, ${pendingMembers.length} pending` : ""}{allMembers.filter((m) => m.paid_amount != null).length > 0 ? `, ${allMembers.filter((m) => m.paid_amount != null).length} paid` : ""}</Text>
+                        <Text style={styles.pinnedMembersText}>{inMembers.length} in{pendingMembers.length > 0 ? `, ${pendingMembers.length} pending` : ""}{allMembers.filter((m) => m.paid_amount != null).length > 0 ? `, ${allMembers.filter((m) => m.paid_amount != null).length} contributed` : ""}</Text>
                       </View>
                     ) : null}
                     {pct != null ? (
@@ -286,46 +301,17 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
                     ) : null}
                   </View>
                   {isPending ? (
-                    pledgingId === ph.id ? (
-                      <View style={{ gap: 4, alignItems: "flex-end" }}>
-                        <TextInput
-                          style={styles.pledgeInput}
-                          value={pledgeAmount}
-                          onChangeText={setPledgeAmount}
-                          keyboardType="decimal-pad"
-                          autoFocus
-                        />
-                        <View style={{ flexDirection: "row", gap: 4 }}>
-                          <Pressable
-                            style={styles.pinnedAcceptButton}
-                            onPress={() => {
-                              respondToGroupHint(ph, "accept", parseFloat(pledgeAmount) || 0);
-                              setPledgingId(null);
-                            }}
-                          >
-                            <Text style={styles.pinnedAcceptText}>Confirm</Text>
-                          </Pressable>
-                          <Pressable style={styles.pinnedDeclineButton} onPress={() => setPledgingId(null)}>
-                            <Text style={styles.pinnedDeclineText}>✕</Text>
-                          </Pressable>
-                        </View>
-                      </View>
-                    ) : (
-                      <View style={{ gap: 4 }}>
-                        <Pressable
-                          style={styles.pinnedAcceptButton}
-                          onPress={() => {
-                            setPledgeAmount(share ? share.toFixed(2) : "");
-                            setPledgingId(ph.id);
-                          }}
-                        >
-                          <Text style={styles.pinnedAcceptText}>Pledge</Text>
-                        </Pressable>
-                        <Pressable style={styles.pinnedDeclineButton} onPress={() => respondToGroupHint(ph, "decline")}>
-                          <Text style={styles.pinnedDeclineText}>Decline</Text>
-                        </Pressable>
-                      </View>
-                    )
+                    <View style={{ gap: 4 }}>
+                      <Pressable
+                        style={styles.pinnedAcceptButton}
+                        onPress={() => respondToGroupHint(ph, "accept")}
+                      >
+                        <Text style={styles.pinnedAcceptText}>I'm in</Text>
+                      </Pressable>
+                      <Pressable style={styles.pinnedDeclineButton} onPress={() => respondToGroupHint(ph, "decline")}>
+                        <Text style={styles.pinnedDeclineText}>Decline</Text>
+                      </Pressable>
+                    </View>
                   ) : payingId === ph.id ? (
                     <View style={{ gap: 4, alignItems: "flex-end" }}>
                       <TextInput
@@ -350,21 +336,25 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
                         </Pressable>
                       </View>
                     </View>
-                  ) : myMember?.status === "in" && myMember.paid_amount == null ? (
+                  ) : myMember?.status === "in" && target != null && myMember.paid_amount == null ? (
                     <View style={{ gap: 4 }}>
                       <Pressable
                         style={styles.pinnedPayButton}
                         onPress={() => {
-                          setPayAmount(myMember.pledged_amount != null ? Number(myMember.pledged_amount).toFixed(2) : "");
+                          setPayAmount("");
                           setPayingId(ph.id);
                         }}
                       >
-                        <Text style={styles.pinnedAcceptText}>Mark as paid</Text>
+                        <Text style={styles.pinnedAcceptText}>I've contributed</Text>
                       </Pressable>
                     </View>
-                  ) : myMember?.status === "in" && myMember.paid_amount != null ? (
+                  ) : myMember?.status === "in" && target != null && myMember.paid_amount != null ? (
                     <View style={styles.pinnedPaidBadge}>
-                      <Text style={styles.pinnedPaidBadgeText}>✓ Paid</Text>
+                      <Text style={styles.pinnedPaidBadgeText}>✓ Contributed</Text>
+                    </View>
+                  ) : myMember?.status === "in" ? (
+                    <View style={styles.pinnedPaidBadge}>
+                      <Text style={styles.pinnedPaidBadgeText}>✓ You're in</Text>
                     </View>
                   ) : (
                     <View style={{ gap: 4 }}>
@@ -449,6 +439,8 @@ const styles = StyleSheet.create({
   pinnedLabel: { fontSize: 10, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.6 },
   pinnedCard: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#fff", borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, padding: 8 },
   pinnedImage: { width: 40, height: 40, borderRadius: 10 },
+  pinnedDonutImageWrap: { position: "absolute", top: 5, left: 5, width: 34, height: 34, borderRadius: 17, overflow: "hidden", backgroundColor: colors.border },
+  pinnedDonutImage: { width: "100%", height: "100%" },
   pinnedTitle: { fontSize: 12, fontWeight: "700", color: colors.textPrimary },
   pinnedPrice: { fontSize: 11, fontWeight: "700", color: colors.coralDeep, marginTop: 1 },
   pinnedOrganiser: { fontSize: 10, color: colors.textMuted, marginTop: 1 },
