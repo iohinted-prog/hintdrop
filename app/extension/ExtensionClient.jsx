@@ -46,17 +46,27 @@ export default function ExtensionClient() {
               details, even from the trickiest sites.
             </p>
             <p className="mb-6 text-slate-600">
-              It&apos;s live now for Chrome. Install it below, then look for the HintDrop icon
+              It&apos;s live now for Chrome and Firefox. Install it below, then look for the HintDrop icon
               in your browser toolbar whenever you want to save something.
             </p>
-            <a
-              href="https://chromewebstore.google.com/detail/HintDrop/ckanonmndemkfbjhblnlnogagfincjbo"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-6 text-sm font-semibold text-white shadow-lg transition hover:translate-y-[-1px]"
-            >
-              Add to Chrome
-            </a>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="https://chromewebstore.google.com/detail/HintDrop/ckanonmndemkfbjhblnlnogagfincjbo"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-12 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-6 text-sm font-semibold text-white shadow-lg transition hover:translate-y-[-1px]"
+              >
+                Add to Chrome
+              </a>
+              <a
+                href="https://addons.mozilla.org/addon/hintdrop/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-12 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-6 text-sm font-semibold text-slate-700 shadow-sm transition hover:translate-y-[-1px]"
+              >
+                Add to Firefox
+              </a>
+            </div>
           </div>
         </div>
       </section>
