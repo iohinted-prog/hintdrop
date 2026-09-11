@@ -67,7 +67,7 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
     const loadPinnedHints = () => {
       supabase
         .from("conversation_hints")
-        .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url, avatar_color)))")
+        .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url, avatar_color)))")
         .eq("conversation_id", conversation.id)
         .eq("dismissed", false)
         .then(({ data }) => setPinnedHints(data || []));
@@ -195,6 +195,12 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
               const allMembers = ph.group_hints?.group_hint_members || [];
               const inMembers = allMembers.filter((m) => m.status === "in");
               const pendingMembers = allMembers.filter((m) => m.status === "invited");
+              const target = ph.group_hints?.target_amount;
+              const totalPeople = 1 + allMembers.length; // organiser + everyone invited
+              const share = target ? target / totalPeople : null;
+              const raised = share ? inMembers.length * share : null;
+              const pct = target && raised != null ? Math.min(100, Math.round((raised / target) * 100)) : null;
+              const fmt = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(n);
               return (
                 <View key={ph.id} style={styles.pinnedCard}>
                   {hint?.image_url ? (
@@ -223,11 +229,19 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
                         <Text style={styles.pinnedMembersText}>{inMembers.length} in{pendingMembers.length > 0 ? `, ${pendingMembers.length} pending` : ""}</Text>
                       </View>
                     ) : null}
+                    {pct != null ? (
+                      <View style={{ marginTop: 6 }}>
+                        <View style={styles.pinnedProgressTrack}>
+                          <View style={[styles.pinnedProgressFill, { width: `${pct}%` }]} />
+                        </View>
+                        <Text style={styles.pinnedProgressText}>{fmt(raised)} of {fmt(target)} pledged</Text>
+                      </View>
+                    ) : null}
                   </View>
                   {isPending ? (
                     <View style={{ gap: 4 }}>
                       <Pressable style={styles.pinnedAcceptButton} onPress={() => respondToGroupHint(ph, "accept")}>
-                        <Text style={styles.pinnedAcceptText}>I'm in</Text>
+                        <Text style={styles.pinnedAcceptText}>{share ? `I'm in (${fmt(share)})` : "I'm in"}</Text>
                       </Pressable>
                       <Pressable style={styles.pinnedDeclineButton} onPress={() => respondToGroupHint(ph, "decline")}>
                         <Text style={styles.pinnedDeclineText}>Decline</Text>
@@ -325,6 +339,9 @@ const styles = StyleSheet.create({
   pinnedRingDeclined: { borderColor: "#e2e8f0", opacity: 0.5 },
   pinnedRingInvited: { borderColor: "#ffcaa8" },
   pinnedMembersText: { fontSize: 10, color: colors.textMuted },
+  pinnedProgressTrack: { height: 5, borderRadius: 3, backgroundColor: "#f1e3db", overflow: "hidden" },
+  pinnedProgressFill: { height: "100%", borderRadius: 3, backgroundColor: colors.coral },
+  pinnedProgressText: { fontSize: 10, color: colors.textMuted, marginTop: 3 },
   pinnedAcceptButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: colors.coral },
   pinnedAcceptText: { fontSize: 10, fontWeight: "700", color: "#fff" },
   pinnedDeclineButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border },

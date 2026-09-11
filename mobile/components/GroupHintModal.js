@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal, View, StyleSheet, Pressable, Image, ScrollView, ActivityIndicator } from "react-native";
+import { Modal, View, StyleSheet, Pressable, Image, ScrollView, ActivityIndicator, TextInput } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Text from "./Text";
 import { supabase } from "../lib/supabase";
@@ -66,6 +66,12 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
+  // Only asked when the hint has no price - matches web's
+  // GroupHintModal.jsx exactly, same reasoning: the pot's target
+  // otherwise comes straight from the hint itself, no extra step.
+  const [manualTargetAmount, setManualTargetAmount] = useState("");
+
+  const hintHasPrice = hint.numeric_price > 0;
 
   useEffect(() => {
     if (!hint?.id) return;
@@ -94,6 +100,10 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
 
   async function handleSend() {
     if (!selected.length || sending) return;
+    if (!groupHint && !hintHasPrice && !(Number(manualTargetAmount) > 0)) {
+      setSendError("Enter a target amount for the pot first - this hint has no price to split automatically.");
+      return;
+    }
     setSending(true);
     setSendError("");
     try {
@@ -101,7 +111,12 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
       if (!gh) {
         const { data: newGh, error: ghErr } = await supabase
           .from("group_hints")
-          .insert({ hint_id: hint.id, organiser_id: currentUserId, recipient_user_id: recipientUserId })
+          .insert({
+            hint_id: hint.id,
+            organiser_id: currentUserId,
+            recipient_user_id: recipientUserId,
+            target_amount: hintHasPrice ? hint.numeric_price : Number(manualTargetAmount),
+          })
           .select()
           .maybeSingle();
         if (ghErr || !newGh) {
@@ -176,6 +191,37 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
               <ActivityIndicator color={colors.coral} style={{ marginTop: 16 }} />
             ) : (
               <>
+                {!groupHint && !hintHasPrice ? (
+                  <View style={{ marginBottom: 16 }}>
+                    <Text style={styles.sectionLabel}>POT TARGET</Text>
+                    <Text style={styles.targetHelpText}>This hint has no price, so set what you're aiming to raise together.</Text>
+                    <View style={styles.targetInputWrap}>
+                      <Text style={styles.targetInputPrefix}>£</Text>
+                      <TextInput
+                        style={styles.targetInput}
+                        value={manualTargetAmount}
+                        onChangeText={setManualTargetAmount}
+                        placeholder="0"
+                        placeholderTextColor={colors.textMuted}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                  </View>
+                ) : null}
+                {(hintHasPrice || groupHint) && selected.length > 0 ? (() => {
+                  const target = groupHint?.target_amount || hint.numeric_price;
+                  const totalPeople = 1 + members.length + selected.length;
+                  const share = target / totalPeople;
+                  return (
+                    <Text style={styles.shareText}>
+                      An even split across {totalPeople} people works out to about{" "}
+                      <Text style={{ fontWeight: "700", color: colors.textSecondary }}>
+                        {new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(share)}
+                      </Text>{" "}
+                      each.
+                    </Text>
+                  );
+                })() : null}
                 {members.length > 0 ? (
                   <View style={{ marginBottom: 16 }}>
                     <Text style={styles.sectionLabel}>ALREADY INVITED</Text>
@@ -238,6 +284,11 @@ const styles = StyleSheet.create({
   closeButton: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   closeButtonText: { fontSize: 13, color: colors.textMuted },
   sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.textSecondary, letterSpacing: 0.4, marginBottom: 10 },
+  targetHelpText: { fontSize: 12, color: colors.textMuted, marginBottom: 8 },
+  targetInputWrap: { position: "relative", justifyContent: "center" },
+  targetInputPrefix: { position: "absolute", left: 16, fontSize: 13, color: colors.textMuted, zIndex: 1 },
+  targetInput: { height: 44, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg, paddingLeft: 32, paddingRight: 16, fontSize: 14, color: colors.textPrimary },
+  shareText: { fontSize: 12, color: colors.textMuted, marginBottom: 12 },
   memberRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 6 },
   memberName: { flex: 1, fontSize: 13, fontWeight: "600", color: colors.textPrimary },
   statusBadge: { borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 3 },

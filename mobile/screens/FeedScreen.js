@@ -635,18 +635,8 @@ export default function FeedScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <LinearGradient colors={["#fff8f4", "#fffaf7"]} style={styles.feedHeroCard}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.feedHeroGreeting}>{greetingForHour(new Date().getHours())}{firstName ? `, ${firstName}` : ""}</Text>
-            <Text style={styles.feedHeroSubtitle}>Your people, moments, and nudges.</Text>
-          </View>
-          <Image
-            source={{ uri: "https://hintdrop.app/illustrations/giftbox-icon-v2.png" }}
-            style={styles.feedHeroIllustration}
-            resizeMode="contain"
-          />
-        </LinearGradient>
+      <View style={[styles.container, { paddingHorizontal: 16 }]}>
+        <Text style={styles.screenTitle}>{greetingForHour(new Date().getHours())}{firstName ? `, ${firstName}` : ""}</Text>
         <ActivityIndicator color={colors.coral} style={{ marginTop: 24 }} />
       </View>
     );
@@ -658,24 +648,14 @@ export default function FeedScreen() {
         data={visibleFeedItems}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
-          // Web has no dedicated mobile header of its own here (its
-          // sidebars are desktop-only) - borrows the site's broader
-          // warm, illustrated card language instead (same idea as
-          // the tinted reminder blocks further down this same page,
-          // or the onboarding cards) rather than a plain title, since
-          // there's no single web element to copy verbatim here.
+          // Matches Shop/Calendar/Circle's own title styling and
+          // spacing exactly now (28px/700/-1.1, same 16px horizontal
+          // inset, same top margin) rather than its own distinct
+          // hero-card treatment - the personalized time-of-day
+          // greeting stays (still worth having over a bare "Feed"),
+          // just presented the same way every other page's title is.
           <>
-            <LinearGradient colors={["#fff8f4", "#fffaf7"]} style={styles.feedHeroCard}>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.feedHeroGreeting}>{greetingForHour(new Date().getHours())}{firstName ? `, ${firstName}` : ""}</Text>
-                <Text style={styles.feedHeroSubtitle}>Your people, moments, and nudges.</Text>
-              </View>
-              <Image
-                source={{ uri: "https://hintdrop.app/illustrations/giftbox-icon-v2.png" }}
-                style={styles.feedHeroIllustration}
-                resizeMode="contain"
-              />
-            </LinearGradient>
+            <Text style={styles.screenTitle}>{greetingForHour(new Date().getHours())}{firstName ? `, ${firstName}` : ""}</Text>
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </>
         }
@@ -712,34 +692,7 @@ export default function FeedScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  feedHeroCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginHorizontal: 16,
-    marginTop: 14,
-    marginBottom: 2,
-    borderRadius: radii.xl,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  feedHeroGreeting: {
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: -0.5,
-    color: colors.textPrimary,
-  },
-  feedHeroSubtitle: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  feedHeroIllustration: {
-    width: 32,
-    height: 38,
-    opacity: 0.9,
-  },
+  screenTitle: { fontSize: 28, fontWeight: "700", letterSpacing: -1.1, color: colors.textPrimary, marginTop: 16, marginBottom: 4 },
   error: { color: "#c9633f", paddingHorizontal: 16, marginBottom: 8 },
   listContent: { paddingHorizontal: 16, paddingBottom: 40, gap: 14 },
   card: { borderRadius: radii.xxl, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16, ...shadow, shadowOpacity: 0.05 },

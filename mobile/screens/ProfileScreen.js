@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Pressable, Image, ScrollView, Modal, ActivityIndicator, Alert, Linking, Animated, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
+import Icon from "../components/Icon";
 import { LinearGradient } from "expo-linear-gradient";
 import GroupHintModal from "../components/GroupHintModal";
 import Text from "../components/Text";
@@ -426,7 +426,7 @@ export default function ProfileScreen({ userId, onBack, insideModal = false, ini
                   style={[styles.iconButton, (filter !== "default" || occasionFilter) && styles.iconButtonActive]}
                   onPress={() => setFilterVisible(true)}
                 >
-                  <Feather name="filter" size={14} color={(filter !== "default" || occasionFilter) ? colors.coral : "#475569"} />
+                  <Icon name="filter" size={14} color={(filter !== "default" || occasionFilter) ? colors.coral : "#475569"} />
                 </Pressable>
               ) : null}
             </View>

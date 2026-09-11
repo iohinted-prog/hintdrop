@@ -1,6 +1,6 @@
 import { View, Pressable, StyleSheet, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
+import Icon from "./Icon";
 import Text from "./Text";
 import { colors } from "../lib/theme";
 
@@ -54,7 +54,7 @@ export default function BottomNav({ state, descriptors, navigation }) {
 
         return (
           <Pressable key={route.key} onPress={onPress} style={styles.tab}>
-            <Feather name={config.icon} size={22} color={isFocused ? colors.coral : colors.textMuted} />
+            <Icon name={config.icon} size={22} color={isFocused ? colors.coral : colors.textMuted} />
             <Text style={[styles.label, isFocused ? styles.labelActive : styles.labelInactive]}>{config.label}</Text>
           </Pressable>
         );

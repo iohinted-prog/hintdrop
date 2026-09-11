@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { View, FlatList, StyleSheet, RefreshControl, ActivityIndicator, TextInput, Pressable, Image, Modal, ScrollView, Share, Alert, Animated } from "react-native";
 import Text from "../components/Text";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Circle } from "react-native-svg";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import { resolveAvatarColor, NON_USER_AVATAR_COLOR } from "../lib/avatarColor";
@@ -126,6 +127,78 @@ function ContactAvatar({ contact, size = 44 }) {
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, alignItems: "center", justifyContent: "center", backgroundColor: contact.avatarColorTo }}>
       <Text style={{ color: "#fff", fontSize: size * 0.32, fontWeight: "700" }}>{contact.initials}</Text>
+    </View>
+  );
+}
+
+const POT_MEMBER_COLORS = ["#ff8060", "#4e9e6e", "#5b8dd9", "#c97ad4", "#e8a23a", "#e05c7a", "#4db8b0", "#9b7fd4"];
+
+// Same multi-segment SVG donut as web's PeopleClient.jsx
+// GroupGiftPotCard, itself reused from the old circles-legacy page's
+// ContributionChart design - built with react-native-svg (already
+// pulled in for the icon rework above) rather than inventing a
+// different mobile-only visual. Even-split model, same as web: one
+// color per accepted member at an equal size (target/totalPeople),
+// no per-person custom amounts, no real payment - a coordination
+// number layered on the existing plain "I'm in" status.
+function GroupGiftPotCard({ groupGift, currentUserId }) {
+  const hint = groupGift.hints;
+  const organiser = groupGift.profiles;
+  const members = groupGift.group_hint_members || [];
+  const inMembers = members.filter((m) => m.status === "in");
+  const target = groupGift.target_amount;
+  const totalPeople = 1 + members.length;
+  const share = target ? target / totalPeople : 0;
+  const raised = share * (inMembers.length + 1);
+  const pct = target ? Math.min(100, Math.round((raised / target) * 100)) : 0;
+  const isOrganiser = groupGift.organiser_id === currentUserId;
+  const fmt = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(n);
+
+  const segments = [
+    { name: isOrganiser ? "You" : organiser?.full_name?.split(" ")[0] || "Organiser", amount: share },
+    ...inMembers.map((m) => ({ name: m.user_id === currentUserId ? "You" : m.profiles?.full_name?.split(" ")[0] || "Someone", amount: share })),
+  ];
+  const cx = 44, cy = 44, r = 36, stroke = 13;
+  const circ = 2 * Math.PI * r;
+
+  return (
+    <View style={styles.potCard}>
+      <View style={{ width: 88, height: 88 }}>
+        <Svg width={88} height={88} viewBox="0 0 88 88" style={{ transform: [{ rotate: "-90deg" }] }}>
+          <Circle cx={cx} cy={cy} r={r} fill="none" stroke="#f1e3db" strokeWidth={stroke} />
+          {segments.map((seg, i) => {
+            const segPct = target ? (seg.amount / target) * 100 : 0;
+            const dash = (segPct / 100) * circ;
+            const segOffset = segments.slice(0, i).reduce((a, s) => a + ((target ? (s.amount / target) * 100 : 0) / 100) * circ, 0);
+            return (
+              <Circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={POT_MEMBER_COLORS[i % POT_MEMBER_COLORS.length]}
+                strokeWidth={stroke} strokeDasharray={`${dash} ${circ - dash}`} strokeDashoffset={-segOffset} strokeLinecap="butt" />
+            );
+          })}
+        </Svg>
+        <View style={styles.potPctWrap}>
+          <Text style={styles.potPctText}>{pct}%</Text>
+        </View>
+      </View>
+      <View style={{ flex: 1, minWidth: 0, marginLeft: 14 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          {hint?.image_url ? <Image source={{ uri: hint.image_url }} style={styles.potImage} /> : null}
+          <Text style={styles.potTitle} numberOfLines={1}>{hint?.title || "Group gift"}</Text>
+        </View>
+        <Text style={styles.potSubtext}>
+          {fmt(raised)} of {target ? fmt(target) : "—"} · {fmt(share)} each
+        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 }}>
+          <View style={{ flexDirection: "row" }}>
+            {segments.map((seg, i) => (
+              <View key={i} style={[styles.potAvatarDot, { backgroundColor: POT_MEMBER_COLORS[i % POT_MEMBER_COLORS.length], marginLeft: i > 0 ? -6 : 0 }]}>
+                <Text style={styles.potAvatarDotText}>{seg.name[0]?.toUpperCase()}</Text>
+              </View>
+            ))}
+          </View>
+          <Text style={styles.potPledgedText}>{inMembers.length + 1} of {totalPeople} pledged</Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -325,6 +398,26 @@ export default function CircleScreen() {
     setOpenChatConversation({ ...convData, conversation_members: members || [] });
   }
   const [currentUserName, setCurrentUserName] = useState("");
+  const [groupGifts, setGroupGifts] = useState([]);
+
+  // Every group gift the user is either organising or has been
+  // invited into - two queries since Supabase can't OR across the
+  // join in one call, then merged. Matches web's PeopleClient.jsx
+  // loadGroupGifts exactly.
+  async function loadGroupGifts(userId) {
+    const [{ data: organising }, { data: memberRows }] = await Promise.all([
+      supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url, avatar_color))").eq("organiser_id", userId),
+      supabase.from("group_hint_members").select("group_hint_id").eq("user_id", userId),
+    ]);
+    const memberGroupHintIds = (memberRows || []).map((r) => r.group_hint_id);
+    const { data: invitedInto } = memberGroupHintIds.length
+      ? await supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url, avatar_color))").in("id", memberGroupHintIds)
+      : { data: [] };
+    const merged = [...(organising || []), ...(invitedInto || [])].filter(
+      (gh, i, self) => self.findIndex((g) => g.id === gh.id) === i
+    ).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    setGroupGifts(merged);
+  }
 
   const loadContacts = useCallback(async () => {
     if (!user?.id) return;
@@ -337,6 +430,7 @@ export default function CircleScreen() {
     loadContacts().finally(() => setLoading(false));
     if (user?.id) {
       supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle().then(({ data }) => setCurrentUserName(data?.full_name || ""));
+      loadGroupGifts(user.id);
     }
   }, [loadContacts, user?.id]);
 
@@ -465,6 +559,20 @@ export default function CircleScreen() {
           )}
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.coral} />}
+          ListFooterComponent={
+            groupGifts.length > 0 ? (
+              <View style={{ marginTop: 20 }}>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={styles.sectionHeader}>GROUP GIFTS</Text>
+                </View>
+                <View style={{ gap: 10, marginTop: 8 }}>
+                  {groupGifts.map((gg) => (
+                    <GroupGiftPotCard key={gg.id} groupGift={gg} currentUserId={user?.id} />
+                  ))}
+                </View>
+              </View>
+            ) : null
+          }
         />
       )}
 
@@ -500,6 +608,15 @@ const styles = StyleSheet.create({
   sectionHeaderRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 20, marginBottom: 10 },
   sectionHeaderIcon: { fontSize: 15 },
   sectionHeader: { fontSize: 12, fontWeight: "700", color: colors.textSecondary, letterSpacing: 0.6 },
+  potCard: { flexDirection: "row", alignItems: "center", borderRadius: radii.xl, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 14 },
+  potPctWrap: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" },
+  potPctText: { fontSize: 15, fontWeight: "700", color: colors.textPrimary },
+  potImage: { width: 28, height: 28, borderRadius: 8 },
+  potTitle: { flex: 1, fontSize: 13, fontWeight: "700", color: colors.textPrimary },
+  potSubtext: { fontSize: 12, color: colors.textSecondary },
+  potAvatarDot: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.card, alignItems: "center", justifyContent: "center" },
+  potAvatarDotText: { fontSize: 7, fontWeight: "700", color: "#fff" },
+  potPledgedText: { fontSize: 10, color: colors.textMuted },
   emptyState: { alignItems: "center", paddingTop: 40, gap: 6 },
   emptyIllustration: { width: 160, height: 160, marginBottom: 8, opacity: 0.9 },
   emptyTitle: { fontSize: 14, fontWeight: "600", color: colors.textSecondary },

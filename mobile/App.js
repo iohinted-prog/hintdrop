@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, ActivityIndicator, Pressable, StyleSheet, Modal, Image, Alert } from "react-native";
 import { useCallback, useEffect, useState } from "react";
 import * as Linking from "expo-linking";
-import { Feather } from "@expo/vector-icons";
+import Icon from "./components/Icon";
 import Text from "./components/Text";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -74,7 +74,7 @@ function AccountButton({ profile, userId, onPress }) {
 function NotificationBell({ userId, count, onPress }) {
   return (
     <Pressable onPress={onPress} style={styles.bellButton}>
-      <Feather name="bell" size={17} color="#475569" />
+      <Icon name="bell" size={17} color="#475569" />
       {count > 0 ? (
         <View style={styles.bellBadge}>
           <Text style={styles.bellBadgeText}>{count > 9 ? "9+" : count}</Text>
@@ -93,7 +93,7 @@ function NotificationBell({ userId, count, onPress }) {
 function MessagesButton({ unreadCount, onPress }) {
   return (
     <Pressable onPress={onPress} style={styles.bellButton}>
-      <Feather name="message-square" size={17} color="#475569" />
+      <Icon name="message-square" size={17} color="#475569" />
       {unreadCount > 0 ? (
         <View style={styles.bellBadge}>
           <Text style={styles.bellBadgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
@@ -381,20 +381,17 @@ export default function App() {
   // Gated on fontsLoaded so no screen ever flashes the wrong font
   // before swapping.
   //
-  // Feather's own icon font (...Feather.font, shape { feather:
-  // <asset> } per @expo/vector-icons' own createIconSet) is loaded
-  // here too now, explicitly and up front, rather than relying on
-  // each <Feather> instance's own internal self-load-on-mount (it
-  // does call Font.loadAsync itself and re-render once ready, per
-  // the package's own source - so this isn't fixing a bug in that
-  // mechanism, it's removing any reliance on it entirely, the same
-  // "gate the whole app on fontsLoaded" approach already used for
-  // Inter, for the same reason).
+  // (Icon glyph fonts - previously @expo/vector-icons' Feather font,
+  // explicitly preloaded here too - are gone entirely now. See
+  // components/Icon.js for why: font-glyph icon rendering stayed
+  // broken across several rounds despite ruling out every code-level
+  // cause, so icons were rebuilt as actual SVG paths via
+  // react-native-svg instead, which needs no font loading step at
+  // all - nothing left here to preload.)
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_600SemiBold,
     Inter_700Bold,
-    ...Feather.font,
   });
 
   if (!fontsLoaded) {
