@@ -34,7 +34,6 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
   const [editHintId, setEditHintId] = useState("");
   const [payingAmount, setPayingAmount] = useState("");
   const [paying, setPaying] = useState(false);
-  const [pledgeAmount, setPledgeAmount] = useState("");
   const [pledging, setPledging] = useState(false);
 
   async function load() {
@@ -60,23 +59,29 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
   const requested = members.filter((m) => m.status === "requested");
   const activeMembers = members.filter((m) => m.status !== "requested" && m.status !== "declined");
   const inMembers = members.filter((m) => m.status === "in");
+  const paidMembers = inMembers.filter((m) => m.paid_amount != null);
   const target = gh?.target_amount;
   const share = target ? target / (1 + activeMembers.length) : 0;
-  const raised = inMembers.reduce((sum, m) => sum + (m.pledged_amount != null ? Number(m.pledged_amount) : share), 0);
+  // Only real, actually-marked contributions count toward the pot - no
+  // fallback to the theoretical share for members who are merely "in"
+  // but haven't contributed yet.
+  const raised = paidMembers.reduce((sum, m) => sum + Number(m.paid_amount), 0);
   const pct = target ? Math.min(100, Math.round((raised / target) * 100)) : 0;
   const fmt = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: gh?.hints?.currency || "GBP" }).format(n);
   const isPastDeadline = gh?.deadline_date && new Date(gh.deadline_date) < new Date(new Date().toDateString());
 
-  async function respond(action, amount) {
+  async function respond(action) {
     if (!myMember) return;
     const status = action === "accept" ? "in" : "declined";
-    await supabase.from("group_hint_members").update(action === "accept" ? { status, pledged_amount: amount } : { status }).eq("id", myMember.id);
+    await supabase.from("group_hint_members").update({ status }).eq("id", myMember.id);
     await load();
   }
 
-  async function joinCommit(amount) {
+  async function joinCommit() {
+    // Approved-but-not-yet-confirmed ("joined") member saying "I'm in" -
+    // no amount here either, that's the separate "I've contributed" step.
     if (!myMember) return;
-    await supabase.from("group_hint_members").update({ status: "in", pledged_amount: amount }).eq("id", myMember.id);
+    await supabase.from("group_hint_members").update({ status: "in" }).eq("id", myMember.id);
     await load();
   }
 
@@ -213,7 +218,7 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
               )}
               <Text style={styles.memberName} numberOfLines={1}>{m.profiles?.full_name}</Text>
               <Text style={styles.memberStatus}>
-                {m.paid_amount != null ? "✓ Paid" : m.status === "in" ? "Pledged" : m.status === "joined" ? "Joined" : "Invited"}
+                {m.paid_amount != null ? "✓ Contributed" : m.status === "in" ? "In" : m.status === "joined" ? "Joined" : "Invited"}
               </Text>
             </View>
           ))}
@@ -237,9 +242,8 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
 
           {!isPastDeadline && myMember?.status === "invited" && (
             <View style={styles.actionRow}>
-              <TextInput value={pledgeAmount} onChangeText={setPledgeAmount} placeholder={share.toFixed(2)} keyboardType="decimal-pad" style={styles.amountInput} />
-              <Pressable disabled={pledging} onPress={async () => { setPledging(true); await respond("accept", parseFloat(pledgeAmount) || share); setPledging(false); }} style={styles.primaryButton}>
-                <Text style={styles.primaryButtonText}>Pledge</Text>
+              <Pressable disabled={pledging} onPress={async () => { setPledging(true); await respond("accept"); setPledging(false); }} style={styles.primaryButton}>
+                <Text style={styles.primaryButtonText}>I'm in</Text>
               </Pressable>
               <Pressable onPress={() => respond("decline")} style={styles.secondaryButton}>
                 <Text style={styles.secondaryButtonText}>Decline</Text>
@@ -249,9 +253,8 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
 
           {!isPastDeadline && myMember?.status === "joined" && (
             <View style={styles.actionRow}>
-              <TextInput value={pledgeAmount} onChangeText={setPledgeAmount} placeholder={share.toFixed(2)} keyboardType="decimal-pad" style={styles.amountInput} />
-              <Pressable disabled={pledging} onPress={async () => { setPledging(true); await joinCommit(parseFloat(pledgeAmount) || share); setPledging(false); }} style={styles.primaryButton}>
-                <Text style={styles.primaryButtonText}>Commit {fmt(share)}</Text>
+              <Pressable disabled={pledging} onPress={async () => { setPledging(true); await joinCommit(); setPledging(false); }} style={styles.primaryButton}>
+                <Text style={styles.primaryButtonText}>I'm in</Text>
               </Pressable>
               <Pressable onPress={leavePot} style={styles.secondaryButton}>
                 <Text style={styles.secondaryButtonText}>Leave</Text>
@@ -259,17 +262,22 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
             </View>
           )}
 
-          {!isPastDeadline && myMember?.status === "in" && myMember.paid_amount == null && (
+          {!isPastDeadline && myMember?.status === "in" && target != null && myMember.paid_amount == null && (
             <View style={styles.actionRow}>
-              <TextInput value={payingAmount} onChangeText={setPayingAmount} placeholder={String(myMember.pledged_amount ?? share)} keyboardType="decimal-pad" style={styles.amountInput} />
+              <TextInput value={payingAmount} onChangeText={setPayingAmount} placeholder={share.toFixed(2)} keyboardType="decimal-pad" style={styles.amountInput} />
               <Pressable disabled={paying} onPress={markPaid} style={styles.payButton}>
-                <Text style={styles.primaryButtonText}>Mark as paid</Text>
+                <Text style={styles.primaryButtonText}>I've contributed</Text>
               </Pressable>
             </View>
           )}
-          {myMember?.status === "in" && myMember.paid_amount != null && (
+          {myMember?.status === "in" && target != null && myMember.paid_amount != null && (
             <View style={styles.paidBadge}>
-              <Text style={styles.paidBadgeText}>✓ You've paid {fmt(myMember.paid_amount)}</Text>
+              <Text style={styles.paidBadgeText}>✓ You've contributed {fmt(myMember.paid_amount)}</Text>
+            </View>
+          )}
+          {myMember?.status === "in" && target == null && (
+            <View style={styles.paidBadge}>
+              <Text style={styles.paidBadgeText}>✓ You're in</Text>
             </View>
           )}
 
