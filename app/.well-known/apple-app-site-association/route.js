@@ -15,10 +15,11 @@ import { NextResponse } from "next/server";
 //
 // Paths cover exactly what the app itself generates and shares -
 // board shares (/b/*), hint shares (/h/*), profile shares (/profile/*),
-// and contact/circle invite links (/join/*, /invite/*) - not every
-// page on the site, since a Universal Link should only intercept the
-// links this app's own share flows produce, not incidentally hijack
-// every hintdrop.app URL someone might tap from anywhere else.
+// contact/circle invite links (/join/*, /invite/*), and group gift pot
+// share links (/pot/*) - not every page on the site, since a Universal
+// Link should only intercept the links this app's own share flows
+// produce, not incidentally hijack every hintdrop.app URL someone
+// might tap from anywhere else.
 export async function GET() {
   return NextResponse.json(
     {
@@ -27,7 +28,7 @@ export async function GET() {
         details: [
           {
             appID: "NMPUC2X54M.app.hintdrop.mobile",
-            paths: ["/b/*", "/h/*", "/profile/*", "/join/*", "/join", "/invite/*"],
+            paths: ["/b/*", "/h/*", "/profile/*", "/join/*", "/join", "/invite/*", "/pot/*"],
           },
         ],
       },

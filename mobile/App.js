@@ -22,6 +22,7 @@ import CircleScreen from "./screens/CircleScreen";
 import AccountScreen from "./screens/AccountScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import ProfileScreen from "./screens/ProfileScreen";
+import GroupHintDetailScreen from "./screens/GroupHintDetailScreen";
 import MessagesScreen from "./screens/MessagesScreen";
 import CalendarScreen from "./screens/CalendarScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
@@ -111,6 +112,7 @@ function SignedInApp() {
   const [accountVisible, setAccountVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [profileViewUserId, setProfileViewUserId] = useState(null);
+  const [openPotId, setOpenPotId] = useState(null);
   const [profileViewBoardId, setProfileViewBoardId] = useState(null);
   const [profile, setProfile] = useState(null);
   const [messagesVisible, setMessagesVisible] = useState(false);
@@ -175,6 +177,10 @@ function SignedInApp() {
         setProfileViewBoardId(null);
         setProfileViewUserId(hint.user_id);
       }
+      return;
+    }
+    if (first === "pot" && second) {
+      setOpenPotId(second);
       return;
     }
     // /invite/contact and /invite/circle carry their own token-based
@@ -308,6 +314,15 @@ function SignedInApp() {
             onBack={() => { setProfileViewUserId(null); setProfileViewBoardId(null); }}
             insideModal
             initialBoardId={profileViewBoardId}
+          />
+        </SafeAreaProvider>
+      </Modal>
+      <Modal visible={Boolean(openPotId)} animationType="slide" onRequestClose={() => setOpenPotId(null)}>
+        <SafeAreaProvider>
+          <GroupHintDetailScreen
+            groupHintId={openPotId}
+            currentUserId={user?.id}
+            onClose={() => setOpenPotId(null)}
           />
         </SafeAreaProvider>
       </Modal>

@@ -34,7 +34,8 @@
             { "scheme": "https", "host": "hintdrop.app", "pathPrefix": "/h" },
             { "scheme": "https", "host": "hintdrop.app", "pathPrefix": "/profile" },
             { "scheme": "https", "host": "hintdrop.app", "pathPrefix": "/join" },
-            { "scheme": "https", "host": "hintdrop.app", "pathPrefix": "/invite" }
+            { "scheme": "https", "host": "hintdrop.app", "pathPrefix": "/invite" },
+            { "scheme": "https", "host": "hintdrop.app", "pathPrefix": "/pot" }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
         }

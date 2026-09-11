@@ -10,6 +10,7 @@ import { resolveAvatarColor, NON_USER_AVATAR_COLOR } from "../lib/avatarColor";
 import { colors, radii, spacing, shadow } from "../lib/theme";
 import ProfileScreen from "./ProfileScreen";
 import ChatThreadScreen from "./ChatThreadScreen";
+import GroupHintDetailScreen from "./GroupHintDetailScreen";
 
 // Mirrors app/circle/PeopleClient.jsx + ContactCard.jsx +
 // AddContactModal.jsx + UserProfileModal.jsx. Built against the real
@@ -370,6 +371,7 @@ export default function CircleScreen() {
   const [search, setSearch] = useState("");
   const [addVisible, setAddVisible] = useState(false);
   const [fullProfileUserId, setFullProfileUserId] = useState(null);
+  const [openPotId, setOpenPotId] = useState(null);
   const [openChatConversation, setOpenChatConversation] = useState(null);
 
   // Mirrors handleMessageContact in app/circle/PeopleClient.jsx exactly
@@ -501,6 +503,10 @@ export default function CircleScreen() {
     return <ProfileScreen userId={fullProfileUserId} onBack={() => setFullProfileUserId(null)} />;
   }
 
+  if (openPotId) {
+    return <GroupHintDetailScreen groupHintId={openPotId} currentUserId={user?.id} onClose={() => { setOpenPotId(null); if (user?.id) loadGroupGifts(user.id); }} />;
+  }
+
   if (openChatConversation) {
     return (
       <ChatThreadScreen
@@ -571,7 +577,9 @@ export default function CircleScreen() {
                 </View>
                 <View style={{ gap: 10, marginTop: 8 }}>
                   {groupGifts.map((gg) => (
-                    <GroupGiftPotCard key={gg.id} groupGift={gg} currentUserId={user?.id} />
+                    <Pressable key={gg.id} onPress={() => setOpenPotId(gg.id)}>
+                      <GroupGiftPotCard groupGift={gg} currentUserId={user?.id} />
+                    </Pressable>
                   ))}
                 </View>
               </View>
