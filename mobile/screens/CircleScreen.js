@@ -157,6 +157,7 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
   const raised = inMembers.reduce((sum, m) => sum + (m.pledged_amount != null ? Number(m.pledged_amount) : share), 0);
   const pct = target ? Math.min(100, Math.round((raised / target) * 100)) : 0;
   const isOrganiser = groupGift.organiser_id === currentUserId;
+  const isPastDeadline = groupGift.deadline_date && new Date(groupGift.deadline_date) < new Date(new Date().toDateString());
   const fmt = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(n);
 
   const segments = [
@@ -167,7 +168,7 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
   const circ = 2 * Math.PI * r;
 
   return (
-    <View style={styles.potCard}>
+    <View style={[styles.potCard, isPastDeadline && { opacity: 0.55 }]}>
       <View style={{ width: 88, height: 88 }}>
         <Svg width={88} height={88} viewBox="0 0 88 88" style={{ transform: [{ rotate: "-90deg" }] }}>
           <Circle cx={cx} cy={cy} r={r} fill="none" stroke="#f1e3db" strokeWidth={stroke} />
@@ -201,7 +202,7 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
               </View>
             ))}
           </View>
-          <Text style={styles.potPledgedText}>{inMembers.length} of {members.length} pledged{inMembers.filter((m) => m.paid_amount != null).length > 0 ? `, ${inMembers.filter((m) => m.paid_amount != null).length} paid` : ""}</Text>
+          <Text style={styles.potPledgedText}>{inMembers.length} of {members.length} pledged{inMembers.filter((m) => m.paid_amount != null).length > 0 ? `, ${inMembers.filter((m) => m.paid_amount != null).length} paid` : ""}{isPastDeadline ? " · Closed" : ""}</Text>
         </View>
       </View>
     </View>

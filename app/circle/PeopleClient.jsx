@@ -38,6 +38,7 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
   const pct = target ? Math.min(100, Math.round((raised / target) * 100)) : 0;
   const isOrganiser = groupGift.organiser_id === currentUserId;
   const formatCurrency = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(n);
+  const isPastDeadline = groupGift.deadline_date && new Date(groupGift.deadline_date) < new Date(new Date().toDateString());
 
   const segments = [
     { name: isOrganiser ? "You" : organiser?.full_name?.split(" ")[0] || "Organiser", amount: share, paid: false },
@@ -47,7 +48,7 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
   const circ = 2 * Math.PI * r;
 
   return (
-    <div className="rounded-[22px] border border-[#f0dfd6] bg-white p-4 flex items-center gap-4">
+    <div className={"rounded-[22px] border border-[#f0dfd6] bg-white p-4 flex items-center gap-4" + (isPastDeadline ? " opacity-55" : "")}>
       <div className="shrink-0 relative" style={{ width: 88, height: 88 }}>
         <svg viewBox="0 0 88 88" width="88" height="88" style={{ transform: "rotate(-90deg)" }}>
           <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f1e3db" strokeWidth={stroke} />
@@ -86,7 +87,7 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
             ))}
           </div>
           <span className="text-[10px] text-slate-400">
-            {inMembers.length} of {members.length} pledged{inMembers.filter(m => m.paid_amount != null).length > 0 ? `, ${inMembers.filter(m => m.paid_amount != null).length} paid` : ""}
+            {inMembers.length} of {members.length} pledged{inMembers.filter(m => m.paid_amount != null).length > 0 ? `, ${inMembers.filter(m => m.paid_amount != null).length} paid` : ""}{isPastDeadline ? " · Closed" : ""}
           </span>
         </div>
       </div>
