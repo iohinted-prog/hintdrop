@@ -571,7 +571,7 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   scrollContent: { padding: 16, paddingBottom: 40 },
-  screenTitle: { fontSize: 26, fontWeight: "700", letterSpacing: -1, color: colors.textPrimary, marginBottom: 16 },
+  screenTitle: { fontSize: 28, fontWeight: "700", letterSpacing: -1.1, color: colors.textPrimary, marginTop: 16, marginBottom: 16 },
   monthNavRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   monthNavButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   monthNavIcon: { fontSize: 20, color: colors.textSecondary },

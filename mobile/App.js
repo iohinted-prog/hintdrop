@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import Text from "./components/Text";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { supabase } from "./lib/supabase";
@@ -166,13 +167,29 @@ function SignedInApp() {
         onSelectAccount={() => setAccountVisible(true)}
       />
       <Modal visible={accountVisible} animationType="slide" onRequestClose={() => setAccountVisible(false)}>
-        <AccountScreen onClose={() => setAccountVisible(false)} />
+        {/* React Native's Modal renders in a separate native root view
+            (a distinct UIViewController on iOS), which is NOT a real
+            descendant of the outer SafeAreaProvider's measured tree -
+            a well-documented react-native-safe-area-context gotcha,
+            confirmed here as the actual root cause of the "can't get
+            back" bug: SafeAreaView/useSafeAreaInsets() inside a Modal
+            can silently return zero insets even with a provider
+            higher up, pushing this screen's back button up under the
+            notch/status bar exactly as reported. Re-providing here,
+            scoped to the modal's own content, is the standard fix. */}
+        <SafeAreaProvider>
+          <AccountScreen onClose={() => setAccountVisible(false)} />
+        </SafeAreaProvider>
       </Modal>
       <Modal visible={settingsVisible} animationType="slide" onRequestClose={() => setSettingsVisible(false)}>
-        <SettingsScreen onClose={() => setSettingsVisible(false)} />
+        <SafeAreaProvider>
+          <SettingsScreen onClose={() => setSettingsVisible(false)} />
+        </SafeAreaProvider>
       </Modal>
       <Modal visible={Boolean(profileViewUserId)} animationType="slide" onRequestClose={() => setProfileViewUserId(null)}>
-        <ProfileScreen userId={profileViewUserId} onBack={() => setProfileViewUserId(null)} />
+        <SafeAreaProvider>
+          <ProfileScreen userId={profileViewUserId} onBack={() => setProfileViewUserId(null)} insideModal />
+        </SafeAreaProvider>
       </Modal>
     </>
   );
@@ -246,9 +263,11 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <RootNavigator />
-      </AuthProvider>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <RootNavigator />
+        </AuthProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

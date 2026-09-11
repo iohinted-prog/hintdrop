@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Pressable, Image, ScrollView, Modal, ActivityIndicator, Alert, Linking, Animated, Share } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
@@ -108,7 +109,7 @@ function BoardPreviewGrid({ previewHints = [] }) {
   );
 }
 
-export default function ProfileScreen({ userId, onBack }) {
+export default function ProfileScreen({ userId, onBack, insideModal = false }) {
   const { user: currentUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [boards, setBoards] = useState(null);
@@ -350,7 +351,13 @@ export default function ProfileScreen({ userId, onBack }) {
   }
 
   return (
-    <View style={styles.container}>
+    // Top safe-area padding only applies when this screen is opened
+    // as its own full-screen Modal (from the header's account menu) -
+    // when it's rendered as a tab's own content (Hints/Feed's local
+    // "view someone's profile" state), react-navigation's header
+    // above it already reserves that space, so adding it again here
+    // too would double up the top padding and push everything down.
+    <SafeAreaView style={styles.container} edges={insideModal ? ["top", "left", "right"] : ["left", "right"]}>
       {(loading || collabStatusLoading) ? (
         <View style={styles.headerSkeletonWrap}>
           <View style={styles.headerSkeletonTopRow}>
@@ -648,7 +655,7 @@ export default function ProfileScreen({ userId, onBack }) {
           ) : null}
         </Pressable>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -671,7 +671,7 @@ export default function ShopScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   listContent: { paddingHorizontal: 16, paddingBottom: 40 },
-  screenTitle: { fontSize: 28, fontWeight: "700", letterSpacing: -1.1, color: colors.textPrimary, marginTop: 16 },
+  screenTitle: { fontSize: 28, fontWeight: "700", letterSpacing: -1.1, color: colors.textPrimary, marginTop: 16, marginBottom: 4 },
   subtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 6 },
   affiliateNote: { fontSize: 11, color: colors.textMuted, marginTop: 6 },
   searchInput: { height: 46, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, paddingHorizontal: 14, fontSize: 14, color: colors.textPrimary, marginTop: 14 },
