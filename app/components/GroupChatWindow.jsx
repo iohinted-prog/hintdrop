@@ -30,6 +30,8 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
   const [myProfile, setMyProfile] = useState(null);
   const [pledgingId, setPledgingId] = useState(null);
   const [pledgeAmount, setPledgeAmount] = useState("");
+  const [payingId, setPayingId] = useState(null);
+  const [payAmount, setPayAmount] = useState("");
 
   const members = conversation?.conversation_members || [];
   const otherMembers = members.filter(m => m.user_id !== currentUserId);
@@ -55,7 +57,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
     // Load pinned hints, including the current user's own status on each,
     // and everyone's status/profile for the "who's in" display
     supabase.from("conversation_hints")
-      .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, profiles(full_name, avatar_url)))")
+      .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, paid_amount, profiles(full_name, avatar_url)))")
       .eq("conversation_id", conversation.id)
       .eq("dismissed", false)
       .then(({ data }) => setPinnedHints(data || []));
@@ -68,7 +70,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_hints", filter: "conversation_id=eq." + conversation.id },
         () => {
           supabase.from("conversation_hints")
-            .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, profiles(full_name, avatar_url)))")
+            .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, paid_amount, profiles(full_name, avatar_url)))")
             .eq("conversation_id", conversation.id)
             .eq("dismissed", false)
             .then(({ data }) => setPinnedHints(data || []));
@@ -172,6 +174,29 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
     }).catch(console.error);
   }
 
+  // Second, separate step from pledging - pledging is just a stated
+  // intent to contribute a certain amount; marking as paid confirms
+  // the money has actually changed hands (outside the app - HintDrop
+  // never moves real money itself). Only the member themselves can
+  // mark their own contribution as paid.
+  async function markAsPaid(ph, amount) {
+    const gh = ph.group_hints;
+    const myMember = (gh?.group_hint_members || []).find(m => m.user_id === currentUserId);
+    if (!myMember) return;
+
+    await supabase.from("group_hint_members").update({ paid_amount: amount }).eq("id", myMember.id);
+
+    const myName = myProfile?.full_name || "Someone";
+    const currency = gh?.hints?.currency || "GBP";
+    const announceBody = `${myName} marked ${new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(amount)} as paid ✅`;
+    await supabase.from("messages").insert({ conversation_id: conversation.id, sender_id: currentUserId, body: announceBody, type: "system" });
+
+    setPinnedHints(prev => prev.map(p => p.id === ph.id
+      ? { ...p, group_hints: { ...p.group_hints, group_hint_members: (p.group_hints.group_hint_members || []).map(m => m.user_id === currentUserId ? { ...m, paid_amount: amount } : m) } }
+      : p
+    ));
+  }
+
   // Each open window sits at its own horizontal offset on desktop, side by
   // side (window width + gap apart), like Messenger's stacked chat heads —
   // expressed as a CSS variable since Tailwind can't express an arbitrary
@@ -237,6 +262,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
                     const target = ph.group_hints?.target_amount;
                     const totalPeople = 1 + allMembers.length; // organiser + everyone invited
                     const share = target ? target / totalPeople : null;
+                    const paidMembers = inMembers.filter(m => m.paid_amount != null);
                     // Real pledged amounts, not an assumed equal split - falls
                     // back to the theoretical share only for members who
                     // accepted before pledge amounts existed.
@@ -249,13 +275,13 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
                         <div className="flex items-center gap-1.5">
                           <div className="flex -space-x-1.5">
                             {allMembers.slice(0, 4).map(m => (
-                              <div key={m.id} className={"rounded-full ring-2 " + (m.status === "in" ? "ring-[#8fc98f]" : m.status === "declined" ? "ring-slate-200 opacity-40" : "ring-[#ffcaa8]")}>
+                              <div key={m.id} className={"rounded-full ring-2 " + (m.paid_amount != null ? "ring-[#2f8a5f]" : m.status === "in" ? "ring-[#8fc98f]" : m.status === "declined" ? "ring-slate-200 opacity-40" : "ring-[#ffcaa8]")}>
                                 <Avatar profile={m.profiles} size="h-4 w-4" />
                               </div>
                             ))}
                           </div>
                           <span className="text-[10px] text-slate-400">
-                            {inMembers.length} in{pendingMembers.length > 0 ? `, ${pendingMembers.length} pending` : ""}
+                            {inMembers.length} in{pendingMembers.length > 0 ? `, ${pendingMembers.length} pending` : ""}{paidMembers.length > 0 ? `, ${paidMembers.length} paid` : ""}
                           </span>
                         </div>
                         {pct != null && (
@@ -311,6 +337,36 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
                       </button>
                     </div>
                   )
+                ) : payingId === ph.id ? (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <input
+                      type="number" step="0.01" min="0" autoFocus
+                      value={payAmount}
+                      onChange={e => setPayAmount(e.target.value)}
+                      className="w-16 h-7 rounded-full border border-[#ead8ce] px-2 text-[11px] text-slate-700 outline-none focus:border-[#f19b7e]"
+                    />
+                    <button type="button"
+                      onClick={() => { markAsPaid(ph, parseFloat(payAmount) || 0); setPayingId(null); }}
+                      className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-gradient-to-b from-[#8fc98f] to-[#5fae5f] text-white">
+                      Confirm
+                    </button>
+                    <button type="button" onClick={() => setPayingId(null)}
+                      className="text-[10px] font-semibold px-2 py-1 rounded-full border border-[#f0dfd6] text-slate-400 hover:bg-slate-50">
+                      ✕
+                    </button>
+                  </div>
+                ) : myMember?.status === "in" && myMember.paid_amount == null ? (
+                  <div className="flex gap-1 shrink-0">
+                    <button type="button"
+                      onClick={() => { setPayAmount(myMember.pledged_amount != null ? Number(myMember.pledged_amount).toFixed(2) : ""); setPayingId(ph.id); }}
+                      className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-gradient-to-b from-[#8fc98f] to-[#5fae5f] text-white">
+                      Mark as paid
+                    </button>
+                  </div>
+                ) : myMember?.status === "in" && myMember.paid_amount != null ? (
+                  <div className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#e3f5ea] text-[#2f8a5f] shrink-0">
+                    ✓ Paid
+                  </div>
                 ) : (
                   <div className="flex gap-1 shrink-0">
                     <button type="button"

@@ -39,8 +39,8 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
   const formatCurrency = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(n);
 
   const segments = [
-    { name: isOrganiser ? "You" : organiser?.full_name?.split(" ")[0] || "Organiser", amount: share },
-    ...inMembers.map((m) => ({ name: m.user_id === currentUserId ? "You" : m.profiles?.full_name?.split(" ")[0] || "Someone", amount: m.pledged_amount != null ? Number(m.pledged_amount) : share })),
+    { name: isOrganiser ? "You" : organiser?.full_name?.split(" ")[0] || "Organiser", amount: share, paid: false },
+    ...inMembers.map((m) => ({ name: m.user_id === currentUserId ? "You" : m.profiles?.full_name?.split(" ")[0] || "Someone", amount: m.pledged_amount != null ? Number(m.pledged_amount) : share, paid: m.paid_amount != null })),
   ];
   const cx = 44, cy = 44, r = 36, stroke = 13;
   const circ = 2 * Math.PI * r;
@@ -79,13 +79,13 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
         <div className="flex items-center gap-1.5 mt-1.5">
           <div className="flex -space-x-1.5">
             {segments.map((seg, i) => (
-              <div key={i} className="h-4 w-4 rounded-full ring-2 ring-white flex items-center justify-center text-[7px] font-bold text-white" style={{ background: POT_MEMBER_COLORS[i % POT_MEMBER_COLORS.length] }}>
+              <div key={i} className={"h-4 w-4 rounded-full flex items-center justify-center text-[7px] font-bold text-white " + (seg.paid ? "ring-2 ring-[#2f8a5f]" : "ring-2 ring-white")} style={{ background: POT_MEMBER_COLORS[i % POT_MEMBER_COLORS.length] }}>
                 {seg.name[0]?.toUpperCase()}
               </div>
             ))}
           </div>
           <span className="text-[10px] text-slate-400">
-            {inMembers.length} of {members.length} pledged
+            {inMembers.length} of {members.length} pledged{inMembers.filter(m => m.paid_amount != null).length > 0 ? `, ${inMembers.filter(m => m.paid_amount != null).length} paid` : ""}
           </span>
         </div>
       </div>
@@ -220,12 +220,12 @@ export default function PeopleClient() {
   // a separate table), then merged.
   async function loadGroupGifts(userId) {
     const [{ data: organising }, { data: memberRows }] = await Promise.all([
-      supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, profiles(full_name, avatar_url))").eq("organiser_id", userId),
+      supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, paid_amount, profiles(full_name, avatar_url))").eq("organiser_id", userId),
       supabase.from("group_hint_members").select("group_hint_id").eq("user_id", userId),
     ]);
     const memberGroupHintIds = (memberRows || []).map((r) => r.group_hint_id);
     const { data: invitedInto } = memberGroupHintIds.length
-      ? await supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, profiles(full_name, avatar_url))").in("id", memberGroupHintIds)
+      ? await supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, paid_amount, profiles(full_name, avatar_url))").in("id", memberGroupHintIds)
       : { data: [] };
     const merged = [...(organising || []), ...(invitedInto || [])].filter(
       (gh, i, self) => self.findIndex((g) => g.id === gh.id) === i

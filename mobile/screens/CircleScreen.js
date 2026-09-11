@@ -3,6 +3,7 @@ import { View, FlatList, StyleSheet, RefreshControl, ActivityIndicator, TextInpu
 import Text from "../components/Text";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle } from "react-native-svg";
+import Icon from "../components/Icon";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import { resolveAvatarColor, NON_USER_AVATAR_COLOR } from "../lib/avatarColor";
@@ -240,7 +241,7 @@ function ContactCard({ contact, onOpenProfile, onDelete, onMessage }) {
       </View>
       {isClickable && onMessage ? (
         <Pressable style={styles.messageButton} onPress={(e) => { e.stopPropagation?.(); onMessage(contact); }} hitSlop={8}>
-          <Text style={styles.messageButtonText}>💬</Text>
+          <Icon name="message-square" size={16} color="#475569" />
         </Pressable>
       ) : null}
       {onDelete ? (
