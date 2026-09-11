@@ -1616,10 +1616,19 @@ export default function FeedClient() {
   // login entry point (AuthModal, both OAuth callback routes, the
   // auth-code-error page) - all of those already land here first, so
   // this is the one place this decision needs to live.
+  //
+  // "Once" has to mean once per session, not once per mount - Next's
+  // App Router remounts this component on every client-side nav to
+  // /feed, so an unconditional check here fired on every visit,
+  // including a deliberate tap on the Feed tab, making Feed
+  // permanently unreachable on mobile instead of just being the
+  // non-default landing tab. sessionStorage scopes it to "redirect
+  // once per browser session" the way it was actually meant to.
   useEffect(() => {
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
-      router.replace("/hints");
-    }
+    if (typeof window === "undefined" || window.innerWidth >= 1024) return;
+    if (sessionStorage.getItem("hd_mobile_landed")) return;
+    sessionStorage.setItem("hd_mobile_landed", "1");
+    router.replace("/hints");
   }, []);
 
   const [sessionUser, setSessionUser] = useState(null);
