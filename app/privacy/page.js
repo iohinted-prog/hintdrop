@@ -14,7 +14,7 @@ async function getUser() {
 }
 
 export const metadata = {
-  title: "Privacy Policy | HintDrop",
+  title: "Privacy Policy",
   description:
     "Read HintDrop's Privacy Policy, including what information we collect, how we use it, and your choices.",
   openGraph: {

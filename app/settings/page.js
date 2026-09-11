@@ -1,7 +1,7 @@
 import SettingsClient from "./SettingsClient";
 
 export const metadata = {
-  title: "Settings | HintDrop",
+  title: "Settings",
   description: "Manage reminder and app preferences.",
 };
 

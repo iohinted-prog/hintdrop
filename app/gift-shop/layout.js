@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Gift Shop | HintDrop",
+  title: "Gift Shop",
   description: "Curated gifts for everyone. Save your favourites to your HintDrop wishlist.",
   openGraph: {
     images: ["https://hintdrop.app/og-default-v2.png"],

@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Contact | HintDrop",
+  title: "Contact",
   description: "Get in touch with the HintDrop team — questions, feedback, or support.",
   openGraph: {
     images: ["https://hintdrop.app/og-default-v2.png"],

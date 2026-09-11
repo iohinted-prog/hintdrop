@@ -14,7 +14,7 @@ async function getUser() {
 }
 
 export const metadata = {
-  title: "Terms of Service | HintDrop",
+  title: "Terms of Service",
   description:
     "Read HintDrop's Terms of Service, including account rules, acceptable use, content rights, and limitations.",
   openGraph: {

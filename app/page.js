@@ -5,7 +5,13 @@ import HomePageClient from "./components/HomePageClient";
 import { SOCIAL_LINKS } from "./components/SocialLinks";
 
 export const metadata = {
-  title: "HintDrop | Never forget. Always thoughtful.",
+  // absolute bypasses the root layout's "%s | HintDrop" title
+  // template entirely - the homepage wants this exact custom title,
+  // not the generic template applied on top of it (which would have
+  // produced "HintDrop | Never forget. Always thoughtful. | HintDrop").
+  // openGraph.title/twitter.title below are separate fields the
+  // template never touches, so those didn't need the same fix.
+  title: { absolute: "HintDrop | Never forget. Always thoughtful." },
   description: "Save what you actually want. Remember who matters. Plan gifts together. HintDrop is the thoughtful gifting app for hints, reminders, and group gifting.",
   keywords: ["gift ideas", "wishlist app", "group gifting", "birthday reminders", "hint list", "gift planning"],
   openGraph: {

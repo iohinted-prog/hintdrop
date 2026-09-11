@@ -21,7 +21,7 @@ export async function generateMetadata({ params }) {
   }
 
   if (!hint) {
-    return { title: "Hint | HintDrop" };
+    return { title: "Hint" };
   }
 
   // Metadata generation happens before any client-side privacy check in
@@ -34,13 +34,13 @@ export async function generateMetadata({ params }) {
   // rather than leaving once spotted.
   if (hint.is_private) {
     return {
-      title: "Hint | HintDrop",
+      title: "Hint",
       description: "This hint is private.",
     };
   }
 
   const ownerName = hint.profiles?.full_name?.split(" ")[0] || "Someone";
-  const title = `${ownerName}'s Hint 👀 | HintDrop`;
+  const title = `${ownerName}'s Hint 👀`;
   const description = hint.title || "Take a look at this gift idea on HintDrop.";
   // Same reasoning as /b/[boardId] - proxied through Next's own image
   // optimizer rather than linked directly, since external retailer

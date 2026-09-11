@@ -1,11 +1,11 @@
 import ExtensionClient from "./ExtensionClient";
 
 export const metadata = {
-  title: "HintDrop Browser Extension",
+  title: "Browser Extension",
   description: "Save gift ideas straight from any product page, without leaving your browser.",
   openGraph: {
     images: ["https://hintdrop.app/og-default-v2.png"],
-    title: "HintDrop Browser Extension",
+    title: "Browser Extension | HintDrop",
     description: "Save gift ideas straight from any product page, without leaving your browser.",
     url: "https://hintdrop.app/extension",
     siteName: "HintDrop",

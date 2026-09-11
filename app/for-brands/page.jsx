@@ -16,7 +16,7 @@ async function getUser() {
 import Link from "next/link";
 
 export const metadata = {
-  title: "For Brands | HintDrop",
+  title: "For Brands",
   description:
     "Partner with HintDrop to place thoughtful products into gifting, reminder, and shared planning moments.",
   openGraph: {

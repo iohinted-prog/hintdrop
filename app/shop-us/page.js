@@ -1,7 +1,7 @@
 import ShopPageContent from "../components/ShopPageContent";
 
 export const metadata = {
-  title: "Shop | HintDrop US",
+  title: "Shop US",
   description: "Browse US gift ideas by occasion, relationship, and price on HintDrop.",
 };
 

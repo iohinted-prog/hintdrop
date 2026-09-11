@@ -13,14 +13,18 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }) {
   const { boardId } = await params;
   const supabase = await createClient();
-  const { data: board } = await supabase
+  const { data: board, error: boardError } = await supabase
     .from("hint_boards")
     .select("title, user_id, is_private, profiles(full_name)")
     .eq("id", boardId)
     .maybeSingle();
 
+  if (boardError) {
+    console.error("Board metadata query error:", boardError);
+  }
+
   if (!board) {
-    return { title: "Hints | HintDrop" };
+    return { title: "Hints" };
   }
 
   // Deliberate product decision (confirmed explicitly, not a default):
@@ -33,7 +37,7 @@ export async function generateMetadata({ params }) {
   // the link forwarded elsewhere also sees the image, not just the
   // intended recipient).
   const ownerName = board.profiles?.full_name?.split(" ")[0] || "Someone";
-  const title = `${board.title} — ${ownerName}'s Hints 👀 | HintDrop`;
+  const title = `${board.title} — ${ownerName}'s Hints 👀`;
   const description = `Take a look at ${ownerName}'s "${board.title}" Hints on HintDrop.`;
 
   // Final decision after extensive testing (both a server-side fetch
@@ -45,7 +49,7 @@ export async function generateMetadata({ params }) {
   // WhatsApp's own crawler fetch it directly. No HintDrop branding
   // overlay, no multi-image collage - the version that's actually,
   // reliably worked throughout this whole investigation.
-  const { data: coverHint } = await supabase
+  const { data: coverHint, error: coverError } = await supabase
     .from("hints")
     .select("image_url")
     .eq("board_id", boardId)
@@ -54,6 +58,10 @@ export async function generateMetadata({ params }) {
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  if (coverError) {
+    console.error("Board cover image query error:", coverError);
+  }
 
   const ogImage = coverHint?.image_url
     ? `https://hintdrop.app/_next/image?url=${encodeURIComponent(coverHint.image_url)}&w=1200&q=75`
@@ -88,11 +96,15 @@ export async function generateMetadata({ params }) {
 export default async function BoardPreviewPage({ params }) {
   const { boardId } = await params;
   const supabase = await createClient();
-  const { data: board } = await supabase
+  const { data: board, error } = await supabase
     .from("hint_boards")
     .select("user_id")
     .eq("id", boardId)
     .maybeSingle();
+
+  if (error) {
+    console.error("Board redirect lookup error:", error);
+  }
 
   return <BoardRedirectClient to={board ? `/profile/${board.user_id}?board=${boardId}` : "/"} />;
 }

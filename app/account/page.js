@@ -1,7 +1,7 @@
 import AccountPageClient from "./AccountPageClient";
 
 export const metadata = {
-  title: "Account | HintDrop",
+  title: "Account",
   description: "Manage your personal details and profile.",
 };
 

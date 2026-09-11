@@ -6,7 +6,7 @@ import PotPageClient from "./PotPageClient";
 // principle as get_pot_public_info() only ever sending safe fields to
 // the client.
 export const metadata = {
-  title: "Chip in on a group gift | HintDrop",
+  title: "Chip in on a group gift",
   description: "You've been invited to help fund a group gift. Sign in to see how it's going and join in.",
 };
 

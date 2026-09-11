@@ -90,6 +90,24 @@ export const metadata = {
   },
   description: "Save what you actually want. Remember who matters. Plan gifts together. HintDrop is the thoughtful gifting app for hints, reminders, and group gifting.",
   metadataBase: new URL("https://hintdrop.app"),
+  // Sitewide fallback - only takes effect on a page/layout that
+  // doesn't declare its own openGraph/twitter config. Every page
+  // audited in this pass already sets its own, but this is a safety
+  // net so a future page that forgets metadata entirely still gets a
+  // real image and description in link previews instead of nothing.
+  openGraph: {
+    title: "HintDrop",
+    description: "Save what you actually want. Remember who matters. Plan gifts together.",
+    siteName: "HintDrop",
+    type: "website",
+    images: ["https://hintdrop.app/og-default-v2.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "HintDrop",
+    description: "Save what you actually want. Remember who matters. Plan gifts together.",
+    images: ["https://hintdrop.app/og-default-v2.png"],
+  },
 };
 
 // Separate from metadata above - themeColor and viewport settings

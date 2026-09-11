@@ -32,6 +32,12 @@ const STATIC_ENTRIES = [
     priority: 0.7,
   },
   {
+    url: "https://hintdrop.app/extension",
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.6,
+  },
+  {
     url: "https://hintdrop.app/contact",
     lastModified: new Date(),
     changeFrequency: "monthly",

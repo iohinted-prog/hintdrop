@@ -16,11 +16,11 @@ async function getUser() {
 import Link from "next/link";
 
 export const metadata = {
-  title: "About HintDrop",
+  title: "About",
   description: "HintDrop helps you save gift ideas, remember birthdays and milestones, and plan group gifts with friends. Built for people who care about getting it right.",
   openGraph: {
     images: ["https://hintdrop.app/og-default-v2.png"],
-    title: "About HintDrop",
+    title: "About | HintDrop",
     description: "HintDrop helps you save gift ideas, remember birthdays and milestones, and plan group gifts with friends. Built for people who care about getting it right.",
     url: "https://hintdrop.app/about",
     siteName: "HintDrop",

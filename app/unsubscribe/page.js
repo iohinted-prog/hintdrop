@@ -4,7 +4,7 @@ import UnsubscribeClient from "./UnsubscribeClient";
 // noindex - this page is only ever meant to be reached via the private,
 // per-person link in an email, never discovered/indexed on its own.
 export const metadata = {
-  title: "Manage Email Preferences | HintDrop",
+  title: "Manage Email Preferences",
   robots: { index: false, follow: false },
 };
 

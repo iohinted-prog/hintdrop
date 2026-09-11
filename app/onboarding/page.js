@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import OnboardingClient from "./OnboardingClient";
 
 export const metadata = {
-  title: "Get started | HintDrop",
+  title: "Get started",
   description: "Set up your HintDrop profile.",
 };
 
