@@ -239,7 +239,7 @@ function SignedInApp() {
         // ambient layer on top of it. The order of the bottom nav
         // itself is unchanged (Home/Circle/Hints/Calendar/Shop) -
         // only which tab is selected on launch.
-        initialRouteName="Hints"
+        initialRouteName="Feed"
         tabBar={(props) => <BottomNav {...props} />}
         screenOptions={{
           headerShown: true,

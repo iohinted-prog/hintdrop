@@ -1602,35 +1602,6 @@ export default function FeedClient() {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
 
-  // On mobile viewports specifically, land on Hints instead of Feed -
-  // Hints (capturing/organizing gift ideas) is the actual core loop,
-  // Feed is more of a social layer on top of it, and the difference
-  // matters more on mobile where Feed's own left/right sidebars
-  // (filters, the calendar widget) are hidden anyway - so mobile's
-  // Feed is just a plain activity list, a weaker landing experience
-  // than Hints. Desktop is unaffected - its fuller 3-column Feed
-  // layout stays the default there. Matches the same lg (1024px)
-  // breakpoint this file's own mobile-bottom-nav vs desktop-nav split
-  // already uses elsewhere, rather than introducing a different one.
-  // Client-side and one-time-on-mount rather than a redirect at every
-  // login entry point (AuthModal, both OAuth callback routes, the
-  // auth-code-error page) - all of those already land here first, so
-  // this is the one place this decision needs to live.
-  //
-  // "Once" has to mean once per session, not once per mount - Next's
-  // App Router remounts this component on every client-side nav to
-  // /feed, so an unconditional check here fired on every visit,
-  // including a deliberate tap on the Feed tab, making Feed
-  // permanently unreachable on mobile instead of just being the
-  // non-default landing tab. sessionStorage scopes it to "redirect
-  // once per browser session" the way it was actually meant to.
-  useEffect(() => {
-    if (typeof window === "undefined" || window.innerWidth >= 1024) return;
-    if (sessionStorage.getItem("hd_mobile_landed")) return;
-    sessionStorage.setItem("hd_mobile_landed", "1");
-    router.replace("/hints");
-  }, []);
-
   const [sessionUser, setSessionUser] = useState(null);
 
   const [contacts, setContacts] = useState([]);
