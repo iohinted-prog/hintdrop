@@ -47,6 +47,12 @@ const ICONS = {
       <Path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </>
   ),
+  circle: (
+    <>
+      <Circle cx="12" cy="12" r="10" />
+      <Circle cx="12" cy="12" r="4" />
+    </>
+  ),
   calendar: (
     <>
       <Rect x="3" y="4" width="18" height="18" rx="2" ry="2" />

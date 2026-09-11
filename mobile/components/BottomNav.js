@@ -13,7 +13,7 @@ import { colors } from "../lib/theme";
 // the Feed tab - it says "Home" on web's bottom nav, not "Feed".
 const TAB_CONFIG = {
   Feed: { label: "Home", icon: "home" },
-  Circle: { label: "Circle", icon: "users" },
+  Circle: { label: "Circle", icon: "circle" },
   Hints: { label: "Hints", icon: null }, // special raised button, no plain icon
   Calendar: { label: "Calendar", icon: "calendar" },
   Shop: { label: "Shop", icon: "shopping-bag" },
