@@ -26,7 +26,7 @@ import CircleScreen from "./screens/CircleScreen";
 import AccountScreen from "./screens/AccountScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import ProfileScreen from "./screens/ProfileScreen";
-import GroupHintDetailScreen from "./screens/GroupHintDetailScreen";
+import PotPreviewScreen from "./screens/PotPreviewScreen";
 import MessagesScreen from "./screens/MessagesScreen";
 import CalendarScreen from "./screens/CalendarScreen";
 import OnboardingScreen from "./screens/OnboardingScreen";
@@ -335,9 +335,10 @@ function SignedInApp() {
       </Modal>
       <Modal visible={Boolean(openPotId)} animationType="slide" onRequestClose={() => setOpenPotId(null)}>
         <SafeAreaProvider>
-          <GroupHintDetailScreen
+          <PotPreviewScreen
             groupHintId={openPotId}
             currentUserId={user?.id}
+            currentUserName={profile?.full_name}
             onClose={() => setOpenPotId(null)}
           />
         </SafeAreaProvider>
