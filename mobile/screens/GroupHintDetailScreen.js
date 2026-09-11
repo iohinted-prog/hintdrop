@@ -216,7 +216,7 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
             <View style={[styles.progressFill, { width: `${pct}%` }]} />
           </View>
           <Text style={styles.progressText}>
-            {fmt(raised)} of {target ? fmt(target) : "—"} · {fmt(share)} each
+            {fmt(raised)} of {target ? fmt(target) : "—"} · {target ? fmt(target) : "—"} / {activeMembers.length || 1} people
             {gh.deadline_date ? ` · by ${new Date(gh.deadline_date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}` : ""}
           </Text>
 
@@ -232,13 +232,11 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
               )}
               <Text style={styles.memberName} numberOfLines={1}>{m.profiles?.full_name}{m.user_id === gh.organiser_id ? " · Organiser" : ""}</Text>
               <Text style={styles.memberStatus}>
-                {m.status === "in" ? "In" : m.status === "joined" ? "Joined" : "Invited"}
+                {m.status === "in" ? "Contributed" : m.status === "joined" ? "Joined" : "Invited"}
               </Text>
-              {m.status === "in" && (
-                <View style={[styles.tickBadge, m.paid_amount != null && styles.tickBadgeFilled]}>
-                  {m.paid_amount != null ? <Text style={styles.tickBadgeText}>✓</Text> : null}
-                </View>
-              )}
+              <View style={[styles.tickBadge, m.paid_amount != null && styles.tickBadgeFilled]}>
+                {m.paid_amount != null ? <Text style={styles.tickBadgeText}>✓</Text> : null}
+              </View>
             </View>
           ))}
 
@@ -285,13 +283,13 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
             <View style={styles.actionRow}>
               <TextInput value={payingAmount} onChangeText={setPayingAmount} placeholder={share.toFixed(2)} keyboardType="decimal-pad" style={styles.amountInput} />
               <Pressable disabled={paying} onPress={markPaid} style={styles.payButton}>
-                <Text style={styles.primaryButtonText}>I've contributed</Text>
+                <Text style={styles.primaryButtonText}>Pledge</Text>
               </Pressable>
             </View>
           )}
           {myMember?.status === "in" && target != null && myMember.paid_amount != null && (
             <View style={styles.paidBadge}>
-              <Text style={styles.paidBadgeText}>✓ You've contributed {fmt(myMember.paid_amount)}</Text>
+              <Text style={styles.paidBadgeText}>✓ You've pledged {fmt(myMember.paid_amount)}</Text>
             </View>
           )}
           {myMember?.status === "in" && target == null && (
@@ -302,7 +300,7 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
 
           <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
             <Pressable onPress={sharePot} style={styles.shareButton}>
-              <Text style={styles.shareButtonText}>Share this pot</Text>
+              <Text style={styles.shareButtonText}>Share pot</Text>
             </Pressable>
             {isOrganiser && !isPastDeadline && (
               <Pressable onPress={startEdit} style={styles.secondaryButton}>

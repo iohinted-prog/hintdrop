@@ -206,7 +206,7 @@ export default function GroupHintDetailModal({ groupHintId, currentUserId, curre
                   <div className="h-full rounded-full bg-gradient-to-r from-[#ff966f] to-[#ff7e54]" style={{ width: `${pct}%` }} />
                 </div>
                 <p className="text-[12px] text-slate-500 mt-1.5">
-                  {fmt(raised)} of {target ? fmt(target) : "—"} · {fmt(share)} each
+                  {fmt(raised)} of {target ? fmt(target) : "—"} · {target ? fmt(target) : "—"} / {activeMembers.length || 1} people
                   {gh.deadline_date && ` · by ${new Date(gh.deadline_date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
                 </p>
               </div>
@@ -222,13 +222,11 @@ export default function GroupHintDetailModal({ groupHintId, currentUserId, curre
                       }
                       <p className="text-[13px] font-semibold text-slate-900 flex-1 truncate">{m.profiles?.full_name}{m.user_id === gh.organiser_id && <span className="text-slate-400 font-normal"> · Organiser</span>}</p>
                       <span className="text-[11px] font-semibold text-slate-400">
-                        {m.status === "in" ? "In" : m.status === "joined" ? "Joined" : "Invited"}
+                        {m.status === "in" ? "Contributed" : m.status === "joined" ? "Joined" : "Invited"}
                       </span>
-                      {m.status === "in" && (
-                        <span className={"flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold " + (m.paid_amount != null ? "bg-[#e3f5ea] text-[#2f8a5f]" : "border border-[#ead8ce] text-transparent")} title={m.paid_amount != null ? "Contributed" : "Not contributed yet"}>
-                          ✓
-                        </span>
-                      )}
+                      <span className={"flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold " + (m.paid_amount != null ? "bg-[#e3f5ea] text-[#2f8a5f]" : "border border-[#ead8ce] text-transparent")} title={m.paid_amount != null ? "Pledged" : "Not pledged yet"}>
+                        ✓
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -270,11 +268,11 @@ export default function GroupHintDetailModal({ groupHintId, currentUserId, curre
                   <input type="number" placeholder={share.toFixed(2)} value={payingAmount} onChange={e => setPayingAmount(e.target.value)}
                     className="w-24 h-11 rounded-full border border-[#ead8ce] px-3 text-sm text-slate-700 outline-none" />
                   <button type="button" disabled={paying} onClick={markPaid}
-                    className="h-11 flex-1 rounded-full bg-gradient-to-b from-[#8fc98f] to-[#5fae5f] text-[13px] font-semibold text-white">I've contributed</button>
+                    className="h-11 flex-1 rounded-full bg-gradient-to-b from-[#8fc98f] to-[#5fae5f] text-[13px] font-semibold text-white">Pledge</button>
                 </div>
               )}
               {myMember?.status === "in" && target != null && myMember.paid_amount != null && (
-                <div className="text-center text-[12px] font-semibold text-[#2f8a5f] bg-[#e3f5ea] rounded-full py-2">✓ You've contributed {fmt(myMember.paid_amount)}</div>
+                <div className="text-center text-[12px] font-semibold text-[#2f8a5f] bg-[#e3f5ea] rounded-full py-2">✓ You've pledged {fmt(myMember.paid_amount)}</div>
               )}
               {myMember?.status === "in" && target == null && (
                 <div className="text-center text-[12px] font-semibold text-[#2f8a5f] bg-[#e3f5ea] rounded-full py-2">✓ You're in</div>
@@ -289,7 +287,7 @@ export default function GroupHintDetailModal({ groupHintId, currentUserId, curre
                   path={`/pot/${gh.id}`}
                   sharerName={currentUserName}
                   text={`Chip in on a group gift I'm organising on HintDrop`}
-                  label="Share this pot"
+                  label="Share pot"
                   className="h-11 flex-[2] flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-md"
                 />
                 {isOrganiser && !isPastDeadline && (
