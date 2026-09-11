@@ -169,102 +169,6 @@ function ContactCard({ contact, onOpenProfile, onDelete }) {
   );
 }
 
-function ContactProfileModal({ contact, onClose, onSeeFullProfile }) {
-  const [profile, setProfile] = useState(null);
-  const [boards, setBoards] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!contact?.profileId) return;
-    setLoading(true);
-    async function load() {
-      const [{ data: profileData }, { data: boardRows }] = await Promise.all([
-        supabase.from("profiles").select("full_name, avatar_url, avatar_color, interests").eq("id", contact.profileId).maybeSingle(),
-        supabase
-          .from("hint_boards")
-          .select("id, title, is_default")
-          .eq("user_id", contact.profileId)
-          .or("is_private.is.null,is_private.eq.false")
-          .order("is_default", { ascending: false })
-          .order("created_at", { ascending: true }),
-      ]);
-      setProfile(profileData);
-      const withCounts = await Promise.all(
-        (boardRows || []).map(async (board) => {
-          const { count } = await supabase.from("hints").select("id", { count: "exact", head: true }).eq("board_id", board.id);
-          return { ...board, hintCount: count || 0 };
-        })
-      );
-      setBoards(withCounts);
-      setLoading(false);
-    }
-    load();
-  }, [contact?.profileId]);
-
-  if (!contact) return null;
-  const displayName = profile?.full_name || contact.name;
-  const displayAvatar = profile?.avatar_url || contact.avatarUrl;
-  const interests = Array.isArray(profile?.interests) ? profile.interests : [];
-  const c = resolveAvatarColor({ avatarColor: profile?.avatar_color, id: contact.profileId });
-
-  return (
-    <Modal visible={Boolean(contact)} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.profileOverlay} onPress={onClose}>
-        <Pressable style={styles.profileCard} onPress={() => {}}>
-          <View style={styles.profileHeader}>
-            {displayAvatar ? (
-              <Image source={{ uri: displayAvatar }} style={styles.profileAvatar} />
-            ) : (
-              <View style={[styles.profileAvatar, { alignItems: "center", justifyContent: "center", backgroundColor: c.to }]}>
-                <Text style={{ color: "#fff", fontSize: 20, fontWeight: "700" }}>{contact.initials}</Text>
-              </View>
-            )}
-            <View style={{ flex: 1 }}>
-              <Text style={styles.profileName}>{displayName}</Text>
-              {interests.length > 0 ? (
-                <View style={styles.interestsRow}>
-                  {interests.slice(0, 5).map((interest) => (
-                    <View key={interest} style={styles.interestChip}>
-                      <Text style={styles.interestChipText}>{interest}</Text>
-                    </View>
-                  ))}
-                </View>
-              ) : null}
-            </View>
-            <Pressable onPress={onClose} style={styles.profileCloseButton} hitSlop={8}>
-              <Text style={styles.profileCloseText}>✕</Text>
-            </Pressable>
-          </View>
-
-          <ScrollView style={styles.profileBoardsScroll}>
-            {loading ? (
-              <ActivityIndicator color={colors.coral} style={{ marginTop: 24 }} />
-            ) : boards.length === 0 ? (
-              <Text style={styles.profileEmptyText}>No public Hints lists yet.</Text>
-            ) : (
-              <View style={styles.profileBoardsGrid}>
-                {boards.map((board) => (
-                  <View key={board.id} style={styles.profileBoardCard}>
-                    <View style={styles.profileBoardImage} />
-                    <Text style={styles.profileBoardTitle} numberOfLines={1}>{board.title}</Text>
-                    <Text style={styles.profileBoardSubtitle}>
-                      {board.is_default ? "Personal" : "Hints for someone else"} · {board.hintCount} Hint{board.hintCount === 1 ? "" : "s"}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </ScrollView>
-
-          <Pressable style={styles.seeFullProfileButton} onPress={() => { onSeeFullProfile(contact.profileId); onClose(); }}>
-            <Text style={styles.seeFullProfileText}>See full profile</Text>
-          </Pressable>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-}
-
 function AddContactModal({ visible, onClose, onSave, currentUserId, currentUserName }) {
   const relationshipOptions = ["Partner", "Spouse", "Family", "Friend", "Parent", "Child", "Sibling", "Cousin", "Colleague", "Roommate", "Best friend", "Other"];
   const [selectedRole, setSelectedRole] = useState("Friend");
@@ -380,7 +284,6 @@ export default function CircleScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [addVisible, setAddVisible] = useState(false);
-  const [profileContact, setProfileContact] = useState(null);
   const [fullProfileUserId, setFullProfileUserId] = useState(null);
   const [currentUserName, setCurrentUserName] = useState("");
 
@@ -506,7 +409,7 @@ export default function CircleScreen() {
                 </View>
               ) : null}
               {item.data.map((contact) => (
-                <ContactCard key={contact.id} contact={contact} onOpenProfile={setProfileContact} onDelete={handleDelete} />
+                <ContactCard key={contact.id} contact={contact} onOpenProfile={(c) => c.profileId && setFullProfileUserId(c.profileId)} onDelete={handleDelete} />
               ))}
             </View>
           )}
@@ -522,8 +425,6 @@ export default function CircleScreen() {
         currentUserId={user?.id}
         currentUserName={currentUserName}
       />
-
-      <ContactProfileModal contact={profileContact} onClose={() => setProfileContact(null)} onSeeFullProfile={setFullProfileUserId} />
     </View>
   );
 }
@@ -593,25 +494,6 @@ const styles = StyleSheet.create({
   seeHintsText: { fontSize: 11, color: colors.coralDeep, marginTop: 2 },
   deleteButton: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   deleteButtonText: { fontSize: 12, color: colors.textMuted },
-  profileOverlay: { flex: 1, backgroundColor: "rgba(33,24,20,0.42)", justifyContent: "flex-end" },
-  profileCard: { backgroundColor: colors.card, borderTopLeftRadius: radii.xxl, borderTopRightRadius: radii.xxl, maxHeight: "85%", padding: 20 },
-  profileHeader: { flexDirection: "row", alignItems: "flex-start", gap: 14 },
-  profileAvatar: { width: 56, height: 56, borderRadius: 28 },
-  profileName: { fontSize: 18, fontWeight: "600", color: colors.textPrimary },
-  interestsRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 6 },
-  interestChip: { backgroundColor: "#fff4ee", borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 2 },
-  interestChipText: { fontSize: 11, fontWeight: "700", color: colors.coralDeep },
-  profileCloseButton: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: colors.borderAlt, alignItems: "center", justifyContent: "center" },
-  profileCloseText: { fontSize: 15, color: colors.textSecondary },
-  profileBoardsScroll: { marginTop: 16 },
-  profileEmptyText: { fontSize: 13, color: colors.textMuted, textAlign: "center", paddingVertical: 24 },
-  profileBoardsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  profileBoardCard: { width: "47%", borderWidth: 1, borderColor: colors.border, borderRadius: radii.md, overflow: "hidden" },
-  profileBoardImage: { width: "100%", aspectRatio: 16 / 9, backgroundColor: "#fdf5f0" },
-  profileBoardTitle: { fontSize: 13, fontWeight: "600", color: colors.textPrimary, marginTop: 6, marginHorizontal: 8 },
-  profileBoardSubtitle: { fontSize: 11, color: colors.textMuted, marginTop: 2, marginHorizontal: 8, marginBottom: 8 },
-  seeFullProfileButton: { marginTop: 14, height: 44, borderRadius: radii.pill, backgroundColor: colors.coral, alignItems: "center", justifyContent: "center", ...shadow },
-  seeFullProfileText: { fontSize: 13, fontWeight: "700", color: "#fff" },
   addOverlay: { flex: 1, backgroundColor: "rgba(42,26,20,0.38)", justifyContent: "flex-end" },
   addCard: { backgroundColor: colors.bg, borderTopLeftRadius: radii.xxl, borderTopRightRadius: radii.xxl, maxHeight: "90%", padding: 20 },
   addHeaderRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },

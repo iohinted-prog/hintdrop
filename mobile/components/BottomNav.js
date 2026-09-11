@@ -107,9 +107,9 @@ const styles = StyleSheet.create({
   // the offset/gap; the ring color only appears once active.
   hintsRing: {
     borderRadius: 32,
-    borderWidth: 3,
+    borderWidth: 1.5,
     borderColor: "transparent",
-    padding: 3,
+    padding: 1.5,
   },
   hintsRingActive: {
     borderColor: colors.coral,

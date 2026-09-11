@@ -349,8 +349,16 @@ function HintPeekModal({ hint, onClose }) {
   );
 }
 
+function greetingForHour(hour) {
+  if (hour < 5) return "Good night";
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
 export default function FeedScreen() {
   const { user } = useAuth();
+  const firstName = (user?.user_metadata?.full_name || "").trim().split(/\s+/)[0] || "";
   const [feedItems, setFeedItems] = useState([]);
   const [reactionsByFeedId, setReactionsByFeedId] = useState({});
   const [commentsByFeedId, setCommentsByFeedId] = useState({});
@@ -497,8 +505,17 @@ export default function FeedScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.screenTitle}>Feed</Text>
-        <Text style={styles.header}>Your people, moments, and nudges.</Text>
+        <LinearGradient colors={["#ffe0d5", "#fff4ee"]} style={styles.feedHeroCard}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.feedHeroGreeting}>{greetingForHour(new Date().getHours())}{firstName ? `, ${firstName}` : ""}</Text>
+            <Text style={styles.feedHeroSubtitle}>Your people, moments, and nudges.</Text>
+          </View>
+          <Image
+            source={{ uri: "https://hintdrop.app/illustrations/giftbox-icon-v2.png" }}
+            style={styles.feedHeroIllustration}
+            resizeMode="contain"
+          />
+        </LinearGradient>
         <ActivityIndicator color={colors.coral} style={{ marginTop: 24 }} />
       </View>
     );
@@ -510,9 +527,24 @@ export default function FeedScreen() {
         data={visibleFeedItems}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
+          // Web has no dedicated mobile header of its own here (its
+          // sidebars are desktop-only) - borrows the site's broader
+          // warm, illustrated card language instead (same idea as
+          // the tinted reminder blocks further down this same page,
+          // or the onboarding cards) rather than a plain title, since
+          // there's no single web element to copy verbatim here.
           <>
-            <Text style={styles.screenTitle}>Feed</Text>
-            <Text style={styles.header}>Your people, moments, and nudges.</Text>
+            <LinearGradient colors={["#ffe0d5", "#fff4ee"]} style={styles.feedHeroCard}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.feedHeroGreeting}>{greetingForHour(new Date().getHours())}{firstName ? `, ${firstName}` : ""}</Text>
+                <Text style={styles.feedHeroSubtitle}>Your people, moments, and nudges.</Text>
+              </View>
+              <Image
+                source={{ uri: "https://hintdrop.app/illustrations/giftbox-icon-v2.png" }}
+                style={styles.feedHeroIllustration}
+                resizeMode="contain"
+              />
+            </LinearGradient>
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </>
         }
@@ -549,8 +581,37 @@ export default function FeedScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  screenTitle: { fontSize: 28, fontWeight: "700", letterSpacing: -1.1, color: colors.textPrimary, paddingHorizontal: 16, paddingTop: 16 },
-  header: { fontSize: 14, fontWeight: "500", color: colors.textSecondary, paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 },
+  feedHeroCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 4,
+    borderRadius: radii.xxl,
+    borderWidth: 1,
+    borderColor: "#f6d9c8",
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    ...shadow,
+    shadowOpacity: 0.06,
+  },
+  feedHeroGreeting: {
+    fontSize: 22,
+    fontWeight: "700",
+    letterSpacing: -0.8,
+    color: "#b0512f",
+  },
+  feedHeroSubtitle: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#a3684f",
+    marginTop: 4,
+  },
+  feedHeroIllustration: {
+    width: 48,
+    height: 56,
+  },
   error: { color: "#c9633f", paddingHorizontal: 16, marginBottom: 8 },
   listContent: { paddingHorizontal: 16, paddingBottom: 40, gap: 14 },
   card: { borderRadius: radii.xxl, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16, ...shadow, shadowOpacity: 0.05 },

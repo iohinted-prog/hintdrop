@@ -261,6 +261,22 @@ export default function CalendarScreen() {
     setShowAdd(false);
   }
 
+  // For "Coming up" rows specifically, since that event's date can be
+  // in a month other than whichever one the grid currently has
+  // displayed - openDate alone would build the wrong key in that
+  // case (it always uses the currently-displayed year/month). Also
+  // moves the grid itself to that month, so if the sheet is dismissed
+  // the calendar is left showing the relevant month rather than
+  // wherever it happened to be before.
+  function openEventDate(event) {
+    const parsed = parseDateOnlyLocal(event.event_date);
+    if (parsed) setCurrentMonth(new Date(parsed.getFullYear(), parsed.getMonth(), 1));
+    setSelectedDate(event.event_date);
+    setSheetOpen(true);
+    setAddForm((f) => ({ ...f, date: event.event_date }));
+    setShowAdd(false);
+  }
+
   async function handleAddEvent() {
     if (!addForm.title || !addForm.date || !user?.id) return;
     setSaving(true);
@@ -500,7 +516,7 @@ export default function CalendarScreen() {
               {upcoming.map((e) => {
                 const c = eventColor(e);
                 return (
-                  <View key={e.id} style={[styles.upcomingRow, c.custom ? { borderColor: c.custom } : null]}>
+                  <Pressable key={e.id} onPress={() => openEventDate(e)} style={[styles.upcomingRow, c.custom ? { borderColor: c.custom } : null]}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                       <EventDot color={c} />
                       <View>
@@ -511,7 +527,7 @@ export default function CalendarScreen() {
                     {e.cta_label ? (
                       <View style={styles.upcomingCta}><Text style={styles.upcomingCtaText}>{e.cta_label}</Text></View>
                     ) : null}
-                  </View>
+                  </Pressable>
                 );
               })}
             </View>

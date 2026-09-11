@@ -1950,12 +1950,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   heroSubtitle: {
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 12,
+    lineHeight: 17,
     color: "#64748b",
     textAlign: "center",
-    marginTop: 10,
-    maxWidth: 420,
+    marginTop: 8,
+    maxWidth: 340,
   },
   newListButton: {
     marginHorizontal: 20,
