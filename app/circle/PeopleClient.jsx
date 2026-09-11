@@ -23,7 +23,10 @@ const POT_MEMBER_COLORS = ["#ff8060", "#4e9e6e", "#5b8dd9", "#c97ad4", "#e8a23a"
 // per a stored contribution amount. No real payment happens here -
 // this is a coordination number only, same as the plain "I'm in"
 // status it's built on top of.
-function GroupGiftPotCard({ groupGift, currentUserId }) {
+function GroupGiftPotCard({ groupGift, currentUserId, onContributed }) {
+  const supabase = createClient();
+  const [payingAmount, setPayingAmount] = useState("");
+  const [paying, setPaying] = useState(false);
   const hint = groupGift.hints;
   const organiser = groupGift.profiles;
   const members = groupGift.group_hint_members || [];
@@ -42,6 +45,17 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
   const isOrganiser = groupGift.organiser_id === currentUserId;
   const formatCurrency = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(n);
   const isPastDeadline = groupGift.deadline_date && new Date(groupGift.deadline_date) < new Date(new Date().toDateString());
+  const myMember = members.find((m) => m.user_id === currentUserId);
+
+  async function markPaid(e) {
+    e.stopPropagation();
+    if (!myMember || paying) return;
+    setPaying(true);
+    await supabase.from("group_hint_members").update({ paid_amount: parseFloat(payingAmount) || 0 }).eq("id", myMember.id);
+    setPaying(false);
+    setPayingAmount("");
+    onContributed?.();
+  }
 
   // Donut segments - one per actual contribution, sized to what was
   // really paid. No organiser segment (they never "contribute" in
@@ -94,6 +108,16 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
             {inMembers.length} of {members.length} in{paidMembers.length > 0 ? `, ${paidMembers.length} contributed` : ""}{isPastDeadline ? " · Closed" : ""}
           </span>
         </div>
+        {!isPastDeadline && myMember?.status === "in" && myMember.paid_amount == null && (
+          <div className="flex items-center gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
+            <input type="number" placeholder={share.toFixed(2)} value={payingAmount} onChange={(e) => setPayingAmount(e.target.value)}
+              className="w-16 h-8 rounded-full border border-[#ead8ce] px-2 text-[11px] text-slate-700 outline-none" />
+            <button type="button" disabled={paying} onClick={markPaid}
+              className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-gradient-to-b from-[#8fc98f] to-[#5fae5f] text-white">
+              I've contributed
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -423,7 +447,7 @@ export default function PeopleClient() {
             <div className="space-y-3">
               {groupGifts.map((gg) => (
                 <div key={gg.id} onClick={() => setOpenPotId(gg.id)} className="cursor-pointer">
-                  <GroupGiftPotCard groupGift={gg} currentUserId={sessionUser?.id} />
+                  <GroupGiftPotCard groupGift={gg} currentUserId={sessionUser?.id} onContributed={() => sessionUser?.id && loadGroupGifts(sessionUser.id)} />
                 </div>
               ))}
             </div>

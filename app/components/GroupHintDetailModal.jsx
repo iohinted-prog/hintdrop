@@ -219,8 +219,13 @@ export default function GroupHintDetailModal({ groupHintId, currentUserId, curre
                       }
                       <p className="text-[13px] font-semibold text-slate-900 flex-1 truncate">{m.profiles?.full_name}</p>
                       <span className="text-[11px] font-semibold text-slate-400">
-                        {m.paid_amount != null ? "✓ Contributed" : m.status === "in" ? "In" : m.status === "joined" ? "Joined" : "Invited"}
+                        {m.status === "in" ? "In" : m.status === "joined" ? "Joined" : "Invited"}
                       </span>
+                      {m.status === "in" && (
+                        <span className={"flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold " + (m.paid_amount != null ? "bg-[#e3f5ea] text-[#2f8a5f]" : "border border-[#ead8ce] text-transparent")} title={m.paid_amount != null ? "Contributed" : "Not contributed yet"}>
+                          ✓
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -282,13 +287,13 @@ export default function GroupHintDetailModal({ groupHintId, currentUserId, curre
                   sharerName={currentUserName}
                   text={`Chip in on a group gift I'm organising on HintDrop`}
                   label="Share this pot"
-                  className="h-11 flex-1 flex items-center justify-center rounded-full border border-[#ead8ce] text-[13px] font-semibold text-slate-700"
+                  className="h-11 flex-[2] flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-md"
                 />
                 {isOrganiser && !isPastDeadline && (
-                  <button type="button" onClick={startEdit} className="h-11 px-5 rounded-full border border-[#ead8ce] text-[13px] font-semibold text-slate-700">Edit</button>
+                  <button type="button" onClick={startEdit} className="h-11 flex-1 rounded-full border border-[#ead8ce] text-[13px] font-semibold text-slate-700">Edit</button>
                 )}
                 {isOrganiser && isPastDeadline && (
-                  <button type="button" onClick={deletePot} className="h-11 px-5 rounded-full border border-[#f0c7bf] text-[13px] font-semibold text-[#b14f43]">Delete</button>
+                  <button type="button" onClick={deletePot} className="h-11 flex-1 rounded-full border border-[#f0c7bf] text-[13px] font-semibold text-[#b14f43]">Delete</button>
                 )}
               </div>
             </>
