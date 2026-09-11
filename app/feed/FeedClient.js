@@ -2677,6 +2677,7 @@ export default function FeedClient() {
                           onOpenProfile={(p) => router.push(`/profile/${p.userId}`)}
                           onOpenHintDetail={(hint) => setFeedHintDetail({
                             ...hint,
+                            ownerId: hint.ownerId || item.actor_user_id || null,
                             ownerName: hint.ownerName || item.metadata?.actor_name || item.actor_name || null,
                             ownerAvatarUrl: hint.ownerAvatarUrl || item.metadata?.actor_avatar_url || item.actor_avatar_url || null,
                           })}

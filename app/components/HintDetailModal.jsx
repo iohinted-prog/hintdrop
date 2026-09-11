@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import HintImage from "./HintImage";
 import ShareButton from "./ShareButton";
+import GroupHintModal from "./GroupHintModal";
 import { createClient } from "../../lib/supabase/client";
 import { trackRetailerClick } from "../../lib/trackRetailerClick";
 import { recordHintView } from "../../lib/recentHints";
@@ -14,17 +15,66 @@ import { recordHintView } from "../../lib/recentHints";
 // out so every tile click site shares one implementation instead of each
 // one silently drifting from (or missing) the others.
 //
+// Confirmed this is currently only actually wired up from FeedClient.js
+// (the "contact hint previews, circle members" callers described above
+// don't exist yet) - worth knowing if adding a new call site later, since
+// this component's own claim/group-gift behavior below now depends on the
+// caller passing hint.ownerId, not just a display name/avatar.
+//
+// Claim ("I'm getting this") and Get-group-together were missing here
+// entirely - ProfileClient.jsx's own hint detail view had both, this
+// shared one had neither, so the same hint looked meaningfully different
+// depending on where you opened it from. Ported directly from
+// ProfileClient.jsx's handleToggleClaim/GroupHintModal wiring, gated on
+// hint.ownerId being present and different from the viewer (mirrors
+// ProfileClient's own isViewingOther check) - this modal doesn't require
+// ownerId for its other features (image/title/share/open all still work
+// without it), so a caller that can't supply it degrades gracefully
+// rather than being blocked from opening the modal at all.
+//
 // Share is always shown — every hint detail view is a share opportunity,
 // so this creates its own client if a caller doesn't pass one, rather than
 // silently hiding the button whenever `supabase` is omitted.
 export default function HintDetailModal({ hint, onClose, supabase, currentUserId, source = "unknown" }) {
   const client = useMemo(() => supabase || createClient(), [supabase]);
+  const [claims, setClaims] = useState([]);
+  const [claiming, setClaiming] = useState(false);
+  const [groupHintOpen, setGroupHintOpen] = useState(false);
+  const [inviteConfirmation, setInviteConfirmation] = useState(null);
+
+  const isViewingOther = Boolean(currentUserId && hint?.ownerId && currentUserId !== hint.ownerId);
 
   useEffect(() => {
     if (hint?.id && currentUserId) recordHintView(client, currentUserId, hint.id);
   }, [hint?.id, currentUserId]);
 
+  useEffect(() => {
+    if (!hint?.id || !isViewingOther) {
+      setClaims([]);
+      return;
+    }
+    client.from("hint_claims").select("id, hint_id, claimed_by, claim_type").eq("hint_id", hint.id).then(({ data }) => setClaims(data || []));
+  }, [hint?.id, isViewingOther]);
+
   if (!hint) return null;
+
+  const myClaim = claims.find((c) => c.claimed_by === currentUserId);
+  const otherClaim = claims.find((c) => c.claimed_by !== currentUserId);
+
+  async function handleToggleClaim() {
+    if (!isViewingOther || claiming) return;
+    setClaiming(true);
+    if (myClaim) {
+      setClaims((prev) => prev.filter((c) => c.id !== myClaim.id));
+      await client.from("hint_claims").delete().eq("id", myClaim.id);
+    } else {
+      const tempId = crypto.randomUUID();
+      setClaims((prev) => [...prev, { id: tempId, hint_id: hint.id, claimed_by: currentUserId, claim_type: "solo" }]);
+      const { error } = await client.from("hint_claims").insert({ hint_id: hint.id, claimed_by: currentUserId, claim_type: "solo" });
+      if (error) setClaims((prev) => prev.filter((c) => c.id !== tempId));
+    }
+    setClaiming(false);
+  }
 
   return (
     <div
@@ -99,7 +149,26 @@ export default function HintDetailModal({ hint, onClose, supabase, currentUserId
               ))}
             </div>
           )}
-          <div className="mt-4">
+          {isViewingOther && (
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                disabled={claiming}
+                onClick={handleToggleClaim}
+                className={`flex-1 h-11 rounded-full text-[13px] font-semibold border transition ${myClaim ? "bg-[#edf6eb] text-[#4a7a3a] border-[#c5dfc0]" : otherClaim ? "bg-[#fff8ee] text-[#b87a2a] border-[#f0d9a0]" : "bg-[#fff4ee] text-[#df7b59] border-[#f0c9b5] hover:bg-[#ffe9db]"}`}
+              >
+                {myClaim ? "✓ On it" : otherClaim ? "Buy anyway?" : "I'm getting this"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setGroupHintOpen(true)}
+                className="flex-1 h-11 rounded-full border border-[#ead8ce] text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0]"
+              >
+                Get group together
+              </button>
+            </div>
+          )}
+          <div className="mt-3">
             <ShareButton
               supabase={client}
               subjectType="hint"
@@ -134,6 +203,30 @@ export default function HintDetailModal({ hint, onClose, supabase, currentUserId
           )}
         </div>
       </div>
+      {groupHintOpen && (
+        <GroupHintModal
+          hint={hint}
+          recipientUserId={hint.ownerId}
+          recipientName={hint.ownerName}
+          currentUserId={currentUserId}
+          onClose={() => setGroupHintOpen(false)}
+          onSent={(count) => {
+            setGroupHintOpen(false);
+            setInviteConfirmation(count);
+            setTimeout(() => setInviteConfirmation(null), 4000);
+          }}
+        />
+      )}
+      {inviteConfirmation != null && (
+        <div className="fixed inset-x-0 bottom-6 z-[130] flex justify-center px-4">
+          <div className="flex items-center gap-2 rounded-full bg-[#2f3b2d] px-5 py-3 text-[13px] font-semibold text-white shadow-xl">
+            <span>✓</span>
+            <span>
+              Invite{inviteConfirmation > 1 ? "s" : ""} sent — you&apos;ll find {inviteConfirmation > 1 ? "them" : "it"} in your chats
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import { resolveAvatarColor } from "../lib/avatarColor";
 import { colors, radii, spacing, shadow } from "../lib/theme";
 import ProfileScreen from "./ProfileScreen";
+import GroupHintModal from "../components/GroupHintModal";
 
 // Mirrors app/feed/FeedClient.js's actual mobile-web behavior, not
 // its full desktop layout - confirmed by reading the file directly:
@@ -19,11 +20,11 @@ import ProfileScreen from "./ProfileScreen";
 // exactly what this matches, rather than inventing filter tabs web
 // itself doesn't show at this size.
 //
-// Explicitly deferred, not silently dropped:
-// - The hint-preview tap-through only shows a simplified detail (image,
-//   title, retailer, Open link) rather than the full claim/share
-//   hint-detail modal ProfileScreen.js has - avoiding duplicating that
-//   whole modal here for a secondary entry point into hint detail.
+// Hint-preview tap-through (HintPeekModal) now matches ProfileScreen.js's
+// hint detail exactly - claim ("I'm getting this"/"Buy anyway?") and Get
+// group together, not just image/title/retailer/Open. Found genuinely
+// inconsistent between the two (and on web too - see app/components/
+// HintDetailModal.jsx) until this pass; fixed on both platforms.
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -257,7 +258,7 @@ function FeedItemCard({ item, comments, activeComposerId, setActiveComposerId, d
           {bucket === "hint" && metadata.preview_hints?.filter((h) => h.image_url).length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 14 }}>
               {metadata.preview_hints.filter((h) => h.image_url).map((hint, i) => (
-                <Pressable key={hint.id || i} style={styles.hintPreviewTile} onPress={() => onOpenHintDetail?.(hint)}>
+                <Pressable key={hint.id || i} style={styles.hintPreviewTile} onPress={() => onOpenHintDetail?.({ ...hint, ownerId: item.actor_user_id, ownerName: metadata.actor_name, ownerAvatarUrl: metadata.actor_avatar_url })}>
                   <Image source={{ uri: hint.image_url }} style={styles.hintPreviewImage} />
                   <LinearGradient colors={["transparent", "rgba(0,0,0,0.6)"]} style={styles.hintPreviewOverlay} />
                   <View style={styles.hintPreviewTextWrap}>
@@ -344,7 +345,40 @@ function FeedItemCard({ item, comments, activeComposerId, setActiveComposerId, d
   );
 }
 
-function HintPeekModal({ hint, onClose }) {
+function HintPeekModal({ hint, onClose, currentUserId }) {
+  const [claims, setClaims] = useState([]);
+  const [claiming, setClaiming] = useState(false);
+  const [groupHintOpen, setGroupHintOpen] = useState(false);
+  const [inviteConfirmation, setInviteConfirmation] = useState(null);
+
+  const isViewingOther = Boolean(currentUserId && hint?.ownerId && currentUserId !== hint.ownerId);
+
+  useEffect(() => {
+    if (!hint?.id || !isViewingOther) {
+      setClaims([]);
+      return;
+    }
+    supabase.from("hint_claims").select("id, hint_id, claimed_by, claim_type").eq("hint_id", hint.id).then(({ data }) => setClaims(data || []));
+  }, [hint?.id, isViewingOther]);
+
+  const myClaim = claims.find((c) => c.claimed_by === currentUserId);
+  const otherClaim = claims.find((c) => c.claimed_by !== currentUserId);
+
+  async function handleToggleClaim() {
+    if (!isViewingOther || claiming) return;
+    setClaiming(true);
+    if (myClaim) {
+      setClaims((prev) => prev.filter((c) => c.id !== myClaim.id));
+      await supabase.from("hint_claims").delete().eq("id", myClaim.id);
+    } else {
+      const tempId = `temp-${Date.now()}`;
+      setClaims((prev) => [...prev, { id: tempId, hint_id: hint.id, claimed_by: currentUserId, claim_type: "solo" }]);
+      const { error } = await supabase.from("hint_claims").insert({ hint_id: hint.id, claimed_by: currentUserId, claim_type: "solo" });
+      if (error) setClaims((prev) => prev.filter((c) => c.id !== tempId));
+    }
+    setClaiming(false);
+  }
+
   return (
     <Modal visible={Boolean(hint)} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.hintPeekOverlay} onPress={onClose}>
@@ -355,6 +389,20 @@ function HintPeekModal({ hint, onClose }) {
             <View style={{ padding: 18 }}>
               <Text style={styles.hintPeekTitle}>{hint.title || "Hint"}</Text>
               {hint.retailer ? <Text style={styles.hintPeekRetailer}>{hint.retailer}</Text> : null}
+              {isViewingOther ? (
+                <View style={{ flexDirection: "row", gap: 8, marginTop: 14 }}>
+                  <Pressable
+                    style={[styles.claimButton, myClaim ? styles.claimButtonMine : otherClaim ? styles.claimButtonOther : styles.claimButtonDefault]}
+                    disabled={claiming}
+                    onPress={handleToggleClaim}
+                  >
+                    <Text style={styles.claimButtonText}>{myClaim ? "✓ On it" : otherClaim ? "Buy anyway?" : "I'm getting this"}</Text>
+                  </Pressable>
+                  <Pressable style={styles.groupTogetherButton} onPress={() => setGroupHintOpen(true)}>
+                    <Text style={styles.groupTogetherText}>Get group together</Text>
+                  </Pressable>
+                </View>
+              ) : null}
               {hint.url ? (
                 <Pressable style={styles.hintPeekOpenButton} onPress={() => Linking.openURL(hint.url)}>
                   <Text style={styles.hintPeekOpenText}>Open →</Text>
@@ -364,6 +412,27 @@ function HintPeekModal({ hint, onClose }) {
           </Pressable>
         ) : null}
       </Pressable>
+      {groupHintOpen && hint ? (
+        <GroupHintModal
+          hint={hint}
+          recipientUserId={hint.ownerId}
+          recipientName={hint.ownerName}
+          currentUserId={currentUserId}
+          onClose={() => setGroupHintOpen(false)}
+          onSent={(count) => {
+            setGroupHintOpen(false);
+            setInviteConfirmation(count);
+            setTimeout(() => setInviteConfirmation(null), 4000);
+          }}
+        />
+      ) : null}
+      {inviteConfirmation != null ? (
+        <View style={styles.inviteToast}>
+          <Text style={styles.inviteToastText}>
+            ✓ Invite{inviteConfirmation > 1 ? "s" : ""} sent — you'll find {inviteConfirmation > 1 ? "them" : "it"} in your messages
+          </Text>
+        </View>
+      ) : null}
     </Modal>
   );
 }
@@ -636,7 +705,7 @@ export default function FeedScreen() {
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.coral} />}
       />
-      <HintPeekModal hint={hintPeek} onClose={() => setHintPeek(null)} />
+      <HintPeekModal hint={hintPeek} onClose={() => setHintPeek(null)} currentUserId={user?.id} />
     </View>
   );
 }
@@ -721,4 +790,13 @@ const styles = StyleSheet.create({
   hintPeekRetailer: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
   hintPeekOpenButton: { marginTop: 14, height: 44, borderRadius: radii.pill, backgroundColor: colors.coral, alignItems: "center", justifyContent: "center" },
   hintPeekOpenText: { fontSize: 13, fontWeight: "700", color: "#fff" },
+  claimButton: { flex: 1, height: 44, borderRadius: radii.pill, alignItems: "center", justifyContent: "center", borderWidth: 1 },
+  claimButtonDefault: { backgroundColor: "#fff4ee", borderColor: "#f0c9b5" },
+  claimButtonMine: { backgroundColor: "#edf6eb", borderColor: "#c5dfc0" },
+  claimButtonOther: { backgroundColor: "#fff8ee", borderColor: "#f0d9a0" },
+  claimButtonText: { fontSize: 13, fontWeight: "700", color: colors.coralDeep },
+  groupTogetherButton: { flex: 1, height: 44, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
+  groupTogetherText: { fontSize: 13, fontWeight: "700", color: colors.textSecondary },
+  inviteToast: { position: "absolute", bottom: 30, left: 24, right: 24, backgroundColor: "#2f3b2d", borderRadius: radii.pill, paddingVertical: 14, paddingHorizontal: 18, alignItems: "center", ...shadow },
+  inviteToastText: { fontSize: 13, fontWeight: "700", color: "#fff", textAlign: "center" },
 });
