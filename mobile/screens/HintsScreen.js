@@ -1117,7 +1117,7 @@ function BoardListScreen({ onSelectBoard }) {
     <View style={styles.container}>
       <View style={styles.heroHeader}>
         <Text style={styles.heroTitle}>Your Hints</Text>
-        <Text style={styles.heroSubtitle}>Save a list for yourself, or build one together, public or secret 🤫</Text>
+        <Text style={styles.heroSubtitle}>Save lists for yourself, or team up with others - public or secret 🤫</Text>
       </View>
 
       {error ? <Text style={styles.errorBanner}>{error}</Text> : null}

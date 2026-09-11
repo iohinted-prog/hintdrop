@@ -226,7 +226,7 @@ export default function HintsMenuClient() {
             Your Hints
           </h1>
           <p className="mx-auto mt-3 max-w-[52ch] text-[15px] leading-7 text-slate-500">
-            Your personal Hints are just for you. Make more for other people — build a list and share it with anyone, for their birthday, Christmas, or anything else.
+            Save lists for yourself, or team up with others — public or secret 🤫
           </p>
         </section>
 
