@@ -13,8 +13,10 @@ export default function HintPreviewClient({ hintId }) {
   const [hint, setHint] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [checkedAuth, setCheckedAuth] = useState(false);
   const [signUpOpen, setSignUpOpen] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     recordShareContext("hint", hintId);
@@ -28,12 +30,22 @@ export default function HintPreviewClient({ hintId }) {
 
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
+      setCheckedAuth(true);
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("hints")
         .select("id, title, image_url, retailer, numeric_price, currency, url, occasions, user_id, profiles(full_name, avatar_url)")
         .eq("id", hintId)
         .maybeSingle();
+      // A real query error (RLS edge case, network issue, ambiguous
+      // embed) previously looked identical to "genuinely doesn't
+      // exist" - this hint existing and being public in the database
+      // while still failing to load client-side means the actual
+      // cause has to be visible somewhere to debug it next time.
+      if (error) {
+        console.error("HintPreviewClient load error:", error);
+        setLoadError(true);
+      }
       setHint(data);
       setLoading(false);
 
@@ -63,14 +75,15 @@ export default function HintPreviewClient({ hintId }) {
     ? new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numeric_price)
     : null;
 
-  return (
-    <PublicShell>
+  const inner = (
+    <>
       <div className="mx-auto max-w-[480px] px-4 py-10">
         {loading ? (
           <p className="text-center text-sm text-slate-400 py-16">Loading...</p>
         ) : !hint ? (
           <div className="text-center py-16">
-            <p className="text-4xl mb-3">🎁</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/illustrations/giftbox-badge-coral.png" alt="" className="h-14 w-14 mx-auto mb-3 rounded-2xl object-contain" />
             <p className="text-[18px] font-semibold text-slate-900">This hint isn't available</p>
             <p className="mt-1 text-sm text-slate-500">It may be private, or no longer exists.</p>
             <Link href="/" className="mt-6 inline-flex h-11 items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-6 text-sm font-semibold text-white shadow-lg">
@@ -133,6 +146,16 @@ export default function HintPreviewClient({ hintId }) {
         )}
       </div>
       <AuthModal open={signUpOpen} onClose={() => setSignUpOpen(false)} initialMode="signup" />
-    </PublicShell>
+    </>
   );
+
+  // Same pattern as ProfileClient.jsx/ExtensionClient.jsx: only wrap in
+  // PublicShell (its own signed-out-appropriate header) once we've
+  // actually confirmed there's no signed-in user - the parent layout's
+  // AppShell already provides the normal app header for a signed-in
+  // visitor, so wrapping unconditionally here duplicated both headers
+  // at once (the exact "double wrapping" bug reported).
+  if (checkedAuth && !currentUser) return <PublicShell>{inner}</PublicShell>;
+  if (!checkedAuth) return null;
+  return inner;
 }
