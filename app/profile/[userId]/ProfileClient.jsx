@@ -774,7 +774,7 @@ export default function ProfileClient({ userId }) {
       )}
       {inviteConfirmation != null && (
         <div className="fixed inset-x-0 bottom-6 z-[130] flex justify-center px-4">
-          <div className="flex items-center gap-2 rounded-full bg-[#2f3b2d] px-5 py-3 text-[13px] font-semibold text-white shadow-xl">
+          <div className="flex items-center gap-2 rounded-full bg-[#e3f5ea] border border-[#bfe4cf] px-5 py-3 text-[13px] font-semibold text-[#2f8a5f] shadow-xl">
             <span>✓</span>
             <span>
               Invite{inviteConfirmation > 1 ? "s" : ""} sent — you&apos;ll find {inviteConfirmation > 1 ? "them" : "it"} in your chats

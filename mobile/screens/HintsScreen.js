@@ -574,6 +574,10 @@ function AddHintModal({ visible, onClose, onSaved, boardId, initialUrl }) {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      // allowsEditing turns on the native crop screen - no fixed aspect,
+      // since hint images intentionally support varied aspect ratios
+      // (the masonry board layout), not one locked shape.
+      allowsEditing: true,
       quality: 0.8,
     });
     if (result.canceled || !result.assets?.[0]?.uri) return;
