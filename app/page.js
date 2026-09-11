@@ -7,17 +7,23 @@ import { SOCIAL_LINKS } from "./components/SocialLinks";
 export const metadata = {
   // absolute bypasses the root layout's "%s | HintDrop" title
   // template entirely - the homepage wants this exact custom title,
-  // not the generic template applied on top of it (which would have
-  // produced "HintDrop | You craft the moments, we remember the
-  // details. | HintDrop"). openGraph.title/twitter.title below are
-  // separate fields the template never touches, so those didn't need
-  // the same fix.
-  title: { absolute: "HintDrop | You craft the Moments, We remember the Details." },
-  description: "Save what you actually want. Remember who matters. Plan gifts together. HintDrop is the thoughtful gifting app for hints, reminders, and group gifting.",
-  keywords: ["gift ideas", "wishlist app", "group gifting", "birthday reminders", "hint list", "gift planning"],
+  // not the generic template applied on top of it. Deliberately
+  // short (47 chars, well under the ~60-char point where Google
+  // tends to truncate or just rewrite it outright) and keyword-
+  // forward rather than a truncated version of the on-page hero
+  // copy - the hero's own longer, more poetic tagline stays exactly
+  // as it is on the page itself, this is specifically what needs to
+  // work as a standalone search-result headline for someone who's
+  // never seen the page. "Wishlist" is the actual term people search
+  // for when looking for something in this category - worth
+  // capturing that intent directly rather than only differentiating
+  // from it after the click.
+  title: { absolute: "HintDrop - The Smarter Wishlist for Group Gifts" },
+  description: "More than a wishlist - save gift ideas, get reminded of birthdays, and pool money together with group pots. The thoughtful way to gift with people you love.",
+  keywords: ["gift ideas", "wishlist app", "group gifting", "birthday reminders", "hint list", "gift planning", "group pot", "pool money for gifts"],
   openGraph: {
-    title: "HintDrop | You craft the Moments, We remember the Details.",
-    description: "Save what you actually want. Remember who matters. Plan gifts together.",
+    title: "HintDrop - The Smarter Wishlist for Group Gifts",
+    description: "More than a wishlist - save gift ideas, get reminded of birthdays, and pool money together with group pots.",
     url: "https://hintdrop.app",
     siteName: "HintDrop",
     type: "website",
@@ -25,8 +31,8 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "HintDrop | You craft the Moments, We remember the Details.",
-    description: "Save what you actually want. Remember who matters. Plan gifts together.",
+    title: "HintDrop - The Smarter Wishlist for Group Gifts",
+    description: "More than a wishlist - save gift ideas, get reminded of birthdays, and pool money together with group pots.",
     images: ["https://hintdrop.app/og-default-v2.png"],
   },
   alternates: {
