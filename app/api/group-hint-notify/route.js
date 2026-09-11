@@ -25,7 +25,7 @@ async function sendEmail({ to, subject, html }) {
 
 export async function POST(req) {
   const supabase = getSupabase();
-  const { type, groupHintId, memberId, responderId, response } = await req.json();
+  const { type, groupHintId, memberId, responderId, response, amount } = await req.json();
 
   if (type === "invite") {
     const { data: gh } = await supabase
@@ -93,15 +93,18 @@ export async function POST(req) {
     const { data: organiserAuth } = await supabase.auth.admin.getUserById(gh?.organiser_id);
     const organiserEmail = organiserAuth?.user?.email;
     const accepted = response === "in";
+    const pledgeText = accepted && amount != null
+      ? new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(amount)
+      : null;
 
     if (organiserEmail) {
       await sendEmail({
         to: organiserEmail,
-        subject: accepted ? `${responderName} is in!` : `${responderName} declined`,
+        subject: accepted ? (pledgeText ? `${responderName} pledged ${pledgeText}!` : `${responderName} is in!`) : `${responderName} declined`,
         html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
           <div style="text-align:center;margin-bottom:20px"><img src="https://hintdrop.app/illustrations/logo-full-wordmark.png" alt="HintDrop" height="36" style="display:inline-block;height:36px;width:auto" /></div>
           <h2 style="color:${accepted ? "#4a7a3a" : "#b14f43"}">${accepted ? "🎉 They're in!" : "They declined"}</h2>
-          <p><strong>${responderName}</strong> has ${accepted ? "accepted" : "declined"} your group gift invite for <strong>${gh?.hints?.title || "a hint"}</strong>.</p>${accepted ? `<p style="color:#555;font-size:14px;margin-top:8px">Get in touch with them to sort out contributions between yourselves.</p>` : ""}
+          <p><strong>${responderName}</strong> has ${accepted ? "accepted" : "declined"} your group gift invite for <strong>${gh?.hints?.title || "a hint"}</strong>.${pledgeText ? ` They pledged <strong>${pledgeText}</strong>.` : ""}</p>${accepted ? `<p style="color:#555;font-size:14px;margin-top:8px">Get in touch with them to sort out contributions between yourselves.</p>` : ""}
           <a href="https://hintdrop.app/feed" style="display:inline-block;margin-top:20px;background:linear-gradient(to bottom,#ff966f,#ff7e54);color:white;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:bold">View in HintDrop</a>
         </div>`,
       });

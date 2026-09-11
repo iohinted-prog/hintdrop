@@ -30,14 +30,17 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
   const target = groupGift.target_amount;
   const totalPeople = 1 + members.length; // organiser + everyone invited
   const share = target ? target / totalPeople : 0;
-  const raised = share * (inMembers.length + 1); // organiser counts as "in" too
+  // Real pledged amounts, not an assumed equal split - falls back to the
+  // theoretical share only for members who accepted before pledge amounts
+  // existed.
+  const raised = inMembers.reduce((sum, m) => sum + (m.pledged_amount != null ? Number(m.pledged_amount) : share), 0);
   const pct = target ? Math.min(100, Math.round((raised / target) * 100)) : 0;
   const isOrganiser = groupGift.organiser_id === currentUserId;
   const formatCurrency = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(n);
 
   const segments = [
     { name: isOrganiser ? "You" : organiser?.full_name?.split(" ")[0] || "Organiser", amount: share },
-    ...inMembers.map((m) => ({ name: m.user_id === currentUserId ? "You" : m.profiles?.full_name?.split(" ")[0] || "Someone", amount: share })),
+    ...inMembers.map((m) => ({ name: m.user_id === currentUserId ? "You" : m.profiles?.full_name?.split(" ")[0] || "Someone", amount: m.pledged_amount != null ? Number(m.pledged_amount) : share })),
   ];
   const cx = 44, cy = 44, r = 36, stroke = 13;
   const circ = 2 * Math.PI * r;
@@ -63,9 +66,9 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
       </div>
       <div className="min-w-0 flex-1">
         {hint?.image_url ? (
-          <div className="flex items-center gap-2 mb-1.5">
-            <HintImage src={hint.image_url} width={28} height={28} className="rounded-[8px] object-cover shrink-0" alt="" />
-            <p className="text-[13px] font-semibold text-slate-900 truncate">{hint?.title || "Group gift"}</p>
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <HintImage src={hint.image_url} width={52} height={52} className="rounded-[12px] object-cover shrink-0" alt="" />
+            <p className="text-[14px] font-semibold text-slate-900 line-clamp-2">{hint?.title || "Group gift"}</p>
           </div>
         ) : (
           <p className="text-[13px] font-semibold text-slate-900 truncate mb-1.5">{hint?.title || "Group gift"}</p>
@@ -82,7 +85,7 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
             ))}
           </div>
           <span className="text-[10px] text-slate-400">
-            {inMembers.length + 1} of {totalPeople} pledged
+            {inMembers.length} of {members.length} pledged
           </span>
         </div>
       </div>
@@ -217,12 +220,12 @@ export default function PeopleClient() {
   // a separate table), then merged.
   async function loadGroupGifts(userId) {
     const [{ data: organising }, { data: memberRows }] = await Promise.all([
-      supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url))").eq("organiser_id", userId),
+      supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, profiles(full_name, avatar_url))").eq("organiser_id", userId),
       supabase.from("group_hint_members").select("group_hint_id").eq("user_id", userId),
     ]);
     const memberGroupHintIds = (memberRows || []).map((r) => r.group_hint_id);
     const { data: invitedInto } = memberGroupHintIds.length
-      ? await supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url))").in("id", memberGroupHintIds)
+      ? await supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, profiles(full_name, avatar_url))").in("id", memberGroupHintIds)
       : { data: [] };
     const merged = [...(organising || []), ...(invitedInto || [])].filter(
       (gh, i, self) => self.findIndex((g) => g.id === gh.id) === i

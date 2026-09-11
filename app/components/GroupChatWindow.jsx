@@ -28,6 +28,8 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [myProfile, setMyProfile] = useState(null);
+  const [pledgingId, setPledgingId] = useState(null);
+  const [pledgeAmount, setPledgeAmount] = useState("");
 
   const members = conversation?.conversation_members || [];
   const otherMembers = members.filter(m => m.user_id !== currentUserId);
@@ -53,7 +55,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
     // Load pinned hints, including the current user's own status on each,
     // and everyone's status/profile for the "who's in" display
     supabase.from("conversation_hints")
-      .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url)))")
+      .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, profiles(full_name, avatar_url)))")
       .eq("conversation_id", conversation.id)
       .eq("dismissed", false)
       .then(({ data }) => setPinnedHints(data || []));
@@ -66,7 +68,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_hints", filter: "conversation_id=eq." + conversation.id },
         () => {
           supabase.from("conversation_hints")
-            .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url)))")
+            .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, profiles(full_name, avatar_url)))")
             .eq("conversation_id", conversation.id)
             .eq("dismissed", false)
             .then(({ data }) => setPinnedHints(data || []));
@@ -130,18 +132,20 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
     setPinnedHints(prev => prev.filter(h => h.id !== pinnedHintId));
   }
 
-  async function respondToGroupHint(ph, action) {
+  async function respondToGroupHint(ph, action, amount) {
     const gh = ph.group_hints;
     const myMember = (gh?.group_hint_members || []).find(m => m.user_id === currentUserId);
     if (!myMember) return;
 
     const status = action === "accept" ? "in" : "declined";
-    await supabase.from("group_hint_members").update({ status }).eq("id", myMember.id);
+    const updatePayload = action === "accept" ? { status, pledged_amount: amount ?? null } : { status };
+    await supabase.from("group_hint_members").update(updatePayload).eq("id", myMember.id);
 
     const myName = myProfile?.full_name || "Someone";
     const hintTitle = gh?.hints?.title || "a hint";
+    const currency = gh?.hints?.currency || "GBP";
     const announceBody = action === "accept"
-      ? `${myName} is in! 🎉`
+      ? (amount != null ? `${myName} pledged ${new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(amount)} 🎉` : `${myName} is in! 🎉`)
       : `${myName} declined`;
 
     if (action === "decline") {
@@ -156,7 +160,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
     await supabase.from("messages").insert({ conversation_id: conversation.id, sender_id: currentUserId, body: announceBody, type: "system" });
 
     setPinnedHints(prev => prev.map(p => p.id === ph.id
-      ? { ...p, group_hints: { ...p.group_hints, group_hint_members: (p.group_hints.group_hint_members || []).map(m => m.user_id === currentUserId ? { ...m, status } : m) } }
+      ? { ...p, group_hints: { ...p.group_hints, group_hint_members: (p.group_hints.group_hint_members || []).map(m => m.user_id === currentUserId ? { ...m, status, pledged_amount: amount ?? m.pledged_amount } : m) } }
       : p
     ));
 
@@ -164,7 +168,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
     fetch("/api/group-hint-notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "response", memberId: myMember.id, responderId: currentUserId, response: status }),
+      body: JSON.stringify({ type: "response", memberId: myMember.id, responderId: currentUserId, response: status, amount }),
     }).catch(console.error);
   }
 
@@ -233,7 +237,12 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
                     const target = ph.group_hints?.target_amount;
                     const totalPeople = 1 + allMembers.length; // organiser + everyone invited
                     const share = target ? target / totalPeople : null;
-                    const raised = share ? inMembers.length * share : null;
+                    // Real pledged amounts, not an assumed equal split - falls
+                    // back to the theoretical share only for members who
+                    // accepted before pledge amounts existed.
+                    const raised = inMembers.length
+                      ? inMembers.reduce((sum, m) => sum + (m.pledged_amount != null ? Number(m.pledged_amount) : (share || 0)), 0)
+                      : null;
                     const pct = target && raised != null ? Math.min(100, Math.round((raised / target) * 100)) : null;
                     return (
                       <div className="mt-1">
@@ -264,22 +273,44 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
                   })()}
                 </div>
                 {isPending ? (
-                  <div className="flex gap-1 shrink-0">
-                    <button type="button" onClick={() => respondToGroupHint(ph, "accept")}
-                      className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white">
-                      {(() => {
-                        const allMembers = ph.group_hints?.group_hint_members || [];
-                        const target = ph.group_hints?.target_amount;
-                        const totalPeople = 1 + allMembers.length;
-                        if (!target) return "I'm in";
-                        return `I'm in (${new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(target / totalPeople)})`;
-                      })()}
-                    </button>
-                    <button type="button" onClick={() => respondToGroupHint(ph, "decline")}
-                      className="text-[10px] font-semibold px-2.5 py-1 rounded-full border border-[#f0dfd6] text-slate-400 hover:bg-slate-50">
-                      Decline
-                    </button>
-                  </div>
+                  pledgingId === ph.id ? (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <input
+                        type="number" step="0.01" min="0" autoFocus
+                        value={pledgeAmount}
+                        onChange={e => setPledgeAmount(e.target.value)}
+                        className="w-16 h-7 rounded-full border border-[#ead8ce] px-2 text-[11px] text-slate-700 outline-none focus:border-[#f19b7e]"
+                      />
+                      <button type="button"
+                        onClick={() => { respondToGroupHint(ph, "accept", parseFloat(pledgeAmount) || 0); setPledgingId(null); }}
+                        className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white">
+                        Confirm
+                      </button>
+                      <button type="button" onClick={() => setPledgingId(null)}
+                        className="text-[10px] font-semibold px-2 py-1 rounded-full border border-[#f0dfd6] text-slate-400 hover:bg-slate-50">
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-1 shrink-0">
+                      <button type="button"
+                        onClick={() => {
+                          const allMembers = ph.group_hints?.group_hint_members || [];
+                          const target = ph.group_hints?.target_amount;
+                          const totalPeople = 1 + allMembers.length;
+                          const defaultShare = target ? target / totalPeople : 0;
+                          setPledgeAmount(defaultShare ? defaultShare.toFixed(2) : "");
+                          setPledgingId(ph.id);
+                        }}
+                        className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white">
+                        Pledge
+                      </button>
+                      <button type="button" onClick={() => respondToGroupHint(ph, "decline")}
+                        className="text-[10px] font-semibold px-2.5 py-1 rounded-full border border-[#f0dfd6] text-slate-400 hover:bg-slate-50">
+                        Decline
+                      </button>
+                    </div>
+                  )
                 ) : (
                   <div className="flex gap-1 shrink-0">
                     <button type="button"
