@@ -199,10 +199,33 @@ function SignedInApp() {
       setOpenPotId(second);
       return;
     }
-    // /invite/contact and /invite/circle carry their own token-based
-    // state (invite_token, etc.) rather than a plain path segment
-    // that maps cleanly to an existing mobile screen the way the
-    // others above do - not handled yet.
+    if (first === "invite" && (second === "contact" || second === "circle")) {
+      // Unlike web's dedicated /invite/contact and /invite/circle
+      // pages, this doesn't need a signed-out/wrong-account/preview
+      // flow of its own - handleIncomingUrl already bails out above if
+      // !user?.id, so by the time this runs there's always already a
+      // signed-in user. Reuses the exact same accept-contact-invite/
+      // accept-circle-invite functions the in-app pending-invites list
+      // (NotificationsPanel.js's handleAcceptInvite) already calls -
+      // both already accept a raw token, not just an invite_id, so no
+      // new backend surface needed for this either.
+      const token = parsed.searchParams.get("token");
+      if (!token) return;
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          second === "contact" ? "accept-contact-invite" : "accept-circle-invite",
+          { body: { token } }
+        );
+        if (error || data?.ok === false) {
+          Alert.alert("Invite link didn't work", data?.error || "This invite may have already been used or expired.");
+        } else {
+          Alert.alert("You're connected!", second === "contact" ? "You've accepted the contact invite." : "You've joined the circle.");
+        }
+      } catch {
+        Alert.alert("Something went wrong", "Please try again.");
+      }
+      return;
+    }
   }, [user?.id]);
 
   useEffect(() => {
