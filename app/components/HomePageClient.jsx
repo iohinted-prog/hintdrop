@@ -583,10 +583,11 @@ export default function HomePageClient() {
               </span>
             </div>
 
-            <h1 className="mt-7 max-w-[580px] text-[48px] font-bold leading-[0.98] tracking-[-0.01em] text-slate-900 sm:text-[64px] lg:text-[82px]" >
-              You craft the Moments,
-              <br />
-              <span className="text-[#ff8060]">We remember the Details.</span>
+            <h1 className="mt-7 text-[48px] font-bold leading-[0.98] tracking-[-0.01em] text-slate-900 sm:text-[64px] lg:text-[82px]" >
+              <span className="block whitespace-nowrap">You craft the</span>
+              <span className="block whitespace-nowrap">Moments</span>
+              <span className="block whitespace-nowrap text-[#ff8060]">We remember</span>
+              <span className="block whitespace-nowrap text-[#ff8060]">the Details.</span>
             </h1>
 
             <div
