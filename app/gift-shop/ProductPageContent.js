@@ -94,6 +94,7 @@ export default async function ProductPageContent({ region, id }) {
             <img
               src={product.image_url}
               alt={product.title}
+              fetchPriority="high"
               style={{ width: "100%", height: "auto", display: "block", objectFit: "cover" }}
             />
           ) : null}
