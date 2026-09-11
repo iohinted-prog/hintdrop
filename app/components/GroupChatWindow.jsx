@@ -28,8 +28,6 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [myProfile, setMyProfile] = useState(null);
-  const [pledgingId, setPledgingId] = useState(null);
-  const [pledgeAmount, setPledgeAmount] = useState("");
   const [payingId, setPayingId] = useState(null);
   const [payAmount, setPayAmount] = useState("");
 
@@ -134,21 +132,16 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
     setPinnedHints(prev => prev.filter(h => h.id !== pinnedHintId));
   }
 
-  async function respondToGroupHint(ph, action, amount) {
+  async function respondToGroupHint(ph, action) {
     const gh = ph.group_hints;
     const myMember = (gh?.group_hint_members || []).find(m => m.user_id === currentUserId);
     if (!myMember) return;
 
     const status = action === "accept" ? "in" : "declined";
-    const updatePayload = action === "accept" ? { status, pledged_amount: amount ?? null } : { status };
-    await supabase.from("group_hint_members").update(updatePayload).eq("id", myMember.id);
+    await supabase.from("group_hint_members").update({ status }).eq("id", myMember.id);
 
     const myName = myProfile?.full_name || "Someone";
-    const hintTitle = gh?.hints?.title || "a hint";
-    const currency = gh?.hints?.currency || "GBP";
-    const announceBody = action === "accept"
-      ? (amount != null ? `${myName} pledged ${new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(amount)} 🎉` : `${myName} is in! 🎉`)
-      : `${myName} declined`;
+    const announceBody = action === "accept" ? `${myName} is in! 🎉` : `${myName} declined`;
 
     if (action === "decline") {
       // Post the decline notice first, while they're still a member (RLS
@@ -162,7 +155,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
     await supabase.from("messages").insert({ conversation_id: conversation.id, sender_id: currentUserId, body: announceBody, type: "system" });
 
     setPinnedHints(prev => prev.map(p => p.id === ph.id
-      ? { ...p, group_hints: { ...p.group_hints, group_hint_members: (p.group_hints.group_hint_members || []).map(m => m.user_id === currentUserId ? { ...m, status, pledged_amount: amount ?? m.pledged_amount } : m) } }
+      ? { ...p, group_hints: { ...p.group_hints, group_hint_members: (p.group_hints.group_hint_members || []).map(m => m.user_id === currentUserId ? { ...m, status } : m) } }
       : p
     ));
 
@@ -170,15 +163,15 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
     fetch("/api/group-hint-notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "response", memberId: myMember.id, responderId: currentUserId, response: status, amount }),
+      body: JSON.stringify({ type: "response", memberId: myMember.id, responderId: currentUserId, response: status }),
     }).catch(console.error);
   }
 
-  // Second, separate step from pledging - pledging is just a stated
-  // intent to contribute a certain amount; marking as paid confirms
-  // the money has actually changed hands (outside the app - HintDrop
-  // never moves real money itself). Only the member themselves can
-  // mark their own contribution as paid.
+  // Second, separate step from accepting - accepting ("I'm in") is just
+  // saying you're in; marking a contribution confirms the money has
+  // actually changed hands (outside the app - HintDrop never moves real
+  // money itself), and only actual contributions count toward the pot's
+  // progress. Only the member themselves can mark their own contribution.
   async function markAsPaid(ph, amount) {
     const gh = ph.group_hints;
     const myMember = (gh?.group_hint_members || []).find(m => m.user_id === currentUserId);
@@ -188,7 +181,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
 
     const myName = myProfile?.full_name || "Someone";
     const currency = gh?.hints?.currency || "GBP";
-    const announceBody = `${myName} marked ${new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(amount)} as paid ✅`;
+    const announceBody = `${myName} contributed ${new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(amount)} 🎉`;
     await supabase.from("messages").insert({ conversation_id: conversation.id, sender_id: currentUserId, body: announceBody, type: "system" });
 
     setPinnedHints(prev => prev.map(p => p.id === ph.id
@@ -240,16 +233,38 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
               : null;
             return (
               <div key={ph.id} className="flex items-center gap-2 bg-white rounded-[14px] border border-[#f0dfd6] p-2">
-                {hint?.image_url && (
-                  <HintImage
-                    src={hint.image_url}
-                    width={40}
-                    height={40}
-                    className="rounded-[10px] object-cover shrink-0 cursor-pointer"
-                    alt=""
-                    onClick={() => { if (ph.group_hints?.organiser_id) { window.location.href = `/profile/${ph.group_hints.recipient_user_id || ph.group_hints.organiser_id}`; onClose(); } }}
-                  />
-                )}
+                {(() => {
+                  const allMembersForRing = ph.group_hints?.group_hint_members || [];
+                  const targetForRing = ph.group_hints?.target_amount;
+                  const paidForRing = allMembersForRing.filter(m => m.status === "in" && m.paid_amount != null);
+                  const raisedForRing = paidForRing.reduce((sum, m) => sum + Number(m.paid_amount), 0);
+                  const pctForRing = targetForRing ? Math.min(100, Math.round((raisedForRing / targetForRing) * 100)) : 0;
+                  const r = 18, circ = 2 * Math.PI * r;
+                  const dash = (pctForRing / 100) * circ;
+                  if (!targetForRing) {
+                    // Plain chat, not a pot - no donut, just the thumbnail as before.
+                    return hint?.image_url ? (
+                      <HintImage src={hint.image_url} width={40} height={40} className="rounded-[10px] object-cover shrink-0 cursor-pointer" alt=""
+                        onClick={() => { if (ph.group_hints?.organiser_id) { window.location.href = `/profile/${ph.group_hints.recipient_user_id || ph.group_hints.organiser_id}`; onClose(); } }} />
+                    ) : null;
+                  }
+                  // Mini version of the donut used on the Circle page tile -
+                  // a single overall-progress ring (not per-member segments,
+                  // there isn't room for that at this size) wrapping the
+                  // hint thumbnail instead of sitting beside it.
+                  return (
+                    <div className="relative shrink-0 cursor-pointer" style={{ width: 44, height: 44 }}
+                      onClick={() => { if (ph.group_hints?.organiser_id) { window.location.href = `/profile/${ph.group_hints.recipient_user_id || ph.group_hints.organiser_id}`; onClose(); } }}>
+                      <svg width={44} height={44} viewBox="0 0 44 44" style={{ transform: "rotate(-90deg)" }}>
+                        <circle cx={22} cy={22} r={r} fill="none" stroke="#f1e3db" strokeWidth={4} />
+                        <circle cx={22} cy={22} r={r} fill="none" stroke="#ff875d" strokeWidth={4} strokeDasharray={`${dash} ${circ - dash}`} strokeLinecap="round" />
+                      </svg>
+                      <div className="absolute inset-[5px] rounded-full overflow-hidden bg-[#f1e3db]">
+                        {hint?.image_url && <HintImage src={hint.image_url} width={34} height={34} className="w-full h-full object-cover" alt="" />}
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div className="min-w-0 flex-1">
                   <p className="text-[12px] font-semibold text-slate-900 truncate">{hint?.title || "Group gift"}</p>
                   {price && <p className="text-[11px] text-[#df7b59] font-semibold">{price}</p>}
@@ -263,13 +278,13 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
                     const totalPeople = 1 + allMembers.length; // organiser + everyone invited
                     const share = target ? target / totalPeople : null;
                     const paidMembers = inMembers.filter(m => m.paid_amount != null);
-                    // Real pledged amounts, not an assumed equal split - falls
-                    // back to the theoretical share only for members who
-                    // accepted before pledge amounts existed.
-                    const raised = inMembers.length
-                      ? inMembers.reduce((sum, m) => sum + (m.pledged_amount != null ? Number(m.pledged_amount) : (share || 0)), 0)
-                      : null;
-                    const pct = target && raised != null ? Math.min(100, Math.round((raised / target) * 100)) : null;
+                    // Only real, actually-marked contributions count toward
+                    // the pot - no fallback to the theoretical share for
+                    // members who are merely "in" but haven't contributed
+                    // yet, which used to make an empty pot look already
+                    // part-funded.
+                    const raised = paidMembers.reduce((sum, m) => sum + Number(m.paid_amount), 0);
+                    const pct = target ? Math.min(100, Math.round((raised / target) * 100)) : 0;
                     return (
                       <div className="mt-1">
                         <div className="flex items-center gap-1.5">
@@ -281,62 +296,29 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
                             ))}
                           </div>
                           <span className="text-[10px] text-slate-400">
-                            {inMembers.length} in{pendingMembers.length > 0 ? `, ${pendingMembers.length} pending` : ""}{paidMembers.length > 0 ? `, ${paidMembers.length} paid` : ""}
+                            {inMembers.length} in{pendingMembers.length > 0 ? `, ${pendingMembers.length} pending` : ""}{paidMembers.length > 0 ? `, ${paidMembers.length} contributed` : ""}
                           </span>
                         </div>
-                        {pct != null && (
-                          <div className="mt-1.5">
-                            <div className="h-1.5 w-full rounded-full bg-[#f1e3db] overflow-hidden">
-                              <div className="h-full rounded-full bg-gradient-to-r from-[#ff966f] to-[#ff7e54]" style={{ width: `${pct}%` }} />
-                            </div>
-                            <p className="text-[10px] text-slate-400 mt-0.5">
-                              {new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(raised)} of {new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(target)} pledged
-                            </p>
-                          </div>
+                        {target != null && (
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(raised)} of {new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(target)} contributed
+                          </p>
                         )}
                       </div>
                     );
                   })()}
                 </div>
                 {isPending ? (
-                  pledgingId === ph.id ? (
-                    <div className="flex items-center gap-1 shrink-0">
-                      <input
-                        type="number" step="0.01" min="0" autoFocus
-                        value={pledgeAmount}
-                        onChange={e => setPledgeAmount(e.target.value)}
-                        className="w-16 h-7 rounded-full border border-[#ead8ce] px-2 text-[11px] text-slate-700 outline-none focus:border-[#f19b7e]"
-                      />
-                      <button type="button"
-                        onClick={() => { respondToGroupHint(ph, "accept", parseFloat(pledgeAmount) || 0); setPledgingId(null); }}
-                        className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white">
-                        Confirm
-                      </button>
-                      <button type="button" onClick={() => setPledgingId(null)}
-                        className="text-[10px] font-semibold px-2 py-1 rounded-full border border-[#f0dfd6] text-slate-400 hover:bg-slate-50">
-                        ✕
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-1 shrink-0">
-                      <button type="button"
-                        onClick={() => {
-                          const allMembers = ph.group_hints?.group_hint_members || [];
-                          const target = ph.group_hints?.target_amount;
-                          const totalPeople = 1 + allMembers.length;
-                          const defaultShare = target ? target / totalPeople : 0;
-                          setPledgeAmount(defaultShare ? defaultShare.toFixed(2) : "");
-                          setPledgingId(ph.id);
-                        }}
-                        className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white">
-                        Pledge
-                      </button>
-                      <button type="button" onClick={() => respondToGroupHint(ph, "decline")}
-                        className="text-[10px] font-semibold px-2.5 py-1 rounded-full border border-[#f0dfd6] text-slate-400 hover:bg-slate-50">
-                        Decline
-                      </button>
-                    </div>
-                  )
+                  <div className="flex gap-1 shrink-0">
+                    <button type="button" onClick={() => respondToGroupHint(ph, "accept")}
+                      className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white">
+                      I'm in
+                    </button>
+                    <button type="button" onClick={() => respondToGroupHint(ph, "decline")}
+                      className="text-[10px] font-semibold px-2.5 py-1 rounded-full border border-[#f0dfd6] text-slate-400 hover:bg-slate-50">
+                      Decline
+                    </button>
+                  </div>
                 ) : payingId === ph.id ? (
                   <div className="flex items-center gap-1 shrink-0">
                     <input
@@ -355,17 +337,21 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
                       ✕
                     </button>
                   </div>
-                ) : myMember?.status === "in" && myMember.paid_amount == null ? (
+                ) : myMember?.status === "in" && ph.group_hints?.target_amount && myMember.paid_amount == null ? (
                   <div className="flex gap-1 shrink-0">
                     <button type="button"
-                      onClick={() => { setPayAmount(myMember.pledged_amount != null ? Number(myMember.pledged_amount).toFixed(2) : ""); setPayingId(ph.id); }}
+                      onClick={() => { setPayAmount(""); setPayingId(ph.id); }}
                       className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-gradient-to-b from-[#8fc98f] to-[#5fae5f] text-white">
-                      Mark as paid
+                      I've contributed
                     </button>
                   </div>
-                ) : myMember?.status === "in" && myMember.paid_amount != null ? (
+                ) : myMember?.status === "in" && ph.group_hints?.target_amount && myMember.paid_amount != null ? (
                   <div className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#e3f5ea] text-[#2f8a5f] shrink-0">
-                    ✓ Paid
+                    ✓ Contributed
+                  </div>
+                ) : myMember?.status === "in" ? (
+                  <div className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#e3f5ea] text-[#2f8a5f] shrink-0">
+                    ✓ You're in
                   </div>
                 ) : (
                   <div className="flex gap-1 shrink-0">
