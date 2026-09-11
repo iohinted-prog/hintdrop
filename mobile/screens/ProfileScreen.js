@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Pressable, Image, ScrollView, Modal, ActivityIndicator, Alert, Linking, Animated, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import GroupHintModal from "../components/GroupHintModal";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -122,6 +123,8 @@ export default function ProfileScreen({ userId, onBack, insideModal = false }) {
   const [filterVisible, setFilterVisible] = useState(false);
   const [occasionFilter, setOccasionFilter] = useState("");
   const [claimingId, setClaimingId] = useState(null);
+  const [groupHint, setGroupHint] = useState(null);
+  const [inviteConfirmation, setInviteConfirmation] = useState(null);
   const [contactState, setContactState] = useState("none");
   const [collabStatus, setCollabStatus] = useState("none");
   const [collabStatusLoading, setCollabStatusLoading] = useState(true);
@@ -649,12 +652,38 @@ export default function ProfileScreen({ userId, onBack, insideModal = false }) {
                       );
                     })() : null}
                   </View>
+                  {isViewingOther ? (
+                    <Pressable style={styles.groupTogetherButton} onPress={() => setGroupHint(selectedHint)}>
+                      <Text style={styles.groupTogetherText}>Get group together</Text>
+                    </Pressable>
+                  ) : null}
                 </View>
               </ScrollView>
             </Pressable>
           ) : null}
         </Pressable>
       </Modal>
+      {groupHint ? (
+        <GroupHintModal
+          hint={groupHint}
+          recipientUserId={userId}
+          recipientName={displayName}
+          currentUserId={currentUser?.id}
+          onClose={() => setGroupHint(null)}
+          onSent={(count) => {
+            setGroupHint(null);
+            setInviteConfirmation(count);
+            setTimeout(() => setInviteConfirmation(null), 4000);
+          }}
+        />
+      ) : null}
+      {inviteConfirmation != null ? (
+        <View style={styles.inviteToast}>
+          <Text style={styles.inviteToastText}>
+            ✓ Invite{inviteConfirmation > 1 ? "s" : ""} sent — you'll find {inviteConfirmation > 1 ? "them" : "it"} in your messages
+          </Text>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -739,6 +768,10 @@ const styles = StyleSheet.create({
   claimButtonMine: { backgroundColor: "#edf6eb", borderColor: "#c5dfc0" },
   claimButtonOther: { backgroundColor: "#fff8ee", borderColor: "#f0d9a0" },
   claimButtonText: { fontSize: 13, fontWeight: "700", color: colors.coralDeep },
+  groupTogetherButton: { marginTop: 10, height: 44, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
+  groupTogetherText: { fontSize: 13, fontWeight: "700", color: colors.textSecondary },
+  inviteToast: { position: "absolute", bottom: 30, left: 24, right: 24, backgroundColor: "#2f3b2d", borderRadius: radii.pill, paddingVertical: 14, paddingHorizontal: 18, alignItems: "center", ...shadow },
+  inviteToastText: { fontSize: 13, fontWeight: "700", color: "#fff", textAlign: "center" },
   headerSkeletonWrap: { backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14 },
   headerSkeletonTopRow: { flexDirection: "row", justifyContent: "space-between" },
   headerSkeletonIdentityRow: { flexDirection: "row", alignItems: "center", gap: 14, marginTop: 12 },

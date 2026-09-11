@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, FlatList, Pressable, Image, TextInput, KeyboardAvoidingView, Platform, Alert } from "react-native";
+import { View, StyleSheet, FlatList, Pressable, Image, TextInput, KeyboardAvoidingView, Platform, Alert, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
@@ -10,8 +10,10 @@ import { colors, radii, shadow } from "../lib/theme";
 // desktop window into a full-screen thread (see MessagesScreen.js for
 // why - the same reasoning applies here). Same messages/conversations
 // data and realtime subscription, same send/delete-message behavior,
-// same mark-as-read-on-open. Pinned group-gift cards are the one
-// deliberate omission - see MessagesScreen.js's header comment.
+// same mark-as-read-on-open, and now also the pinned group-gift cards
+// (conversation_hints/group_hints/group_hint_members) with the same
+// accept/decline flow - group gifting is built out as its own feature
+// now (see components/GroupHintModal.js for the invite side).
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -32,8 +34,9 @@ function Avatar({ profile, userId, size = 28 }) {
   );
 }
 
-export default function ChatThreadScreen({ conversation, currentUserId, onBack }) {
+export default function ChatThreadScreen({ conversation, currentUserId, onBack, onViewProfile }) {
   const [messages, setMessages] = useState([]);
+  const [pinnedHints, setPinnedHints] = useState([]);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [myProfile, setMyProfile] = useState(null);
@@ -61,6 +64,16 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack }
       .order("created_at", { ascending: false })
       .then(({ data }) => setMessages(data || []));
 
+    const loadPinnedHints = () => {
+      supabase
+        .from("conversation_hints")
+        .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url, avatar_color)))")
+        .eq("conversation_id", conversation.id)
+        .eq("dismissed", false)
+        .then(({ data }) => setPinnedHints(data || []));
+    };
+    loadPinnedHints();
+
     const channel = supabase
       .channel("conv-" + conversation.id)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: "conversation_id=eq." + conversation.id }, (payload) =>
@@ -69,6 +82,7 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack }
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages" }, (payload) =>
         setMessages((prev) => prev.filter((m) => m.id !== payload.old.id))
       )
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_hints", filter: "conversation_id=eq." + conversation.id }, loadPinnedHints)
       .subscribe();
 
     supabase.from("conversation_members").update({ last_read_at: new Date().toISOString() }).eq("conversation_id", conversation.id).eq("user_id", currentUserId).then(() => {});
@@ -112,6 +126,43 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack }
     ]);
   }
 
+  async function dismissHint(pinnedHintId) {
+    await supabase.from("conversation_hints").update({ dismissed: true }).eq("id", pinnedHintId);
+    setPinnedHints((prev) => prev.filter((h) => h.id !== pinnedHintId));
+  }
+
+  async function respondToGroupHint(ph, action) {
+    const gh = ph.group_hints;
+    const myMember = (gh?.group_hint_members || []).find((m) => m.user_id === currentUserId);
+    if (!myMember) return;
+
+    const status = action === "accept" ? "in" : "declined";
+    await supabase.from("group_hint_members").update({ status }).eq("id", myMember.id);
+
+    const myName = myProfile?.full_name || "Someone";
+    const hintTitle = gh?.hints?.title || "a hint";
+    const announceBody = action === "accept" ? `${myName} is in! 🎉` : `${myName} declined`;
+
+    if (action === "decline") {
+      // Post the decline notice first, while still a member (RLS
+      // requires the sender to be a member), then remove them from
+      // the chat - same order as web, same reason.
+      await supabase.from("messages").insert({ conversation_id: conversation.id, sender_id: currentUserId, body: announceBody, type: "system" });
+      await supabase.from("conversation_members").delete().eq("conversation_id", conversation.id).eq("user_id", currentUserId);
+      onBack();
+      return;
+    }
+
+    await supabase.from("messages").insert({ conversation_id: conversation.id, sender_id: currentUserId, body: announceBody, type: "system" });
+    setPinnedHints((prev) =>
+      prev.map((p) =>
+        p.id !== ph.id
+          ? p
+          : { ...p, group_hints: { ...p.group_hints, group_hint_members: (p.group_hints.group_hint_members || []).map((m) => (m.id === myMember.id ? { ...m, status: "in" } : m)) } }
+      )
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={0}>
@@ -131,6 +182,78 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack }
             <Text style={styles.headerSubtitle}>{members.length} {members.length === 1 ? "person" : "people"}</Text>
           </View>
         </View>
+
+        {pinnedHints.length > 0 ? (
+          <View style={styles.pinnedWrap}>
+            <Text style={styles.pinnedLabel}>📌 GROUP GIFTS</Text>
+            {pinnedHints.map((ph) => {
+              const hint = ph.group_hints?.hints;
+              const organiser = ph.group_hints?.profiles;
+              const myMember = (ph.group_hints?.group_hint_members || []).find((m) => m.user_id === currentUserId);
+              const isPending = myMember?.status === "invited";
+              const price = hint?.numeric_price > 0 ? new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(hint.numeric_price) : null;
+              const allMembers = ph.group_hints?.group_hint_members || [];
+              const inMembers = allMembers.filter((m) => m.status === "in");
+              const pendingMembers = allMembers.filter((m) => m.status === "invited");
+              return (
+                <View key={ph.id} style={styles.pinnedCard}>
+                  {hint?.image_url ? (
+                    <Pressable
+                      onPress={() => {
+                        const dest = ph.group_hints?.recipient_user_id || ph.group_hints?.organiser_id;
+                        if (dest && onViewProfile) onViewProfile(dest);
+                      }}
+                    >
+                      <Image source={{ uri: hint.image_url }} style={styles.pinnedImage} />
+                    </Pressable>
+                  ) : null}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.pinnedTitle} numberOfLines={1}>{hint?.title || "Group gift"}</Text>
+                    {price ? <Text style={styles.pinnedPrice}>{price}</Text> : null}
+                    {organiser ? <Text style={styles.pinnedOrganiser}>by {organiser.full_name?.split(" ")[0]}</Text> : null}
+                    {allMembers.length > 0 ? (
+                      <View style={styles.pinnedMembersRow}>
+                        <View style={{ flexDirection: "row" }}>
+                          {allMembers.slice(0, 4).map((m, i) => (
+                            <View key={m.id} style={[styles.pinnedMemberAvatarWrap, { marginLeft: i > 0 ? -8 : 0 }, m.status === "in" ? styles.pinnedRingIn : m.status === "declined" ? styles.pinnedRingDeclined : styles.pinnedRingInvited]}>
+                              <Avatar profile={m.profiles} userId={m.user_id} size={16} />
+                            </View>
+                          ))}
+                        </View>
+                        <Text style={styles.pinnedMembersText}>{inMembers.length} in{pendingMembers.length > 0 ? `, ${pendingMembers.length} pending` : ""}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  {isPending ? (
+                    <View style={{ gap: 4 }}>
+                      <Pressable style={styles.pinnedAcceptButton} onPress={() => respondToGroupHint(ph, "accept")}>
+                        <Text style={styles.pinnedAcceptText}>I'm in</Text>
+                      </Pressable>
+                      <Pressable style={styles.pinnedDeclineButton} onPress={() => respondToGroupHint(ph, "decline")}>
+                        <Text style={styles.pinnedDeclineText}>Decline</Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <View style={{ gap: 4 }}>
+                      <Pressable
+                        style={styles.pinnedDismissButton}
+                        onPress={() => {
+                          const dest = ph.group_hints?.recipient_user_id || ph.group_hints?.organiser_id;
+                          if (dest && onViewProfile) onViewProfile(dest);
+                        }}
+                      >
+                        <Text style={styles.pinnedSeeHintsText}>See hints</Text>
+                      </Pressable>
+                      <Pressable style={styles.pinnedDismissButton} onPress={() => dismissHint(ph.id)}>
+                        <Text style={styles.pinnedDeclineText}>Dismiss</Text>
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
 
         <FlatList
           ref={listRef}
@@ -189,6 +312,25 @@ const styles = StyleSheet.create({
   headerAvatars: { flexDirection: "row" },
   headerTitle: { fontSize: 14, fontWeight: "700", color: colors.textPrimary },
   headerSubtitle: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  pinnedWrap: { borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: "#fff8f5", paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
+  pinnedLabel: { fontSize: 10, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.6 },
+  pinnedCard: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#fff", borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, padding: 8 },
+  pinnedImage: { width: 40, height: 40, borderRadius: 10 },
+  pinnedTitle: { fontSize: 12, fontWeight: "700", color: colors.textPrimary },
+  pinnedPrice: { fontSize: 11, fontWeight: "700", color: colors.coralDeep, marginTop: 1 },
+  pinnedOrganiser: { fontSize: 10, color: colors.textMuted, marginTop: 1 },
+  pinnedMembersRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
+  pinnedMemberAvatarWrap: { borderRadius: 10, borderWidth: 2, borderColor: "#fff" },
+  pinnedRingIn: { borderColor: "#8fc98f" },
+  pinnedRingDeclined: { borderColor: "#e2e8f0", opacity: 0.5 },
+  pinnedRingInvited: { borderColor: "#ffcaa8" },
+  pinnedMembersText: { fontSize: 10, color: colors.textMuted },
+  pinnedAcceptButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: colors.coral },
+  pinnedAcceptText: { fontSize: 10, fontWeight: "700", color: "#fff" },
+  pinnedDeclineButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border },
+  pinnedDeclineText: { fontSize: 10, fontWeight: "700", color: colors.textMuted },
+  pinnedDismissButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border },
+  pinnedSeeHintsText: { fontSize: 10, fontWeight: "700", color: colors.coralDeep },
   messagesContent: { padding: 16, gap: 10, flexGrow: 1 },
   emptyWrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 80 },
   emptyText: { color: colors.textMuted, fontSize: 14 },

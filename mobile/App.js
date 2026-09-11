@@ -245,7 +245,10 @@ function SignedInApp() {
       </Modal>
       <Modal visible={messagesVisible} animationType="slide" onRequestClose={() => setMessagesVisible(false)}>
         <SafeAreaProvider>
-          <MessagesScreen onBack={() => { setMessagesVisible(false); loadUnreadMessageCount(); }} />
+          <MessagesScreen
+            onBack={() => { setMessagesVisible(false); loadUnreadMessageCount(); }}
+            onViewProfile={(uid) => { setMessagesVisible(false); setProfileViewUserId(uid); }}
+          />
         </SafeAreaProvider>
       </Modal>
     </>

@@ -402,7 +402,14 @@ export default function CircleScreen() {
   }
 
   if (openChatConversation) {
-    return <ChatThreadScreen conversation={openChatConversation} currentUserId={user?.id} onBack={() => setOpenChatConversation(null)} />;
+    return (
+      <ChatThreadScreen
+        conversation={openChatConversation}
+        currentUserId={user?.id}
+        onBack={() => setOpenChatConversation(null)}
+        onViewProfile={(uid) => { setOpenChatConversation(null); setFullProfileUserId(uid); }}
+      />
+    );
   }
 
   return (

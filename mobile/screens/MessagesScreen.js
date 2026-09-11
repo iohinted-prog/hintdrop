@@ -57,7 +57,7 @@ function ConvAvatarStack({ members }) {
   );
 }
 
-export default function MessagesScreen({ onBack }) {
+export default function MessagesScreen({ onBack, onViewProfile }) {
   const { user } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -137,6 +137,7 @@ export default function MessagesScreen({ onBack }) {
         conversation={openConversation}
         currentUserId={user?.id}
         onBack={() => { setOpenConversation(null); loadConversations(); }}
+        onViewProfile={onViewProfile}
       />
     );
   }
