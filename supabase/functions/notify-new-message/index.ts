@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
           from: "HintDrop <hello@hintdrop.app>",
           to: email,
           subject: `${senderName} sent you a message`,
-          html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px"><h2 style="color:#df7b59">New message</h2><p><strong>${senderName}</strong> sent you a message on HintDrop:</p><p style="background:#f5f0ee;border-radius:12px;padding:16px;font-size:15px">${record.body}</p><a href="https://hintdrop.app/feed" style="display:inline-block;margin-top:20px;background:linear-gradient(to bottom,#ff966f,#ff7e54);color:white;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:bold">Open HintDrop</a></div>`,
+          html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px"><div style="text-align:center;margin-bottom:20px"><img src="https://hintdrop.app/illustrations/logo-full-wordmark.png" alt="HintDrop" height="36" style="display:inline-block;height:36px;width:auto" /></div><h2 style="color:#df7b59">New message</h2><p><strong>${senderName}</strong> sent you a message on HintDrop:</p><p style="background:#f5f0ee;border-radius:12px;padding:16px;font-size:15px">${record.body}</p><a href="https://hintdrop.app/feed" style="display:inline-block;margin-top:20px;background:linear-gradient(to bottom,#ff966f,#ff7e54);color:white;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:bold">Open HintDrop</a></div>`,
         }),
       });
       sent++;
