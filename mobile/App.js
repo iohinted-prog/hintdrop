@@ -11,6 +11,10 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from "@expo-google-fonts/inter";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { supabase } from "./lib/supabase";
+
+// Matches a standard uuid - lets the same profile deep link accept
+// either an old-style id link or the newer vanity username.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 import { resolveAvatarColor } from "./lib/avatarColor";
 import { registerForPushNotifications } from "./lib/pushNotifications";
 import NotificationsPanel from "./components/NotificationsPanel";
@@ -151,7 +155,19 @@ function SignedInApp() {
 
     if (first === "profile" && second) {
       setProfileViewBoardId(null);
-      setProfileViewUserId(second);
+      // second may be either the old-style real id (already-shared
+      // links must keep working) or the newer vanity username -
+      // ProfileScreen.js's own queries filter on the real uuid
+      // column, so this resolves it here first rather than letting a
+      // username string reach a query that expects a uuid. Matches
+      // web's page.js doing the same resolution server-side.
+      if (UUID_RE.test(second)) {
+        setProfileViewUserId(second);
+      } else {
+        supabase.from("profiles").select("id").eq("username", second).maybeSingle().then(({ data }) => {
+          setProfileViewUserId(data?.id || second);
+        });
+      }
       return;
     }
     if (first === "join" && second) {

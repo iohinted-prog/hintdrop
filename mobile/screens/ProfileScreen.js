@@ -320,7 +320,7 @@ export default function ProfileScreen({ userId, onBack, insideModal = false, ini
   }
 
   async function handleShare() {
-    const url = selectedBoardId ? `https://hintdrop.app/b/${selectedBoardId}` : `https://hintdrop.app/profile/${userId}`;
+    const url = selectedBoardId ? `https://hintdrop.app/b/${selectedBoardId}` : `https://hintdrop.app/profile/${profile?.username || userId}`;
     const title = selectedBoardId ? `${displayName}'s hint: "${selectedBoardData?.title}"` : `Check out ${displayName}'s Hints on HintDrop`;
     try {
       await Share.share({ message: `${title} ${url}` });
