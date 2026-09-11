@@ -22,7 +22,7 @@ function wrapHtml(headline: string, bodyHtml: string, color: string) {
 <div style="background:#f5ede8;padding:40px 20px;">
   <div style="max-width:520px;margin:0 auto;">
     <div style="text-align:center;margin-bottom:28px;">
-      <img src="${LOGO_URL}" alt="HintDrop" height="40" style="display:inline-block;height:40px;width:auto;" />
+      <img src="${LOGO_URL}" alt="HintDrop" height="64" style="display:inline-block;height:64px;width:auto;" />
     </div>
     <div style="background:#fffaf7;border-radius:28px;border:1px solid #efdcd2;box-shadow:0 20px 60px rgba(88,46,31,0.12);overflow:hidden;">
       <div style="background:linear-gradient(135deg,${color === "coral" ? "#ff966f,#ff7e54" : color === "green" ? "#8fc98f,#5fae5f" : "#c9633f,#a34f35"});padding:36px 40px 32px;">
