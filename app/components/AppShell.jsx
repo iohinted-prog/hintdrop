@@ -306,6 +306,7 @@ export default function AppShell({ children }) {
 
   const [inviteActionId, setInviteActionId] = useState(null);
   const [collabActionId, setCollabActionId] = useState(null);
+  const [potRequestActionId, setPotRequestActionId] = useState(null);
   const [notifActionId, setNotifActionId] = useState(null);
   const notifRef = useRef(null);
   const messagesRef = useRef(null);
@@ -501,6 +502,27 @@ export default function AppShell({ children }) {
       setInviteCount(prev => Math.max(0, prev - 1));
     } finally {
       setCollabActionId(null);
+    }
+  }
+
+  // Approving here only ever moves a request to "joined" - the exact
+  // same status GroupHintDetailModal's own approveRequest sets. That
+  // status still isn't full membership on its own; the invitee has to
+  // separately tap "I'm in" themselves before they're actually treated
+  // as part of the pot anywhere else in the app. Declining removes the
+  // request outright, same as the modal's declineRequest.
+  async function handleGroupHintRequestAction(notif, decision) {
+    setPotRequestActionId(notif.id);
+    try {
+      const memberId = notif.data?.member_id;
+      if (memberId) {
+        await supabase.from("group_hint_members").update({ status: decision === "accept" ? "joined" : "declined" }).eq("id", memberId);
+      }
+      await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", notif.id);
+      setActivityNotifs(prev => prev.filter(n => n.id !== notif.id));
+      setInviteCount(prev => Math.max(0, prev - 1));
+    } finally {
+      setPotRequestActionId(null);
     }
   }
 
@@ -771,6 +793,37 @@ export default function AppShell({ children }) {
         </div>
         );
       })}
+      {activityNotifs.filter(n => n.type === "group_hint_request").slice(0, 5).map(notif => {
+        const color = resolveAvatarColor({ avatarColor: notif.data?.actor_avatar_color, id: notif.actor_user_id || notif.data?.actor_name });
+        return (
+        <div key={notif.id} className="rounded-[18px] border border-[#ffd8c9] bg-[#fff4ee] p-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white overflow-hidden" style={{ background: `linear-gradient(to bottom, ${color.from}, ${color.to})` }}>
+              {notif.data?.actor_avatar_url
+                ? <HintImage src={notif.data.actor_avatar_url} fill className="object-cover" sizes="36px" alt="" fallbackClassName="hidden" />
+                : (notif.data?.actor_name || "?")[0]?.toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-semibold text-slate-900 leading-tight">{notif.title}</p>
+              {notif.body && <p className="text-[11px] text-slate-400 mt-0.5 truncate">{notif.body}</p>}
+            </div>
+            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#ffe2d3] text-[#c9633f]">Request</span>
+          </div>
+          <div className="flex gap-2">
+            <button type="button" disabled={potRequestActionId === notif.id}
+              onClick={() => handleGroupHintRequestAction(notif, "accept")}
+              className="flex-1 h-9 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[12px] font-semibold text-white disabled:opacity-60">
+              {potRequestActionId === notif.id ? "..." : "Approve"}
+            </button>
+            <button type="button" disabled={potRequestActionId === notif.id}
+              onClick={() => handleGroupHintRequestAction(notif, "decline")}
+              className="flex-1 h-9 rounded-full border border-[#ead8ce] bg-white text-[12px] font-semibold text-slate-600 disabled:opacity-60">
+              Decline
+            </button>
+          </div>
+        </div>
+        );
+      })}
       {activityNotifs.filter(n => n.type === "group_hint_response").slice(0, 5).map(notif => {
         const hintImage = notif.data?.hint_image;
         const recipientId = notif.data?.recipient_user_id;
@@ -870,7 +923,7 @@ export default function AppShell({ children }) {
         </div>
         );
       })}
-      {activityNotifs.filter(n => n.type !== "group_hint_response" && n.type !== "birthday_reminder" && n.type !== "collab_request" && n.type !== "collab_accepted").slice(0, 5).map(notif => (
+      {activityNotifs.filter(n => n.type !== "group_hint_response" && n.type !== "birthday_reminder" && n.type !== "collab_request" && n.type !== "collab_accepted" && n.type !== "group_hint_request").slice(0, 5).map(notif => (
         <div key={notif.id} className="rounded-[18px] border border-[#e6ddd7] bg-white p-4">
           <div className="flex items-center gap-3">
             <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white overflow-hidden" style={{ background: `linear-gradient(to bottom, ${resolveAvatarColor({ avatarColor: notif.data?.actor_avatar_color, id: notif.actor_user_id || notif.data?.actor_name }).from}, ${resolveAvatarColor({ avatarColor: notif.data?.actor_avatar_color, id: notif.actor_user_id || notif.data?.actor_name }).to})` }}>

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import PublicShell from "../../components/PublicShell";
+import AuthGatedShell from "../../components/AuthGatedShell";
 import AuthModal from "../../components/AuthModal";
 import HintImage from "../../components/HintImage";
 import { createClient } from "../../../lib/supabase/client";
@@ -149,13 +149,10 @@ export default function HintPreviewClient({ hintId }) {
     </>
   );
 
-  // Same pattern as ProfileClient.jsx/ExtensionClient.jsx: only wrap in
-  // PublicShell (its own signed-out-appropriate header) once we've
-  // actually confirmed there's no signed-in user - the parent layout's
-  // AppShell already provides the normal app header for a signed-in
-  // visitor, so wrapping unconditionally here duplicated both headers
-  // at once (the exact "double wrapping" bug reported).
-  if (checkedAuth && !currentUser) return <PublicShell>{inner}</PublicShell>;
-  if (!checkedAuth) return null;
-  return inner;
+  // Now the single shared AuthGatedShell handles this - see that
+  // component for why every one of these pages was reimplementing
+  // this check by hand in the first place (and getting it wrong more
+  // than once, including a genuine bug found later in
+  // JoinCircleClient.jsx and PotPageClient.jsx).
+  return <AuthGatedShell checkedAuth={checkedAuth} currentUser={currentUser}>{inner}</AuthGatedShell>;
 }

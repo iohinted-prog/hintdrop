@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import PublicShell from "../../components/PublicShell";
+import AuthGatedShell from "../../components/AuthGatedShell";
 import AuthModal from "../../components/AuthModal";
 import HintImage from "../../components/HintImage";
 import { createClient } from "../../../lib/supabase/client";
@@ -15,6 +15,7 @@ export default function JoinCircleClient({ ownerId }) {
   const [owner, setOwner] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [checkedAuth, setCheckedAuth] = useState(false);
   const [contactState, setContactState] = useState("none"); // "none" | "pending" | "active"
   const [addingContact, setAddingContact] = useState(false);
   const [addContactError, setAddContactError] = useState("");
@@ -33,6 +34,7 @@ export default function JoinCircleClient({ ownerId }) {
 
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
+      setCheckedAuth(true);
 
       const { data: rpcRows, error: rpcError } = await supabase.rpc("get_public_profile", { target_id: ownerId });
       let ownerData = rpcRows?.[0] || null;
@@ -72,7 +74,7 @@ export default function JoinCircleClient({ ownerId }) {
   const isOwnLink = currentUser?.id === ownerId;
 
   return (
-    <PublicShell>
+    <AuthGatedShell checkedAuth={checkedAuth} currentUser={currentUser}>
       <div className="mx-auto flex min-h-[70vh] max-w-[480px] flex-col items-center justify-center px-5 py-16 text-center">
         {loading ? (
           <div className="h-20 w-20 rounded-full bg-[#f0e4dd] animate-pulse" />
@@ -139,6 +141,6 @@ export default function JoinCircleClient({ ownerId }) {
         )}
       </div>
       <AuthModal key={authMode} open={signUpOpen} onClose={() => setSignUpOpen(false)} initialMode={authMode} />
-    </PublicShell>
+    </AuthGatedShell>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, Fragment } from "react";
-import PublicShell from "../components/PublicShell";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import AuthGatedShell from "../components/AuthGatedShell";
 import AuthModal from "../components/AuthModal";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 import HintImage from "../components/HintImage";
@@ -380,6 +380,7 @@ export default function GiftShopClient({ region = "uk" }) {
   // ShopPageContent.jsx's bootstrap does, since nothing else on this
   // page needs it.
   const [currentUser, setCurrentUser] = useState(null);
+  const [checkedAuth, setCheckedAuth] = useState(false);
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState("");
@@ -454,7 +455,7 @@ export default function GiftShopClient({ region = "uk" }) {
     let active = true;
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (active) setCurrentUser(user || null);
+      if (active) { setCurrentUser(user || null); setCheckedAuth(true); }
     });
     return () => {
       active = false;
@@ -636,10 +637,15 @@ export default function GiftShopClient({ region = "uk" }) {
   // extra, so AppShell's is the only header shown. Matches the fix
   // in AppShell.jsx (conditionallyHiddenPath) exactly: hide one side
   // or the other based on auth state, never both, never neither.
-  const Shell = currentUser ? Fragment : PublicShell;
+  // (currentUser starts null before the auth check above resolves,
+  // which made this always evaluate to PublicShell on first render
+  // even for a signed-in visitor - same race condition class of bug
+  // as JoinCircleClient.jsx/PotPageClient.jsx, just self-correcting
+  // once auth resolved rather than staying stuck. AuthGatedShell
+  // gates on checkedAuth too, so it can't happen here either.)
 
   return (
-    <Shell>
+    <AuthGatedShell checkedAuth={checkedAuth} currentUser={currentUser}>
       <div className="mx-auto max-w-[1380px] px-5 py-8 md:px-8">
         {pageError ? (
           <div className="mb-5 rounded-[22px] border border-[#efc0ba] bg-[#fff4f2] px-4 py-3 text-sm text-[#b14f43]">
@@ -786,6 +792,6 @@ export default function GiftShopClient({ region = "uk" }) {
         </div>
       </div>
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
-    </Shell>
+    </AuthGatedShell>
   );
 }

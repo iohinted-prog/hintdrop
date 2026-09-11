@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import PublicShell from "../components/PublicShell";
+import AuthGatedShell from "../components/AuthGatedShell";
 import { createClient } from "../../lib/supabase/client";
 
 export default function ExtensionClient() {
@@ -73,12 +73,8 @@ export default function ExtensionClient() {
     </main>
   );
 
-  // Same pattern as ProfileClient.jsx: only wrap in PublicShell (its own
-  // signed-out-appropriate header) once we've actually confirmed there's
-  // no signed-in user - the parent layout's AppShell already provides
-  // the normal app header for a signed-in visitor, so wrapping
-  // unconditionally here duplicated both headers at once.
-  if (checkedAuth && !currentUser) return <PublicShell>{inner}</PublicShell>;
-  if (!checkedAuth) return null;
-  return inner;
+  // Now the single shared AuthGatedShell handles this - see that
+  // component for why every one of these pages was reimplementing
+  // this check by hand.
+  return <AuthGatedShell checkedAuth={checkedAuth} currentUser={currentUser}>{inner}</AuthGatedShell>;
 }

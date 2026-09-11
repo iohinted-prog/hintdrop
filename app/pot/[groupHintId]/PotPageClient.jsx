@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "../../../lib/supabase/client";
 import AuthModal from "../../components/AuthModal";
 import GroupHintDetailModal from "../../components/GroupHintDetailModal";
-import PublicShell from "../../components/PublicShell";
+import AuthGatedShell from "../../components/AuthGatedShell";
 
 // The landing page for a pot's share link. Deliberately a three-way split:
 // signed out -> a generic teaser card asking them to sign up/in (no pot
@@ -43,7 +43,34 @@ export default function PotPageClient({ groupHintId }) {
   async function requestToJoin() {
     if (!currentUser || requesting) return;
     setRequesting(true);
-    await supabase.from("group_hint_members").insert({ group_hint_id: groupHintId, user_id: currentUser.id, status: "requested" });
+    const { data: newMember } = await supabase
+      .from("group_hint_members")
+      .insert({ group_hint_id: groupHintId, user_id: currentUser.id, status: "requested" })
+      .select("id")
+      .maybeSingle();
+    // Surfaces to the organiser as a real, actionable notification
+    // (approve/decline right there) rather than only being visible if
+    // they happen to open the pot's own detail view - deliberately
+    // generic wording, same non-spoiler reasoning as everywhere else
+    // on this page (info.title exists but isn't used here on purpose).
+    if (info?.organiser_id && newMember?.id) {
+      const { data: requesterProfile } = await supabase.from("profiles").select("full_name, avatar_url, avatar_color").eq("id", currentUser.id).maybeSingle();
+      const requesterName = requesterProfile?.full_name || "Someone";
+      await supabase.from("notifications").insert({
+        user_id: info.organiser_id,
+        actor_user_id: currentUser.id,
+        type: "group_hint_request",
+        title: `${requesterName} wants to join your pot`,
+        body: "Approve to let them see it and chip in.",
+        data: {
+          actor_name: requesterName,
+          actor_avatar_url: requesterProfile?.avatar_url || null,
+          actor_avatar_color: requesterProfile?.avatar_color || null,
+          group_hint_id: groupHintId,
+          member_id: newMember.id,
+        },
+      });
+    }
     await load();
     setRequesting(false);
   }
@@ -51,7 +78,7 @@ export default function PotPageClient({ groupHintId }) {
   const hasFullAccess = info && (info.organiser_id === currentUser?.id || info.requester_status === "joined" || info.requester_status === "in");
 
   if (loading) {
-    return <PublicShell><div className="min-h-screen flex items-center justify-center text-sm text-slate-400">Loading...</div></PublicShell>;
+    return null;
   }
 
   if (hasFullAccess) {
@@ -66,7 +93,7 @@ export default function PotPageClient({ groupHintId }) {
   }
 
   return (
-    <PublicShell>
+    <AuthGatedShell checkedAuth={!loading} currentUser={currentUser}>
       <div className="min-h-screen flex items-center justify-center px-5">
         <div className="w-full max-w-[420px] rounded-[28px] bg-[#fffaf7] border border-[#efdcd2] shadow-xl p-6 text-center">
           {!currentUser ? (
@@ -106,6 +133,6 @@ export default function PotPageClient({ groupHintId }) {
           )}
         </div>
       </div>
-    </PublicShell>
+    </AuthGatedShell>
   );
 }
