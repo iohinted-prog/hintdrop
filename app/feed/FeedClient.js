@@ -2,7 +2,6 @@
 import ContactCard from "../components/ContactCard";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import HintImage from "../components/HintImage";
 import ShareButton from "../components/ShareButton";
 import HintDetailModal from "../components/HintDetailModal";
@@ -13,6 +12,7 @@ import AvatarMenu from "../components/AvatarMenu";
 import AddContactModal from "../components/AddContactModal";
 import EditContactModal from "../components/EditContactModal";
 import ContactsManagerModal from "../components/ContactsManagerModal";
+import UserProfileModal from "../components/UserProfileModal";
 
 const feedFilters = [
   { key: "all", label: "All activity" },
@@ -804,7 +804,7 @@ function FeedItem({
           <button
             type="button"
             onClick={() => onOpenProfile && onOpenProfile({ userId: actorUserId, name: metadata.actor_name, avatarUrl: actorAvatarUrl, initials: actorInitials })}
-            className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[12px] font-bold text-white transition hover:scale-[1.03] overflow-hidden"
+            className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-[#efcdbf] to-[#bb8168] text-[12px] font-bold text-white transition hover:scale-[1.03] cursor-pointer overflow-hidden"
           >
             {actorAvatarUrl ? <HintImage src={actorAvatarUrl} alt={metadata.actor_name || ""} fill sizes="44px" className="object-cover" fallbackClassName="hidden" /> : actorInitials}
           </button>
@@ -833,7 +833,7 @@ function FeedItem({
                     <button
                       type="button"
                       onClick={() => onOpenProfile && onOpenProfile({ userId: actorUserId, name: metadata.actor_name, avatarUrl: actorAvatarUrl, initials: actorInitials })}
-                      className="text-[13px] font-semibold text-slate-900 hover:text-[#d96d4f]"
+                      className="text-[13px] font-semibold text-slate-900 hover:text-[#d96d4f] cursor-pointer"
                     >
                       {metadata.actor_name}
                     </button>
@@ -974,7 +974,7 @@ function FeedItem({
                 <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
                   {comments.map((comment) => (
                     <div key={comment.id} className="flex items-start gap-3 rounded-[18px] border border-[#f0e8e3] bg-white px-4 py-3">
-                      <button type="button" onClick={() => comment.user_id && comment.user_id !== sessionUser?.id && onOpenProfile && onOpenProfile({ userId: comment.user_id, name: comment.author_name, avatarUrl: comment.author_avatar, initials: getInitials(comment.author_name || "S") })} className="shrink-0 mt-0.5">
+                      <button type="button" onClick={() => comment.user_id && comment.user_id !== sessionUser?.id && onOpenProfile && onOpenProfile({ userId: comment.user_id, name: comment.author_name, avatarUrl: comment.author_avatar, initials: getInitials(comment.author_name || "S") })} className={"shrink-0 mt-0.5 " + (comment.user_id && comment.user_id !== sessionUser?.id ? "cursor-pointer" : "")}>
                         {comment.author_avatar ? (
                           <HintImage src={comment.author_avatar} alt={comment.author_name} width={28} height={28} className="rounded-full object-cover" fallbackClassName="hidden" />
                         ) : (
@@ -1600,7 +1600,6 @@ function buildGenericCalendarEvents() {
 
 export default function FeedClient() {
   const supabase = useMemo(() => createClient(), []);
-  const router = useRouter();
 
   const [sessionUser, setSessionUser] = useState(null);
 
@@ -1615,6 +1614,7 @@ export default function FeedClient() {
   const [isDeletingContact, setIsDeletingContact] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
   const [isContactsManagerOpen, setIsContactsManagerOpen] = useState(false);
+  const [previewUserId, setPreviewUserId] = useState(null);
   const [editContactForm, setEditContactForm] = useState({ name: "", role: "Friend" });
   const [isSavingEditContact, setIsSavingEditContact] = useState(false);
   const [editContactError, setEditContactError] = useState("");
@@ -2675,7 +2675,7 @@ export default function FeedClient() {
                           onSubmitComment={handleSubmitComment}
                           demoReactionsState={demoReactionsByFeedId[item.id]}
                           onToggleDemoReaction={handleToggleDemoReaction}
-                          onOpenProfile={(p) => router.push(`/profile/${p.userId}`)}
+                          onOpenProfile={(p) => setPreviewUserId(p.userId)}
                           onOpenHintDetail={(hint) => setFeedHintDetail({
                             ...hint,
                             ownerId: hint.ownerId || item.actor_user_id || null,
@@ -2754,8 +2754,17 @@ export default function FeedClient() {
         onAdd={() => { setIsContactsManagerOpen(false); setIsAddContactOpen(true); }}
         onRefresh={() => loadContacts(sessionUser.id)}
         onDelete={(c) => { setIsContactsManagerOpen(false); openDeleteContactModal(c); }}
-        onOpenProfile={(p) => { setIsContactsManagerOpen(false); router.push(`/profile/${p.userId}`); }}
+        onOpenProfile={(p) => { setIsContactsManagerOpen(false); setPreviewUserId(p.userId); }}
       />
+      {previewUserId && (
+        <UserProfileModal
+          userId={previewUserId}
+          currentUserId={sessionUser?.id}
+          isContact={contacts.some((c) => c.profileId === previewUserId)}
+          onAddContact={() => { setPreviewUserId(null); setIsAddContactOpen(true); }}
+          onClose={() => setPreviewUserId(null)}
+        />
+      )}
       <AddContactModal
         open={isAddContactOpen}
         onClose={() => setIsAddContactOpen(false)}

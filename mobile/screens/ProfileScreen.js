@@ -157,7 +157,7 @@ export default function ProfileScreen({ userId, onBack, insideModal = false, ini
 
   const loadProfile = useCallback(async () => {
     const [{ data: profileData }, { data: boardRows }] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, avatar_url, avatar_color, interests, birthday").eq("id", userId).maybeSingle(),
+      supabase.from("profiles").select("id, full_name, avatar_url, avatar_color, interests, birthday, username").eq("id", userId).maybeSingle(),
       supabase
         .from("hint_boards")
         .select("id, title, is_default")

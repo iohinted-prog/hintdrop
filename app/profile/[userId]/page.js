@@ -6,13 +6,20 @@ import ProfileClient from "./ProfileClient";
 // than risk serving stale metadata.
 export const dynamic = "force-dynamic";
 
+// Matches a standard UUID - lets the same [userId] route accept
+// either an old-style id link (still works, already shared/bookmarked
+// links must keep working) or the new vanity username, without two
+// separate routes.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function generateMetadata({ params }) {
   const { userId } = await params;
   const supabase = await createClient();
+  const lookupColumn = UUID_RE.test(userId) ? "id" : "username";
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url, bio")
-    .eq("id", userId)
+    .select("id, full_name, avatar_url, bio, username")
+    .eq(lookupColumn, userId)
     .maybeSingle();
 
   if (error) {
@@ -56,12 +63,30 @@ export async function generateMetadata({ params }) {
       images: ogImage ? [ogImage] : undefined,
     },
     alternates: {
-      canonical: `https://hintdrop.app/profile/${userId}`,
+      // Always the vanity form once known, even if this particular
+      // request arrived via the old id link - one canonical URL per
+      // profile regardless of which form got shared.
+      canonical: `https://hintdrop.app/profile/${profile.username || userId}`,
     },
   };
 }
 
 export default async function ProfilePage({ params }) {
   const { userId } = await params;
-  return <ProfileClient userId={userId} />;
+  // Resolve the vanity username to the real profile id here, once,
+  // server-side - ProfileClient.jsx compares/queries against this id
+  // in around 20 places (currentUser.id === userId checks, foreign
+  // key filters, the RPC call), all of which need a real uuid
+  // regardless of which URL form got clicked. Passing the resolved id
+  // down means none of that internal logic has to change at all - it
+  // keeps receiving exactly what it always received. The browser's
+  // address bar still shows whichever form the person actually
+  // visited; this only affects what gets fetched.
+  let resolvedId = userId;
+  if (!UUID_RE.test(userId)) {
+    const supabase = await createClient();
+    const { data } = await supabase.from("profiles").select("id").eq("username", userId).maybeSingle();
+    resolvedId = data?.id || userId;
+  }
+  return <ProfileClient userId={resolvedId} />;
 }

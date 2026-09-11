@@ -66,7 +66,7 @@ export default function UserProfileModal({ userId, name, avatarUrl, initials, on
           <div className="flex items-center justify-between gap-4">
             <Link href={"/profile/" + userId} onClick={onClose} className="flex items-center gap-4 hover:opacity-80 transition-opacity">
               {displayAvatar
-                ? <HintImage src={displayAvatar} alt={displayName} width={56} height={56} className="rounded-full object-cover" fallbackClassName="hidden" />
+                ? <HintImage src={displayAvatar} alt={displayName} width={56} height={56} className="h-14 w-14 shrink-0 rounded-full object-cover" fallbackClassName="hidden" />
                 : <div className="flex h-14 w-14 items-center justify-center rounded-full text-[14px] font-bold text-white" style={{ background: `linear-gradient(to bottom, ${resolveAvatarColor({ avatarColor: profile?.avatar_color, id: userId }).from}, ${resolveAvatarColor({ avatarColor: profile?.avatar_color, id: userId }).to})` }}>{displayInitials}</div>
               }
               <div>

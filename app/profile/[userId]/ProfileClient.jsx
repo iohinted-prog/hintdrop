@@ -132,7 +132,7 @@ export default function ProfileClient({ userId }) {
         console.error("get_public_profile RPC failed, falling back to direct select:", profileRpcError.message);
         const { data: fallbackProfile } = await supabase
           .from("profiles")
-          .select("id, full_name, avatar_url, avatar_color, interests")
+          .select("id, full_name, avatar_url, avatar_color, interests, username")
           .eq("id", userId)
           .maybeSingle();
         profileData = fallbackProfile;
@@ -334,7 +334,7 @@ export default function ProfileClient({ userId }) {
   function goToMenu() {
     if (!selectedBoardId) return;
     setSelectedBoardId(null);
-    router.push(`/profile/${userId}`, { scroll: false });
+    router.push(`/profile/${profile?.username || userId}`, { scroll: false });
   }
 
   async function handleDeleteBoard(board) {
@@ -423,7 +423,7 @@ export default function ProfileClient({ userId }) {
                 supabase={supabase}
                 subjectType={selectedBoardId ? "board" : "profile"}
                 subjectId={selectedBoardId || userId}
-                path={selectedBoardId ? `/b/${selectedBoardId}` : `/profile/${userId}`}
+                path={selectedBoardId ? `/b/${selectedBoardId}` : `/profile/${profile?.username || userId}`}
                 title={selectedBoardId ? selectedBoardData?.title : `${displayName}'s Hints`}
                 text={selectedBoardId
                   ? `${displayName}'s hint: "${selectedBoardData?.title}"`
@@ -461,8 +461,8 @@ export default function ProfileClient({ userId }) {
               bar competing for room in the same row was. */}
           <div className="mt-3 flex items-center gap-4">
             {profile?.avatar_url
-              ? <button type="button" onClick={goToMenu} className={selectedBoardId ? "cursor-pointer" : "cursor-default"}>
-                  <HintImage src={profile.avatar_url} alt={displayName} width={56} height={56} className="rounded-full object-cover border-2 border-[#f0dfd6] shrink-0" fallbackClassName="hidden" />
+              ? <button type="button" onClick={goToMenu} className={`h-14 w-14 shrink-0 ${selectedBoardId ? "cursor-pointer" : "cursor-default"}`}>
+                  <HintImage src={profile.avatar_url} alt={displayName} width={56} height={56} className="h-14 w-14 rounded-full object-cover border-2 border-[#f0dfd6]" fallbackClassName="hidden" />
                 </button>
               : <button type="button" onClick={goToMenu} className={`h-14 w-14 rounded-full flex items-center justify-center text-[16px] font-bold text-white shrink-0 ${selectedBoardId ? "cursor-pointer" : "cursor-default"}`} style={{ background: `linear-gradient(to bottom, ${resolveAvatarColor({ avatarColor: profile?.avatar_color, id: userId }).from}, ${resolveAvatarColor({ avatarColor: profile?.avatar_color, id: userId }).to})` }}>{getInitials(displayName)}</button>
             }
