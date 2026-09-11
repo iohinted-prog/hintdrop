@@ -12,6 +12,7 @@
     "ios": {
       "bundleIdentifier": "app.hintdrop.mobile",
       "supportsTablet": true,
+      "associatedDomains": ["applinks:hintdrop.app"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -23,7 +24,21 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "hintdrop.app", "pathPrefix": "/b" },
+            { "scheme": "https", "host": "hintdrop.app", "pathPrefix": "/h" },
+            { "scheme": "https", "host": "hintdrop.app", "pathPrefix": "/profile" },
+            { "scheme": "https", "host": "hintdrop.app", "pathPrefix": "/join" },
+            { "scheme": "https", "host": "hintdrop.app", "pathPrefix": "/invite" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

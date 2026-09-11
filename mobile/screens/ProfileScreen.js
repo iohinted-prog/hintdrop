@@ -107,11 +107,11 @@ function BoardPreviewGrid({ previewHints = [] }) {
   );
 }
 
-export default function ProfileScreen({ userId, onBack, insideModal = false }) {
+export default function ProfileScreen({ userId, onBack, insideModal = false, initialBoardId = null }) {
   const { user: currentUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [boards, setBoards] = useState(null);
-  const [selectedBoardId, setSelectedBoardId] = useState(null);
+  const [selectedBoardId, setSelectedBoardId] = useState(initialBoardId);
   const [boardHintsLoading, setBoardHintsLoading] = useState(false);
   const [hints, setHints] = useState([]);
   const [claims, setClaims] = useState([]);

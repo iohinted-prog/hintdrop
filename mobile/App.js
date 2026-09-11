@@ -3,6 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, ActivityIndicator, Pressable, StyleSheet, Modal, Image, Alert } from "react-native";
 import { useCallback, useEffect, useState } from "react";
+import * as Linking from "expo-linking";
 import { Feather } from "@expo/vector-icons";
 import Text from "./components/Text";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -110,6 +111,7 @@ function SignedInApp() {
   const [accountVisible, setAccountVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [profileViewUserId, setProfileViewUserId] = useState(null);
+  const [profileViewBoardId, setProfileViewBoardId] = useState(null);
   const [profile, setProfile] = useState(null);
   const [messagesVisible, setMessagesVisible] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
@@ -122,6 +124,71 @@ function SignedInApp() {
   useEffect(() => {
     if (user?.id) registerForPushNotifications(user.id);
   }, [user?.id]);
+
+  // Handles both Universal Links/App Links (a hintdrop.app/... URL
+  // tapped from anywhere, opened via the associatedDomains/
+  // intentFilters config in app.json - see the .well-known route
+  // handlers in the web repo for the other half of that setup) and
+  // the app's own hintdrop:// custom scheme. Covers exactly the
+  // paths the app itself generates via its own share flows: profile
+  // shares, board shares, hint shares, and contact/circle invite
+  // links - matching web's own redirect targets (e.g. /b/{boardId}
+  // resolves the same way web's BoardRedirectClient.jsx does, to
+  // /profile/{ownerId}?board={boardId}) rather than inventing a
+  // different destination mobile-only.
+  const handleIncomingUrl = useCallback(async (url) => {
+    if (!url || !user?.id) return;
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return;
+    }
+    const segments = parsed.pathname.split("/").filter(Boolean);
+    const [first, second] = segments;
+
+    if (first === "profile" && second) {
+      setProfileViewBoardId(null);
+      setProfileViewUserId(second);
+      return;
+    }
+    if (first === "join" && second) {
+      // Same destination as web's /join/{ownerId} - a prompt to add
+      // this person to your circle - which is just that person's
+      // profile plus the "Add to circle" action ProfileScreen.js
+      // already has, not a separate screen.
+      setProfileViewBoardId(null);
+      setProfileViewUserId(second);
+      return;
+    }
+    if (first === "b" && second) {
+      const { data: board } = await supabase.from("hint_boards").select("user_id").eq("id", second).maybeSingle();
+      if (board?.user_id) {
+        setProfileViewBoardId(second);
+        setProfileViewUserId(board.user_id);
+      }
+      return;
+    }
+    if (first === "h" && second) {
+      const { data: hint } = await supabase.from("hints").select("user_id").eq("id", second).maybeSingle();
+      if (hint?.user_id) {
+        setProfileViewBoardId(null);
+        setProfileViewUserId(hint.user_id);
+      }
+      return;
+    }
+    // /invite/contact and /invite/circle carry their own token-based
+    // state (invite_token, etc.) rather than a plain path segment
+    // that maps cleanly to an existing mobile screen the way the
+    // others above do - not handled yet.
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    Linking.getInitialURL().then((url) => { if (url) handleIncomingUrl(url); });
+    const subscription = Linking.addEventListener("url", ({ url }) => handleIncomingUrl(url));
+    return () => subscription.remove();
+  }, [user?.id, handleIncomingUrl]);
 
   // Matches web's badge logic exactly (AppShell.jsx's loadGroupMessages
   // + its "new-messages-global" realtime channel) - same real per-
@@ -235,7 +302,12 @@ function SignedInApp() {
       </Modal>
       <Modal visible={Boolean(profileViewUserId)} animationType="slide" onRequestClose={() => setProfileViewUserId(null)}>
         <SafeAreaProvider>
-          <ProfileScreen userId={profileViewUserId} onBack={() => setProfileViewUserId(null)} insideModal />
+          <ProfileScreen
+            userId={profileViewUserId}
+            onBack={() => { setProfileViewUserId(null); setProfileViewBoardId(null); }}
+            insideModal
+            initialBoardId={profileViewBoardId}
+          />
         </SafeAreaProvider>
       </Modal>
       <Modal visible={messagesVisible} animationType="slide" onRequestClose={() => setMessagesVisible(false)}>
