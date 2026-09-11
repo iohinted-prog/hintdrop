@@ -39,6 +39,7 @@ export default function HintDetailModal({ hint, onClose, supabase, currentUserId
   const client = useMemo(() => supabase || createClient(), [supabase]);
   const [claims, setClaims] = useState([]);
   const [claiming, setClaiming] = useState(false);
+  const [hoveringClaim, setHoveringClaim] = useState(false);
   const [groupHintOpen, setGroupHintOpen] = useState(false);
   const [inviteConfirmation, setInviteConfirmation] = useState(null);
 
@@ -155,9 +156,11 @@ export default function HintDetailModal({ hint, onClose, supabase, currentUserId
                 type="button"
                 disabled={claiming}
                 onClick={handleToggleClaim}
+                onMouseEnter={() => setHoveringClaim(true)}
+                onMouseLeave={() => setHoveringClaim(false)}
                 className={`flex-1 h-11 rounded-full text-[13px] font-semibold border transition ${myClaim ? "bg-[#edf6eb] text-[#4a7a3a] border-[#c5dfc0]" : otherClaim ? "bg-[#fff8ee] text-[#b87a2a] border-[#f0d9a0]" : "bg-[#fff4ee] text-[#df7b59] border-[#f0c9b5] hover:bg-[#ffe9db]"}`}
               >
-                {myClaim ? "✓ On it" : otherClaim ? "Buy anyway?" : "I'm getting this"}
+                {myClaim ? "✓ On it" : otherClaim ? (hoveringClaim ? "Buy anyway?" : "Someone's getting this") : "I'm getting this"}
               </button>
               <button
                 type="button"

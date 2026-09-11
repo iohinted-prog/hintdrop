@@ -71,6 +71,7 @@ export default function ProfileClient({ userId }) {
   const [filterPopupOpen, setFilterPopupOpen] = useState(false);
   const [occasionFilter, setOccasionFilter] = useState("");
   const [claimingId, setClaimingId] = useState(null);
+  const [hoveringClaimId, setHoveringClaimId] = useState(null);
   const [contactState, setContactState] = useState("none"); // "none" | "pending" | "active"
   const [collabStatus, setCollabStatus] = useState("none"); // "none" | "pending" | "accepted"
   const [collabStatusLoading, setCollabStatusLoading] = useState(true);
@@ -748,8 +749,10 @@ export default function ProfileClient({ userId }) {
                   return (
                     <button type="button" disabled={claimingId === selectedHint.id}
                       onClick={() => { setClaimingId(selectedHint.id); handleToggleClaim(selectedHint).finally(() => setClaimingId(null)); }}
+                      onMouseEnter={() => setHoveringClaimId(selectedHint.id)}
+                      onMouseLeave={() => setHoveringClaimId(null)}
                       className={`flex-1 h-11 rounded-full text-[13px] font-semibold border transition ${myClaim ? "bg-[#edf6eb] text-[#4a7a3a] border-[#c5dfc0]" : otherClaim ? "bg-[#fff8ee] text-[#b87a2a] border-[#f0d9a0]" : "bg-[#fff4ee] text-[#df7b59] border-[#f0c9b5] hover:bg-[#ffe9db]"}`}>
-                      {myClaim ? "✓ On it" : otherClaim ? "Buy anyway?" : "I'm getting this"}
+                      {myClaim ? "✓ On it" : otherClaim ? (hoveringClaimId === selectedHint.id ? "Buy anyway?" : "Someone's getting this") : "I'm getting this"}
                     </button>
                   );
                 })()}
