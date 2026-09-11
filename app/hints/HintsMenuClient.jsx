@@ -14,6 +14,9 @@ function errorToMessage(value) {
 }
 
 function BoardCard({ board, onDelete, ownerName }) {
+  const sharedWithLabel = board.sharedWithNames?.length
+    ? `Shared with ${board.sharedWithNames.join(", ")}`
+    : null;
   return (
     <Link
       href={`/hints/${board.id}`}
@@ -29,7 +32,7 @@ function BoardCard({ board, onDelete, ownerName }) {
             {board.title}
           </p>
           <p className="mt-0.5 text-[12px] text-slate-400">
-            {ownerName ? `Collaborating with ${ownerName}` : board.is_default ? "Personal" : "Hints for someone else"} · {board.hintCount} Hint{board.hintCount === 1 ? "" : "s"}
+            {sharedWithLabel || (ownerName ? `Collaborating with ${ownerName}` : board.is_default ? "Personal" : "Hints for someone else")} · {board.hintCount} Hint{board.hintCount === 1 ? "" : "s"}
           </p>
         </div>
         <span className="shrink-0 text-slate-300 transition group-hover:text-[#df7b59]">→</span>
@@ -122,8 +125,25 @@ export default function HintsMenuClient() {
         })
       );
 
+      // A board the owner has shared (someone else accepted onto it)
+      // only ever shows in "Collaborating on" now, not duplicated in
+      // the plain board grid above it too.
+      const { data: sharedOutRows } = await supabase
+        .from("board_collaborators")
+        .select("board_id, profiles:user_id(full_name)")
+        .in("board_id", boardRows.map((b) => b.id))
+        .eq("status", "accepted");
+      const sharedOutByBoard = {};
+      (sharedOutRows || []).forEach((row) => {
+        if (!sharedOutByBoard[row.board_id]) sharedOutByBoard[row.board_id] = [];
+        sharedOutByBoard[row.board_id].push(row.profiles?.full_name || "Someone");
+      });
+      const ownedAndShared = boardsWithPreviews
+        .filter((b) => sharedOutByBoard[b.id])
+        .map((b) => ({ ...b, sharedWithNames: sharedOutByBoard[b.id] }));
+
       if (cancelled) return;
-      setBoards(boardsWithPreviews);
+      setBoards(boardsWithPreviews.filter((b) => !sharedOutByBoard[b.id]));
 
       // Boards this person collaborates on but doesn't own - the only
       // way to find one again previously was the original shared
@@ -147,7 +167,7 @@ export default function HintsMenuClient() {
           })
       );
       if (cancelled) return;
-      setCollabBoards(collabBoardsWithPreviews);
+      setCollabBoards([...ownedAndShared, ...collabBoardsWithPreviews]);
       setIsLoading(false);
     }
 

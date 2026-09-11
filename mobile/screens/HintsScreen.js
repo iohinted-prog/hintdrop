@@ -450,6 +450,7 @@ function EditHintModal({ hint, visible, onClose, onSaved, onDeleted }) {
 }
 
 function BoardCard({ board, onPress, onDelete, ownerName }) {
+  const sharedWithLabel = board.sharedWithNames?.length ? `Shared with ${board.sharedWithNames.join(", ")}` : null;
   return (
     <Pressable
       style={({ pressed }) => [styles.boardCard, pressed && styles.boardCardPressed]}
@@ -474,7 +475,7 @@ function BoardCard({ board, onPress, onDelete, ownerName }) {
             {board.title}
           </Text>
           <Text style={styles.boardSubtitle}>
-            {ownerName ? `Collaborating with ${ownerName}` : board.is_default ? "Personal" : "Hints for someone else"} · {board.hintCount}{" "}
+            {sharedWithLabel || (ownerName ? `Collaborating with ${ownerName}` : board.is_default ? "Personal" : "Hints for someone else")} · {board.hintCount}{" "}
             {board.hintCount === 1 ? "Hint" : "Hints"}
           </Text>
         </View>
@@ -985,7 +986,26 @@ function BoardListScreen({ onSelectBoard }) {
         return { ...board, hintCount: count || 0, previewHints: previewHints || [] };
       })
     );
-    setBoards(withPreviews);
+
+    // A board the owner has shared (someone else accepted onto it)
+    // only shows in "Collaborating on" now, not duplicated in the
+    // plain board list above it too - matches the same change made
+    // to the web app's Hints menu.
+    const { data: sharedOutRows } = await supabase
+      .from("board_collaborators")
+      .select("board_id, profiles:user_id(full_name)")
+      .in("board_id", (boardRows || []).map((b) => b.id))
+      .eq("status", "accepted");
+    const sharedOutByBoard = {};
+    (sharedOutRows || []).forEach((row) => {
+      if (!sharedOutByBoard[row.board_id]) sharedOutByBoard[row.board_id] = [];
+      sharedOutByBoard[row.board_id].push(row.profiles?.full_name || "Someone");
+    });
+    const ownedAndShared = withPreviews
+      .filter((b) => sharedOutByBoard[b.id])
+      .map((b) => ({ ...b, sharedWithNames: sharedOutByBoard[b.id], isCollab: true }));
+
+    setBoards(withPreviews.filter((b) => !sharedOutByBoard[b.id]));
 
     // Boards this person collaborates on but doesn't own - matches
     // the same "Collaborating on" section added to the web app's
@@ -1009,7 +1029,7 @@ function BoardListScreen({ onSelectBoard }) {
           return { ...cb, hintCount: count || 0, previewHints: previewHints || [], ownerName: cb.profiles?.full_name || "Someone", isCollab: true };
         })
     );
-    setCollabBoards(collabWithPreviews);
+    setCollabBoards([...ownedAndShared, ...collabWithPreviews]);
   }, [user?.id]);
 
   useEffect(() => {
