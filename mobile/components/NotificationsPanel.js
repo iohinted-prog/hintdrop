@@ -24,16 +24,14 @@ import { colors, radii, spacing, shadow } from "../lib/theme";
 // too, rather than only refreshing on open.
 //
 // Explicitly deferred, not silently dropped:
-// - group_hint_response notifications and circle_notifications
-//   ("Keep going" / "Cancel circle") - both belong to the group-
-//   gifting system (GroupHintModal), which was already deferred when
-//   building the Profile screen. Rather than half-wire actions into
-//   a feature that doesn't exist here yet, these notification types
-//   are simply not fetched - if they exist in the database from web-
-//   side activity, they won't show up here until group gifting
-//   itself is ported.
-// - Group message/conversation unread counts - mobile has no
-//   messaging system at all yet.
+// - circle_notifications ("Keep going" / "Cancel circle") - confirmed
+//   this is legacy: its only writer anywhere in the codebase is
+//   app/api/circles/organiser-action/route.js, which itself only
+//   exists to redirect into circles-legacy - a page with no reachable
+//   link from anywhere in the live app. Not the same system as
+//   group_hints (which IS fully built here - see group_hint_response
+//   below), so this stays correctly out of scope rather than half-
+//   porting a dead feature.
 // - collab_accepted's "Start adding hints" button doesn't deep-link
 //   into the Hints tab's specific board (no shared cross-tab
 //   navigation context exists yet) - marks read and closes the panel
@@ -74,7 +72,7 @@ function NotifAvatar({ name, avatarUrl, avatarColor, userId, size = 36 }) {
   );
 }
 
-export default function NotificationsPanel({ visible, onClose, currentUserId, onCountChange }) {
+export default function NotificationsPanel({ visible, onClose, currentUserId, onCountChange, onViewProfile }) {
   const [invites, setInvites] = useState([]);
   const [activityNotifs, setActivityNotifs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -103,7 +101,7 @@ export default function NotificationsPanel({ visible, onClose, currentUserId, on
     setInvites(merged);
     // Only the notification types this screen actually knows how to
     // render/act on - see the deferred-features note at the top.
-    const knownTypes = ["collab_request", "collab_accepted", "birthday_reminder"];
+    const knownTypes = ["collab_request", "collab_accepted", "birthday_reminder", "group_hint_response"];
     const relevant = (notifData || []).filter((n) => knownTypes.includes(n.type) || n.type === "reaction" || n.type === "comment");
     setActivityNotifs(relevant);
     const lastSeen = await getNotifLastSeen();
@@ -189,6 +187,7 @@ export default function NotificationsPanel({ visible, onClose, currentUserId, on
   const collabRequests = activityNotifs.filter((n) => n.type === "collab_request");
   const collabAccepted = activityNotifs.filter((n) => n.type === "collab_accepted");
   const birthdayReminders = activityNotifs.filter((n) => n.type === "birthday_reminder");
+  const groupHintResponses = activityNotifs.filter((n) => n.type === "group_hint_response");
   const generic = activityNotifs.filter((n) => n.type === "reaction" || n.type === "comment");
 
   return (
@@ -254,6 +253,33 @@ export default function NotificationsPanel({ visible, onClose, currentUserId, on
                       </View>
                       <Text style={{ fontSize: 14 }}>🎂</Text>
                     </View>
+                    <Pressable onPress={() => dismissNotif(notif)}><Text style={styles.dismissText}>Dismiss</Text></Pressable>
+                  </View>
+                ))}
+
+                {groupHintResponses.map((notif) => (
+                  <View key={notif.id} style={styles.plainCard}>
+                    <View style={styles.notifRow}>
+                      <NotifAvatar name={notif.data?.actor_name} avatarUrl={notif.data?.actor_avatar_url} avatarColor={notif.data?.actor_avatar_color} userId={notif.actor_user_id} />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={styles.notifTitle} numberOfLines={1}>{notif.title}</Text>
+                        {notif.body ? <Text style={styles.notifBody} numberOfLines={1}>{notif.body}</Text> : null}
+                      </View>
+                      <View style={notif.data?.response === "in" ? styles.badgeGreen : styles.badgeOrange}>
+                        <Text style={notif.data?.response === "in" ? styles.badgeGreenText : styles.badgeOrangeText}>{notif.data?.response === "in" ? "Accepted" : "Declined"}</Text>
+                      </View>
+                    </View>
+                    {notif.data?.hint_image ? (
+                      <Pressable
+                        onPress={() => {
+                          const recipientId = notif.data?.recipient_user_id;
+                          if (recipientId && onViewProfile) { onClose(); onViewProfile(recipientId); }
+                        }}
+                      >
+                        <Image source={{ uri: notif.data.hint_image }} style={styles.groupHintImage} />
+                      </Pressable>
+                    ) : null}
+                    {notif.data?.response === "in" ? <Text style={styles.groupHintFollowup}>Get in touch with them to sort out contributions.</Text> : null}
                     <Pressable onPress={() => dismissNotif(notif)}><Text style={styles.dismissText}>Dismiss</Text></Pressable>
                   </View>
                 ))}
@@ -343,6 +369,8 @@ const styles = StyleSheet.create({
   declineButtonText: { fontSize: 12, fontWeight: "700", color: colors.textSecondary },
   startAddingButton: { marginTop: 10, height: 34, borderRadius: radii.pill, backgroundColor: colors.coral, alignItems: "center", justifyContent: "center", paddingHorizontal: 8 },
   dismissText: { fontSize: 11, fontWeight: "600", color: colors.textMuted, marginTop: 8 },
+  groupHintImage: { width: "100%", height: 80, borderRadius: radii.md, marginTop: 8 },
+  groupHintFollowup: { fontSize: 11, color: colors.textSecondary, marginTop: 8 },
   badgeOrange: { backgroundColor: "#ffe2d3", borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 3 },
   badgeOrangeText: { fontSize: 10, fontWeight: "700", color: "#c9633f" },
   badgeGreen: { backgroundColor: colors.successBorder, borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 3 },

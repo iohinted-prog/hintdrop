@@ -20,13 +20,6 @@ import ChatThreadScreen from "./ChatThreadScreen";
 // instead: a real conversation list you can actually scroll through,
 // tapping into a full-screen thread - the natural mobile equivalent,
 // not a literal copy of a web layout that wouldn't work here.
-//
-// Explicitly deferred: pinned group-gift cards inside a thread
-// (group_hints/conversation_hints) - part of the group-gifting system
-// already deferred consistently everywhere else this session
-// (Profile, Notifications). Plain conversations and messages are
-// fully ported; group-gift-linked conversations will just show their
-// messages without the pinned-gift card until that system exists here.
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);

@@ -84,12 +84,6 @@ function NotificationBell({ userId, count, onPress }) {
 }
 
 // Matches web's header Messages button (app/components/AppShell.jsx)
-// visually - same grey speech-bubble vector, same position beside the
-// bell. Mobile has no messaging system yet (see the earlier session
-// notes on GroupChatWindow deferral), so this is not yet wired to a
-// real inbox - tapping it says so plainly rather than silently doing
-// nothing, which would read as broken rather than "not built yet".
-// Matches web's header Messages button (app/components/AppShell.jsx)
 // - same grey speech-bubble vector, same position beside the bell.
 // Unlike web (a dropdown, capped at 8 conversations, opening floating
 // chat windows), this navigates to a real full-screen conversation
@@ -208,6 +202,7 @@ function SignedInApp() {
         onClose={() => setNotifVisible(false)}
         currentUserId={user?.id}
         onCountChange={setNotifCount}
+        onViewProfile={setProfileViewUserId}
       />
       <AccountMenu
         visible={accountMenuVisible}

@@ -14,9 +14,6 @@ import { colors, radii, spacing, shadow } from "../lib/theme";
 // from the actual file, not approximated.
 //
 // Explicitly deferred, not silently dropped:
-// - Group gifting (GroupHintModal, "Get group together" button) - a
-//   271-line component of its own (invite flow, per-person status,
-//   its own notification/email side effects). Separate task.
 // - The signed-out "Sign up to join {name}'s Circle" prompt - doesn't
 //   apply to mobile's navigation model the same way, since the app
 //   requires being signed in to reach any screen at all (unlike web,
