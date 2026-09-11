@@ -8,14 +8,15 @@ export const metadata = {
   // absolute bypasses the root layout's "%s | HintDrop" title
   // template entirely - the homepage wants this exact custom title,
   // not the generic template applied on top of it (which would have
-  // produced "HintDrop | Never forget. Always thoughtful. | HintDrop").
-  // openGraph.title/twitter.title below are separate fields the
-  // template never touches, so those didn't need the same fix.
-  title: { absolute: "HintDrop | Never forget. Always thoughtful." },
+  // produced "HintDrop | You craft the moments, we remember the
+  // details. | HintDrop"). openGraph.title/twitter.title below are
+  // separate fields the template never touches, so those didn't need
+  // the same fix.
+  title: { absolute: "HintDrop | You craft the moments, we remember the details." },
   description: "Save what you actually want. Remember who matters. Plan gifts together. HintDrop is the thoughtful gifting app for hints, reminders, and group gifting.",
   keywords: ["gift ideas", "wishlist app", "group gifting", "birthday reminders", "hint list", "gift planning"],
   openGraph: {
-    title: "HintDrop | Never forget. Always thoughtful.",
+    title: "HintDrop | You craft the moments, we remember the details.",
     description: "Save what you actually want. Remember who matters. Plan gifts together.",
     url: "https://hintdrop.app",
     siteName: "HintDrop",
@@ -24,7 +25,7 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "HintDrop | Never forget. Always thoughtful.",
+    title: "HintDrop | You craft the moments, we remember the details.",
     description: "Save what you actually want. Remember who matters. Plan gifts together.",
     images: ["https://hintdrop.app/og-default-v2.png"],
   },

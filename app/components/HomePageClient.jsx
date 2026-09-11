@@ -579,14 +579,14 @@ export default function HomePageClient() {
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[14px] font-bold text-[#eb7b58] shadow-sm">
               <span>♡</span>
               <span>
-                You craft the moments, we remember the details.
+                Never forget. Always thoughtful.
               </span>
             </div>
 
             <h1 className="mt-7 max-w-[580px] text-[48px] font-bold leading-[0.98] tracking-[-0.01em] text-slate-900 sm:text-[64px] lg:text-[82px]" >
-              Never forget.
+              You craft the moments,
               <br />
-              <span className="text-[#ff8060]">Always thoughtful.</span>
+              <span className="text-[#ff8060]">we remember the details.</span>
             </h1>
 
             <div
