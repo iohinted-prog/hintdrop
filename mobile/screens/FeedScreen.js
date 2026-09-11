@@ -444,29 +444,6 @@ function greetingForHour(hour) {
   return "Good evening";
 }
 
-// Bg/border/text triplet per time of day - green for morning, blue
-// for afternoon, coral (the app's orange) for evening. Night isn't a
-// case anyone asked to color, so it falls back to a neutral tint
-// rather than inventing an unrequested fourth scheme.
-function greetingColorsForHour(hour) {
-  if (hour < 5) return { bg: colors.bgAlt, border: colors.border, text: colors.textSecondary };
-  if (hour < 12) return { bg: colors.successBg, border: colors.successBorder, text: colors.successText };
-  if (hour < 18) return { bg: colors.infoBg, border: colors.infoBorder, text: colors.infoText };
-  return { bg: "#ffe9df", border: colors.coralPale, text: colors.coralDeep };
-}
-
-function GreetingPill({ firstName }) {
-  const hour = new Date().getHours();
-  const { bg, border, text } = greetingColorsForHour(hour);
-  return (
-    <View style={[styles.greetingPill, { backgroundColor: bg, borderColor: border }]}>
-      <Text style={[styles.greetingPillText, { color: text }]} numberOfLines={1}>
-        {greetingForHour(hour)}{firstName ? `, ${firstName}` : ""}
-      </Text>
-    </View>
-  );
-}
-
 export default function FeedScreen() {
   const { user } = useAuth();
   const firstName = (user?.user_metadata?.full_name || "").trim().split(/\s+/)[0] || "";
@@ -659,7 +636,7 @@ export default function FeedScreen() {
   if (loading) {
     return (
       <View style={[styles.container, { paddingHorizontal: 16 }]}>
-        <GreetingPill firstName={firstName} />
+        <Text style={styles.screenTitle}>{greetingForHour(new Date().getHours())}{firstName ? `, ${firstName}` : ""}</Text>
         <ActivityIndicator color={colors.coral} style={{ marginTop: 24 }} />
       </View>
     );
@@ -678,7 +655,7 @@ export default function FeedScreen() {
           // greeting stays (still worth having over a bare "Feed"),
           // just presented the same way every other page's title is.
           <>
-            <GreetingPill firstName={firstName} />
+            <Text style={styles.screenTitle}>{greetingForHour(new Date().getHours())}{firstName ? `, ${firstName}` : ""}</Text>
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </>
         }
@@ -716,8 +693,6 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   screenTitle: { fontSize: 28, fontWeight: "700", letterSpacing: -1.1, color: colors.textPrimary, marginTop: 16, marginBottom: 4 },
-  greetingPill: { alignSelf: "flex-start", marginTop: 16, marginBottom: 4, paddingHorizontal: 18, paddingVertical: 10, borderRadius: radii.pill, borderWidth: 1 },
-  greetingPillText: { fontSize: 24, fontWeight: "700", letterSpacing: -1 },
   error: { color: "#c9633f", paddingHorizontal: 16, marginBottom: 8 },
   listContent: { paddingHorizontal: 16, paddingBottom: 40, gap: 14 },
   card: { borderRadius: radii.xxl, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 16, ...shadow, shadowOpacity: 0.05 },
