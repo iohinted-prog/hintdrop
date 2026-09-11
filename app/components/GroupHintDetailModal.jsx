@@ -34,7 +34,6 @@ export default function GroupHintDetailModal({ groupHintId, currentUserId, curre
   const [editHintId, setEditHintId] = useState("");
   const [payingAmount, setPayingAmount] = useState("");
   const [paying, setPaying] = useState(false);
-  const [pledgeAmount, setPledgeAmount] = useState("");
   const [pledging, setPledging] = useState(false);
 
   async function load() {
@@ -60,26 +59,31 @@ export default function GroupHintDetailModal({ groupHintId, currentUserId, curre
   const requested = members.filter(m => m.status === "requested");
   const activeMembers = members.filter(m => m.status !== "requested" && m.status !== "declined");
   const inMembers = members.filter(m => m.status === "in");
+  const paidMembers = inMembers.filter(m => m.paid_amount != null);
   const target = gh?.target_amount;
   const share = target ? target / (1 + activeMembers.length) : 0;
-  const raised = inMembers.reduce((sum, m) => sum + (m.pledged_amount != null ? Number(m.pledged_amount) : share), 0);
+  // Only real, actually-marked contributions count toward the pot - no
+  // fallback to the theoretical share for members who are merely "in"
+  // but haven't contributed yet.
+  const raised = paidMembers.reduce((sum, m) => sum + Number(m.paid_amount), 0);
   const pct = target ? Math.min(100, Math.round((raised / target) * 100)) : 0;
   const fmt = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: gh?.hints?.currency || "GBP" }).format(n);
   const isPastDeadline = gh?.deadline_date && new Date(gh.deadline_date) < new Date(new Date().toDateString());
 
-  async function respond(action, amount) {
+  async function respond(action) {
     if (!myMember) return;
     const status = action === "accept" ? "in" : "declined";
-    await supabase.from("group_hint_members").update(action === "accept" ? { status, pledged_amount: amount } : { status }).eq("id", myMember.id);
+    await supabase.from("group_hint_members").update({ status }).eq("id", myMember.id);
     await load();
   }
 
-  async function joinCommit(amount) {
-    // Approved-but-not-committed ("joined") member confirming their pledge -
-    // same "in" status as a direct invite's commit, just arriving via the
-    // request-to-join path instead.
+  async function joinCommit() {
+    // Approved-but-not-yet-confirmed ("joined") member saying "I'm in" -
+    // same "in" status a direct invite's accept sets, just arriving via
+    // the request-to-join path instead. No amount here either - that's
+    // the separate "I've contributed" step below, once they're in.
     if (!myMember) return;
-    await supabase.from("group_hint_members").update({ status: "in", pledged_amount: amount }).eq("id", myMember.id);
+    await supabase.from("group_hint_members").update({ status: "in" }).eq("id", myMember.id);
     await load();
   }
 
@@ -215,7 +219,7 @@ export default function GroupHintDetailModal({ groupHintId, currentUserId, curre
                       }
                       <p className="text-[13px] font-semibold text-slate-900 flex-1 truncate">{m.profiles?.full_name}</p>
                       <span className="text-[11px] font-semibold text-slate-400">
-                        {m.paid_amount != null ? "✓ Paid" : m.status === "in" ? "Pledged" : m.status === "joined" ? "Joined" : "Invited"}
+                        {m.paid_amount != null ? "✓ Contributed" : m.status === "in" ? "In" : m.status === "joined" ? "Joined" : "Invited"}
                       </span>
                     </div>
                   ))}
@@ -239,34 +243,33 @@ export default function GroupHintDetailModal({ groupHintId, currentUserId, curre
 
               {!isPastDeadline && myMember?.status === "invited" && (
                 <div className="flex gap-2">
-                  <input type="number" placeholder={share.toFixed(2)} value={pledgeAmount} onChange={e => setPledgeAmount(e.target.value)}
-                    className="w-24 h-11 rounded-full border border-[#ead8ce] px-3 text-sm text-slate-700 outline-none" />
-                  <button type="button" disabled={pledging} onClick={async () => { setPledging(true); await respond("accept", parseFloat(pledgeAmount) || share); setPledging(false); }}
-                    className="h-11 flex-1 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white">Pledge</button>
+                  <button type="button" disabled={pledging} onClick={async () => { setPledging(true); await respond("accept"); setPledging(false); }}
+                    className="h-11 flex-1 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white">I'm in</button>
                   <button type="button" onClick={() => respond("decline")} className="h-11 rounded-full border border-[#ead8ce] px-4 text-[13px] font-semibold text-slate-400">Decline</button>
                 </div>
               )}
 
               {!isPastDeadline && myMember?.status === "joined" && (
                 <div className="flex gap-2">
-                  <input type="number" placeholder={share.toFixed(2)} value={pledgeAmount} onChange={e => setPledgeAmount(e.target.value)}
-                    className="w-24 h-11 rounded-full border border-[#ead8ce] px-3 text-sm text-slate-700 outline-none" />
-                  <button type="button" disabled={pledging} onClick={async () => { setPledging(true); await joinCommit(parseFloat(pledgeAmount) || share); setPledging(false); }}
-                    className="h-11 flex-1 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white">Commit {fmt(share)}</button>
+                  <button type="button" disabled={pledging} onClick={async () => { setPledging(true); await joinCommit(); setPledging(false); }}
+                    className="h-11 flex-1 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white">I'm in</button>
                   <button type="button" onClick={leavePot} className="h-11 rounded-full border border-[#ead8ce] px-4 text-[13px] font-semibold text-slate-400">Leave</button>
                 </div>
               )}
 
-              {!isPastDeadline && myMember?.status === "in" && myMember.paid_amount == null && (
+              {!isPastDeadline && myMember?.status === "in" && target != null && myMember.paid_amount == null && (
                 <div className="flex gap-2">
-                  <input type="number" placeholder={String(myMember.pledged_amount ?? share)} value={payingAmount} onChange={e => setPayingAmount(e.target.value)}
+                  <input type="number" placeholder={share.toFixed(2)} value={payingAmount} onChange={e => setPayingAmount(e.target.value)}
                     className="w-24 h-11 rounded-full border border-[#ead8ce] px-3 text-sm text-slate-700 outline-none" />
                   <button type="button" disabled={paying} onClick={markPaid}
-                    className="h-11 flex-1 rounded-full bg-gradient-to-b from-[#8fc98f] to-[#5fae5f] text-[13px] font-semibold text-white">Mark as paid</button>
+                    className="h-11 flex-1 rounded-full bg-gradient-to-b from-[#8fc98f] to-[#5fae5f] text-[13px] font-semibold text-white">I've contributed</button>
                 </div>
               )}
-              {myMember?.status === "in" && myMember.paid_amount != null && (
-                <div className="text-center text-[12px] font-semibold text-[#2f8a5f] bg-[#e3f5ea] rounded-full py-2">✓ You've paid {fmt(myMember.paid_amount)}</div>
+              {myMember?.status === "in" && target != null && myMember.paid_amount != null && (
+                <div className="text-center text-[12px] font-semibold text-[#2f8a5f] bg-[#e3f5ea] rounded-full py-2">✓ You've contributed {fmt(myMember.paid_amount)}</div>
+              )}
+              {myMember?.status === "in" && target == null && (
+                <div className="text-center text-[12px] font-semibold text-[#2f8a5f] bg-[#e3f5ea] rounded-full py-2">✓ You're in</div>
               )}
 
               <div className="flex gap-2 pt-1">
