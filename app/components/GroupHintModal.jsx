@@ -73,6 +73,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
   // out of this modal) before anything else - not something that happens
   // silently just because they opened this modal.
   const [potConfirmed, setPotConfirmed] = useState(false);
+  const [chatOnly, setChatOnly] = useState(false);
   const [deadlineDate, setDeadlineDate] = useState("");
   const [recipientEvents, setRecipientEvents] = useState([]);
   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
@@ -136,7 +137,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
 
   async function handleSend() {
     if (!selected.length) return;
-    if (!groupHint && !hintHasPrice && !(Number(manualTargetAmount) > 0)) {
+    if (!chatOnly && !groupHint && !hintHasPrice && !(Number(manualTargetAmount) > 0)) {
       setSendError("Enter a target amount for the pot first - this hint has no price to split automatically.");
       return;
     }
@@ -156,8 +157,11 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
             hint_id: hint.id,
             organiser_id: user.id,
             recipient_user_id: recipientUserId,
-            target_amount: hintHasPrice ? hint.numeric_price : Number(manualTargetAmount),
-            deadline_date: deadlineDate || null,
+            // A plain conversation carries no money tracking at all - no
+            // target, no deadline, regardless of whether the hint itself
+            // has a price.
+            target_amount: chatOnly ? null : (hintHasPrice ? hint.numeric_price : Number(manualTargetAmount)),
+            deadline_date: chatOnly ? null : (deadlineDate || null),
           })
           .select()
           .maybeSingle();
@@ -205,11 +209,13 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
       const newlyInvitedNames = selected
         .map(uid => contacts.find(c => c.profile_id === uid)?.name)
         .filter(Boolean);
-      const inviteBody = isNewConv
-        ? `${organiserName} started a group gift for ${hint.title || "a hint"} 🎁`
-        : newlyInvitedNames.length
-          ? `${organiserName} invited ${newlyInvitedNames.join(", ")} to chip in on ${hint.title || "a hint"} 🎁`
-          : `${organiserName} wants to chip in on ${hint.title || "a hint"} 🎁`;
+      const inviteBody = chatOnly
+        ? `${organiserName} started a conversation about ${hint.title || "a hint"} 🎁`
+        : isNewConv
+          ? `${organiserName} started a group gift for ${hint.title || "a hint"} 🎁`
+          : newlyInvitedNames.length
+            ? `${organiserName} invited ${newlyInvitedNames.join(", ")} to chip in on ${hint.title || "a hint"} 🎁`
+            : `${organiserName} wants to chip in on ${hint.title || "a hint"} 🎁`;
       await supabase.from("messages").insert({ conversation_id: convId, sender_id: user.id, body: inviteBody, type: "system" });
 
       // Marking "I'm getting this" is a request, not silent - the
@@ -258,26 +264,30 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
         <div className="overflow-y-auto flex-1 p-4 space-y-4">
           {loading ? (
             <div className="text-center text-sm text-slate-400 py-8">Loading...</div>
-          ) : !groupHint && !potConfirmed ? (
+          ) : !groupHint && !potConfirmed && !chatOnly ? (
             <div className="py-4 text-center">
-              <p className="text-[15px] font-semibold text-slate-900 mb-1.5">Start a group pot for this gift?</p>
+              <p className="text-[15px] font-semibold text-slate-900 mb-1.5">Get a group together for this gift?</p>
               <p className="text-[13px] text-slate-500 mb-6">
-                You'll invite people to chip in toward {hint.title || "this hint"} for {recipientName}. It's just a shared coordination number - HintDrop never moves real money.
+                Start a pot to track contributions toward {hint.title || "this hint"} for {recipientName}, or just start a conversation about it with no money tracking at all.
               </p>
-              <div className="flex gap-2 justify-center">
-                <button type="button" onClick={onClose}
-                  className="h-11 px-5 rounded-full border border-[#ead8ce] text-[13px] font-semibold text-slate-500">
-                  Cancel
-                </button>
+              <div className="flex flex-col gap-2 items-stretch">
                 <button type="button" onClick={() => setPotConfirmed(true)}
                   className="h-11 px-6 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-md">
-                  Yes, start a pot
+                  Start a pot
+                </button>
+                <button type="button" onClick={() => setChatOnly(true)}
+                  className="h-11 px-6 rounded-full border border-[#ead8ce] text-[13px] font-semibold text-slate-700">
+                  Just start a conversation
+                </button>
+                <button type="button" onClick={onClose}
+                  className="h-9 text-[12px] font-semibold text-slate-400">
+                  Cancel
                 </button>
               </div>
             </div>
           ) : (
             <>
-              {!groupHint && (
+              {!groupHint && !chatOnly && (
                 <div>
                   <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Deadline (optional)</p>
                   {recipientEvents.length > 0 && (
@@ -307,7 +317,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
                   </span>
                 </label>
               )}
-              {!groupHint && !hintHasPrice && (
+              {!groupHint && !chatOnly && !hintHasPrice && (
                 <div>
                   <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Pot target</p>
                   <p className="text-[12px] text-slate-400 mb-2">This hint has no price, so set what you're aiming to raise together.</p>
@@ -325,7 +335,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
                   </div>
                 </div>
               )}
-              {(hintHasPrice || groupHint) && selected.length > 0 && (() => {
+              {!chatOnly && (hintHasPrice || groupHint) && selected.length > 0 && (() => {
                 const target = groupHint?.target_amount || hint.numeric_price;
                 const totalPeople = 1 + members.length + selected.length; // organiser + already-invited + newly selected
                 const share = target / totalPeople;
@@ -361,7 +371,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
 
               {availableContacts.length > 0 && (
                 <div>
-                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Invite to chip in</p>
+                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">{chatOnly ? "Invite to chat" : "Invite to chip in"}</p>
                   <div className="space-y-2">
                     {availableContacts.map(c => (
                       <div key={c.profile_id} className="flex items-center gap-3 py-1 cursor-pointer" onClick={() => toggleContact(c.profile_id)}>
@@ -394,7 +404,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
           <div className="px-4 pb-5 pt-2 border-t border-[#f2e5de] shrink-0">
             <button type="button" disabled={sending} onClick={handleSend}
               className="w-full h-11 flex items-center justify-center rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-lg">
-              {sending ? "Sending..." : `Invite ${selected.length} contact${selected.length > 1 ? "s" : ""} to chip in`}
+              {sending ? "Sending..." : `Invite ${selected.length} contact${selected.length > 1 ? "s" : ""} to ${chatOnly ? "chat" : "chip in"}`}
             </button>
           </div>
         )}
