@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   listContent: { paddingVertical: 8 },
   emptyText: { textAlign: "center", color: colors.textMuted, marginTop: 60, fontSize: 14 },
   convRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#f5ece6" },
-  avatarStack: { flexDirection: "row", width: 44 },
+  avatarStack: { flexDirection: "row", width: 44, flexShrink: 0 },
   avatarStackItem: { borderRadius: 20, borderWidth: 2, borderColor: colors.bg },
   avatarStackImage: { width: 36, height: 36, borderRadius: 18 },
   convTitle: { fontSize: 14, fontWeight: "600", color: colors.textPrimary },

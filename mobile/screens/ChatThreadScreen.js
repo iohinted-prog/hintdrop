@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card },
   headerBack: { paddingVertical: 4 },
   headerBackText: { fontSize: 14, fontWeight: "600", color: colors.coral },
-  headerAvatars: { flexDirection: "row" },
+  headerAvatars: { flexDirection: "row", width: 72, flexShrink: 0 },
   headerTitle: { fontSize: 14, fontWeight: "700", color: colors.textPrimary },
   headerSubtitle: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
   pinnedWrap: { borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: "#fff8f5", paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
