@@ -133,5 +133,55 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Plain conversations (no target_amount, so no deadline either) get a
+  // single reminder 7 days after they started, to anyone who hasn't
+  // responded "I'm in"/declined yet - just once, ever, tracked via
+  // chat_reminder_sent so it can never re-fire even if this job runs
+  // more than once on the same day.
+  const sevenDaysAgo = new Date(today)
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  const { data: chats } = await supabase
+    .from('group_hints')
+    .select('id, title, created_at, hints(title), group_hint_members(id, user_id, status)')
+    .is('target_amount', null)
+    .eq('chat_reminder_sent', false)
+    .lte('created_at', sevenDaysAgo.toISOString())
+
+  for (const chat of chats || []) {
+    const title = chat.title || chat.hints?.title || 'a hint'
+    const stillWaiting = (chat.group_hint_members || []).filter((m: any) => m.status === 'invited')
+
+    for (const member of stillWaiting) {
+      try {
+        const { data: auth } = await supabase.auth.admin.getUserById(member.user_id)
+        const email = auth?.user?.email
+        if (!email) continue
+        const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', member.user_id).maybeSingle()
+        const name = profile?.full_name?.split(' ')[0] || 'there'
+
+        const emailRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${Deno.env.get('RESEND_API_KEY')}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: 'HintDrop <hello@hintdrop.app>',
+            to: email,
+            subject: `Still there? A conversation about "${title}" is waiting on you`,
+            html: wrapHtml(
+              "Still there?",
+              `<p>Hi ${name},</p><p>You were invited to a conversation about <strong>${title}</strong> a week ago and haven't replied yet. No pressure - just checking you saw it.</p><a href="https://hintdrop.app/feed" style="display:inline-block;margin-top:16px;background:linear-gradient(to bottom,#ff966f,#ff7e54);color:white;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:bold">Open HintDrop</a>`,
+              'coral'
+            ),
+          }),
+        })
+        if (!emailRes.ok) results.errors.push(`Chat reminder failed for ${email}`)
+        else results.reminders++
+      } catch (e) {
+        results.errors.push(`Chat reminder error: ${e}`)
+      }
+    }
+
+    await supabase.from('group_hints').update({ chat_reminder_sent: true }).eq('id', chat.id)
+  }
+
   return new Response(JSON.stringify(results), { headers: { 'Content-Type': 'application/json' } })
 })
