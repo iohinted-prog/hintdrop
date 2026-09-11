@@ -10,11 +10,15 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }) {
   const { hintId } = await params;
   const supabase = await createClient();
-  const { data: hint } = await supabase
+  const { data: hint, error } = await supabase
     .from("hints")
-    .select("title, image_url, retailer, is_private, user_id, profiles(full_name)")
+    .select("title, image_url, retailer, is_private, user_id, profiles!hints_user_id_profiles_fkey(full_name)")
     .eq("id", hintId)
     .maybeSingle();
+
+  if (error) {
+    console.error("Hint metadata query error:", error);
+  }
 
   if (!hint) {
     return { title: "Hint | HintDrop" };

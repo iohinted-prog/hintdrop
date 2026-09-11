@@ -34,7 +34,7 @@ export default function HintPreviewClient({ hintId }) {
 
       const { data, error } = await supabase
         .from("hints")
-        .select("id, title, image_url, retailer, numeric_price, currency, url, occasions, user_id, profiles(full_name, avatar_url)")
+        .select("id, title, image_url, retailer, numeric_price, currency, url, occasions, user_id, profiles!hints_user_id_profiles_fkey(full_name, avatar_url)")
         .eq("id", hintId)
         .maybeSingle();
       // A real query error (RLS edge case, network issue, ambiguous
