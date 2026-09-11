@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { View, FlatList, StyleSheet, RefreshControl, ActivityIndicator, TextInput, Pressable, Image, Modal, ScrollView, Share, Alert, Animated } from "react-native";
 import Text from "../components/Text";
+import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import { resolveAvatarColor, NON_USER_AVATAR_COLOR } from "../lib/avatarColor";
@@ -223,6 +224,7 @@ function AddContactModal({ visible, onClose, onSave, currentUserId, currentUserN
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.addOverlay}>
+        <LinearGradient colors={["transparent", "rgba(42,26,20,0.5)"]} style={StyleSheet.absoluteFillObject} pointerEvents="none" />
         <View style={styles.addCard}>
           <View style={styles.addHeaderRow}>
             <View>
@@ -544,7 +546,7 @@ const styles = StyleSheet.create({
   messageButtonText: { fontSize: 14 },
   deleteButton: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   deleteButtonText: { fontSize: 12, color: colors.textMuted },
-  addOverlay: { flex: 1, backgroundColor: "rgba(42,26,20,0.38)", justifyContent: "flex-end" },
+  addOverlay: { flex: 1, justifyContent: "flex-end" },
   addCard: { backgroundColor: colors.bg, borderTopLeftRadius: radii.xxl, borderTopRightRadius: radii.xxl, maxHeight: "90%", padding: 20 },
   addHeaderRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
   addEyebrow: { fontSize: 11, fontWeight: "700", color: colors.coralDeep, letterSpacing: 0.6 },

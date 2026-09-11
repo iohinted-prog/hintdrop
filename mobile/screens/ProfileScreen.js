@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Pressable, Image, ScrollView, Modal, ActivityIndicator, Alert, Linking, Animated, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import GroupHintModal from "../components/GroupHintModal";
 import Text from "../components/Text";
@@ -22,6 +23,22 @@ import { colors, radii, spacing, shadow } from "../lib/theme";
 // - Board delete-on-hover (a X button that fades in on card hover) -
 //   there's no hover state on mobile; ported as a persistent small
 //   delete affordance instead, shown only for the owner's own boards.
+
+// Mirrors web's loadRatio - measures each hint's real image aspect
+// ratio via Image.getSize, wrapped in a Promise the same way web
+// wraps its <img> onload. Real ratios per-tile, not a fixed 3/4 for
+// every card, is what actually makes the grid read as masonry rather
+// than a uniform grid - measuring the images is the whole mechanism,
+// not the aspectRatio style alone.
+function loadImageRatio(uri) {
+  return new Promise((resolve) => {
+    Image.getSize(
+      uri,
+      (width, height) => resolve(width > 0 && height > 0 ? width / height : null),
+      () => resolve(null)
+    );
+  });
+}
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -114,6 +131,7 @@ export default function ProfileScreen({ userId, onBack, insideModal = false, ini
   const [selectedBoardId, setSelectedBoardId] = useState(initialBoardId);
   const [boardHintsLoading, setBoardHintsLoading] = useState(false);
   const [hints, setHints] = useState([]);
+  const [hintImageRatios, setHintImageRatios] = useState({});
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("default");
@@ -193,6 +211,18 @@ export default function ProfileScreen({ userId, onBack, insideModal = false, ini
         const { data: claimsData } = await supabase.from("hint_claims").select("id, hint_id, claimed_by, claim_type").in("hint_id", hintsList.map((h) => h.id));
         if (!cancelled) setClaims(claimsData || []);
       }
+      // Measured before clearing the loading flag, same as web - so
+      // cards appear already correctly sized instead of showing at a
+      // default ratio then visibly resizing a moment later.
+      const ratios = {};
+      await Promise.all(
+        hintsList.filter((h) => h.image_url).map(async (h) => {
+          const r = await loadImageRatio(h.image_url);
+          if (r) ratios[h.id] = r;
+        })
+      );
+      if (cancelled) return;
+      setHintImageRatios(ratios);
       setBoardHintsLoading(false);
     }
     loadBoardHints();
@@ -323,8 +353,13 @@ export default function ProfileScreen({ userId, onBack, insideModal = false, ini
 
   function HintTile({ hint, index }) {
     const [, to] = GRADIENT_PAIRS[index % GRADIENT_PAIRS.length];
+    // Matches web exactly - the real measured ratio when available,
+    // a 3/4 fallback otherwise (no clamping here, unlike Shop's
+    // ShopCard which does clamp - web's own profile grid doesn't
+    // either, so this doesn't invent a difference).
+    const ratio = hint.image_url && hintImageRatios[hint.id] ? hintImageRatios[hint.id] : 3 / 4;
     return (
-      <Pressable style={styles.hintTile} onPress={() => setSelectedHint(hint)}>
+      <Pressable style={[styles.hintTile, { aspectRatio: ratio }]} onPress={() => setSelectedHint(hint)}>
         {hint.image_url ? (
           <Image source={{ uri: hint.image_url }} style={styles.hintTileImage} />
         ) : (
@@ -391,7 +426,7 @@ export default function ProfileScreen({ userId, onBack, insideModal = false, ini
                   style={[styles.iconButton, (filter !== "default" || occasionFilter) && styles.iconButtonActive]}
                   onPress={() => setFilterVisible(true)}
                 >
-                  <Text style={[styles.iconButtonText, (filter !== "default" || occasionFilter) && { color: colors.coral }]}>⚗</Text>
+                  <Feather name="filter" size={14} color={(filter !== "default" || occasionFilter) ? colors.coral : "#475569"} />
                 </Pressable>
               ) : null}
             </View>
@@ -544,6 +579,7 @@ export default function ProfileScreen({ userId, onBack, insideModal = false, ini
 
       <Modal visible={filterVisible} transparent animationType="slide" onRequestClose={() => setFilterVisible(false)}>
         <Pressable style={styles.filterOverlay} onPress={() => setFilterVisible(false)}>
+          <LinearGradient colors={["transparent", "rgba(33,24,20,0.55)"]} style={StyleSheet.absoluteFillObject} pointerEvents="none" />
           <Pressable style={styles.filterCard} onPress={() => {}}>
             <View style={styles.filterHeaderRow}>
               <Text style={styles.filterTitle}>Filter hints</Text>
@@ -588,6 +624,7 @@ export default function ProfileScreen({ userId, onBack, insideModal = false, ini
 
       <Modal visible={Boolean(selectedHint)} transparent animationType="slide" onRequestClose={() => setSelectedHint(null)}>
         <Pressable style={styles.detailOverlay} onPress={() => setSelectedHint(null)}>
+          <LinearGradient colors={["transparent", "rgba(0,0,0,0.55)"]} style={StyleSheet.absoluteFillObject} pointerEvents="none" />
           {selectedHint ? (
             <Pressable style={styles.detailCard} onPress={() => {}}>
               <ScrollView>
@@ -726,7 +763,7 @@ const styles = StyleSheet.create({
   boardDeleteButton: { position: "absolute", right: 8, top: 8, width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.9)", borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   boardDeleteText: { fontSize: 11, color: colors.textMuted },
   hintsColumnsWrap: { flexDirection: "row", gap: 12 },
-  hintTile: { borderRadius: radii.xl, overflow: "hidden", aspectRatio: 3 / 4, position: "relative", ...shadow },
+  hintTile: { borderRadius: radii.xl, overflow: "hidden", position: "relative", ...shadow },
   hintTileImage: { width: "100%", height: "100%", position: "absolute" },
   hintTileOverlay: { ...StyleSheet.absoluteFillObject },
   hintTileStar: { position: "absolute", top: 8, right: 8, fontSize: 16 },
@@ -734,7 +771,7 @@ const styles = StyleSheet.create({
   hintTileTitle: { fontSize: 14, fontWeight: "700", color: "#fff" },
   hintTilePriceBadge: { marginTop: 4, alignSelf: "flex-start", backgroundColor: colors.coral, borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 2 },
   hintTilePriceText: { fontSize: 11, fontWeight: "700", color: "#fff" },
-  filterOverlay: { flex: 1, backgroundColor: "rgba(33,24,20,0.42)", justifyContent: "flex-end" },
+  filterOverlay: { flex: 1, justifyContent: "flex-end" },
   filterCard: { backgroundColor: colors.card, borderTopLeftRadius: radii.xxl, borderTopRightRadius: radii.xxl, padding: 20 },
   filterHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
   filterTitle: { fontSize: 17, fontWeight: "600", color: colors.textPrimary },
@@ -746,7 +783,7 @@ const styles = StyleSheet.create({
   filterLabel: { fontSize: 12, fontWeight: "700", color: colors.textSecondary, marginBottom: 8 },
   filterDoneButton: { marginTop: 20, height: 48, borderRadius: radii.pill, backgroundColor: colors.coral, alignItems: "center", justifyContent: "center", ...shadow },
   filterDoneText: { fontSize: 14, fontWeight: "700", color: "#fff" },
-  detailOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  detailOverlay: { flex: 1, justifyContent: "flex-end" },
   detailCard: { backgroundColor: colors.bg, borderTopLeftRadius: radii.xxl, borderTopRightRadius: radii.xxl, maxHeight: "88%" },
   detailCloseRow: { flexDirection: "row", justifyContent: "flex-end", padding: 12 },
   detailImage: { width: "100%", height: 260 },

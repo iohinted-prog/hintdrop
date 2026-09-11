@@ -341,6 +341,7 @@ const styles = StyleSheet.create({
   },
   titleAccent: {
     color: "#ff875d",
+    fontWeight: "700",
   },
   modeTitle: {
     fontSize: 15,

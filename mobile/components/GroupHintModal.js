@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Modal, View, StyleSheet, Pressable, Image, ScrollView, ActivityIndicator } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import Text from "./Text";
 import { supabase } from "../lib/supabase";
 import { resolveAvatarColor } from "../lib/avatarColor";
@@ -159,6 +160,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
+        <LinearGradient colors={["transparent", "rgba(0,0,0,0.55)"]} style={StyleSheet.absoluteFillObject} pointerEvents="none" />
         <Pressable style={styles.card} onPress={() => {}}>
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
@@ -227,7 +229,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  overlay: { flex: 1, justifyContent: "flex-end" },
   card: { backgroundColor: colors.bg, borderTopLeftRadius: radii.xxl, borderTopRightRadius: radii.xxl, maxHeight: "88%" },
   header: { flexDirection: "row", alignItems: "flex-start", padding: 18, borderBottomWidth: 1, borderBottomColor: colors.border },
   headerTitle: { fontSize: 16, fontWeight: "700", color: colors.textPrimary },

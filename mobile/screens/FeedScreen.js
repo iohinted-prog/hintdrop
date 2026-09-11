@@ -330,6 +330,7 @@ function HintPeekModal({ hint, onClose }) {
   return (
     <Modal visible={Boolean(hint)} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.hintPeekOverlay} onPress={onClose}>
+        <LinearGradient colors={["transparent", "rgba(0,0,0,0.55)"]} style={StyleSheet.absoluteFillObject} pointerEvents="none" />
         {hint ? (
           <Pressable style={styles.hintPeekCard} onPress={() => {}}>
             {hint.image_url ? <Image source={{ uri: hint.image_url }} style={styles.hintPeekImage} resizeMode="cover" /> : null}
@@ -655,7 +656,7 @@ const styles = StyleSheet.create({
   composerInput: { flex: 1, height: 40, borderRadius: radii.pill, borderWidth: 1, borderColor: "#e9ddd6", backgroundColor: colors.card, paddingHorizontal: 14, fontSize: 14, color: colors.textPrimary },
   composerSend: { height: 40, paddingHorizontal: 16, borderRadius: radii.pill, backgroundColor: "#2f3b2d", alignItems: "center", justifyContent: "center" },
   composerSendText: { fontSize: 13, fontWeight: "700", color: "#fff" },
-  hintPeekOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  hintPeekOverlay: { flex: 1, justifyContent: "flex-end" },
   hintPeekCard: { backgroundColor: colors.bg, borderTopLeftRadius: radii.xxl, borderTopRightRadius: radii.xxl },
   hintPeekImage: { width: "100%", height: 220 },
   hintPeekTitle: { fontSize: 17, fontWeight: "600", color: colors.textPrimary },

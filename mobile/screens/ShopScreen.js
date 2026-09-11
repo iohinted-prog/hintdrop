@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, StyleSheet, Pressable, Image, TextInput, ActivityIndicator, ScrollView, Modal, Linking } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -186,6 +187,7 @@ function ProductDetailModal({ product, onClose, onAddToHints, onViewItem, isSavi
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.detailOverlay} onPress={onClose}>
+        <LinearGradient colors={["transparent", "rgba(0,0,0,0.55)"]} style={StyleSheet.absoluteFillObject} pointerEvents="none" />
         <Pressable style={styles.detailCard} onPress={() => {}}>
           <ScrollView>
             {product.image_url ? (
@@ -248,6 +250,7 @@ function BoardPickerModal({ visible, boards, loading, onSelectBoard, onClose, ne
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.detailOverlay} onPress={onClose}>
+        <LinearGradient colors={["transparent", "rgba(0,0,0,0.55)"]} style={StyleSheet.absoluteFillObject} pointerEvents="none" />
         <Pressable style={styles.detailCard} onPress={() => {}}>
           <View style={{ padding: 20 }}>
             <Text style={styles.detailTitle}>Add to which list?</Text>
@@ -704,7 +707,7 @@ const styles = StyleSheet.create({
   cardAddButtonText: { fontSize: 10, fontWeight: "700", color: "#fff" },
   cardViewButton: { flex: 1, height: 30, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   cardViewButtonText: { fontSize: 10, fontWeight: "700", color: colors.textSecondary },
-  detailOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  detailOverlay: { flex: 1, justifyContent: "flex-end" },
   detailCard: { backgroundColor: colors.bg, borderTopLeftRadius: radii.xxl, borderTopRightRadius: radii.xxl, maxHeight: "88%" },
   detailImage: { width: "100%", height: 260 },
   detailTitle: { fontSize: 18, fontWeight: "700", color: colors.textPrimary },

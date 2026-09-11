@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { View, StyleSheet, Pressable, Modal, ScrollView, TextInput, ActivityIndicator, Alert, Image, Linking } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { LinearGradient } from "expo-linear-gradient";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -537,6 +538,7 @@ export default function CalendarScreen() {
 
       <Modal visible={sheetOpen} transparent animationType="slide" onRequestClose={() => { setSheetOpen(false); setShowAdd(false); }}>
         <Pressable style={styles.sheetOverlay} onPress={() => { setSheetOpen(false); setShowAdd(false); }}>
+          <LinearGradient colors={["transparent", "rgba(0,0,0,0.55)"]} style={StyleSheet.absoluteFillObject} pointerEvents="none" />
           <Pressable style={styles.sheetCard} onPress={() => {}}>
             <View style={styles.sheetHeaderRow}>
               <Text style={styles.sheetTitle}>{selectedDate ? new Date(selectedDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) : ""}</Text>
@@ -601,7 +603,7 @@ const styles = StyleSheet.create({
   upcomingCtaText: { fontSize: 11, fontWeight: "700", color: "#fff" },
   eventBadge: { borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 3 },
   eventBadgeText: { fontSize: 11, fontWeight: "700" },
-  sheetOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  sheetOverlay: { flex: 1, justifyContent: "flex-end" },
   sheetCard: { backgroundColor: colors.bg, borderTopLeftRadius: radii.xxl, borderTopRightRadius: radii.xxl, padding: 18, maxHeight: "82%" },
   sheetHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
   sheetTitle: { fontSize: 15, fontWeight: "700", color: colors.textPrimary, flex: 1 },
