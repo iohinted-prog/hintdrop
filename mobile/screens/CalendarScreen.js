@@ -436,9 +436,9 @@ export default function CalendarScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingHorizontal: 16 }]}>
         <Text style={styles.screenTitle}>Calendar</Text>
-        <ActivityIndicator color={colors.coral} style={{ marginTop: 24 }} />
+        <ActivityIndicator color={colors.coral} style={{ marginTop: 40 }} />
       </View>
     );
   }

@@ -568,9 +568,10 @@ export default function ShopScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingHorizontal: 16 }]}>
         <Text style={styles.screenTitle}>Shop</Text>
-        <ActivityIndicator color={colors.coral} style={{ marginTop: 24 }} />
+        <Text style={styles.subtitle}>Curated gift ideas, then save the good ones to hints.</Text>
+        <ActivityIndicator color={colors.coral} style={{ marginTop: 40 }} />
       </View>
     );
   }

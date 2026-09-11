@@ -20,12 +20,6 @@ import ProfileScreen from "./ProfileScreen";
 // itself doesn't show at this size.
 //
 // Explicitly deferred, not silently dropped:
-// - Calendar-derived reminder items being injected into the feed
-//   (shortReminderFeedItems on web) - depends on the Calendar system,
-//   which doesn't exist on mobile yet. Own/contact feed_items and the
-//   two-item demo fallback are ported; calendar-sourced reminders
-//   will start appearing here once Calendar itself is built, the
-//   same query web uses.
 // - The hint-preview tap-through only shows a simplified detail (image,
 //   title, retailer, Open link) rather than the full claim/share
 //   hint-detail modal ProfileScreen.js has - avoiding duplicating that
@@ -88,6 +82,30 @@ function eventTypeIcon(title, type) {
   if (normalized.includes("celebration")) return "balloon.svg";
   if (normalized.includes("holiday")) return "holiday-palm.svg";
   return "calendar.svg";
+}
+
+// Mirrors web's possessiveName + buildReminderHeadline exactly (app/
+// feed/FeedClient.js) - same "already says birthday/anniversary/etc
+// in the title, don't double up" guard that avoids headlines like
+// "Maya's Birthday's birthday is in 5 days".
+function possessiveName(name) {
+  const trimmed = String(name || "").trim();
+  if (!trimmed) return "Their";
+  return trimmed.endsWith("s") ? `${trimmed}'` : `${trimmed}'s`;
+}
+
+const EVENT_TYPE_LABELS = { birthday: "birthday", anniversary: "anniversary", celebration: "celebration" };
+
+function buildReminderHeadline({ title, type, eventDate }) {
+  const diffDays = diffInDaysFromToday(eventDate);
+  const cleanTitle = String(title || "Event").trim();
+  if (diffDays == null) return `${cleanTitle} is coming up`;
+  const distance = formatReminderDistance(diffDays).toLowerCase();
+  if (/\b(birthday|bday|anniversary|wedding|celebration)\b/i.test(cleanTitle)) {
+    return `${cleanTitle} is ${distance}`;
+  }
+  const typeLabel = EVENT_TYPE_LABELS[String(type || "").toLowerCase()] || "event";
+  return `${possessiveName(title)} ${typeLabel} is ${distance}`;
 }
 
 function reminderStyleForType(eventType, customColor) {
@@ -361,6 +379,7 @@ export default function FeedScreen() {
   const { user } = useAuth();
   const firstName = (user?.user_metadata?.full_name || "").trim().split(/\s+/)[0] || "";
   const [feedItems, setFeedItems] = useState([]);
+  const [calendarReminderItems, setCalendarReminderItems] = useState([]);
   const [reactionsByFeedId, setReactionsByFeedId] = useState({});
   const [commentsByFeedId, setCommentsByFeedId] = useState({});
   const [demoReactionsByFeedId, setDemoReactionsByFeedId] = useState({ "demo-hint-post": demoHintPost.metadata.demo_reactions.map((r) => ({ ...r, active: false })) });
@@ -403,6 +422,46 @@ export default function FeedScreen() {
       return { ...row, metadata: { ...(row.metadata || {}), actor_avatar_url: row.metadata?.actor_avatar_url || avatarByUserId[row.actor_user_id] } };
     });
     setFeedItems(enriched);
+
+    // Mirrors web's shortReminderFeedItems exactly (app/feed/
+    // FeedClient.js) - upcoming calendar events (0-7 days out) shown
+    // as reminder cards in the feed itself, not just in Calendar.
+    // This was deferred when Feed was first built (Calendar didn't
+    // exist yet on mobile) and never revisited - a real gap, not
+    // something intentionally left out.
+    const { data: personalEvents } = await supabase.from("calendar_events").select("*").eq("user_id", user.id);
+    const { data: sharedEvents } = await supabase.from("calendar_events").select("*").eq("is_shared", true);
+    const allEvents = [...(personalEvents || []), ...(sharedEvents || [])].filter(
+      (e, i, self) => self.findIndex((x) => x.id === e.id) === i
+    );
+    const reminderItems = allEvents
+      .map((event) => {
+        const diffDays = diffInDaysFromToday(event.event_date);
+        if (diffDays === null || diffDays < 0 || diffDays > 7) return null;
+        return {
+          id: `reminder-${event.id}`,
+          owner_user_id: user.id,
+          actor_user_id: null,
+          family: "reminder",
+          item_type: "event_reminder",
+          headline: buildReminderHeadline({ title: event.title, type: event.type, eventDate: event.event_date }),
+          body: "A reminder so you have time to sort the gift.",
+          cta_label: "Shop",
+          cta_href: "/shop",
+          occurred_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          metadata: {
+            social_enabled: false,
+            event_date: event.event_date,
+            event_type: event.type,
+            event_title: event.title,
+            event_color: event.color,
+          },
+          isDemo: false,
+        };
+      })
+      .filter(Boolean);
+    setCalendarReminderItems(reminderItems);
 
     const ids = enriched.filter(isSocialFeedItem).map((i) => i.id);
     if (ids.length) {
@@ -501,7 +560,9 @@ export default function FeedScreen() {
     return <ProfileScreen userId={fullProfileUserId} onBack={() => setFullProfileUserId(null)} />;
   }
 
-  const visibleFeedItems = feedItems.length > 0 ? feedItems : [demoReminderPost, demoHintPost];
+  const visibleFeedItems = [...(feedItems.length > 0 ? feedItems : [demoReminderPost, demoHintPost]), ...calendarReminderItems].sort(
+    (a, b) => new Date(b.occurred_at || b.created_at) - new Date(a.occurred_at || a.created_at)
+  );
 
   if (loading) {
     return (

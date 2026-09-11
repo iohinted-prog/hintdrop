@@ -1071,8 +1071,13 @@ function BoardListScreen({ onSelectBoard }) {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator color="#ff875d" />
+      <View style={styles.container}>
+        <View style={styles.heroHeader}>
+          <Text style={styles.heroTitle}>Your Hints</Text>
+        </View>
+        <View style={styles.centered}>
+          <ActivityIndicator color="#ff875d" />
+        </View>
       </View>
     );
   }
