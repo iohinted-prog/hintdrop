@@ -59,12 +59,12 @@ const RELATIONSHIP_GROUPS = {
 const RELATIONSHIP_OPTIONS = Object.keys(RELATIONSHIP_GROUPS);
 
 const PRICE_BAND_OPTIONS = [
-  { label: "Up to £25", max: 25 },
-  { label: "Up to £50", max: 50 },
-  { label: "Up to £100", max: 100 },
-  { label: "Up to £250", max: 250 },
-  { label: "Up to £500", max: 500 },
-  { label: "Up to £1000", max: 1000 },
+  { label: "Under £25", max: 25 },
+  { label: "£25 - £50", min: 25, max: 50 },
+  { label: "£50 - £100", min: 50, max: 100 },
+  { label: "£100 - £250", min: 100, max: 250 },
+  { label: "£250 - £500", min: 250, max: 500 },
+  { label: "£500 - £1000", min: 500, max: 1000 },
   { label: "£1000+", max: Infinity, min: 1000 },
 ];
 

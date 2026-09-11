@@ -43,12 +43,12 @@ const RELATIONSHIP_GROUPS = {
 };
 const relationshipOptions = Object.keys(RELATIONSHIP_GROUPS);
 const priceBandOptions = [
-  { label: "Up to £25", max: 25 },
-  { label: "Up to £50", max: 50 },
-  { label: "Up to £100", max: 100 },
-  { label: "Up to £250", max: 250 },
-  { label: "Up to £500", max: 500 },
-  { label: "Up to £1000", max: 1000 },
+  { label: "Under £25", max: 25 },
+  { label: "£25 - £50", min: 25, max: 50 },
+  { label: "£50 - £100", min: 50, max: 100 },
+  { label: "£100 - £250", min: 100, max: 250 },
+  { label: "£250 - £500", min: 250, max: 500 },
+  { label: "£500 - £1000", min: 500, max: 1000 },
   { label: "£1000+", max: Infinity, min: 1000 },
 ];
 
@@ -218,23 +218,57 @@ function ProductDetailModal({ product, onClose, onAddToHints, onViewItem, isSavi
   );
 }
 
+// A collage per board, mirroring the same adaptive-grid idea
+// HintsScreen.js's BoardPreview uses for the board list itself,
+// simplified for this smaller context (a single image when there's
+// only one, an even split otherwise) rather than duplicating its
+// full 1/2/3/4-cell layout logic here.
+function BoardPreviewThumb({ previewHints = [] }) {
+  const items = previewHints.filter((h) => h.image_url).slice(0, 4);
+  if (items.length === 0) {
+    return <View style={[styles.boardGridThumb, styles.boardGridThumbEmpty]}><Text style={{ fontSize: 22 }}>🎁</Text></View>;
+  }
+  if (items.length === 1) {
+    return (
+      <View style={styles.boardGridThumb}>
+        <Image source={{ uri: items[0].image_url }} style={styles.boardGridThumbFull} />
+      </View>
+    );
+  }
+  return (
+    <View style={[styles.boardGridThumb, { flexDirection: "row", flexWrap: "wrap" }]}>
+      {items.map((hint, i) => (
+        <Image key={hint.id || i} source={{ uri: hint.image_url }} style={styles.boardGridThumbQuarter} />
+      ))}
+    </View>
+  );
+}
+
 function BoardPickerModal({ visible, boards, loading, onSelectBoard, onClose, newBoardTitle, setNewBoardTitle, onCreateBoard, isCreatingBoard }) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.detailOverlay} onPress={onClose}>
         <Pressable style={styles.detailCard} onPress={() => {}}>
           <View style={{ padding: 20 }}>
-            <Text style={styles.detailTitle}>Save to which list?</Text>
+            <Text style={styles.detailTitle}>Add to which list?</Text>
             {loading ? (
               <ActivityIndicator color={colors.coral} style={{ marginTop: 16 }} />
+            ) : boards.length === 0 ? (
+              <Text style={styles.emptyText}>You don't have any hint lists yet — create one below.</Text>
             ) : (
-              <ScrollView style={{ maxHeight: 260, marginTop: 12 }}>
-                {boards.map((b) => (
-                  <Pressable key={b.id} style={styles.boardRow} onPress={() => onSelectBoard(b.id)}>
-                    <Text style={styles.boardRowTitle}>{b.title}</Text>
-                    <Text style={styles.boardRowCount}>{b.hintCount} hints</Text>
-                  </Pressable>
-                ))}
+              // Matches web's actual board picker exactly - a 2-column
+              // grid of square collage cards, not a plain text list -
+              // web's own version here is genuinely richer than what
+              // this had before, not something invented for mobile.
+              <ScrollView style={{ maxHeight: 340, marginTop: 12 }}>
+                <View style={styles.boardGridWrap}>
+                  {boards.map((b) => (
+                    <Pressable key={b.id} style={styles.boardGridItem} onPress={() => onSelectBoard(b.id)}>
+                      <BoardPreviewThumb previewHints={b.previewHints} />
+                      <Text style={styles.boardGridTitle} numberOfLines={1}>{b.is_private ? "🔒 " : ""}{b.title}</Text>
+                    </Pressable>
+                  ))}
+                </View>
               </ScrollView>
             )}
             <View style={{ flexDirection: "row", gap: 8, marginTop: 14 }}>
@@ -413,8 +447,15 @@ export default function ShopScreen() {
     const { data: boardRows } = await supabase.from("hint_boards").select("id, title, is_default, is_private").eq("user_id", userId).order("is_default", { ascending: false }).order("created_at", { ascending: true });
     const boardsWithCounts = await Promise.all(
       (boardRows || []).map(async (board) => {
-        const { count } = await supabase.from("hints").select("id", { count: "exact", head: true }).eq("board_id", board.id);
-        return { ...board, hintCount: count || 0 };
+        const [{ count }, { data: previewHints }] = await Promise.all([
+          supabase.from("hints").select("id", { count: "exact", head: true }).eq("board_id", board.id),
+          // Same pattern as HintsMenuClient's/ProfileClient's own board
+          // previews - a handful of images per board, not the full hint
+          // list, is what makes the picker feel like it's showing real
+          // content instead of a bare text list of names/counts.
+          supabase.from("hints").select("id, image_url").eq("board_id", board.id).order("position", { ascending: true }).limit(4),
+        ]);
+        return { ...board, hintCount: count || 0, previewHints: previewHints || [] };
       })
     );
     setUserBoards(boardsWithCounts);
@@ -676,9 +717,13 @@ const styles = StyleSheet.create({
   detailViewButton: { flex: 1, height: 44, borderRadius: radii.pill, backgroundColor: colors.coral, alignItems: "center", justifyContent: "center" },
   detailViewButtonText: { fontSize: 13, fontWeight: "700", color: "#fff" },
   formInput: { height: 44, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, paddingHorizontal: 12, fontSize: 13, color: colors.textPrimary },
-  boardRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  boardRowTitle: { fontSize: 14, fontWeight: "600", color: colors.textPrimary },
-  boardRowCount: { fontSize: 12, color: colors.textMuted },
+  boardGridWrap: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  boardGridItem: { width: "47%" },
+  boardGridThumb: { width: "100%", aspectRatio: 1, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, overflow: "hidden", backgroundColor: "#fdf5f0" },
+  boardGridThumbEmpty: { alignItems: "center", justifyContent: "center" },
+  boardGridThumbFull: { width: "100%", height: "100%" },
+  boardGridThumbQuarter: { width: "50%", height: "50%" },
+  boardGridTitle: { fontSize: 13, fontWeight: "600", color: colors.textPrimary, marginTop: 6 },
   toast: { position: "absolute", bottom: 24, left: 20, right: 20, backgroundColor: "#f3fbf1", borderWidth: 1, borderColor: "#d8e8d3", borderRadius: radii.pill, paddingVertical: 12, paddingHorizontal: 18, alignItems: "center", ...shadow },
   toastText: { fontSize: 13, fontWeight: "700", color: "#3a7d55" },
 });
