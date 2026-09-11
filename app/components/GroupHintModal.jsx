@@ -69,6 +69,14 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
   // Only asked when the hint has no price - the pot's target otherwise
   // comes straight from the hint itself, no separate step needed.
   const [manualTargetAmount, setManualTargetAmount] = useState("");
+  // Organiser has to explicitly decide to start a pot (vs just cancelling
+  // out of this modal) before anything else - not something that happens
+  // silently just because they opened this modal.
+  const [potConfirmed, setPotConfirmed] = useState(false);
+  const [deadlineDate, setDeadlineDate] = useState("");
+  const [recipientEvents, setRecipientEvents] = useState([]);
+  const [alreadyClaimed, setAlreadyClaimed] = useState(false);
+  const [wantsClaim, setWantsClaim] = useState(true);
 
   const hintHasPrice = hint.numeric_price > 0;
 
@@ -90,11 +98,35 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
       if (existing) {
         setGroupHint(existing);
         setMembers(existing.group_hint_members || []);
+        setDeadlineDate(existing.deadline_date || "");
       }
+
+      // Only the recipient's own shared events are readable here (RLS
+      // gates on is_shared=true) - private ones are never visible to an
+      // organiser, deliberately. A handful of quick-pick suggestions,
+      // not a full calendar browse.
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: events } = await supabase
+        .from("calendar_events")
+        .select("id, title, event_date")
+        .eq("user_id", recipientUserId)
+        .eq("is_shared", true)
+        .gte("event_date", today)
+        .order("event_date", { ascending: true })
+        .limit(3);
+      setRecipientEvents(events || []);
+
+      const { data: claims } = await supabase
+        .from("hint_claims")
+        .select("id")
+        .eq("hint_id", hint.id)
+        .eq("claimed_by", currentUserId);
+      setAlreadyClaimed((claims || []).length > 0);
+
       setLoading(false);
     }
     load();
-  }, [hint.id, currentUserId]);
+  }, [hint.id, currentUserId, recipientUserId]);
 
   function toggleContact(profileId) {
     setSelected(prev => prev.includes(profileId)
@@ -125,6 +157,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
             organiser_id: user.id,
             recipient_user_id: recipientUserId,
             target_amount: hintHasPrice ? hint.numeric_price : Number(manualTargetAmount),
+            deadline_date: deadlineDate || null,
           })
           .select()
           .maybeSingle();
@@ -179,6 +212,13 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
           : `${organiserName} wants to chip in on ${hint.title || "a hint"} 🎁`;
       await supabase.from("messages").insert({ conversation_id: convId, sender_id: user.id, body: inviteBody, type: "system" });
 
+      // Marking "I'm getting this" is a request, not silent - the
+      // checkbox defaults on, but nothing happens here if the organiser
+      // unchecked it or had already claimed it some other way.
+      if (wantsClaim && !alreadyClaimed) {
+        await supabase.from("hint_claims").insert({ hint_id: hint.id, claimed_by: user.id, claim_type: "group" });
+      }
+
       setGroupHint(gh);
       setMembers(newMembers || []);
       const invitedCount = selected.length;
@@ -218,8 +258,55 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
         <div className="overflow-y-auto flex-1 p-4 space-y-4">
           {loading ? (
             <div className="text-center text-sm text-slate-400 py-8">Loading...</div>
+          ) : !groupHint && !potConfirmed ? (
+            <div className="py-4 text-center">
+              <p className="text-[15px] font-semibold text-slate-900 mb-1.5">Start a group pot for this gift?</p>
+              <p className="text-[13px] text-slate-500 mb-6">
+                You'll invite people to chip in toward {hint.title || "this hint"} for {recipientName}. It's just a shared coordination number - HintDrop never moves real money.
+              </p>
+              <div className="flex gap-2 justify-center">
+                <button type="button" onClick={onClose}
+                  className="h-11 px-5 rounded-full border border-[#ead8ce] text-[13px] font-semibold text-slate-500">
+                  Cancel
+                </button>
+                <button type="button" onClick={() => setPotConfirmed(true)}
+                  className="h-11 px-6 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white shadow-md">
+                  Yes, start a pot
+                </button>
+              </div>
+            </div>
           ) : (
             <>
+              {!groupHint && (
+                <div>
+                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Deadline (optional)</p>
+                  {recipientEvents.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {recipientEvents.map(ev => (
+                        <button key={ev.id} type="button" onClick={() => setDeadlineDate(ev.event_date)}
+                          className={"text-[12px] font-semibold px-3 py-1.5 rounded-full border " + (deadlineDate === ev.event_date ? "border-[#ff875d] bg-[#fff1ea] text-[#df7b59]" : "border-[#ead8ce] text-slate-500")}>
+                          {ev.title} · {new Date(ev.event_date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <input
+                    type="date"
+                    value={deadlineDate}
+                    onChange={(e) => setDeadlineDate(e.target.value)}
+                    className="w-full h-11 rounded-full border border-[#ead8ce] px-4 text-sm text-slate-700 outline-none focus:border-[#ff875d]"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1.5">Leave blank if there's no deadline - reminder emails only go out when there's a date to count down to.</p>
+                </div>
+              )}
+              {!alreadyClaimed && (
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input type="checkbox" checked={wantsClaim} onChange={(e) => setWantsClaim(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#ff875d]" />
+                  <span className="text-[12px] text-slate-500">
+                    Mark <span className="font-semibold text-slate-700">"I'm getting this"</span> so it's clear to anyone else browsing {recipientName}'s hints that this one's already covered.
+                  </span>
+                </label>
+              )}
               {!groupHint && !hintHasPrice && (
                 <div>
                   <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Pot target</p>
