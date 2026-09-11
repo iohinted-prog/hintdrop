@@ -115,7 +115,7 @@ export default function ShareButton({
             <button
               type="button"
               onClick={handleWhatsApp}
-              className="w-full flex items-center gap-2.5 rounded-[14px] bg-[#25D366] px-3.5 py-3 text-sm font-bold text-white shadow-sm hover:brightness-105"
+              className="w-full flex items-center gap-2.5 rounded-[14px] bg-gradient-to-b from-[#ff966f] to-[#ff7e54] px-3.5 py-3 text-sm font-bold text-[#fffaf3] shadow-sm hover:brightness-105"
             >
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-[16px]">💬</span>
               Share on WhatsApp

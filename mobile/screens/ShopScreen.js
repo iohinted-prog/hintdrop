@@ -570,6 +570,9 @@ export default function ShopScreen() {
     return (
       <View style={[styles.container, { paddingHorizontal: 16 }]}>
         <Text style={styles.screenTitle}>Shop</Text>
+        <View style={styles.rewardsPill}>
+          <Text style={styles.rewardsPillText}>🎁 Rewards — coming soon</Text>
+        </View>
         <Text style={styles.subtitle}>Curated gift ideas, then save the good ones to hints.</Text>
         <ActivityIndicator color={colors.coral} style={{ marginTop: 40 }} />
       </View>
@@ -580,6 +583,9 @@ export default function ShopScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.listContent}>
         <Text style={styles.screenTitle}>Shop</Text>
+        <View style={styles.rewardsPill}>
+          <Text style={styles.rewardsPillText}>🎁 Rewards — coming soon</Text>
+        </View>
         <Text style={styles.subtitle}>Curated gift ideas, then save the good ones to hints.</Text>
         <Text style={styles.affiliateNote}>Some links may be affiliate links. If you buy through them, HintDrop may earn a commission at no extra cost to you.</Text>
 
@@ -677,6 +683,8 @@ const styles = StyleSheet.create({
   listContent: { paddingHorizontal: 16, paddingBottom: 40 },
   screenTitle: { fontSize: 28, fontWeight: "700", letterSpacing: -1.1, color: colors.textPrimary, marginTop: 16, marginBottom: 4 },
   subtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 6 },
+  rewardsPill: { alignSelf: "flex-start", marginTop: 8, paddingHorizontal: 12, paddingVertical: 5, borderRadius: radii.pill, borderWidth: 1, borderColor: "#e6ddd7", backgroundColor: "#faf7f4" },
+  rewardsPillText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6, color: colors.textMuted, textTransform: "uppercase" },
   affiliateNote: { fontSize: 11, color: colors.textMuted, marginTop: 6 },
   searchInput: { height: 46, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, paddingHorizontal: 14, fontSize: 14, color: colors.textPrimary, marginTop: 14 },
   filtersToggle: { alignSelf: "flex-start", marginTop: 10, height: 34, paddingHorizontal: 14, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, alignItems: "center", justifyContent: "center" },
