@@ -57,3 +57,39 @@ export async function buildProductMetadata(region, id) {
     },
   };
 }
+
+// Product structured data (schema.org/Product) - the actual lever for
+// price/availability rich snippets in Google search results, separate
+// from the openGraph/twitter tags above which only affect link
+// previews. A second getProductById call here rather than threading
+// the result through from generateMetadata - Next's fetch/data layer
+// dedupes identical requests within the same render pass, and
+// splitting these into two small, independently-named functions
+// (matching the existing buildProductMetadata) reads more clearly
+// than one function returning two unrelated shapes.
+export async function buildProductJsonLd(region, id) {
+  const product = await getProductById(region, id);
+  if (!product) return null;
+
+  const canonicalUrl = `https://hintdrop.app/gift-shop-${region}/p/${product.id}`;
+  // in_stock is the only state this catalog actually tracks (is_active
+  // already filters out anything that isn't) - no separate stock-level
+  // signal to reflect a genuine "out of stock" state, so this is never
+  // guessed at beyond what's true: every listed product is available.
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.title,
+    image: product.image_url ? [product.image_url] : undefined,
+    description: buildDescription(product),
+    brand: product.retailer ? { "@type": "Brand", name: product.retailer } : undefined,
+    url: canonicalUrl,
+    offers: {
+      "@type": "Offer",
+      price: product.numeric_price || undefined,
+      priceCurrency: product.currency || "GBP",
+      availability: "https://schema.org/InStock",
+      url: product.affiliate_url || product.product_url || canonicalUrl,
+    },
+  };
+}

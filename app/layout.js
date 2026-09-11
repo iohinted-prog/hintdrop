@@ -9,6 +9,7 @@ const nunito = Nunito({
 import "./globals.css";
 import { PreferencesProvider } from "./providers/PreferencesProvider";
 import AppShell from "./components/AppShell";
+import { SOCIAL_LINKS } from "./components/SocialLinks";
 
 // Sitewide font - switched from Quicksand (which read as too rounded/
 // informal once seen live across the whole site) to Inter, the
@@ -122,9 +123,35 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }) {
+  // Organization/WebSite structured data - helps Google's Knowledge
+  // Panel understand HintDrop as a real entity distinct from a generic
+  // page title, and gives social profile links a canonical home to
+  // attach to (sameAs). No SearchAction here - the in-app shop search
+  // is client-side filtering with no URL query pattern (?q=...) Google
+  // could actually drive traffic through, so claiming one would
+  // describe a capability that doesn't really work that way.
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "HintDrop",
+    url: "https://hintdrop.app",
+    logo: "https://hintdrop.app/illustrations/giftbox-badge-coral.png",
+    sameAs: SOCIAL_LINKS?.map((link) => link.href).filter(Boolean),
+  };
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "HintDrop",
+    url: "https://hintdrop.app",
+  };
+
   return (
     <html lang="en">
       <body className={`${nunito.variable} ${inter.variable} antialiased`}>
+        {/* eslint-disable-next-line react/no-danger */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
+        {/* eslint-disable-next-line react/no-danger */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />
         {/* Auto-affiliate link rewriting (Skimlinks) — was only loaded on
             /shop, meaning every outbound retailer link anywhere else in the
             app (gift-shop, hints, hint detail modals, shared hint/board
