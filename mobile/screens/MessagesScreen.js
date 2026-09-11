@@ -202,6 +202,6 @@ const styles = StyleSheet.create({
   convTitleUnread: { fontWeight: "700" },
   convPreview: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   convPreviewUnread: { color: colors.textSecondary, fontWeight: "600" },
-  unreadBadge: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 5, backgroundColor: "#f36f64", alignItems: "center", justifyContent: "center" },
+  unreadBadge: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 5, backgroundColor: "#f36f64", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   unreadBadgeText: { fontSize: 11, fontWeight: "700", color: "#fff" },
 });

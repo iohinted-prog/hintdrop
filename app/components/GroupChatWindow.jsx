@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "../../lib/supabase/client";
 import Link from "next/link";
 import HintImage from "./HintImage";
+import GroupHintDetailModal from "./GroupHintDetailModal";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -30,6 +31,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
   const [myProfile, setMyProfile] = useState(null);
   const [payingId, setPayingId] = useState(null);
   const [payAmount, setPayAmount] = useState("");
+  const [openPotId, setOpenPotId] = useState(null);
 
   const members = conversation?.conversation_members || [];
   const otherMembers = members.filter(m => m.user_id !== currentUserId);
@@ -265,7 +267,10 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
                     </div>
                   );
                 })()}
-                <div className="min-w-0 flex-1">
+                <div
+                  className={`min-w-0 flex-1 ${ph.group_hints?.target_amount != null ? "cursor-pointer" : ""}`}
+                  onClick={() => { if (ph.group_hints?.target_amount != null) setOpenPotId(ph.group_hints.id); }}
+                >
                   <p className="text-[12px] font-semibold text-slate-900 truncate">{hint?.title || "Group gift"}</p>
                   {price && <p className="text-[11px] text-[#df7b59] font-semibold">{price}</p>}
                   {organiser && <p className="text-[10px] text-slate-400">by {organiser.full_name?.split(" ")[0]}</p>}
@@ -430,6 +435,14 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
+      {openPotId && (
+        <GroupHintDetailModal
+          groupHintId={openPotId}
+          currentUserId={currentUserId}
+          currentUserName={myProfile?.full_name}
+          onClose={() => setOpenPotId(null)}
+        />
+      )}
     </div>
   );
 }

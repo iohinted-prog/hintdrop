@@ -248,8 +248,8 @@ function FeedItemCard({ item, comments, activeComposerId, setActiveComposerId, d
                     <Text style={styles.actorName}>{metadata.actor_name}</Text>
                   </Pressable>
                 ) : null}
-                <View style={[styles.bucketBadge, { backgroundColor: bucketStyle.bg }]}>
-                  <Text style={[styles.bucketBadgeText, { color: bucketStyle.text }]}>{bucketStyle.label}</Text>
+                <View style={styles.bucketBadge}>
+                  <Text style={styles.bucketBadgeText}>{bucketStyle.label}</Text>
                 </View>
                 {item.isDemo ? (
                   <View style={styles.demoBadge}><Text style={styles.demoBadgeText}>Demo</Text></View>
@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
   cardBadgeRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
   actorName: { fontSize: 13, fontWeight: "700", color: colors.textPrimary },
   bucketBadge: { borderRadius: radii.pill, paddingHorizontal: 9, paddingVertical: 3 },
-  bucketBadgeText: { fontSize: 11, fontWeight: "700" },
+  bucketBadgeText: { fontSize: 11, fontWeight: "700", color: "#1e293b" },
   demoBadge: { borderWidth: 1, borderColor: colors.borderAlt, backgroundColor: colors.bg, borderRadius: radii.pill, paddingHorizontal: 9, paddingVertical: 3 },
   demoBadgeText: { fontSize: 11, fontWeight: "500", color: colors.textMuted },
   headline: { fontSize: 15, lineHeight: 21, color: colors.textSecondary, marginTop: 6 },
