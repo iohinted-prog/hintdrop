@@ -78,6 +78,7 @@ export default function NotificationsPanel({ visible, onClose, currentUserId, on
   const [loading, setLoading] = useState(true);
   const [inviteActionId, setInviteActionId] = useState(null);
   const [collabActionId, setCollabActionId] = useState(null);
+  const [potRequestActionId, setPotRequestActionId] = useState(null);
 
   const load = useCallback(async () => {
     if (!currentUserId) return;
@@ -101,7 +102,7 @@ export default function NotificationsPanel({ visible, onClose, currentUserId, on
     setInvites(merged);
     // Only the notification types this screen actually knows how to
     // render/act on - see the deferred-features note at the top.
-    const knownTypes = ["collab_request", "collab_accepted", "birthday_reminder", "group_hint_response"];
+    const knownTypes = ["collab_request", "collab_accepted", "birthday_reminder", "group_hint_response", "group_hint_request"];
     const relevant = (notifData || []).filter((n) => knownTypes.includes(n.type) || n.type === "reaction" || n.type === "comment" || n.type === "new_message");
     setActivityNotifs(relevant);
     const lastSeen = await getNotifLastSeen();
@@ -178,6 +179,24 @@ export default function NotificationsPanel({ visible, onClose, currentUserId, on
     }
   }
 
+  // Approving here only ever moves the request to "joined" - same
+  // status GroupHintDetailModal/Screen's own approveRequest sets, not
+  // full membership yet on its own. The invitee still has to
+  // separately tap "I'm in" before they're actually treated as part
+  // of the pot anywhere else. Declining removes the request outright.
+  async function handleGroupHintRequestAction(notif, decision) {
+    setPotRequestActionId(notif.id);
+    try {
+      const memberId = notif.data?.member_id;
+      if (memberId) {
+        await supabase.from("group_hint_members").update({ status: decision === "accept" ? "joined" : "declined" }).eq("id", memberId);
+      }
+      await dismissNotif(notif);
+    } finally {
+      setPotRequestActionId(null);
+    }
+  }
+
   async function dismissNotif(notif) {
     await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", notif.id);
     setActivityNotifs((prev) => prev.filter((n) => n.id !== notif.id));
@@ -185,6 +204,7 @@ export default function NotificationsPanel({ visible, onClose, currentUserId, on
   }
 
   const collabRequests = activityNotifs.filter((n) => n.type === "collab_request");
+  const groupHintRequests = activityNotifs.filter((n) => n.type === "group_hint_request");
   const collabAccepted = activityNotifs.filter((n) => n.type === "collab_accepted");
   const birthdayReminders = activityNotifs.filter((n) => n.type === "birthday_reminder");
   const groupHintResponses = activityNotifs.filter((n) => n.type === "group_hint_response");
@@ -226,6 +246,27 @@ export default function NotificationsPanel({ visible, onClose, currentUserId, on
                     </View>
                   );
                 })}
+
+                {groupHintRequests.map((notif) => (
+                  <View key={notif.id} style={styles.collabRequestCard}>
+                    <View style={styles.notifRow}>
+                      <NotifAvatar name={notif.data?.actor_name} avatarUrl={notif.data?.actor_avatar_url} avatarColor={notif.data?.actor_avatar_color} userId={notif.actor_user_id} />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={styles.notifTitle} numberOfLines={1}>{notif.title}</Text>
+                        {notif.body ? <Text style={styles.notifBody} numberOfLines={1}>{notif.body}</Text> : null}
+                      </View>
+                      <View style={styles.badgeOrange}><Text style={styles.badgeOrangeText}>Request</Text></View>
+                    </View>
+                    <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                      <Pressable style={styles.approveButton} disabled={potRequestActionId === notif.id} onPress={() => handleGroupHintRequestAction(notif, "accept")}>
+                        <Text style={styles.approveButtonText}>{potRequestActionId === notif.id ? "..." : "Approve"}</Text>
+                      </Pressable>
+                      <Pressable style={styles.declineButton} disabled={potRequestActionId === notif.id} onPress={() => handleGroupHintRequestAction(notif, "decline")}>
+                        <Text style={styles.declineButtonText}>Decline</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ))}
 
                 {collabAccepted.map((notif) => (
                   <View key={notif.id} style={styles.collabAcceptedCard}>
