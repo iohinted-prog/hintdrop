@@ -143,10 +143,13 @@ const POT_MEMBER_COLORS = ["#ff8060", "#4e9e6e", "#5b8dd9", "#c97ad4", "#e8a23a"
 // color per accepted member at an equal size (target/totalPeople),
 // no per-person custom amounts, no real payment - a coordination
 // number layered on the existing plain "I'm in" status.
-function GroupGiftPotCard({ groupGift, currentUserId }) {
+function GroupGiftPotCard({ groupGift, currentUserId, onContributed }) {
+  const [payingAmount, setPayingAmount] = useState("");
+  const [paying, setPaying] = useState(false);
   const hint = groupGift.hints;
   const organiser = groupGift.profiles;
   const members = groupGift.group_hint_members || [];
+  const myMember = members.find((m) => m.user_id === currentUserId);
   const inMembers = members.filter((m) => m.status === "in");
   const paidMembers = inMembers.filter((m) => m.paid_amount != null);
   const target = groupGift.target_amount;
@@ -161,6 +164,15 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
   const pct = target ? Math.min(100, Math.round((raised / target) * 100)) : 0;
   const isOrganiser = groupGift.organiser_id === currentUserId;
   const isPastDeadline = groupGift.deadline_date && new Date(groupGift.deadline_date) < new Date(new Date().toDateString());
+
+  async function markPaid() {
+    if (!myMember || paying) return;
+    setPaying(true);
+    await supabase.from("group_hint_members").update({ paid_amount: parseFloat(payingAmount) || 0 }).eq("id", myMember.id);
+    setPaying(false);
+    setPayingAmount("");
+    onContributed?.();
+  }
   const fmt = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(n);
 
   // Donut segments - one per actual contribution, sized to what was
@@ -206,6 +218,20 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
             ))}
           </View>
           <Text style={styles.potPledgedText}>{inMembers.length} of {members.length} in{paidMembers.length > 0 ? `, ${paidMembers.length} contributed` : ""}{isPastDeadline ? " · Closed" : ""}</Text>
+          {!isPastDeadline && myMember?.status === "in" && myMember.paid_amount == null && (
+            <Pressable style={styles.potContributeRow} onPress={(e) => e.stopPropagation?.()}>
+              <TextInput
+                style={styles.potContributeInput}
+                value={payingAmount}
+                onChangeText={setPayingAmount}
+                placeholder={share.toFixed(2)}
+                keyboardType="decimal-pad"
+              />
+              <Pressable disabled={paying} onPress={markPaid} style={styles.potContributeButton}>
+                <Text style={styles.potContributeButtonText}>I've contributed</Text>
+              </Pressable>
+            </Pressable>
+          )}
         </View>
       </View>
     </View>
@@ -582,7 +608,7 @@ export default function CircleScreen() {
                 <View style={{ gap: 10, marginTop: 8 }}>
                   {groupGifts.map((gg) => (
                     <Pressable key={gg.id} onPress={() => setOpenPotId(gg.id)}>
-                      <GroupGiftPotCard groupGift={gg} currentUserId={user?.id} />
+                      <GroupGiftPotCard groupGift={gg} currentUserId={user?.id} onContributed={() => user?.id && loadGroupGifts(user.id)} />
                     </Pressable>
                   ))}
                 </View>
@@ -634,6 +660,10 @@ const styles = StyleSheet.create({
   potAvatarDotPaid: { borderColor: colors.successText },
   potAvatarDotText: { fontSize: 7, fontWeight: "700", color: "#fff" },
   potPledgedText: { fontSize: 10, color: colors.textMuted },
+  potContributeRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
+  potContributeInput: { width: 64, height: 32, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 8, fontSize: 11, color: colors.textPrimary, backgroundColor: colors.card },
+  potContributeButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: colors.successText },
+  potContributeButtonText: { fontSize: 11, fontWeight: "700", color: "#fff" },
   emptyState: { alignItems: "center", paddingTop: 40, gap: 6 },
   emptyIllustration: { width: 160, height: 160, marginBottom: 8, opacity: 0.9 },
   emptyTitle: { fontSize: 14, fontWeight: "600", color: colors.textSecondary },

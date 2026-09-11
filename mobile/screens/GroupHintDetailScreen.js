@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, ScrollView, StyleSheet, Pressable, Image, TextInput, ActivityIndicator, Alert } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable, Image, TextInput, ActivityIndicator, Alert, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
@@ -132,6 +132,17 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
     await load();
   }
 
+  async function sharePot() {
+    try {
+      await Share.share({
+        message: `Chip in on a group gift I'm organising on HintDrop: https://hintdrop.app/pot/${gh.id}`,
+        url: `https://hintdrop.app/pot/${gh.id}`,
+      });
+    } catch {
+      // user dismissed the share sheet - nothing to do
+    }
+  }
+
   function deletePot() {
     Alert.alert("Delete this pot?", "This can't be undone.", [
       { text: "Cancel", style: "cancel" },
@@ -218,8 +229,13 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
               )}
               <Text style={styles.memberName} numberOfLines={1}>{m.profiles?.full_name}</Text>
               <Text style={styles.memberStatus}>
-                {m.paid_amount != null ? "✓ Contributed" : m.status === "in" ? "In" : m.status === "joined" ? "Joined" : "Invited"}
+                {m.status === "in" ? "In" : m.status === "joined" ? "Joined" : "Invited"}
               </Text>
+              {m.status === "in" && (
+                <View style={[styles.tickBadge, m.paid_amount != null && styles.tickBadgeFilled]}>
+                  {m.paid_amount != null ? <Text style={styles.tickBadgeText}>✓</Text> : null}
+                </View>
+              )}
             </View>
           ))}
 
@@ -282,6 +298,9 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
           )}
 
           <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+            <Pressable onPress={sharePot} style={styles.shareButton}>
+              <Text style={styles.shareButtonText}>Share this pot</Text>
+            </Pressable>
             {isOrganiser && !isPastDeadline && (
               <Pressable onPress={startEdit} style={styles.secondaryButton}>
                 <Text style={styles.secondaryButtonText}>Edit</Text>
@@ -324,6 +343,9 @@ const styles = StyleSheet.create({
   memberAvatarFallbackText: { fontSize: 10, fontWeight: "700", color: "#fff" },
   memberName: { flex: 1, fontSize: 13, fontWeight: "600", color: colors.textPrimary },
   memberStatus: { fontSize: 11, fontWeight: "600", color: colors.textMuted },
+  tickBadge: { width: 20, height: 20, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
+  tickBadgeFilled: { backgroundColor: colors.successBg, borderColor: colors.successBg },
+  tickBadgeText: { fontSize: 11, fontWeight: "700", color: colors.successText },
   approveButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radii.pill, backgroundColor: colors.coral },
   approveButtonText: { fontSize: 11, fontWeight: "700", color: "#fff" },
   declineButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border },
@@ -334,6 +356,8 @@ const styles = StyleSheet.create({
   primaryButtonText: { fontSize: 13, fontWeight: "700", color: "#fff" },
   payButton: { flex: 1, height: 44, borderRadius: radii.pill, backgroundColor: colors.successText, alignItems: "center", justifyContent: "center" },
   secondaryButton: { flex: 1, height: 44, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
+  shareButton: { flex: 2, height: 44, borderRadius: radii.pill, backgroundColor: colors.coral, alignItems: "center", justifyContent: "center", ...shadow },
+  shareButtonText: { fontSize: 13, fontWeight: "700", color: "#fff" },
   secondaryButtonText: { fontSize: 13, fontWeight: "700", color: colors.textSecondary },
   deleteButton: { flex: 1, height: 44, borderRadius: radii.pill, borderWidth: 1, borderColor: "#f0c7bf", alignItems: "center", justifyContent: "center" },
   deleteButtonText: { fontSize: 13, fontWeight: "700", color: colors.errorText },
