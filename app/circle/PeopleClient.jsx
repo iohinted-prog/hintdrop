@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
 import AddContactModal from "../components/AddContactModal";
 import ContactCard from "../components/ContactCard";
 import GroupHintDetailModal from "../components/GroupHintDetailModal";
+import UserProfileModal from "../components/UserProfileModal";
 import { useChatWindows } from "../components/ChatWindowsProvider";
 import HintImage from "../components/HintImage";
 import { resolveAvatarColor, NON_USER_AVATAR_COLOR } from "../../lib/avatarColor";
@@ -208,7 +208,6 @@ function HintsPreview({ userId, supabase }) {
 
 export default function PeopleClient() {
   const supabase = createClient();
-  const router = useRouter();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -217,6 +216,7 @@ export default function PeopleClient() {
 
   const [sessionUser, setSessionUser] = useState(null);
   const [openPotId, setOpenPotId] = useState(null);
+  const [previewUserId, setPreviewUserId] = useState(null);
 
   const [contactHints, setContactHints] = useState({});
   const [groupGifts, setGroupGifts] = useState([]);
@@ -418,7 +418,7 @@ export default function PeopleClient() {
                 </div>
                 <div className="space-y-3">
                   {upcomingBirthdays.map(contact => (
-                    <ContactCard key={contact.id} contact={contact} onOpenProfile={(p) => router.push(`/profile/${p.userId}`)}
+                    <ContactCard key={contact.id} contact={contact} onOpenProfile={(p) => setPreviewUserId(p.userId)}
                       onDeleteClick={handleDelete}
                       onMessageClick={handleMessageContact}
                       previewBoards={contactHints[contact.profileId] || []} />
@@ -433,7 +433,7 @@ export default function PeopleClient() {
                 )}
                 <div className="space-y-3">
                   {everyoneElse.map(contact => (
-                    <ContactCard key={contact.id} contact={contact} onOpenProfile={(p) => router.push(`/profile/${p.userId}`)}
+                    <ContactCard key={contact.id} contact={contact} onOpenProfile={(p) => setPreviewUserId(p.userId)}
                       onDeleteClick={handleDelete}
                       onMessageClick={handleMessageContact}
                       previewBoards={contactHints[contact.profileId] || []} />
@@ -464,6 +464,14 @@ export default function PeopleClient() {
           currentUserId={sessionUser?.id}
           currentUserName={sessionUser?.user_metadata?.full_name}
           onClose={() => { setOpenPotId(null); if (sessionUser?.id) loadGroupGifts(sessionUser.id); }}
+        />
+      )}
+      {previewUserId && (
+        <UserProfileModal
+          userId={previewUserId}
+          currentUserId={sessionUser?.id}
+          isContact
+          onClose={() => setPreviewUserId(null)}
         />
       )}
     </main>
