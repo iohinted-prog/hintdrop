@@ -70,6 +70,15 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
   // GroupHintModal.jsx exactly, same reasoning: the pot's target
   // otherwise comes straight from the hint itself, no extra step.
   const [manualTargetAmount, setManualTargetAmount] = useState("");
+  // Organiser has to explicitly decide pot vs. plain conversation before
+  // anything else - not something that happens silently just by opening
+  // this modal. Matches web's GroupHintModal.jsx exactly.
+  const [potConfirmed, setPotConfirmed] = useState(false);
+  const [chatOnly, setChatOnly] = useState(false);
+  const [deadlineDate, setDeadlineDate] = useState("");
+  const [recipientEvents, setRecipientEvents] = useState([]);
+  const [alreadyClaimed, setAlreadyClaimed] = useState(false);
+  const [wantsClaim, setWantsClaim] = useState(true);
 
   const hintHasPrice = hint.numeric_price > 0;
 
@@ -88,11 +97,30 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
       if (existing) {
         setGroupHint(existing);
         setMembers(existing.group_hint_members || []);
+        setDeadlineDate(existing.deadline_date || "");
       }
+
+      // Only the recipient's own SHARED events are readable here (RLS
+      // gates on is_shared=true) - matches web exactly, an organiser
+      // never sees anything private.
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: events } = await supabase
+        .from("calendar_events")
+        .select("id, title, event_date")
+        .eq("user_id", recipientUserId)
+        .eq("is_shared", true)
+        .gte("event_date", today)
+        .order("event_date", { ascending: true })
+        .limit(3);
+      setRecipientEvents(events || []);
+
+      const { data: claims } = await supabase.from("hint_claims").select("id").eq("hint_id", hint.id).eq("claimed_by", currentUserId);
+      setAlreadyClaimed((claims || []).length > 0);
+
       setLoading(false);
     }
     load();
-  }, [hint?.id, currentUserId]);
+  }, [hint?.id, currentUserId, recipientUserId]);
 
   function toggleContact(profileId) {
     setSelected((prev) => (prev.includes(profileId) ? prev.filter((id) => id !== profileId) : [...prev, profileId]));
@@ -100,7 +128,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
 
   async function handleSend() {
     if (!selected.length || sending) return;
-    if (!groupHint && !hintHasPrice && !(Number(manualTargetAmount) > 0)) {
+    if (!chatOnly && !groupHint && !hintHasPrice && !(Number(manualTargetAmount) > 0)) {
       setSendError("Enter a target amount for the pot first - this hint has no price to split automatically.");
       return;
     }
@@ -115,7 +143,11 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
             hint_id: hint.id,
             organiser_id: currentUserId,
             recipient_user_id: recipientUserId,
-            target_amount: hintHasPrice ? hint.numeric_price : Number(manualTargetAmount),
+            // A plain conversation carries no money tracking at all - no
+            // target, no deadline, regardless of whether the hint itself
+            // has a price. Matches web exactly.
+            target_amount: chatOnly ? null : (hintHasPrice ? hint.numeric_price : Number(manualTargetAmount)),
+            deadline_date: chatOnly ? null : (deadlineDate || null),
           })
           .select()
           .maybeSingle();
@@ -141,12 +173,22 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
       await supabase.from("conversation_hints").upsert({ conversation_id: convId, group_hint_id: gh.id }, { onConflict: "conversation_id,group_hint_id" });
 
       const newlyInvitedNames = selected.map((uid) => contacts.find((c) => c.profile_id === uid)?.name).filter(Boolean);
-      const inviteBody = isNewConv
-        ? `${organiserName} started a group gift for ${hint.title || "a hint"} 🎁`
-        : newlyInvitedNames.length
-          ? `${organiserName} invited ${newlyInvitedNames.join(", ")} to chip in on ${hint.title || "a hint"} 🎁`
-          : `${organiserName} wants to chip in on ${hint.title || "a hint"} 🎁`;
+      const inviteBody = chatOnly
+        ? `${organiserName} started a conversation about ${hint.title || "a hint"} 🎁`
+        : isNewConv
+          ? `${organiserName} started a group gift for ${hint.title || "a hint"} 🎁`
+          : newlyInvitedNames.length
+            ? `${organiserName} invited ${newlyInvitedNames.join(", ")} to chip in on ${hint.title || "a hint"} 🎁`
+            : `${organiserName} wants to chip in on ${hint.title || "a hint"} 🎁`;
       await supabase.from("messages").insert({ conversation_id: convId, sender_id: currentUserId, body: inviteBody, type: "system" });
+
+      // Marking "I'm getting this" is a request, not silent - the
+      // checkbox defaults on, but nothing happens here if the organiser
+      // unchecked it or had already claimed it some other way. Matches
+      // web exactly.
+      if (wantsClaim && !alreadyClaimed) {
+        await supabase.from("hint_claims").insert({ hint_id: hint.id, claimed_by: currentUserId, claim_type: "group" });
+      }
 
       setGroupHint(gh);
       setMembers(newMembers || []);
@@ -189,9 +231,60 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
           <ScrollView style={{ maxHeight: 360 }} contentContainerStyle={{ padding: 16 }}>
             {loading ? (
               <ActivityIndicator color={colors.coral} style={{ marginTop: 16 }} />
+            ) : !groupHint && !potConfirmed && !chatOnly ? (
+              <View style={{ paddingVertical: 16, alignItems: "center" }}>
+                <Text style={styles.confirmTitle}>Get a group together for this gift?</Text>
+                <Text style={styles.confirmBody}>
+                  Start a pot to track contributions toward {hint.title || "this hint"} for {recipientName}, or just start a conversation about it with no money tracking at all.
+                </Text>
+                <Pressable style={styles.confirmPrimaryButton} onPress={() => setPotConfirmed(true)}>
+                  <Text style={styles.confirmPrimaryButtonText}>Start a pot</Text>
+                </Pressable>
+                <Pressable style={styles.confirmSecondaryButton} onPress={() => setChatOnly(true)}>
+                  <Text style={styles.confirmSecondaryButtonText}>Just start a conversation</Text>
+                </Pressable>
+                <Pressable onPress={onClose} style={{ marginTop: 8 }}>
+                  <Text style={styles.confirmCancelText}>Cancel</Text>
+                </Pressable>
+              </View>
             ) : (
               <>
-                {!groupHint && !hintHasPrice ? (
+                {!groupHint && !chatOnly ? (
+                  <View style={{ marginBottom: 16 }}>
+                    <Text style={styles.sectionLabel}>DEADLINE (OPTIONAL)</Text>
+                    {recipientEvents.length > 0 ? (
+                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                        {recipientEvents.map((ev) => (
+                          <Pressable key={ev.id} onPress={() => setDeadlineDate(ev.event_date)}
+                            style={[styles.eventChip, deadlineDate === ev.event_date && styles.eventChipActive]}>
+                            <Text style={[styles.eventChipText, deadlineDate === ev.event_date && styles.eventChipTextActive]}>
+                              {ev.title} · {new Date(ev.event_date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    ) : null}
+                    <TextInput
+                      style={styles.deadlineInput}
+                      value={deadlineDate}
+                      onChangeText={setDeadlineDate}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={colors.textMuted}
+                    />
+                    <Text style={styles.targetHelpText}>Leave blank if there's no deadline - reminder emails only go out when there's a date to count down to.</Text>
+                  </View>
+                ) : null}
+                {!alreadyClaimed ? (
+                  <Pressable style={{ flexDirection: "row", gap: 10, marginBottom: 16 }} onPress={() => setWantsClaim(!wantsClaim)}>
+                    <View style={[styles.checkbox, wantsClaim && styles.checkboxChecked]}>
+                      {wantsClaim ? <Text style={styles.checkboxMark}>✓</Text> : null}
+                    </View>
+                    <Text style={styles.claimText}>
+                      Mark <Text style={{ fontWeight: "700", color: colors.textSecondary }}>"I'm getting this"</Text> so it's clear to anyone else browsing {recipientName}'s hints that this one's already covered.
+                    </Text>
+                  </Pressable>
+                ) : null}
+                {!groupHint && !chatOnly && !hintHasPrice ? (
                   <View style={{ marginBottom: 16 }}>
                     <Text style={styles.sectionLabel}>POT TARGET</Text>
                     <Text style={styles.targetHelpText}>This hint has no price, so set what you're aiming to raise together.</Text>
@@ -208,7 +301,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
                     </View>
                   </View>
                 ) : null}
-                {(hintHasPrice || groupHint) && selected.length > 0 ? (() => {
+                {!chatOnly && (hintHasPrice || groupHint) && selected.length > 0 ? (() => {
                   const target = groupHint?.target_amount || hint.numeric_price;
                   const totalPeople = 1 + members.length + selected.length;
                   const share = target / totalPeople;
@@ -239,7 +332,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
 
                 {availableContacts.length > 0 ? (
                   <View>
-                    <Text style={styles.sectionLabel}>INVITE TO CHIP IN</Text>
+                    <Text style={styles.sectionLabel}>{chatOnly ? "INVITE TO CHAT" : "INVITE TO CHIP IN"}</Text>
                     {availableContacts.map((c) => (
                       <Pressable key={c.profile_id} style={styles.memberRow} onPress={() => toggleContact(c.profile_id)}>
                         <GHAvatar name={c.name} avatarUrl={c.avatar_url} userId={c.profile_id} />
@@ -264,7 +357,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
           {selected.length > 0 ? (
             <View style={styles.footer}>
               <Pressable style={[styles.sendButton, sending && { opacity: 0.7 }]} onPress={handleSend} disabled={sending}>
-                <Text style={styles.sendButtonText}>{sending ? "Sending..." : `Invite ${selected.length} contact${selected.length > 1 ? "s" : ""} to chip in`}</Text>
+                <Text style={styles.sendButtonText}>{sending ? "Sending..." : `Invite ${selected.length} contact${selected.length > 1 ? "s" : ""} to ${chatOnly ? "chat" : "chip in"}`}</Text>
               </Pressable>
             </View>
           ) : null}
@@ -284,10 +377,26 @@ const styles = StyleSheet.create({
   closeButton: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   closeButtonText: { fontSize: 13, color: colors.textMuted },
   sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.textSecondary, letterSpacing: 0.4, marginBottom: 10 },
+  confirmTitle: { fontSize: 15, fontWeight: "700", color: colors.textPrimary, marginBottom: 6, textAlign: "center" },
+  confirmBody: { fontSize: 13, color: colors.textMuted, textAlign: "center", marginBottom: 20, paddingHorizontal: 8 },
+  confirmPrimaryButton: { height: 44, width: "100%", borderRadius: radii.pill, backgroundColor: colors.coral, alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  confirmPrimaryButtonText: { fontSize: 13, fontWeight: "700", color: "#fff" },
+  confirmSecondaryButton: { height: 44, width: "100%", borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
+  confirmSecondaryButtonText: { fontSize: 13, fontWeight: "700", color: colors.textSecondary },
+  confirmCancelText: { fontSize: 12, fontWeight: "700", color: colors.textMuted },
+  eventChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border },
+  eventChipActive: { borderColor: colors.coral, backgroundColor: "#fff1ea" },
+  eventChipText: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
+  eventChipTextActive: { color: colors.coral },
+  checkbox: { width: 18, height: 18, borderRadius: 5, borderWidth: 1.5, borderColor: colors.border, alignItems: "center", justifyContent: "center", marginTop: 1 },
+  checkboxChecked: { backgroundColor: colors.coral, borderColor: colors.coral },
+  checkboxMark: { color: "#fff", fontSize: 12, fontWeight: "700" },
+  claimText: { flex: 1, fontSize: 12, color: colors.textMuted, lineHeight: 17 },
   targetHelpText: { fontSize: 12, color: colors.textMuted, marginBottom: 8 },
   targetInputWrap: { position: "relative", justifyContent: "center" },
   targetInputPrefix: { position: "absolute", left: 16, fontSize: 13, color: colors.textMuted, zIndex: 1 },
   targetInput: { height: 44, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg, paddingLeft: 32, paddingRight: 16, fontSize: 14, color: colors.textPrimary },
+  deadlineInput: { height: 44, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg, paddingHorizontal: 16, fontSize: 14, color: colors.textPrimary },
   shareText: { fontSize: 12, color: colors.textMuted, marginBottom: 12 },
   memberRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 6 },
   memberName: { flex: 1, fontSize: 13, fontWeight: "600", color: colors.textPrimary },
