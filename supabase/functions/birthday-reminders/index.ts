@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const LOGO_URL = "https://hintdrop.app/illustrations/logo-full-wordmark.png"
+const LOGO_URL = "https://hintdrop.app/illustrations/logo-coral-full.png"
 
 function birthdayEmailHtml(ownerName: string, recipientName: string, daysUntil: number, hints: any[], birthdayDate: string) {
   const dayLabel = daysUntil === 10 ? 'in 10 days' : 'in 3 days'

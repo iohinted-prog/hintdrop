@@ -46,7 +46,7 @@ export async function POST(req) {
         to: ownerEmail,
         subject: `${requesterName} wants to collaborate on "${board.title}"`,
         html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
-          <div style="text-align:center;margin-bottom:20px"><img src="https://hintdrop.app/illustrations/logo-full-wordmark.png" alt="HintDrop" height="36" style="display:inline-block;height:36px;width:auto" /></div>
+          <div style="text-align:center;margin-bottom:20px"><img src="https://hintdrop.app/illustrations/logo-coral-full.png" alt="HintDrop" height="36" style="display:inline-block;height:36px;width:auto" /></div>
           <h2 style="color:#df7b59">👥 New collaboration request</h2>
           <p><strong>${requesterName}</strong> would like to collaborate on your list <strong>"${board.title}"</strong>.</p>
           <a href="https://hintdrop.app/hints/${board.id}" style="display:inline-block;margin-top:20px;background:linear-gradient(to bottom,#ff966f,#ff7e54);color:white;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:bold">Review request</a>
@@ -102,7 +102,7 @@ export async function POST(req) {
         to: requesterEmail,
         subject: `${ownerName} accepted your collaboration request`,
         html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
-          <div style="text-align:center;margin-bottom:20px"><img src="https://hintdrop.app/illustrations/logo-full-wordmark.png" alt="HintDrop" height="36" style="display:inline-block;height:36px;width:auto" /></div>
+          <div style="text-align:center;margin-bottom:20px"><img src="https://hintdrop.app/illustrations/logo-coral-full.png" alt="HintDrop" height="36" style="display:inline-block;height:36px;width:auto" /></div>
           <h2 style="color:#2f8a5f">🎉 You're in!</h2>
           <p><strong>${ownerName}</strong> accepted your request to collaborate on <strong>"${board.title}"</strong>.</p>
           <a href="https://hintdrop.app/hints/${board.id}" style="display:inline-block;margin-top:20px;background:linear-gradient(to bottom,#ff966f,#ff7e54);color:white;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:bold">Start adding hints</a>

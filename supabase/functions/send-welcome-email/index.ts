@@ -14,7 +14,7 @@ function buildWelcomeEmail(name: string): string {
 <div style="background:#f5ede8;padding:40px 20px;">
   <div style="max-width:520px;margin:0 auto;">
     <div style="text-align:center;margin-bottom:28px;">
-      <img src="https://hintdrop.app/illustrations/logo-full-wordmark.png" alt="HintDrop" height="40" style="display:inline-block;height:40px;width:auto;" />
+      <img src="https://hintdrop.app/illustrations/logo-coral-full.png" alt="HintDrop" height="40" style="display:inline-block;height:40px;width:auto;" />
     </div>
     <div style="background:#fffaf7;border-radius:28px;border:1px solid #efdcd2;box-shadow:0 20px 60px rgba(88,46,31,0.12);overflow:hidden;">
       <div style="background:linear-gradient(135deg,#ff9a7b,#ff7055);padding:36px 40px 32px;">

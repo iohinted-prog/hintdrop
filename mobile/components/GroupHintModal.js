@@ -235,13 +235,13 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
               <View style={{ paddingVertical: 16, alignItems: "center" }}>
                 <Text style={styles.confirmTitle}>Get a group together for this gift?</Text>
                 <Text style={styles.confirmBody}>
-                  Start a pot to track contributions toward {hint.title || "this hint"} for {recipientName}, or just start a conversation about it with no money tracking at all.
+                  Start a pot to track contributions toward {hint.title || "this hint"} for {recipientName}, or start a chat about it with no money tracking at all.
                 </Text>
                 <Pressable style={styles.confirmPrimaryButton} onPress={() => setPotConfirmed(true)}>
                   <Text style={styles.confirmPrimaryButtonText}>Start a pot</Text>
                 </Pressable>
                 <Pressable style={styles.confirmSecondaryButton} onPress={() => setChatOnly(true)}>
-                  <Text style={styles.confirmSecondaryButtonText}>Just start a conversation</Text>
+                  <Text style={styles.confirmSecondaryButtonText}>Start a chat</Text>
                 </Pressable>
                 <Pressable onPress={onClose} style={{ marginTop: 8 }}>
                   <Text style={styles.confirmCancelText}>Cancel</Text>

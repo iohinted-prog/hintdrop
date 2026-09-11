@@ -8,7 +8,7 @@
 // and group_hint_members rows, never recipient_user_id.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const LOGO_URL = "https://hintdrop.app/illustrations/logo-full-wordmark.png"
+const LOGO_URL = "https://hintdrop.app/illustrations/logo-coral-full.png"
 
 function fmt(amount: number, currency: string) {
   return new Intl.NumberFormat('en-GB', { style: 'currency', currency: currency || 'GBP' }).format(amount)

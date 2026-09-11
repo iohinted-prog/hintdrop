@@ -268,7 +268,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
             <div className="py-4 text-center">
               <p className="text-[15px] font-semibold text-slate-900 mb-1.5">Get a group together for this gift?</p>
               <p className="text-[13px] text-slate-500 mb-6">
-                Start a pot to track contributions toward {hint.title || "this hint"} for {recipientName}, or just start a conversation about it with no money tracking at all.
+                Start a pot to track contributions toward {hint.title || "this hint"} for {recipientName}, or start a chat about it with no money tracking at all.
               </p>
               <div className="flex flex-col gap-2 items-stretch">
                 <button type="button" onClick={() => setPotConfirmed(true)}
@@ -277,7 +277,7 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
                 </button>
                 <button type="button" onClick={() => setChatOnly(true)}
                   className="h-11 px-6 rounded-full border border-[#ead8ce] text-[13px] font-semibold text-slate-700">
-                  Just start a conversation
+                  Start a chat
                 </button>
                 <button type="button" onClick={onClose}
                   className="h-9 text-[12px] font-semibold text-slate-400">
