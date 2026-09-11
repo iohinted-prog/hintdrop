@@ -121,6 +121,7 @@ export default function AppShell({ children }) {
     pathname.startsWith("/b/") ||
     pathname.startsWith("/join/") ||
     pathname.startsWith("/profile/") ||
+    pathname.startsWith("/pot/") ||
     pathname === "/extension" ||
     // Added when /gift-shop-uk and /gift-shop-us were introduced,
     // fixing a regression: they render their own PublicShell (same
