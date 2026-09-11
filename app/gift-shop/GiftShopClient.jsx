@@ -128,7 +128,7 @@ function getDisplayPrice(product, formatCurrency, formatCurrencyIn) {
   return product?.price_text || "Price unavailable";
 }
 
-function GiftCard({ product, region, imageRatios, onViewItem, isOpeningLink, formatCurrency, formatCurrencyIn, onImageError, onRequestSignIn }) {
+function GiftCard({ product, region, imageRatios, onViewItem, isOpeningLink, formatCurrency, formatCurrencyIn, onImageError, onRequestSignIn, priority = false }) {
   const [showModal, setShowModal] = useState(false);
   const [justShared, setJustShared] = useState(false);
   const interestTags = getTagArray(product.interest_tags);
@@ -188,6 +188,7 @@ function GiftCard({ product, region, imageRatios, onViewItem, isOpeningLink, for
               className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               fallbackClassName="hidden"
               onError={() => onImageError?.(product.id)}
+              priority={priority}
             />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-[#ead8ca] via-[#dbc0a8] to-[#c4a17f]" />
@@ -759,7 +760,7 @@ export default function GiftShopClient({ region = "uk" }) {
                 <GiftShopSkeleton />
               ) : visibleProducts.length ? (
                 <div className="columns-2 gap-4 md:columns-3 md:gap-6 xl:columns-4">
-                  {visibleProducts.map((product) => (
+                  {visibleProducts.map((product, index) => (
                     <div key={product.id} data-product-id={product.id} className="mb-4 break-inside-avoid md:mb-6">
                       <GiftCard
                         product={product}
@@ -771,6 +772,7 @@ export default function GiftShopClient({ region = "uk" }) {
                         formatCurrencyIn={formatCurrencyIn}
                         onImageError={handleImageError}
                         onRequestSignIn={() => setAuthOpen(true)}
+                        priority={index < 4}
                       />
                     </div>
                   ))}
