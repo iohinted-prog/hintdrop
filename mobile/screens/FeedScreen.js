@@ -567,7 +567,7 @@ export default function FeedScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <LinearGradient colors={["#ffe0d5", "#fff4ee"]} style={styles.feedHeroCard}>
+        <LinearGradient colors={["#fff8f4", "#fffaf7"]} style={styles.feedHeroCard}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.feedHeroGreeting}>{greetingForHour(new Date().getHours())}{firstName ? `, ${firstName}` : ""}</Text>
             <Text style={styles.feedHeroSubtitle}>Your people, moments, and nudges.</Text>
@@ -596,7 +596,7 @@ export default function FeedScreen() {
           // or the onboarding cards) rather than a plain title, since
           // there's no single web element to copy verbatim here.
           <>
-            <LinearGradient colors={["#ffe0d5", "#fff4ee"]} style={styles.feedHeroCard}>
+            <LinearGradient colors={["#fff8f4", "#fffaf7"]} style={styles.feedHeroCard}>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={styles.feedHeroGreeting}>{greetingForHour(new Date().getHours())}{firstName ? `, ${firstName}` : ""}</Text>
                 <Text style={styles.feedHeroSubtitle}>Your people, moments, and nudges.</Text>
@@ -646,33 +646,30 @@ const styles = StyleSheet.create({
   feedHeroCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
+    gap: 10,
     marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 4,
-    borderRadius: radii.xxl,
-    borderWidth: 1,
-    borderColor: "#f6d9c8",
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    ...shadow,
-    shadowOpacity: 0.06,
+    marginTop: 14,
+    marginBottom: 2,
+    borderRadius: radii.xl,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
   },
   feedHeroGreeting: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "700",
-    letterSpacing: -0.8,
-    color: "#b0512f",
+    letterSpacing: -0.5,
+    color: colors.textPrimary,
   },
   feedHeroSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "500",
-    color: "#a3684f",
-    marginTop: 4,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   feedHeroIllustration: {
-    width: 48,
-    height: 56,
+    width: 32,
+    height: 38,
+    opacity: 0.9,
   },
   error: { color: "#c9633f", paddingHorizontal: 16, marginBottom: 8 },
   listContent: { paddingHorizontal: 16, paddingBottom: 40, gap: 14 },

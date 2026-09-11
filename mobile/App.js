@@ -234,6 +234,12 @@ function SignedInApp() {
   return (
     <>
       <Tab.Navigator
+        // Opens on Hints by default - Hints is the core loop (capture
+        // + organize gift ideas), not Feed, which is more of a social
+        // ambient layer on top of it. The order of the bottom nav
+        // itself is unchanged (Home/Circle/Hints/Calendar/Shop) -
+        // only which tab is selected on launch.
+        initialRouteName="Hints"
         tabBar={(props) => <BottomNav {...props} />}
         screenOptions={{
           headerShown: true,
