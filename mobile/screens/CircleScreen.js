@@ -149,14 +149,17 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
   const target = groupGift.target_amount;
   const totalPeople = 1 + members.length;
   const share = target ? target / totalPeople : 0;
-  const raised = share * (inMembers.length + 1);
+  // Real pledged amounts, not an assumed equal split - falls back to the
+  // theoretical share only for members who accepted before pledge amounts
+  // existed.
+  const raised = inMembers.reduce((sum, m) => sum + (m.pledged_amount != null ? Number(m.pledged_amount) : share), 0);
   const pct = target ? Math.min(100, Math.round((raised / target) * 100)) : 0;
   const isOrganiser = groupGift.organiser_id === currentUserId;
   const fmt = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(n);
 
   const segments = [
     { name: isOrganiser ? "You" : organiser?.full_name?.split(" ")[0] || "Organiser", amount: share },
-    ...inMembers.map((m) => ({ name: m.user_id === currentUserId ? "You" : m.profiles?.full_name?.split(" ")[0] || "Someone", amount: share })),
+    ...inMembers.map((m) => ({ name: m.user_id === currentUserId ? "You" : m.profiles?.full_name?.split(" ")[0] || "Someone", amount: m.pledged_amount != null ? Number(m.pledged_amount) : share })),
   ];
   const cx = 44, cy = 44, r = 36, stroke = 13;
   const circ = 2 * Math.PI * r;
@@ -181,9 +184,9 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
         </View>
       </View>
       <View style={{ flex: 1, minWidth: 0, marginLeft: 14 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 }}>
           {hint?.image_url ? <Image source={{ uri: hint.image_url }} style={styles.potImage} /> : null}
-          <Text style={styles.potTitle} numberOfLines={1}>{hint?.title || "Group gift"}</Text>
+          <Text style={styles.potTitle} numberOfLines={2}>{hint?.title || "Group gift"}</Text>
         </View>
         <Text style={styles.potSubtext}>
           {fmt(raised)} of {target ? fmt(target) : "—"} · {fmt(share)} each
@@ -196,7 +199,7 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
               </View>
             ))}
           </View>
-          <Text style={styles.potPledgedText}>{inMembers.length + 1} of {totalPeople} pledged</Text>
+          <Text style={styles.potPledgedText}>{inMembers.length} of {members.length} pledged</Text>
         </View>
       </View>
     </View>
@@ -406,12 +409,12 @@ export default function CircleScreen() {
   // loadGroupGifts exactly.
   async function loadGroupGifts(userId) {
     const [{ data: organising }, { data: memberRows }] = await Promise.all([
-      supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url, avatar_color))").eq("organiser_id", userId),
+      supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, profiles(full_name, avatar_url, avatar_color))").eq("organiser_id", userId),
       supabase.from("group_hint_members").select("group_hint_id").eq("user_id", userId),
     ]);
     const memberGroupHintIds = (memberRows || []).map((r) => r.group_hint_id);
     const { data: invitedInto } = memberGroupHintIds.length
-      ? await supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url, avatar_color))").in("id", memberGroupHintIds)
+      ? await supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, profiles(full_name, avatar_url, avatar_color))").in("id", memberGroupHintIds)
       : { data: [] };
     const merged = [...(organising || []), ...(invitedInto || [])].filter(
       (gh, i, self) => self.findIndex((g) => g.id === gh.id) === i
@@ -611,7 +614,7 @@ const styles = StyleSheet.create({
   potCard: { flexDirection: "row", alignItems: "center", borderRadius: radii.xl, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, padding: 14 },
   potPctWrap: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" },
   potPctText: { fontSize: 15, fontWeight: "700", color: colors.textPrimary },
-  potImage: { width: 28, height: 28, borderRadius: 8 },
+  potImage: { width: 52, height: 52, borderRadius: 12 },
   potTitle: { flex: 1, fontSize: 13, fontWeight: "700", color: colors.textPrimary },
   potSubtext: { fontSize: 12, color: colors.textSecondary },
   potAvatarDot: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: colors.card, alignItems: "center", justifyContent: "center" },

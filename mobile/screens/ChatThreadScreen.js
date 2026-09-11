@@ -40,6 +40,8 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [myProfile, setMyProfile] = useState(null);
+  const [pledgingId, setPledgingId] = useState(null);
+  const [pledgeAmount, setPledgeAmount] = useState("");
   const listRef = useRef(null);
 
   const members = conversation?.conversation_members || [];
@@ -67,7 +69,7 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
     const loadPinnedHints = () => {
       supabase
         .from("conversation_hints")
-        .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url, avatar_color)))")
+        .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, pledged_amount, profiles(full_name, avatar_url, avatar_color)))")
         .eq("conversation_id", conversation.id)
         .eq("dismissed", false)
         .then(({ data }) => setPinnedHints(data || []));
@@ -131,17 +133,24 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
     setPinnedHints((prev) => prev.filter((h) => h.id !== pinnedHintId));
   }
 
-  async function respondToGroupHint(ph, action) {
+  async function respondToGroupHint(ph, action, amount) {
     const gh = ph.group_hints;
     const myMember = (gh?.group_hint_members || []).find((m) => m.user_id === currentUserId);
     if (!myMember) return;
 
     const status = action === "accept" ? "in" : "declined";
-    await supabase.from("group_hint_members").update({ status }).eq("id", myMember.id);
+    const updatePayload = action === "accept" ? { status, pledged_amount: amount ?? null } : { status };
+    await supabase.from("group_hint_members").update(updatePayload).eq("id", myMember.id);
 
     const myName = myProfile?.full_name || "Someone";
     const hintTitle = gh?.hints?.title || "a hint";
-    const announceBody = action === "accept" ? `${myName} is in! 🎉` : `${myName} declined`;
+    const currency = gh?.hints?.currency || "GBP";
+    const announceBody =
+      action === "accept"
+        ? amount != null
+          ? `${myName} pledged ${new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(amount)} 🎉`
+          : `${myName} is in! 🎉`
+        : `${myName} declined`;
 
     if (action === "decline") {
       // Post the decline notice first, while still a member (RLS
@@ -158,9 +167,16 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
       prev.map((p) =>
         p.id !== ph.id
           ? p
-          : { ...p, group_hints: { ...p.group_hints, group_hint_members: (p.group_hints.group_hint_members || []).map((m) => (m.id === myMember.id ? { ...m, status: "in" } : m)) } }
+          : { ...p, group_hints: { ...p.group_hints, group_hint_members: (p.group_hints.group_hint_members || []).map((m) => (m.id === myMember.id ? { ...m, status: "in", pledged_amount: amount ?? m.pledged_amount } : m)) } }
       )
     );
+
+    // Email nudge to the organiser, same as web.
+    fetch("https://hintdrop.app/api/group-hint-notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "response", memberId: myMember.id, responderId: currentUserId, response: status, amount }),
+    }).catch(() => {});
   }
 
   return (
@@ -198,7 +214,12 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
               const target = ph.group_hints?.target_amount;
               const totalPeople = 1 + allMembers.length; // organiser + everyone invited
               const share = target ? target / totalPeople : null;
-              const raised = share ? inMembers.length * share : null;
+              // Real pledged amounts, not an assumed equal split - falls
+              // back to the theoretical share only for members who
+              // accepted before pledge amounts existed.
+              const raised = inMembers.length
+                ? inMembers.reduce((sum, m) => sum + (m.pledged_amount != null ? Number(m.pledged_amount) : (share || 0)), 0)
+                : null;
               const pct = target && raised != null ? Math.min(100, Math.round((raised / target) * 100)) : null;
               const fmt = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(n);
               return (
@@ -239,14 +260,46 @@ export default function ChatThreadScreen({ conversation, currentUserId, onBack, 
                     ) : null}
                   </View>
                   {isPending ? (
-                    <View style={{ gap: 4 }}>
-                      <Pressable style={styles.pinnedAcceptButton} onPress={() => respondToGroupHint(ph, "accept")}>
-                        <Text style={styles.pinnedAcceptText}>{share ? `I'm in (${fmt(share)})` : "I'm in"}</Text>
-                      </Pressable>
-                      <Pressable style={styles.pinnedDeclineButton} onPress={() => respondToGroupHint(ph, "decline")}>
-                        <Text style={styles.pinnedDeclineText}>Decline</Text>
-                      </Pressable>
-                    </View>
+                    pledgingId === ph.id ? (
+                      <View style={{ gap: 4, alignItems: "flex-end" }}>
+                        <TextInput
+                          style={styles.pledgeInput}
+                          value={pledgeAmount}
+                          onChangeText={setPledgeAmount}
+                          keyboardType="decimal-pad"
+                          autoFocus
+                        />
+                        <View style={{ flexDirection: "row", gap: 4 }}>
+                          <Pressable
+                            style={styles.pinnedAcceptButton}
+                            onPress={() => {
+                              respondToGroupHint(ph, "accept", parseFloat(pledgeAmount) || 0);
+                              setPledgingId(null);
+                            }}
+                          >
+                            <Text style={styles.pinnedAcceptText}>Confirm</Text>
+                          </Pressable>
+                          <Pressable style={styles.pinnedDeclineButton} onPress={() => setPledgingId(null)}>
+                            <Text style={styles.pinnedDeclineText}>✕</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={{ gap: 4 }}>
+                        <Pressable
+                          style={styles.pinnedAcceptButton}
+                          onPress={() => {
+                            setPledgeAmount(share ? share.toFixed(2) : "");
+                            setPledgingId(ph.id);
+                          }}
+                        >
+                          <Text style={styles.pinnedAcceptText}>Pledge</Text>
+                        </Pressable>
+                        <Pressable style={styles.pinnedDeclineButton} onPress={() => respondToGroupHint(ph, "decline")}>
+                          <Text style={styles.pinnedDeclineText}>Decline</Text>
+                        </Pressable>
+                      </View>
+                    )
                   ) : (
                     <View style={{ gap: 4 }}>
                       <Pressable
@@ -343,6 +396,7 @@ const styles = StyleSheet.create({
   pinnedProgressFill: { height: "100%", borderRadius: 3, backgroundColor: colors.coral },
   pinnedProgressText: { fontSize: 10, color: colors.textMuted, marginTop: 3 },
   pinnedAcceptButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: colors.coral },
+  pledgeInput: { width: 64, height: 28, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff", paddingHorizontal: 10, fontSize: 12, color: colors.textPrimary },
   pinnedAcceptText: { fontSize: 10, fontWeight: "700", color: "#fff" },
   pinnedDeclineButton: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border },
   pinnedDeclineText: { fontSize: 10, fontWeight: "700", color: colors.textMuted },
