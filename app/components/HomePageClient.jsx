@@ -250,7 +250,7 @@ function HintCard({ title, text, image, tag, tag2, starred, private: isPrivate, 
       {isRealImage ? (
         <div className="relative h-[120px] w-full">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={image} alt={title} className="h-full w-full object-cover" />
+          <img src={image} alt={title} loading="lazy" className="h-full w-full object-cover" />
         </div>
       ) : (
         <div className={`h-[120px] w-full bg-gradient-to-br ${image}`} />
@@ -664,6 +664,9 @@ export default function HomePageClient() {
             <img
               src="/illustrations/hero-character.png"
               alt="Illustration of a woman holding a phone showing a gift, next to a wrapped present"
+              width={1080}
+              height={1080}
+              fetchPriority="high"
               className="relative z-0 w-[72%] max-w-[380px] drop-shadow-[0_20px_40px_rgba(80,50,30,0.16)]"
             />
 
