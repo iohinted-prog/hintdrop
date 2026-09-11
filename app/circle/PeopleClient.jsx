@@ -11,6 +11,85 @@ import { resolveAvatarColor, NON_USER_AVATAR_COLOR } from "../../lib/avatarColor
 function getInitials(name) {
   return String(name || "").trim().split(/\s+/).slice(0, 2).map(p => p[0]?.toUpperCase() || "").join("");
 }
+const POT_MEMBER_COLORS = ["#ff8060", "#4e9e6e", "#5b8dd9", "#c97ad4", "#e8a23a", "#e05c7a", "#4db8b0", "#9b7fd4"];
+
+// Same multi-segment SVG donut design as the old circles-legacy page's
+// ContributionChart - reused because it was a genuinely good, already-
+// designed visual, not rebuilt from scratch. Adapted for the simpler
+// even-split pledge model though (no per-person custom amounts - an
+// accepted member's share is just target/totalPeople), so segments are
+// one color per accepted member at an equal size, not variable sizes
+// per a stored contribution amount. No real payment happens here -
+// this is a coordination number only, same as the plain "I'm in"
+// status it's built on top of.
+function GroupGiftPotCard({ groupGift, currentUserId }) {
+  const hint = groupGift.hints;
+  const organiser = groupGift.profiles;
+  const members = groupGift.group_hint_members || [];
+  const inMembers = members.filter((m) => m.status === "in");
+  const target = groupGift.target_amount;
+  const totalPeople = 1 + members.length; // organiser + everyone invited
+  const share = target ? target / totalPeople : 0;
+  const raised = share * (inMembers.length + 1); // organiser counts as "in" too
+  const pct = target ? Math.min(100, Math.round((raised / target) * 100)) : 0;
+  const isOrganiser = groupGift.organiser_id === currentUserId;
+  const formatCurrency = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(n);
+
+  const segments = [
+    { name: isOrganiser ? "You" : organiser?.full_name?.split(" ")[0] || "Organiser", amount: share },
+    ...inMembers.map((m) => ({ name: m.user_id === currentUserId ? "You" : m.profiles?.full_name?.split(" ")[0] || "Someone", amount: share })),
+  ];
+  const cx = 44, cy = 44, r = 36, stroke = 13;
+  const circ = 2 * Math.PI * r;
+
+  return (
+    <div className="rounded-[22px] border border-[#f0dfd6] bg-white p-4 flex items-center gap-4">
+      <div className="shrink-0 relative" style={{ width: 88, height: 88 }}>
+        <svg viewBox="0 0 88 88" width="88" height="88" style={{ transform: "rotate(-90deg)" }}>
+          <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f1e3db" strokeWidth={stroke} />
+          {segments.map((seg, i) => {
+            const segPct = target ? (seg.amount / target) * 100 : 0;
+            const dash = (segPct / 100) * circ;
+            const segOffset = segments.slice(0, i).reduce((a, s) => a + ((target ? (s.amount / target) * 100 : 0) / 100) * circ, 0);
+            return (
+              <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={POT_MEMBER_COLORS[i % POT_MEMBER_COLORS.length]}
+                strokeWidth={stroke} strokeDasharray={`${dash} ${circ - dash}`} strokeDashoffset={-segOffset} strokeLinecap="butt" />
+            );
+          })}
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-[15px] font-bold text-slate-800">{pct}%</span>
+        </div>
+      </div>
+      <div className="min-w-0 flex-1">
+        {hint?.image_url ? (
+          <div className="flex items-center gap-2 mb-1.5">
+            <HintImage src={hint.image_url} width={28} height={28} className="rounded-[8px] object-cover shrink-0" alt="" />
+            <p className="text-[13px] font-semibold text-slate-900 truncate">{hint?.title || "Group gift"}</p>
+          </div>
+        ) : (
+          <p className="text-[13px] font-semibold text-slate-900 truncate mb-1.5">{hint?.title || "Group gift"}</p>
+        )}
+        <p className="text-[12px] text-slate-500">
+          {formatCurrency(raised)} of {target ? formatCurrency(target) : "—"} · {formatCurrency(share)} each
+        </p>
+        <div className="flex items-center gap-1.5 mt-1.5">
+          <div className="flex -space-x-1.5">
+            {segments.map((seg, i) => (
+              <div key={i} className="h-4 w-4 rounded-full ring-2 ring-white flex items-center justify-center text-[7px] font-bold text-white" style={{ background: POT_MEMBER_COLORS[i % POT_MEMBER_COLORS.length] }}>
+                {seg.name[0]?.toUpperCase()}
+              </div>
+            ))}
+          </div>
+          <span className="text-[10px] text-slate-400">
+            {inMembers.length + 1} of {totalPeople} pledged
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function daysUntilBirthday(birthday) {
   if (!birthday) return null;
   const bday = new Date(birthday + "T00:00:00");
@@ -104,6 +183,7 @@ export default function PeopleClient() {
   const [sessionUser, setSessionUser] = useState(null);
 
   const [contactHints, setContactHints] = useState({});
+  const [groupGifts, setGroupGifts] = useState([]);
   const { openThread } = useChatWindows();
 
   async function handleMessageContact(contact) {
@@ -131,10 +211,30 @@ export default function PeopleClient() {
     openThread({ ...convsData, conversation_members: members || [], group_hints: null });
   }
 
+  // Every group gift the user is either organising or has been invited
+  // into - two queries since Supabase can't OR across the join in one
+  // call (organiser_id is a plain column on group_hints, membership is
+  // a separate table), then merged.
+  async function loadGroupGifts(userId) {
+    const [{ data: organising }, { data: memberRows }] = await Promise.all([
+      supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url))").eq("organiser_id", userId),
+      supabase.from("group_hint_members").select("group_hint_id").eq("user_id", userId),
+    ]);
+    const memberGroupHintIds = (memberRows || []).map((r) => r.group_hint_id);
+    const { data: invitedInto } = memberGroupHintIds.length
+      ? await supabase.from("group_hints").select("id, hint_id, organiser_id, recipient_user_id, target_amount, created_at, hints(title, image_url, numeric_price, currency), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url))").in("id", memberGroupHintIds)
+      : { data: [] };
+    const merged = [...(organising || []), ...(invitedInto || [])].filter(
+      (gh, i, self) => self.findIndex((g) => g.id === gh.id) === i
+    ).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    setGroupGifts(merged);
+  }
+
   async function loadContacts() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     setSessionUser(user);
+    loadGroupGifts(user.id);
     const { data } = await supabase.from("contact_public_state").select("*")
       .eq("owner_user_id", user.id).order("name", { ascending: true });
     const mapped = (data || []).map(buildContact);
@@ -305,6 +405,16 @@ export default function PeopleClient() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+        {groupGifts.length > 0 && (
+          <div className="mt-6">
+            <p className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide mb-2.5">Group gifts</p>
+            <div className="space-y-3">
+              {groupGifts.map((gg) => (
+                <GroupGiftPotCard key={gg.id} groupGift={gg} currentUserId={sessionUser?.id} />
+              ))}
+            </div>
           </div>
         )}
       </div>

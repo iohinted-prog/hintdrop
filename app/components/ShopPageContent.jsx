@@ -1037,8 +1037,13 @@ export default function ShopPageContent({ region = "uk" }) {
         <section className="rounded-[34px] border border-[#eeddd3] bg-[#fff7f2] p-4 shadow-[0_18px_60px_rgba(173,101,72,0.10)] sm:p-5">
           <div className="rounded-[28px] border border-[#f1dfd6] bg-white p-5 sm:p-6">
             <div className="min-w-0">
-                <div className="inline-flex rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e37b57]">
-                  Curated gifting
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="inline-flex rounded-full bg-[#fff4ee] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e37b57]">
+                    Curated gifting
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 rounded-full border border-[#e6ddd7] bg-[#faf7f4] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    🎁 Rewards — coming soon
+                  </div>
                 </div>
 
                 <h1 className="mt-3 text-[34px] font-bold tracking-[-0.06em] text-slate-900 sm:text-[40px]">

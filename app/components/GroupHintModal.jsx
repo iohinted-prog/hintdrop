@@ -66,6 +66,11 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
+  // Only asked when the hint has no price - the pot's target otherwise
+  // comes straight from the hint itself, no separate step needed.
+  const [manualTargetAmount, setManualTargetAmount] = useState("");
+
+  const hintHasPrice = hint.numeric_price > 0;
 
   useEffect(() => {
     async function load() {
@@ -99,6 +104,10 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
 
   async function handleSend() {
     if (!selected.length) return;
+    if (!groupHint && !hintHasPrice && !(Number(manualTargetAmount) > 0)) {
+      setSendError("Enter a target amount for the pot first - this hint has no price to split automatically.");
+      return;
+    }
     setSending(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -111,7 +120,12 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
       if (!gh) {
         const { data: newGh, error: ghErr } = await supabase
           .from("group_hints")
-          .insert({ hint_id: hint.id, organiser_id: user.id, recipient_user_id: recipientUserId })
+          .insert({
+            hint_id: hint.id,
+            organiser_id: user.id,
+            recipient_user_id: recipientUserId,
+            target_amount: hintHasPrice ? hint.numeric_price : Number(manualTargetAmount),
+          })
           .select()
           .maybeSingle();
         if (ghErr || !newGh) {
@@ -206,6 +220,38 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
             <div className="text-center text-sm text-slate-400 py-8">Loading...</div>
           ) : (
             <>
+              {!groupHint && !hintHasPrice && (
+                <div>
+                  <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Pot target</p>
+                  <p className="text-[12px] text-slate-400 mb-2">This hint has no price, so set what you're aiming to raise together.</p>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-slate-400">£</span>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={manualTargetAmount}
+                      onChange={(e) => setManualTargetAmount(e.target.value)}
+                      placeholder="0"
+                      className="w-full h-11 rounded-full border border-[#ead8ce] pl-8 pr-4 text-sm text-slate-700 outline-none focus:border-[#ff875d]"
+                    />
+                  </div>
+                </div>
+              )}
+              {(hintHasPrice || groupHint) && selected.length > 0 && (() => {
+                const target = groupHint?.target_amount || hint.numeric_price;
+                const totalPeople = 1 + members.length + selected.length; // organiser + already-invited + newly selected
+                const share = target / totalPeople;
+                return (
+                  <p className="text-[12px] text-slate-500 -mt-1">
+                    An even split across {totalPeople} people works out to about{" "}
+                    <span className="font-semibold text-slate-700">
+                      {new Intl.NumberFormat("en-GB", { style: "currency", currency: hint.currency || "GBP" }).format(share)}
+                    </span>{" "}
+                    each.
+                  </p>
+                );
+              })()}
               {members.length > 0 && (
                 <div>
                   <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Already invited</p>

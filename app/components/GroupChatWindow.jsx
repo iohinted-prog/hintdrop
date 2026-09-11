@@ -53,7 +53,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
     // Load pinned hints, including the current user's own status on each,
     // and everyone's status/profile for the "who's in" display
     supabase.from("conversation_hints")
-      .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url)))")
+      .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url)))")
       .eq("conversation_id", conversation.id)
       .eq("dismissed", false)
       .then(({ data }) => setPinnedHints(data || []));
@@ -66,7 +66,7 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_hints", filter: "conversation_id=eq." + conversation.id },
         () => {
           supabase.from("conversation_hints")
-            .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url)))")
+            .select("id, group_hint_id, dismissed, group_hints(id, hint_id, organiser_id, recipient_user_id, target_amount, hints(title, image_url, numeric_price, currency, retailer), profiles!group_hints_organiser_id_fkey(full_name), group_hint_members(id, user_id, status, profiles(full_name, avatar_url)))")
             .eq("conversation_id", conversation.id)
             .eq("dismissed", false)
             .then(({ data }) => setPinnedHints(data || []));
@@ -230,18 +230,35 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
                     if (!allMembers.length) return null;
                     const inMembers = allMembers.filter(m => m.status === "in");
                     const pendingMembers = allMembers.filter(m => m.status === "invited");
+                    const target = ph.group_hints?.target_amount;
+                    const totalPeople = 1 + allMembers.length; // organiser + everyone invited
+                    const share = target ? target / totalPeople : null;
+                    const raised = share ? inMembers.length * share : null;
+                    const pct = target && raised != null ? Math.min(100, Math.round((raised / target) * 100)) : null;
                     return (
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <div className="flex -space-x-1.5">
-                          {allMembers.slice(0, 4).map(m => (
-                            <div key={m.id} className={"rounded-full ring-2 " + (m.status === "in" ? "ring-[#8fc98f]" : m.status === "declined" ? "ring-slate-200 opacity-40" : "ring-[#ffcaa8]")}>
-                              <Avatar profile={m.profiles} size="h-4 w-4" />
-                            </div>
-                          ))}
+                      <div className="mt-1">
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex -space-x-1.5">
+                            {allMembers.slice(0, 4).map(m => (
+                              <div key={m.id} className={"rounded-full ring-2 " + (m.status === "in" ? "ring-[#8fc98f]" : m.status === "declined" ? "ring-slate-200 opacity-40" : "ring-[#ffcaa8]")}>
+                                <Avatar profile={m.profiles} size="h-4 w-4" />
+                              </div>
+                            ))}
+                          </div>
+                          <span className="text-[10px] text-slate-400">
+                            {inMembers.length} in{pendingMembers.length > 0 ? `, ${pendingMembers.length} pending` : ""}
+                          </span>
                         </div>
-                        <span className="text-[10px] text-slate-400">
-                          {inMembers.length} in{pendingMembers.length > 0 ? `, ${pendingMembers.length} pending` : ""}
-                        </span>
+                        {pct != null && (
+                          <div className="mt-1.5">
+                            <div className="h-1.5 w-full rounded-full bg-[#f1e3db] overflow-hidden">
+                              <div className="h-full rounded-full bg-gradient-to-r from-[#ff966f] to-[#ff7e54]" style={{ width: `${pct}%` }} />
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-0.5">
+                              {new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(raised)} of {new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(target)} pledged
+                            </p>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
@@ -250,7 +267,13 @@ export default function GroupChatWindow({ conversation, currentUserId, onClose, 
                   <div className="flex gap-1 shrink-0">
                     <button type="button" onClick={() => respondToGroupHint(ph, "accept")}
                       className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white">
-                      I'm in
+                      {(() => {
+                        const allMembers = ph.group_hints?.group_hint_members || [];
+                        const target = ph.group_hints?.target_amount;
+                        const totalPeople = 1 + allMembers.length;
+                        if (!target) return "I'm in";
+                        return `I'm in (${new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(target / totalPeople)})`;
+                      })()}
                     </button>
                     <button type="button" onClick={() => respondToGroupHint(ph, "decline")}
                       className="text-[10px] font-semibold px-2.5 py-1 rounded-full border border-[#f0dfd6] text-slate-400 hover:bg-slate-50">
