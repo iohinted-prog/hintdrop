@@ -148,22 +148,25 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
   const organiser = groupGift.profiles;
   const members = groupGift.group_hint_members || [];
   const inMembers = members.filter((m) => m.status === "in");
+  const paidMembers = inMembers.filter((m) => m.paid_amount != null);
   const target = groupGift.target_amount;
   const totalPeople = 1 + members.length;
   const share = target ? target / totalPeople : 0;
-  // Real pledged amounts, not an assumed equal split - falls back to the
-  // theoretical share only for members who accepted before pledge amounts
-  // existed.
-  const raised = inMembers.reduce((sum, m) => sum + (m.pledged_amount != null ? Number(m.pledged_amount) : share), 0);
+  // Only real, actually-marked contributions count toward the pot - no
+  // fallback to the theoretical share for members who are merely "in"
+  // but haven't contributed yet (and the organiser was never a real
+  // contributor here at all), which used to make an empty pot look
+  // already 30-50% full.
+  const raised = paidMembers.reduce((sum, m) => sum + Number(m.paid_amount), 0);
   const pct = target ? Math.min(100, Math.round((raised / target) * 100)) : 0;
   const isOrganiser = groupGift.organiser_id === currentUserId;
   const isPastDeadline = groupGift.deadline_date && new Date(groupGift.deadline_date) < new Date(new Date().toDateString());
   const fmt = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: hint?.currency || "GBP" }).format(n);
 
-  const segments = [
-    { name: isOrganiser ? "You" : organiser?.full_name?.split(" ")[0] || "Organiser", amount: share, paid: false },
-    ...inMembers.map((m) => ({ name: m.user_id === currentUserId ? "You" : m.profiles?.full_name?.split(" ")[0] || "Someone", amount: m.pledged_amount != null ? Number(m.pledged_amount) : share, paid: m.paid_amount != null })),
-  ];
+  // Donut segments - one per actual contribution, sized to what was
+  // really paid. No organiser segment (they never "contribute" in this
+  // model) and no segment for an "in" member who hasn't paid yet.
+  const segments = paidMembers.map((m) => ({ name: m.user_id === currentUserId ? "You" : m.profiles?.full_name?.split(" ")[0] || "Someone", amount: Number(m.paid_amount), paid: true }));
   const cx = 44, cy = 44, r = 36, stroke = 13;
   const circ = 2 * Math.PI * r;
 
@@ -202,7 +205,7 @@ function GroupGiftPotCard({ groupGift, currentUserId }) {
               </View>
             ))}
           </View>
-          <Text style={styles.potPledgedText}>{inMembers.length} of {members.length} pledged{inMembers.filter((m) => m.paid_amount != null).length > 0 ? `, ${inMembers.filter((m) => m.paid_amount != null).length} paid` : ""}{isPastDeadline ? " · Closed" : ""}</Text>
+          <Text style={styles.potPledgedText}>{inMembers.length} of {members.length} in{paidMembers.length > 0 ? `, ${paidMembers.length} contributed` : ""}{isPastDeadline ? " · Closed" : ""}</Text>
         </View>
       </View>
     </View>
