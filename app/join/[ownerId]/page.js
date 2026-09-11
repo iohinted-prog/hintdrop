@@ -21,6 +21,11 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description,
+    // noindex - matches robots.js's /join disallow (belt and braces,
+    // same reasoning as /profile, /pot, /unsubscribe - a personal
+    // circle-invite link has no reason to appear in search results
+    // even though it's still a real, working link-preview target).
+    robots: { index: false, follow: false },
     openGraph: { title, description, type: "website" },
     twitter: { card: "summary", title, description },
     alternates: {

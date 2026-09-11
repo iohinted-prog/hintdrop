@@ -18,6 +18,7 @@ const PRIVATE_ROUTES = [
   "/profile",
   "/billing",
   "/auth",
+  "/pot",
   "/api/",
 ];
 
