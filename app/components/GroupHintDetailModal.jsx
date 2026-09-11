@@ -61,7 +61,10 @@ export default function GroupHintDetailModal({ groupHintId, currentUserId, curre
   const inMembers = members.filter(m => m.status === "in");
   const paidMembers = inMembers.filter(m => m.paid_amount != null);
   const target = gh?.target_amount;
-  const share = target ? target / (1 + activeMembers.length) : 0;
+  // The organiser is a real member row now (status "in" from the moment
+  // they create the pot), so activeMembers already includes them - no
+  // more manually adding 1 for them on top of it.
+  const share = target && activeMembers.length ? target / activeMembers.length : 0;
   // Only real, actually-marked contributions count toward the pot - no
   // fallback to the theoretical share for members who are merely "in"
   // but haven't contributed yet.
@@ -217,7 +220,7 @@ export default function GroupHintDetailModal({ groupHintId, currentUserId, curre
                         ? <HintImage src={m.profiles.avatar_url} width={32} height={32} className={"rounded-full object-cover " + (m.paid_amount != null ? "ring-2 ring-[#2f8a5f]" : "")} alt="" />
                         : <div className="h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ background: POT_MEMBER_COLORS[i % POT_MEMBER_COLORS.length] }}>{getInitials(m.profiles?.full_name)}</div>
                       }
-                      <p className="text-[13px] font-semibold text-slate-900 flex-1 truncate">{m.profiles?.full_name}</p>
+                      <p className="text-[13px] font-semibold text-slate-900 flex-1 truncate">{m.profiles?.full_name}{m.user_id === gh.organiser_id && <span className="text-slate-400 font-normal"> · Organiser</span>}</p>
                       <span className="text-[11px] font-semibold text-slate-400">
                         {m.status === "in" ? "In" : m.status === "joined" ? "Joined" : "Invited"}
                       </span>
