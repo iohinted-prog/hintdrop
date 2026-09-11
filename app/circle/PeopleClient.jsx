@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
 import AddContactModal from "../components/AddContactModal";
 import ContactCard from "../components/ContactCard";
+import GroupHintDetailModal from "../components/GroupHintDetailModal";
 import { useChatWindows } from "../components/ChatWindowsProvider";
 import HintImage from "../components/HintImage";
 import { resolveAvatarColor, NON_USER_AVATAR_COLOR } from "../../lib/avatarColor";
@@ -184,6 +185,7 @@ export default function PeopleClient() {
   const [search, setSearch] = useState("");
 
   const [sessionUser, setSessionUser] = useState(null);
+  const [openPotId, setOpenPotId] = useState(null);
 
   const [contactHints, setContactHints] = useState({});
   const [groupGifts, setGroupGifts] = useState([]);
@@ -415,7 +417,9 @@ export default function PeopleClient() {
             <p className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide mb-2.5">Group gifts</p>
             <div className="space-y-3">
               {groupGifts.map((gg) => (
-                <GroupGiftPotCard key={gg.id} groupGift={gg} currentUserId={sessionUser?.id} />
+                <div key={gg.id} onClick={() => setOpenPotId(gg.id)} className="cursor-pointer">
+                  <GroupGiftPotCard groupGift={gg} currentUserId={sessionUser?.id} />
+                </div>
               ))}
             </div>
           </div>
@@ -423,6 +427,14 @@ export default function PeopleClient() {
       </div>
       <AddContactModal key={addKey} modalKey={addKey} open={isAddOpen} onClose={() => setIsAddOpen(false)}
         onSave={async (payload) => { await handleSaveContact(payload); setIsAddOpen(false); }} supabase={supabase} />
+      {openPotId && (
+        <GroupHintDetailModal
+          groupHintId={openPotId}
+          currentUserId={sessionUser?.id}
+          currentUserName={sessionUser?.user_metadata?.full_name}
+          onClose={() => { setOpenPotId(null); if (sessionUser?.id) loadGroupGifts(sessionUser.id); }}
+        />
+      )}
     </main>
   );
 }
