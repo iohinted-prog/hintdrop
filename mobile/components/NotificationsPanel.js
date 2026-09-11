@@ -102,7 +102,7 @@ export default function NotificationsPanel({ visible, onClose, currentUserId, on
     // Only the notification types this screen actually knows how to
     // render/act on - see the deferred-features note at the top.
     const knownTypes = ["collab_request", "collab_accepted", "birthday_reminder", "group_hint_response"];
-    const relevant = (notifData || []).filter((n) => knownTypes.includes(n.type) || n.type === "reaction" || n.type === "comment");
+    const relevant = (notifData || []).filter((n) => knownTypes.includes(n.type) || n.type === "reaction" || n.type === "comment" || n.type === "new_message");
     setActivityNotifs(relevant);
     const lastSeen = await getNotifLastSeen();
     onCountChange?.(countUnseenSince(merged, lastSeen) + countUnseenSince(relevant, lastSeen));
@@ -188,7 +188,7 @@ export default function NotificationsPanel({ visible, onClose, currentUserId, on
   const collabAccepted = activityNotifs.filter((n) => n.type === "collab_accepted");
   const birthdayReminders = activityNotifs.filter((n) => n.type === "birthday_reminder");
   const groupHintResponses = activityNotifs.filter((n) => n.type === "group_hint_response");
-  const generic = activityNotifs.filter((n) => n.type === "reaction" || n.type === "comment");
+  const generic = activityNotifs.filter((n) => n.type === "reaction" || n.type === "comment" || n.type === "new_message");
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -292,8 +292,8 @@ export default function NotificationsPanel({ visible, onClose, currentUserId, on
                         <Text style={styles.notifTitle} numberOfLines={1}>{notif.title}</Text>
                         {notif.body ? <Text style={styles.notifBody} numberOfLines={1}>{notif.body}</Text> : null}
                       </View>
-                      <View style={notif.type === "reaction" ? styles.badgeOrange : styles.badgeBlue}>
-                        <Text style={notif.type === "reaction" ? styles.badgeOrangeText : styles.badgeBlueText}>{notif.type === "reaction" ? "React" : "Comment"}</Text>
+                      <View style={notif.type === "reaction" ? styles.badgeOrange : notif.type === "new_message" ? styles.badgeGreen : styles.badgeBlue}>
+                        <Text style={notif.type === "reaction" ? styles.badgeOrangeText : notif.type === "new_message" ? styles.badgeGreenText : styles.badgeBlueText}>{notif.type === "reaction" ? "React" : notif.type === "new_message" ? "Message" : "Comment"}</Text>
                       </View>
                     </View>
                     <Pressable onPress={() => dismissNotif(notif)}><Text style={styles.dismissText}>Mark as read</Text></Pressable>
@@ -377,6 +377,8 @@ const styles = StyleSheet.create({
   badgeGreenText: { fontSize: 10, fontWeight: "700", color: colors.successText },
   badgeBlue: { backgroundColor: "#eef4ff", borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 3 },
   badgeBlueText: { fontSize: 10, fontWeight: "700", color: "#5676b3" },
+  badgeGreen: { backgroundColor: "#eafaf0", borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 3 },
+  badgeGreenText: { fontSize: 10, fontWeight: "700", color: "#2f8a5f" },
   badgeSage: { backgroundColor: "#f0f7ee", borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 3 },
   badgeSageText: { fontSize: 10, fontWeight: "700", color: "#4e684d" },
   badgeDark: { backgroundColor: "#2f3b2d", borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 3 },

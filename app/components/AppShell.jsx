@@ -882,8 +882,8 @@ export default function AppShell({ children }) {
               <p className="text-sm font-semibold text-slate-900 truncate">{notif.title}</p>
               {notif.body && <p className="text-xs text-slate-500 truncate mt-0.5">{notif.body}</p>}
             </div>
-            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${notif.type === "reaction" ? "bg-[#fff4ee] text-[#df7b59]" : "bg-[#eef4ff] text-[#5676b3]"}`}>
-              {notif.type === "reaction" ? "React" : "Comment"}
+            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${notif.type === "reaction" ? "bg-[#fff4ee] text-[#df7b59]" : notif.type === "new_message" ? "bg-[#eafaf0] text-[#2f8a5f]" : "bg-[#eef4ff] text-[#5676b3]"}`}>
+              {notif.type === "reaction" ? "React" : notif.type === "new_message" ? "Message" : "Comment"}
             </span>
           </div>
           <button type="button"
