@@ -69,6 +69,12 @@ function formatReminderDistance(diffDays) {
   return `In ${months} month${months === 1 ? "" : "s"}`;
 }
 
+// Every icon this returns is loaded via React Native's <Image>, which -
+// unlike a browser <img> - cannot render .svg sources at all (raster
+// formats only). The web app's originals are .svg; PNG renders of
+// each were generated specifically for this mobile use (public/
+// illustrations/<name>.png alongside the existing .svg web keeps
+// using), rather than switching to SvgUri/remote-SVG rendering here.
 function eventTypeIcon(title, type) {
   const t = String(title || "").toLowerCase();
   const normalized = String(type || "").toLowerCase();
@@ -76,13 +82,13 @@ function eventTypeIcon(title, type) {
   if (t.includes("halloween")) return "pumpkin.png";
   if (t.includes("easter")) return "bunny.png";
   if (t.includes("patrick")) return "shamrock.png";
-  if (t.includes("new year")) return "balloon.svg";
-  if (t.includes("birthday") || normalized.includes("birthday")) return "birthday-cake.svg";
-  if (t.includes("wedding") || normalized.includes("wedding")) return "wedding-church.svg";
-  if (t.includes("anniversary") || normalized.includes("anniversary")) return "calendar.svg";
-  if (normalized.includes("celebration")) return "balloon.svg";
-  if (normalized.includes("holiday")) return "holiday-palm.svg";
-  return "calendar.svg";
+  if (t.includes("new year")) return "balloon.png";
+  if (t.includes("birthday") || normalized.includes("birthday")) return "birthday-cake.png";
+  if (t.includes("wedding") || normalized.includes("wedding")) return "wedding-church.png";
+  if (t.includes("anniversary") || normalized.includes("anniversary")) return "calendar.png";
+  if (normalized.includes("celebration")) return "balloon.png";
+  if (normalized.includes("holiday")) return "holiday-palm.png";
+  return "calendar.png";
 }
 
 // Mirrors web's possessiveName + buildReminderHeadline exactly (app/
