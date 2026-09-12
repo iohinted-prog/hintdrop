@@ -10,6 +10,7 @@ import { resolveAvatarColor, NON_USER_AVATAR_COLOR } from "../lib/avatarColor";
 import { colors, radii, spacing, shadow } from "../lib/theme";
 import ProfileScreen from "./ProfileScreen";
 import ChatThreadScreen from "./ChatThreadScreen";
+import HintImage from "../components/HintImage";
 import GroupHintDetailScreen from "./GroupHintDetailScreen";
 
 // Mirrors app/circle/PeopleClient.jsx + ContactCard.jsx +
@@ -205,7 +206,7 @@ function GroupGiftPotCard({ groupGift, currentUserId, onContributed }) {
       </View>
       <View style={{ flex: 1, minWidth: 0, marginLeft: 14 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          {hint?.image_url ? <Image source={{ uri: hint.image_url }} style={styles.potImage} /> : null}
+          {hint?.image_url ? <HintImage uri={hint.image_url} style={styles.potImage} /> : null}
           <Text style={styles.potTitle} numberOfLines={2}>{hint?.title || "Group gift"}</Text>
         </View>
         <Text style={styles.potSubtext}>

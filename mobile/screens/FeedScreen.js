@@ -8,6 +8,7 @@ import { resolveAvatarColor } from "../lib/avatarColor";
 import { colors, radii, spacing, shadow } from "../lib/theme";
 import ProfileScreen from "./ProfileScreen";
 import GroupHintModal from "../components/GroupHintModal";
+import HintImage from "../components/HintImage";
 
 // Mirrors app/feed/FeedClient.js's actual mobile-web behavior, not
 // its full desktop layout - confirmed by reading the file directly:
@@ -265,7 +266,7 @@ function FeedItemCard({ item, comments, activeComposerId, setActiveComposerId, d
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 14 }}>
               {metadata.preview_hints.filter((h) => h.image_url).map((hint, i) => (
                 <Pressable key={hint.id || i} style={styles.hintPreviewTile} onPress={() => onOpenHintDetail?.({ ...hint, ownerId: item.actor_user_id, ownerName: metadata.actor_name, ownerAvatarUrl: metadata.actor_avatar_url })}>
-                  <Image source={{ uri: hint.image_url }} style={styles.hintPreviewImage} />
+                  <HintImage uri={hint.image_url} style={styles.hintPreviewImage} />
                   <LinearGradient colors={["transparent", "rgba(0,0,0,0.6)"]} style={styles.hintPreviewOverlay} />
                   <View style={styles.hintPreviewTextWrap}>
                     <Text style={styles.hintPreviewTitle} numberOfLines={1}>{hint.title}</Text>
@@ -423,7 +424,7 @@ function HintPeekModal({ hint, onClose, currentUserId }) {
         <LinearGradient colors={["transparent", "rgba(0,0,0,0.55)"]} style={StyleSheet.absoluteFillObject} pointerEvents="none" />
         {hint ? (
           <Pressable style={styles.hintPeekCard} onPress={() => {}}>
-            {hint.image_url ? <Image source={{ uri: hint.image_url }} style={styles.hintPeekImage} resizeMode="cover" /> : null}
+            {hint.image_url ? <HintImage uri={hint.image_url} style={styles.hintPeekImage} resizeMode="cover" /> : null}
             <View style={{ padding: 18 }}>
               <Text style={styles.hintPeekTitle}>{hint.title || "Hint"}</Text>
               {hint.retailer ? <Text style={styles.hintPeekRetailer}>{hint.retailer}</Text> : null}

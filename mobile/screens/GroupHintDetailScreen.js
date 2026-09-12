@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { colors, radii, spacing, shadow } from "../lib/theme";
+import HintImage from "../components/HintImage";
 
 const POT_MEMBER_COLORS = ["#ff8060", "#4e9e6e", "#5b8dd9", "#c97ad4", "#e8a23a", "#e05c7a", "#4db8b0", "#9b7fd4"];
 
@@ -177,7 +178,7 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
           <Text style={styles.sectionLabel}>Which item</Text>
           {recipientHints.map((h) => (
             <Pressable key={h.id} onPress={() => setEditHintId(h.id)} style={[styles.hintPickRow, editHintId === h.id && styles.hintPickRowActive]}>
-              {h.image_url ? <Image source={{ uri: h.image_url }} style={styles.hintPickImage} /> : <View style={styles.hintPickImagePlaceholder} />}
+              {h.image_url ? <HintImage uri={h.image_url} style={styles.hintPickImage} /> : <View style={styles.hintPickImagePlaceholder} />}
               <Text style={styles.hintPickTitle} numberOfLines={1}>{h.title}</Text>
             </Pressable>
           ))}
@@ -205,7 +206,7 @@ export default function GroupHintDetailScreen({ groupHintId, currentUserId, onCl
           )}
 
           <View style={styles.headRow}>
-            {gh.hints?.image_url ? <Image source={{ uri: gh.hints.image_url }} style={styles.mainImage} /> : null}
+            {gh.hints?.image_url ? <HintImage uri={gh.hints.image_url} style={styles.mainImage} /> : null}
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.mainTitle} numberOfLines={2}>{gh.title || gh.hints?.title}</Text>
               <Text style={styles.organiserText}>Organised by {gh.profiles?.full_name}</Text>

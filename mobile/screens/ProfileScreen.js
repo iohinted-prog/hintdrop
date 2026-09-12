@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "../components/Icon";
 import { LinearGradient } from "expo-linear-gradient";
 import GroupHintModal from "../components/GroupHintModal";
+import HintImage from "../components/HintImage";
 import Text from "../components/Text";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -85,7 +86,7 @@ function BoardPreviewGrid({ previewHints = [] }) {
   function Tile({ hint, style }) {
     return (
       <View style={[{ overflow: "hidden", backgroundColor: "#ead8ca" }, style]}>
-        {hint?.image_url ? <Image source={{ uri: hint.image_url }} style={{ width: "100%", height: "100%" }} /> : null}
+        {hint?.image_url ? <HintImage uri={hint.image_url} style={{ width: "100%", height: "100%" }} /> : null}
       </View>
     );
   }
@@ -395,7 +396,7 @@ export default function ProfileScreen({ userId, onBack, insideModal = false, ini
     return (
       <Pressable style={[styles.hintTile, { aspectRatio: ratio }]} onPress={() => setSelectedHint(hint)}>
         {hint.image_url ? (
-          <Image source={{ uri: hint.image_url }} style={styles.hintTileImage} />
+          <HintImage uri={hint.image_url} style={styles.hintTileImage} />
         ) : (
           <View style={[styles.hintTileImage, { backgroundColor: to, alignItems: "center", justifyContent: "center" }]}>
             <Text style={{ fontSize: 32 }}>🎁</Text>
@@ -668,7 +669,7 @@ export default function ProfileScreen({ userId, onBack, insideModal = false, ini
                   </Pressable>
                 </View>
                 {selectedHint.image_url ? (
-                  <Image source={{ uri: selectedHint.image_url }} style={styles.detailImage} resizeMode="contain" />
+                  <HintImage uri={selectedHint.image_url} style={styles.detailImage} resizeMode="contain" />
                 ) : (
                   <View style={[styles.detailImage, { backgroundColor: "#c4a17f", alignItems: "center", justifyContent: "center" }]}>
                     <Text style={{ fontSize: 48 }}>🎁</Text>
