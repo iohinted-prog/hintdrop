@@ -20,7 +20,7 @@ const OCCASION_OPTIONS = [
 
 const RELATIONSHIP_OPTIONS = [
   "Partner", "Boyfriend", "Girlfriend", "Husband", "Wife", "Father", "Mother", "Parent",
-  "Brother", "Sister", "Sibling", "Son", "Child", "Friend", "Colleague", "Family", "For him", "For her",
+  "Brother", "Sister", "Sibling", "Son", "Daughter", "Child", "Friend", "Colleague", "Family", "For him", "For her",
 ];
 
 // Matches a url slug like "fathers-day" or "boyfriend" back to its
