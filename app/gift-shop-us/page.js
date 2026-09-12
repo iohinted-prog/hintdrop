@@ -1,7 +1,7 @@
 import GiftShopPageContent from "../gift-shop/GiftShopPageContent";
 
-const title = "Gift Shop | HintDrop US";
-const description = "Curated US gift ideas by occasion, relationship, and price. Save your favourites as hints on HintDrop.";
+const title = "Gift Ideas & Wishlists for Every Occasion | HintDrop US";
+const description = "Curated gift ideas for Christmas, birthdays, Mother's Day, Father's Day and more. Save favourites to your HintDrop wishlist by occasion or relationship.";
 
 export const metadata = {
   title,
