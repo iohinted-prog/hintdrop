@@ -72,7 +72,7 @@ export default async function GiftShopPage({ region }) {
           </ul>
         </div>
       </noscript>
-      <GiftShopClient region={region} />
+      <GiftShopClient region={region} initialProducts={sampleProducts} />
     </>
   );
 }

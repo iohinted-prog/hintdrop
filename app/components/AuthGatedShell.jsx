@@ -21,14 +21,30 @@ import PublicShell from "./PublicShell";
 //
 //   if (checkedAuth) return <AuthGatedShell checkedAuth={checkedAuth} currentUser={currentUser}>{inner}</AuthGatedShell>;
 //
-// While auth hasn't resolved yet, this renders nothing (null) rather
-// than guessing - both a signed-in AppShell (already provided by the
-// parent layout, invisible to this component) and PublicShell are
-// legitimate final states, and rendering either one first only to
-// possibly swap it a moment later is its own version of this same
-// flicker/double-render class of bug.
+// While auth hasn't resolved yet, this now renders children bare
+// (unwrapped) rather than null. Returning null was the safer choice
+// against the double-header bug this component exists to prevent,
+// but it had a real cost that only showed up later: any page using
+// this rendered completely empty - not just headerless, genuinely
+// content-free - for the entire window between mount and the async
+// auth check resolving. For a page a real visitor waits half a
+// second for, that's invisible. For a crawler that renders once and
+// moves on (confirmed via Search Console: gift-shop-uk was crawled
+// successfully - 200 OK - but flagged as a Soft 404, because
+// whatever Googlebot's renderer captured looked empty), it can mean
+// the page is judged to have no real content at all.
+//
+// This is still safe against the double-header bug: AppShell (the
+// parent layout) independently hides its own header for every path
+// in its conditionallyHiddenPath list until ITS OWN auth check
+// resolves, regardless of what this component does - so during this
+// component's loading window, AppShell's header stays hidden on its
+// own, and there's nothing here yet to conflict with. Once this
+// component's checkedAuth resolves, it swaps to PublicShell (signed
+// out) or bare children with AppShell's now-visible header (signed
+// in) - exactly one shell, same as before, just with real content
+// visible the whole time instead of a blank window first.
 export default function AuthGatedShell({ checkedAuth, currentUser, children }) {
-  if (!checkedAuth) return null;
-  if (!currentUser) return <PublicShell>{children}</PublicShell>;
+  if (checkedAuth && !currentUser) return <PublicShell>{children}</PublicShell>;
   return children;
 }

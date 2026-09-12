@@ -381,7 +381,7 @@ function EmptyState({ onClear }) {
   );
 }
 
-export default function GiftShopClient({ region = "uk" }) {
+export default function GiftShopClient({ region = "uk", initialProducts = [] }) {
   const { formatCurrency, formatCurrencyIn } = useCurrencyFormatter();
   const [authOpen, setAuthOpen] = useState(false);
   // Only used to decide which header to render (see the Shell choice
@@ -396,8 +396,15 @@ export default function GiftShopClient({ region = "uk" }) {
   // page needs it.
   const [currentUser, setCurrentUser] = useState(null);
   const [checkedAuth, setCheckedAuth] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Seeded from the server-fetched sample GiftShopPageContent.js
+  // already pulls for the <noscript> fallback - real content is
+  // visible from the very first paint instead of an empty grid until
+  // the client-side /api/products fetch below completes. The client
+  // fetch below still runs and replaces this with the full, live,
+  // filterable set for a real visitor; this is only about what's
+  // there before that finishes.
+  const [products, setProducts] = useState(initialProducts);
+  const [isLoading, setIsLoading] = useState(initialProducts.length === 0);
   const [pageError, setPageError] = useState("");
   const [openingLinkId, setOpeningLinkId] = useState("");
   const [selectedOccasion, setSelectedOccasion] = useState("");
