@@ -54,7 +54,7 @@ export default async function GiftShopPage({ region }) {
       <noscript>
         <div style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 20px" }}>
           <h1>Gift Shop | HintDrop</h1>
-          <p>Curated gifts for everyone. Save your favourites to your HintDrop wishlist.</p>
+          <p>Curated gifts for everyone. Save your favourites as hints on HintDrop.</p>
           <ul style={{ listStyle: "none", padding: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 20 }}>
             {sampleProducts.map((product) => (
               <li key={product.id}>

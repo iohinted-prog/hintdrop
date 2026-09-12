@@ -666,7 +666,7 @@ export default function GiftShopClient({ region = "uk" }) {
               </h1>
 
               <p className="mt-3 hidden max-w-[760px] text-[15px] leading-7 text-slate-600 sm:block">
-                Curated gifts for everyone. Create a free HintDrop account to save your favourites to a wishlist.
+                Curated gifts for everyone. Create a free HintDrop account to save your favourites as hints.
               </p>
 
               <p className="mt-2 text-[12px] text-slate-400">
@@ -786,7 +786,7 @@ export default function GiftShopClient({ region = "uk" }) {
 
         {/* Sign in CTA */}
         <div className="mt-16 text-center py-10 rounded-[28px] bg-[#fff5f0] border border-[#f0dfd6]">
-          <p className="text-[18px] font-semibold text-slate-900 mb-2">Save gifts to your wishlist</p>
+          <p className="text-[18px] font-semibold text-slate-900 mb-2">Save gifts as hints</p>
           <p className="text-[14px] text-slate-500 mb-5">Create a free HintDrop account to save hints and share with the people who buy for you.</p>
           <button type="button" onClick={() => setAuthOpen(true)} className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-[14px] font-semibold bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-white shadow-sm">
             Get started free

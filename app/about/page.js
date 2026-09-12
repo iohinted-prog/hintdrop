@@ -43,7 +43,7 @@ export default async function AboutPage() {
               Save hints. Remember people. Plan gifts together.
             </h1>
             <p className="mt-4 text-[17px] leading-8 text-slate-600">
-              HintDrop is a wishlist and gifting app built around the people you care about. Save hints from any retailer, remember birthdays and milestones, and plan group gifts with friends — all in one place.
+              HintDrop is a social gifting app built around the people you care about. Save hints from any retailer, remember birthdays and milestones, and plan group gifts with friends — all in one place.
             </p>
           </div>
 

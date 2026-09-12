@@ -852,8 +852,8 @@ export default function HomePageClient() {
                   Gift prompt
                 </p>
                 <p className="mt-2 text-sm leading-7 text-white/90">
-                  Sarah saved "ceramic dinnerware" and "weekend city break" to
-                  her wishlist.
+                  Sarah saved "ceramic dinnerware" and "weekend city break" as
+                  hints.
                 </p>
                 <button
                   className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-800"

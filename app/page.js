@@ -5,25 +5,19 @@ import HomePageClient from "./components/HomePageClient";
 import { SOCIAL_LINKS } from "./components/SocialLinks";
 
 export const metadata = {
-  // absolute bypasses the root layout's "%s | HintDrop" title
-  // template entirely - the homepage wants this exact custom title,
-  // not the generic template applied on top of it. Deliberately
-  // short (47 chars, well under the ~60-char point where Google
-  // tends to truncate or just rewrite it outright) and keyword-
-  // forward rather than a truncated version of the on-page hero
-  // copy - the hero's own longer, more poetic tagline stays exactly
-  // as it is on the page itself, this is specifically what needs to
-  // work as a standalone search-result headline for someone who's
-  // never seen the page. "Wishlist" is the actual term people search
-  // for when looking for something in this category - worth
-  // capturing that intent directly rather than only differentiating
-  // from it after the click.
-  title: { absolute: "HintDrop - The Smarter Wishlist for Group Gifts" },
-  description: "More than a wishlist - save gift ideas, get reminded of birthdays, and pool money together with group pots. The thoughtful way to gift with people you love.",
-  keywords: ["gift ideas", "wishlist app", "group gifting", "birthday reminders", "hint list", "gift planning", "group pot", "pool money for gifts"],
+  // Repositioned away from "wishlist" entirely per direct correction -
+  // HintDrop isn't a wishlist alternative, it's a social gifting
+  // platform: saving what you want for yourself AND saving gift ideas
+  // for other people, both directions. Title stays short (38 chars)
+  // and leads with that framing directly instead of a category
+  // comparison; description carries the "for yourself, for others"
+  // duality plus the group-pots differentiator.
+  title: { absolute: "HintDrop - The Social Gifting Platform" },
+  description: "Save hints for yourself, and gift ideas for the people you love. Remember birthdays, share what matters, and pool money together with group pots.",
+  keywords: ["social gifting", "gift ideas", "group gifting", "birthday reminders", "hint list", "gift planning", "group pot", "pool money for gifts"],
   openGraph: {
-    title: "HintDrop - The Smarter Wishlist for Group Gifts",
-    description: "More than a wishlist - save gift ideas, get reminded of birthdays, and pool money together with group pots.",
+    title: "HintDrop - The Social Gifting Platform",
+    description: "Save hints for yourself, and gift ideas for the people you love. Remember birthdays, share what matters, and pool money together with group pots.",
     url: "https://hintdrop.app",
     siteName: "HintDrop",
     type: "website",
@@ -31,8 +25,8 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "HintDrop - The Smarter Wishlist for Group Gifts",
-    description: "More than a wishlist - save gift ideas, get reminded of birthdays, and pool money together with group pots.",
+    title: "HintDrop - The Social Gifting Platform",
+    description: "Save hints for yourself, and gift ideas for the people you love. Remember birthdays, share what matters, and pool money together with group pots.",
     images: ["https://hintdrop.app/og-default-v2.png"],
   },
   alternates: {
