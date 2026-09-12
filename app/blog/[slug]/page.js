@@ -87,21 +87,30 @@ export default async function BlogPostPage({ params }) {
             <ol className="mt-6 space-y-5">
               {products.map((product, i) => {
                 const outboundUrl = product.affiliate_url || product.product_url;
+                const CardTag = outboundUrl ? "a" : "div";
+                const cardProps = outboundUrl
+                  ? { href: outboundUrl, target: "_blank", rel: "noopener noreferrer nofollow sponsored" }
+                  : {};
                 return (
-                  <li key={product.id} className="flex gap-4 rounded-[20px] border border-[#eadfd4] bg-white/80 p-4">
-                    <span className="shrink-0 text-lg font-bold text-[#c1846c]">{i + 1}</span>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={product.image_url} alt={product.title} loading="lazy" className="h-20 w-20 shrink-0 rounded-[14px] object-cover" />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-slate-900">{product.title}</p>
-                      {product.price_text && <p className="text-sm text-[#df7b59] font-semibold">{product.price_text}</p>}
-                      {product.short_note && <p className="mt-1 text-sm text-slate-500">{product.short_note}</p>}
-                      {outboundUrl && (
-                        <a href={outboundUrl} target="_blank" rel="noopener noreferrer nofollow sponsored" className="mt-1 inline-block text-sm font-semibold text-[#df7b59] hover:underline">
-                          View this gift →
-                        </a>
-                      )}
-                    </div>
+                  <li key={product.id}>
+                    <CardTag
+                      {...cardProps}
+                      className={"flex gap-4 rounded-[20px] border border-[#eadfd4] bg-white/80 p-4 transition " + (outboundUrl ? "cursor-pointer hover:border-[#f0c9b5] hover:bg-white" : "")}
+                    >
+                      <span className="shrink-0 text-lg font-bold text-[#c1846c]">{i + 1}</span>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={product.image_url} alt={product.title} loading="lazy" className="h-20 w-20 shrink-0 rounded-[14px] object-cover" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-slate-900">{product.title}</p>
+                        {product.price_text && <p className="text-sm text-[#df7b59] font-semibold">{product.price_text}</p>}
+                        {product.short_note && <p className="mt-1 text-sm text-slate-500">{product.short_note}</p>}
+                        {outboundUrl && (
+                          <span className="mt-1 inline-block text-sm font-semibold text-[#df7b59]">
+                            View this gift →
+                          </span>
+                        )}
+                      </div>
+                    </CardTag>
                   </li>
                 );
               })}
