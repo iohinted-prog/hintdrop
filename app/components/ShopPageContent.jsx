@@ -6,6 +6,7 @@ import { shuffleProducts } from "../../lib/products";
 import BoardPreviewGrid from "../components/BoardPreviewGrid";
 import { useCurrencyFormatter } from "../../lib/useCurrencyFormatter";
 import HintImage from "../components/HintImage";
+import GroupHintModal from "../components/GroupHintModal";
 
 const CARD_MIN_HEIGHT = "220px";
 
@@ -252,14 +253,46 @@ function ShopCard({
   formatCurrency,
   formatCurrencyIn,
   onImageError,
+  currentUserId,
+  currentUserName,
 }) {
   const [showModal, setShowModal] = useState(false);
   const [justShared, setJustShared] = useState(false);
+  const [groupHint, setGroupHint] = useState(null);
+  const [startingGroup, setStartingGroup] = useState(false);
   const interestTags = getTagArray(product.interest_tags);
   const occasionTags = getTagArray(product.occasion_tags);
   const displayTags = [...interestTags.slice(0, 1), ...occasionTags.slice(0, 1)].slice(0, 2);
   const displayPrice = getDisplayPrice(product, formatCurrency, formatCurrencyIn);
   const retailerLabel = product.retailer || normaliseRetailer(getOutboundUrl(product));
+
+  // "Get group together" on a shop item, distinct from viewing an
+  // already-saved hint (HintDetailModal.jsx/ProfileClient.jsx) - a raw
+  // shop product has no hints.id for GroupHintModal to key off, and no
+  // natural "recipient" the way someone's own saved hint does. Treats
+  // this as organising a pot for yourself (recipientUserId is the
+  // organiser's own id) rather than building a full contact-picker for
+  // choosing someone else's - genuinely the more common real case for
+  // "help me chip in for this" starting from browsing the shop, and
+  // avoids a much larger UI surface for a first version of this.
+  // Silently saves the product as a real hint first (board_id null,
+  // same as every other un-boarded save path), since that's what
+  // group_hints.hint_id actually needs to point at.
+  async function handleStartGroupTogether() {
+    if (!currentUserId || startingGroup) return;
+    setStartingGroup(true);
+    try {
+      const supabase = createClient();
+      const payload = buildHintInsertPayload(product, currentUserId, null);
+      const { data: newHint, error } = await supabase.from("hints").insert(payload).select().single();
+      if (error) throw error;
+      setGroupHint(newHint);
+    } catch {
+      // Swallowed - button just reverts, no modal opens, person can retry.
+    } finally {
+      setStartingGroup(false);
+    }
+  }
 
   const rawRatio = imageRatios[product.id];
   // Clamped to a range, not capped at a single ceiling - the previous
@@ -444,6 +477,16 @@ function ShopCard({
                   {isOpeningLink ? "Opening..." : "View item →"}
                 </button>
               </div>
+              {currentUserId && (
+                <button
+                  type="button"
+                  onClick={handleStartGroupTogether}
+                  disabled={startingGroup}
+                  className="mt-3 w-full h-11 rounded-full border border-[#ead8ce] text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0] disabled:opacity-70"
+                >
+                  {startingGroup ? "Starting..." : "Get group together"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleShare}
@@ -454,6 +497,16 @@ function ShopCard({
             </div>
           </div>
         </div>
+      )}
+      {groupHint && (
+        <GroupHintModal
+          hint={groupHint}
+          recipientUserId={currentUserId}
+          recipientName={currentUserName || "yourself"}
+          currentUserId={currentUserId}
+          onClose={() => setGroupHint(null)}
+          onSent={() => setGroupHint(null)}
+        />
       )}
     </>
   );
@@ -881,7 +934,13 @@ export default function ShopPageContent({ region = "uk" }) {
 
     setSavingHintId(product.id);
     setPageError("");
-    setSuccessMessage("");
+    // Shown immediately, before the board-picker modal below closes -
+    // without this, the modal dismisses instantly followed by up to
+    // 18 real seconds of visibly nothing happening while the image
+    // refetch below runs, which is exactly what mobile's equivalent
+    // flow was reported as "freezing" over - overwritten by the real
+    // success message once the save actually completes.
+    setSuccessMessage("Saving...");
     setBoardPickerProduct(null);
 
     try {
@@ -1190,6 +1249,8 @@ export default function ShopPageContent({ region = "uk" }) {
                         formatCurrency={formatCurrency}
                         formatCurrencyIn={formatCurrencyIn}
                         onImageError={handleImageError}
+                        currentUserId={currentUser?.id}
+                        currentUserName={currentUser?.user_metadata?.full_name}
                       />
                     </div>
                   ))}

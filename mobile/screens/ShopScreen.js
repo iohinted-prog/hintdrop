@@ -479,7 +479,14 @@ export default function ShopScreen() {
     if (!product || !user?.id) return;
     setSavingHintId(product.id);
     setPageError("");
-    setSuccessMessage("");
+    // Shown immediately, before the board-picker/detail modals below
+    // close - without this, both modals dismissing instantly followed
+    // by up to several seconds of visibly nothing happening (while the
+    // image refetch below runs) is exactly what read as the app
+    // freezing: nothing was actually broken, there was just no visible
+    // feedback during a real wait. Overwritten by the real success
+    // message once the save actually completes.
+    setSuccessMessage("Saving...");
     setBoardPickerProduct(null);
     setDetailProduct(null);
     try {
@@ -487,7 +494,15 @@ export default function ShopScreen() {
       // images are sometimes genuinely poor (favicons, tiny grid
       // thumbnails), so try a fresher one from the retailer's own
       // page first, bounded so a slow/blocked retailer never holds
-      // up the save.
+      // up the save. 18s matches web's own deliberately-widened
+      // timeout (see ShopPageContent.jsx's version of this comment) -
+      // the server-side scraper can legitimately take that long
+      // checking multiple candidate images' real pixel dimensions, so
+      // shortening this would just mean more saves silently falling
+      // back to a worse stored image, not fixing anything. The actual
+      // problem wasn't the wait being too long, it was that nothing
+      // was visible during it - fixed by the immediate "Saving..."
+      // toast above instead.
       let refetchedImage = null;
       const scrapeUrl = String(product?.product_url || "").trim() || getOutboundUrl(product);
       try {
