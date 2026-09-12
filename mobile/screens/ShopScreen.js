@@ -7,6 +7,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
 import { colors, radii, spacing, shadow } from "../lib/theme";
 import { getStoredRegion } from "../lib/region";
+import GroupHintModal from "../components/GroupHintModal";
 
 // Mirrors app/components/ShopPageContent.jsx. Built against the real
 // file - same shop_products data (fetched from the same public
@@ -179,11 +180,34 @@ function ShopCard({ product, imageRatio, onPress, onAddToHints, onViewItem, isSa
   );
 }
 
-function ProductDetailModal({ product, onClose, onAddToHints, onViewItem, isSavingHint, isOpeningLink }) {
+function ProductDetailModal({ product, onClose, onAddToHints, onViewItem, isSavingHint, isOpeningLink, currentUserId, currentUserName }) {
+  const [groupHint, setGroupHint] = useState(null);
+  const [startingGroup, setStartingGroup] = useState(false);
   if (!product) return null;
   const displayPrice = getDisplayPrice(product);
   const retailerLabel = product.retailer || normaliseRetailer(getOutboundUrl(product));
   const displayTags = [...getTagArray(product.interest_tags).slice(0, 1), ...getTagArray(product.occasion_tags).slice(0, 1)].slice(0, 2);
+
+  // Same "Get group together on a shop item" gap as web's
+  // ShopPageContent.jsx - organises a pot for yourself (recipient is
+  // the organiser's own id), since a raw shop product has no
+  // recipient the way an already-saved hint does. Silently saves the
+  // product as a real hint first (board_id null), since group_hints
+  // needs a genuine hints.id to point at.
+  async function handleStartGroupTogether() {
+    if (!currentUserId || startingGroup) return;
+    setStartingGroup(true);
+    try {
+      const payload = buildHintInsertPayload(product, currentUserId, null);
+      const { data: newHint, error } = await supabase.from("hints").insert(payload).select().single();
+      if (error) throw error;
+      setGroupHint(newHint);
+    } catch {
+      // Swallowed - button just reverts, no modal opens, person can retry.
+    } finally {
+      setStartingGroup(false);
+    }
+  }
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.detailOverlay} onPress={onClose}>
@@ -212,10 +236,29 @@ function ProductDetailModal({ product, onClose, onAddToHints, onViewItem, isSavi
                   <Text style={styles.detailViewButtonText}>{isOpeningLink ? "Opening..." : "View item →"}</Text>
                 </Pressable>
               </View>
+              {currentUserId ? (
+                <Pressable
+                  style={[styles.detailAddButton, { marginTop: 10, width: "100%" }]}
+                  onPress={handleStartGroupTogether}
+                  disabled={startingGroup}
+                >
+                  <Text style={styles.detailAddButtonText}>{startingGroup ? "Starting..." : "Get group together"}</Text>
+                </Pressable>
+              ) : null}
             </View>
           </ScrollView>
         </Pressable>
       </Pressable>
+      {groupHint && (
+        <GroupHintModal
+          hint={groupHint}
+          recipientUserId={currentUserId}
+          recipientName={currentUserName || "yourself"}
+          currentUserId={currentUserId}
+          onClose={() => setGroupHint(null)}
+          onSent={() => setGroupHint(null)}
+        />
+      )}
     </Modal>
   );
 }
@@ -670,7 +713,7 @@ export default function ShopScreen() {
         )}
       </ScrollView>
 
-      <ProductDetailModal product={detailProduct} onClose={() => setDetailProduct(null)} onAddToHints={handleAddToHints} onViewItem={handleViewItem} isSavingHint={savingHintId === detailProduct?.id} isOpeningLink={openingLinkId === detailProduct?.id} />
+      <ProductDetailModal product={detailProduct} onClose={() => setDetailProduct(null)} onAddToHints={handleAddToHints} onViewItem={handleViewItem} isSavingHint={savingHintId === detailProduct?.id} isOpeningLink={openingLinkId === detailProduct?.id} currentUserId={user?.id} currentUserName={user?.user_metadata?.full_name} />
 
       <BoardPickerModal
         visible={Boolean(boardPickerProduct)}
