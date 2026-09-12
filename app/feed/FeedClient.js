@@ -770,12 +770,12 @@ function FeedItem({
 
   const bucketStyle =
     bucket === "hint"
-      ? "bg-[#f5f3ff] text-[#7c5cbf]"
+      ? "bg-[#fff4e6] text-[#c2650a]"
       : bucket === "circle"
-        ? "bg-[#eef6ea] text-[#5b7a3c]"
+        ? "bg-[#e8f2ff] text-[#2563a8]"
         : bucket === "reminder"
-          ? "bg-[#fff3ee] text-[#e07c54]"
-          : "bg-[#fff7e8] text-[#af7b14]";
+          ? "bg-[#e9f9ee] text-[#1f8a4c]"
+          : "bg-[#e8f2ff] text-[#2563a8]";
 
   const bucketLabel =
     bucket === "hint"

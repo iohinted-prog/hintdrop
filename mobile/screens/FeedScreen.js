@@ -149,11 +149,11 @@ function isSocialFeedItem(item) {
 }
 
 const BUCKET_STYLES = {
-  hint: { bg: "#f5f3ff", text: "#7c5cbf", label: "Hint" },
-  circle: { bg: "#eef6ea", text: "#5b7a3c", label: "Circle" },
-  reminder: { bg: "#fff3ee", text: "#e07c54", label: "Reminder" },
-  contact: { bg: "#fff7e8", text: "#af7b14", label: "Contact" },
-  all: { bg: "#fff7e8", text: "#af7b14", label: "Contact" },
+  hint: { bg: "#fff4e6", text: "#c2650a", label: "Hint" },
+  circle: { bg: "#e8f2ff", text: "#2563a8", label: "Circle" },
+  reminder: { bg: "#e9f9ee", text: "#1f8a4c", label: "Reminder" },
+  contact: { bg: "#e8f2ff", text: "#2563a8", label: "Contact" },
+  all: { bg: "#e8f2ff", text: "#2563a8", label: "Contact" },
 };
 
 const REACTION_EMOJIS = ["❤️", "👏", "🎁"];
@@ -248,8 +248,8 @@ function FeedItemCard({ item, comments, activeComposerId, setActiveComposerId, d
                     <Text style={styles.actorName}>{metadata.actor_name}</Text>
                   </Pressable>
                 ) : null}
-                <View style={styles.bucketBadge}>
-                  <Text style={styles.bucketBadgeText}>{bucketStyle.label}</Text>
+                <View style={[styles.bucketBadge, { backgroundColor: bucketStyle.bg }]}>
+                  <Text style={[styles.bucketBadgeText, { color: bucketStyle.text }]}>{bucketStyle.label}</Text>
                 </View>
                 {item.isDemo ? (
                   <View style={styles.demoBadge}><Text style={styles.demoBadgeText}>Demo</Text></View>
