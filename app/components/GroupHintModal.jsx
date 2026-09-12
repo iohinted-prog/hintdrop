@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "../../lib/supabase/client";
 import HintImage from "./HintImage";
+import ShareButton from "./ShareButton";
 
 function getInitials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -65,6 +66,9 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [creatingLink, setCreatingLink] = useState(false);
+  const [emailInvite, setEmailInvite] = useState("");
+  const [sendingEmailInvite, setSendingEmailInvite] = useState(false);
   const [sendError, setSendError] = useState("");
   // Only asked when the hint has no price - the pot's target otherwise
   // comes straight from the hint itself, no separate step needed.
@@ -133,6 +137,70 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
     setSelected(prev => prev.includes(profileId)
       ? prev.filter(id => id !== profileId)
       : [...prev, profileId]);
+  }
+
+  // Separate from handleSend deliberately, not a refactor of it -
+  // handleSend requires selected.length > 0 and tightly bundles pot
+  // creation with contact-invite messaging/conversation logic that
+  // assumes at least one other real participant. Inviting a non-
+  // contact (someone with no profile_id to select from the list at
+  // all) needs the pot to exist independent of any contact being
+  // picked, so this only ever does the minimum: create (or reuse) the
+  // group_hints row and the organiser's own membership row, nothing
+  // else. Real gap this closes: there was previously no way to invite
+  // anyone who isn't already a matched HintDrop contact at all.
+  async function ensureGroupHintForSharing() {
+    if (groupHint) return groupHint;
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
+    if (!user) { setSendError("Not logged in"); return null; }
+    if (!chatOnly && !hintHasPrice && !(Number(manualTargetAmount) > 0)) {
+      setSendError("Enter a target amount for the pot first - this hint has no price to split automatically.");
+      return null;
+    }
+    const { data: newGh, error: ghErr } = await supabase
+      .from("group_hints")
+      .insert({
+        hint_id: hint.id,
+        organiser_id: user.id,
+        recipient_user_id: recipientUserId,
+        target_amount: chatOnly ? null : (hintHasPrice ? hint.numeric_price : Number(manualTargetAmount)),
+        deadline_date: chatOnly ? null : (deadlineDate || null),
+      })
+      .select()
+      .maybeSingle();
+    if (ghErr || !newGh) {
+      setSendError("Failed to create group: " + (ghErr?.message || "unknown error"));
+      return null;
+    }
+    await supabase.from("group_hint_members").insert({ group_hint_id: newGh.id, user_id: user.id, status: "in" });
+    setGroupHint(newGh);
+    return newGh;
+  }
+
+  // Genuinely simple by design, not a placeholder for something
+  // bigger - this is a mailto: link with the pot's real share URL
+  // pre-filled, not a new backend email-sending function. Anyone who
+  // opens it lands on the same public /pot/{id} page a shared link
+  // opens, and can request to join from there (the existing request-
+  // to-join + organiser-notification flow already built for that
+  // page) - no new invite/acceptance mechanism needed, this only
+  // needed a way to get the link into a non-contact's inbox.
+  async function handleEmailInvite() {
+    const trimmed = emailInvite.trim();
+    if (!trimmed || sendingEmailInvite) return;
+    setSendingEmailInvite(true);
+    try {
+      const gh = await ensureGroupHintForSharing();
+      if (!gh) return;
+      const url = `https://hintdrop.app/pot/${gh.id}`;
+      const subject = encodeURIComponent(`Chip in on a group gift on HintDrop`);
+      const body = encodeURIComponent(`Hey,\n\nI'm organising a group gift and would love your help - take a look here:\n${url}\n\n`);
+      window.location.href = `mailto:${encodeURIComponent(trimmed)}?subject=${subject}&body=${body}`;
+      setEmailInvite("");
+    } finally {
+      setSendingEmailInvite(false);
+    }
   }
 
   async function handleSend() {
@@ -375,6 +443,48 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
                   </div>
                 </div>
               )}
+
+              <div className="mb-4">
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Invite someone not on HintDrop yet</p>
+                {groupHint ? (
+                  <ShareButton
+                    supabase={supabase}
+                    subjectType="group_hint"
+                    subjectId={groupHint.id}
+                    currentUserId={currentUserId}
+                    path={`/pot/${groupHint.id}`}
+                    text={`Chip in on a group gift I'm organising on HintDrop`}
+                    label="Share invite link"
+                    className="w-full h-10 flex items-center justify-center rounded-full border border-[#ead8ce] text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0]"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    disabled={creatingLink}
+                    onClick={async () => { setCreatingLink(true); await ensureGroupHintForSharing(); setCreatingLink(false); }}
+                    className="w-full h-10 flex items-center justify-center rounded-full border border-[#ead8ce] text-[13px] font-semibold text-slate-600 hover:bg-[#fff5f0] disabled:opacity-70"
+                  >
+                    {creatingLink ? "Creating..." : "Get a share link"}
+                  </button>
+                )}
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="email"
+                    value={emailInvite}
+                    onChange={(e) => setEmailInvite(e.target.value)}
+                    placeholder="Or invite by email"
+                    className="flex-1 h-10 rounded-full border border-[#ead8ce] bg-white px-4 text-[13px] outline-none focus:border-[#ff966f]"
+                  />
+                  <button
+                    type="button"
+                    disabled={!emailInvite.trim() || sendingEmailInvite}
+                    onClick={handleEmailInvite}
+                    className="h-10 px-4 rounded-full bg-gradient-to-b from-[#ff966f] to-[#ff7e54] text-[13px] font-semibold text-white disabled:opacity-70"
+                  >
+                    Invite
+                  </button>
+                </div>
+              </div>
 
               {availableContacts.length > 0 && (
                 <div>
