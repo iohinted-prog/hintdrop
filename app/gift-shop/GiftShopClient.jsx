@@ -29,7 +29,7 @@ const RELATIONSHIP_OPTIONS = [
 // shop with a filter already applied via a plain, readable query
 // param instead of needing to know the exact display string.
 function slugify(label) {
-  return label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return label.toLowerCase().replace(/'/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 function optionFromSlug(options, slug) {
   if (!slug) return "";
