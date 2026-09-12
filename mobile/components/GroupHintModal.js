@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal, View, StyleSheet, Pressable, Image, ScrollView, ActivityIndicator, TextInput } from "react-native";
+import { Modal, View, StyleSheet, Pressable, Image, ScrollView, ActivityIndicator, TextInput, Share, Linking } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Text from "./Text";
 import { supabase } from "../lib/supabase";
@@ -65,6 +65,9 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [creatingLink, setCreatingLink] = useState(false);
+  const [emailInvite, setEmailInvite] = useState("");
+  const [sendingEmailInvite, setSendingEmailInvite] = useState(false);
   const [sendError, setSendError] = useState("");
   // Only asked when the hint has no price - matches web's
   // GroupHintModal.jsx exactly, same reasoning: the pot's target
@@ -124,6 +127,73 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
 
   function toggleContact(profileId) {
     setSelected((prev) => (prev.includes(profileId) ? prev.filter((id) => id !== profileId) : [...prev, profileId]));
+  }
+
+  // Same standalone function as web's GroupHintModal.jsx, same
+  // reasoning - deliberately not a refactor of handleSend, which
+  // requires selected.length > 0 and tightly bundles pot creation
+  // with contact-invite messaging/conversation logic. Does only the
+  // minimum: create (or reuse) the group_hints row and the
+  // organiser's own membership row.
+  async function ensureGroupHintForSharing() {
+    if (groupHint) return groupHint;
+    if (!chatOnly && !hintHasPrice && !(Number(manualTargetAmount) > 0)) {
+      setSendError("Enter a target amount for the pot first - this hint has no price to split automatically.");
+      return null;
+    }
+    const { data: newGh, error: ghErr } = await supabase
+      .from("group_hints")
+      .insert({
+        hint_id: hint.id,
+        organiser_id: currentUserId,
+        recipient_user_id: recipientUserId,
+        target_amount: chatOnly ? null : (hintHasPrice ? hint.numeric_price : Number(manualTargetAmount)),
+        deadline_date: chatOnly ? null : (deadlineDate || null),
+      })
+      .select()
+      .maybeSingle();
+    if (ghErr || !newGh) {
+      setSendError("Failed to create group: " + (ghErr?.message || "unknown error"));
+      return null;
+    }
+    await supabase.from("group_hint_members").insert({ group_hint_id: newGh.id, user_id: currentUserId, status: "in" });
+    setGroupHint(newGh);
+    return newGh;
+  }
+
+  async function handleShareLink() {
+    setCreatingLink(true);
+    const gh = await ensureGroupHintForSharing();
+    setCreatingLink(false);
+    if (!gh) return;
+    try {
+      await Share.share({
+        message: `Chip in on a group gift I'm organising on HintDrop: https://hintdrop.app/pot/${gh.id}`,
+        url: `https://hintdrop.app/pot/${gh.id}`,
+      });
+    } catch {
+      // user dismissed the share sheet
+    }
+  }
+
+  // Same mailto: approach as web - genuinely simple by design, not a
+  // placeholder. Anyone who opens it lands on the existing public
+  // /pot/{id} page and can request to join from there.
+  async function handleEmailInvite() {
+    const trimmed = emailInvite.trim();
+    if (!trimmed || sendingEmailInvite) return;
+    setSendingEmailInvite(true);
+    try {
+      const gh = await ensureGroupHintForSharing();
+      if (!gh) return;
+      const url = `https://hintdrop.app/pot/${gh.id}`;
+      const subject = encodeURIComponent("Chip in on a group gift on HintDrop");
+      const body = encodeURIComponent(`Hey,\n\nI'm organising a group gift and would love your help - take a look here:\n${url}\n\n`);
+      await Linking.openURL(`mailto:${trimmed}?subject=${subject}&body=${body}`);
+      setEmailInvite("");
+    } finally {
+      setSendingEmailInvite(false);
+    }
   }
 
   async function handleSend() {
@@ -337,6 +407,37 @@ export default function GroupHintModal({ hint, recipientUserId, recipientName, c
                   </View>
                 ) : null}
 
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={styles.sectionLabel}>INVITE SOMEONE NOT ON HINTDROP YET</Text>
+                  {groupHint ? (
+                    <Pressable style={styles.shareLinkButton} disabled={creatingLink} onPress={handleShareLink}>
+                      <Text style={styles.shareLinkButtonText}>Share invite link</Text>
+                    </Pressable>
+                  ) : (
+                    <Pressable style={styles.shareLinkButton} disabled={creatingLink} onPress={handleShareLink}>
+                      <Text style={styles.shareLinkButtonText}>{creatingLink ? "Creating..." : "Get a share link"}</Text>
+                    </Pressable>
+                  )}
+                  <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+                    <TextInput
+                      value={emailInvite}
+                      onChangeText={setEmailInvite}
+                      placeholder="Or invite by email"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      style={styles.emailInviteInput}
+                      placeholderTextColor={colors.textMuted}
+                    />
+                    <Pressable
+                      style={[styles.emailInviteButton, (!emailInvite.trim() || sendingEmailInvite) && { opacity: 0.6 }]}
+                      disabled={!emailInvite.trim() || sendingEmailInvite}
+                      onPress={handleEmailInvite}
+                    >
+                      <Text style={styles.emailInviteButtonText}>Invite</Text>
+                    </Pressable>
+                  </View>
+                </View>
+
                 {availableContacts.length > 0 ? (
                   <View>
                     <Text style={styles.sectionLabel}>{chatOnly ? "INVITE TO CHAT" : "INVITE TO CHIP IN"}</Text>
@@ -384,6 +485,11 @@ const styles = StyleSheet.create({
   closeButton: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   closeButtonText: { fontSize: 13, color: colors.textMuted },
   sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.textSecondary, letterSpacing: 0.4, marginBottom: 10 },
+  shareLinkButton: { height: 40, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
+  shareLinkButtonText: { fontSize: 13, fontWeight: "700", color: colors.textSecondary },
+  emailInviteInput: { flex: 1, height: 40, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: "#fff", paddingHorizontal: 16, fontSize: 13, color: colors.textPrimary },
+  emailInviteButton: { height: 40, paddingHorizontal: 16, borderRadius: radii.pill, backgroundColor: colors.coral, alignItems: "center", justifyContent: "center" },
+  emailInviteButtonText: { fontSize: 13, fontWeight: "700", color: "#fff" },
   confirmTitle: { fontSize: 15, fontWeight: "700", color: colors.textPrimary, marginBottom: 6, textAlign: "center" },
   confirmBody: { fontSize: 13, color: colors.textMuted, textAlign: "center", marginBottom: 20, paddingHorizontal: 8 },
   confirmPrimaryButton: { height: 44, width: "100%", borderRadius: radii.pill, backgroundColor: colors.coral, alignItems: "center", justifyContent: "center", marginBottom: 8 },
