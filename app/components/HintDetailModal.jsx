@@ -42,6 +42,8 @@ export default function HintDetailModal({ hint, onClose, supabase, currentUserId
   const [hoveringClaim, setHoveringClaim] = useState(false);
   const [groupHintOpen, setGroupHintOpen] = useState(false);
   const [inviteConfirmation, setInviteConfirmation] = useState(null);
+  const [savingToHints, setSavingToHints] = useState(false);
+  const [savedToHints, setSavedToHints] = useState(false);
 
   const isViewingOther = Boolean(currentUserId && hint?.ownerId && currentUserId !== hint.ownerId);
 
@@ -75,6 +77,44 @@ export default function HintDetailModal({ hint, onClose, supabase, currentUserId
       if (error) setClaims((prev) => prev.filter((c) => c.id !== tempId));
     }
     setClaiming(false);
+  }
+
+  // "Add to my hints" - saving someone else's hint idea as your own,
+  // not the shop's own save-to-board flow (that's ShopPageContent.jsx's
+  // separate buildHintInsertPayload) - board_id is always null here
+  // since there's no board picker in this modal, same as how a claim
+  // or group-pot invite doesn't ask which board either. Real gap this
+  // closes: this modal had a claim button and a group-pot button, but
+  // no way to actually save the hint itself to your own list.
+  async function handleAddToMyHints() {
+    if (!currentUserId || savingToHints || savedToHints) return;
+    setSavingToHints(true);
+    try {
+      const { error } = await client.from("hints").insert({
+        user_id: currentUserId,
+        board_id: null,
+        title: hint.title?.trim() || "Saved hint",
+        url: hint.url || "",
+        image_url: hint.image_url || "",
+        source: "shared_hint",
+        is_private: false,
+        retailer: hint.retailer || "",
+        price_text: hint.price_text || "",
+        numeric_price: hint.numeric_price ?? null,
+        currency: hint.currency || null,
+        starred: false,
+        position: 0,
+      });
+      if (error) throw error;
+      setSavedToHints(true);
+    } catch {
+      // Swallowed deliberately for now - the button reverts to its
+      // normal (non-saving) state on the finally below, so a failed
+      // save just means the person can try again, rather than the
+      // whole modal breaking.
+    } finally {
+      setSavingToHints(false);
+    }
   }
 
   return (
@@ -170,6 +210,16 @@ export default function HintDetailModal({ hint, onClose, supabase, currentUserId
                 Get group together
               </button>
             </div>
+          )}
+          {isViewingOther && (
+            <button
+              type="button"
+              disabled={savingToHints || savedToHints}
+              onClick={handleAddToMyHints}
+              className={`mt-2 w-full h-11 rounded-full text-[13px] font-semibold border transition ${savedToHints ? "bg-[#edf6eb] text-[#4a7a3a] border-[#c5dfc0]" : "border-[#ead8ce] text-slate-600 hover:bg-[#fff5f0]"}`}
+            >
+              {savedToHints ? "✓ Added to your hints" : savingToHints ? "Adding..." : "Add to my hints"}
+            </button>
           )}
           <div className="mt-3">
             <ShareButton

@@ -71,6 +71,8 @@ export default function ProfileClient({ userId }) {
   const [filterPopupOpen, setFilterPopupOpen] = useState(false);
   const [occasionFilter, setOccasionFilter] = useState("");
   const [claimingId, setClaimingId] = useState(null);
+  const [savingHintId, setSavingHintId] = useState(null);
+  const [savedHintIds, setSavedHintIds] = useState(() => new Set());
   const [hoveringClaimId, setHoveringClaimId] = useState(null);
   const [contactState, setContactState] = useState("none"); // "none" | "pending" | "active"
   const [collabStatus, setCollabStatus] = useState("none"); // "none" | "pending" | "accepted"
@@ -301,6 +303,40 @@ export default function ProfileClient({ userId }) {
       setClaims(prev => [...prev, { id: tempId, hint_id: hint.id, claimed_by: currentUser.id, claim_type: "solo" }]);
       const { error } = await supabase.from("hint_claims").insert({ hint_id: hint.id, claimed_by: currentUser.id, claim_type: "solo" });
       if (error) setClaims(prev => prev.filter(c => c.id !== tempId));
+    }
+  }
+
+  // Same "Add to my hints" gap as the shared HintDetailModal.jsx (Feed's
+  // own hint-view) - this is ProfileClient's separate, pre-existing
+  // implementation of the same claim/group-together buttons, which is
+  // why this needs its own copy of the handler rather than the fix
+  // living in one shared place. board_id is always null - no board
+  // picker in this view, same reasoning as the shared modal's version.
+  async function handleAddToMyHints(hint) {
+    if (!currentUser || savingHintId === hint.id || savedHintIds.has(hint.id)) return;
+    setSavingHintId(hint.id);
+    try {
+      const { error } = await supabase.from("hints").insert({
+        user_id: currentUser.id,
+        board_id: null,
+        title: hint.title?.trim() || "Saved hint",
+        url: hint.url || "",
+        image_url: hint.image_url || "",
+        source: "shared_hint",
+        is_private: false,
+        retailer: hint.retailer || "",
+        price_text: hint.price_text || "",
+        numeric_price: hint.numeric_price ?? null,
+        currency: hint.currency || null,
+        starred: false,
+        position: 0,
+      });
+      if (error) throw error;
+      setSavedHintIds(prev => new Set(prev).add(hint.id));
+    } catch {
+      // Swallowed - button just reverts and can be tried again.
+    } finally {
+      setSavingHintId(null);
     }
   }
 
@@ -757,6 +793,14 @@ export default function ProfileClient({ userId }) {
                   );
                 })()}
               </div>
+              {isViewingOther && (
+                <button type="button"
+                  disabled={savingHintId === selectedHint.id || savedHintIds.has(selectedHint.id)}
+                  onClick={() => handleAddToMyHints(selectedHint)}
+                  className={`mt-2 w-full h-11 rounded-full text-[13px] font-semibold border transition ${savedHintIds.has(selectedHint.id) ? "bg-[#edf6eb] text-[#4a7a3a] border-[#c5dfc0]" : "border-[#ead8ce] text-slate-600 hover:bg-[#fff5f0]"}`}>
+                  {savedHintIds.has(selectedHint.id) ? "✓ Added to your hints" : savingHintId === selectedHint.id ? "Adding..." : "Add to my hints"}
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -138,6 +138,8 @@ export default function ProfileScreen({ userId, onBack, insideModal = false, ini
   const [filterVisible, setFilterVisible] = useState(false);
   const [occasionFilter, setOccasionFilter] = useState("");
   const [claimingId, setClaimingId] = useState(null);
+  const [savingHintId, setSavingHintId] = useState(null);
+  const [savedHintIds, setSavedHintIds] = useState(() => new Set());
   const [groupHint, setGroupHint] = useState(null);
   const [inviteConfirmation, setInviteConfirmation] = useState(null);
   const [contactState, setContactState] = useState("none");
@@ -298,6 +300,38 @@ export default function ProfileScreen({ userId, onBack, insideModal = false, ini
     } else {
       const { data } = await supabase.from("hint_claims").insert({ hint_id: hint.id, claimed_by: currentUser.id, claim_type: "solo" }).select().single();
       if (data) setClaims((prev) => [...prev, data]);
+    }
+  }
+
+  // Same "Add to my hints" gap as web's ProfileClient.jsx (this is
+  // mobile's own separate copy of the same claim/group buttons) and
+  // FeedScreen.js's HintPeekModal - board_id always null, no board
+  // picker in this view.
+  async function handleAddToMyHints(hint) {
+    if (!currentUser || savingHintId === hint.id || savedHintIds.has(hint.id)) return;
+    setSavingHintId(hint.id);
+    try {
+      const { error } = await supabase.from("hints").insert({
+        user_id: currentUser.id,
+        board_id: null,
+        title: hint.title?.trim() || "Saved hint",
+        url: hint.url || "",
+        image_url: hint.image_url || "",
+        source: "shared_hint",
+        is_private: false,
+        retailer: hint.retailer || "",
+        price_text: hint.price_text || "",
+        numeric_price: hint.numeric_price ?? null,
+        currency: hint.currency || null,
+        starred: false,
+        position: 0,
+      });
+      if (error) throw error;
+      setSavedHintIds((prev) => new Set(prev).add(hint.id));
+    } catch {
+      // Swallowed - button just reverts and can be tried again.
+    } finally {
+      setSavingHintId(null);
     }
   }
 
@@ -689,6 +723,17 @@ export default function ProfileScreen({ userId, onBack, insideModal = false, ini
                   {isViewingOther ? (
                     <Pressable style={styles.groupTogetherButton} onPress={() => setGroupHint(selectedHint)}>
                       <Text style={styles.groupTogetherText}>Get group together</Text>
+                    </Pressable>
+                  ) : null}
+                  {isViewingOther ? (
+                    <Pressable
+                      style={[styles.groupTogetherButton, { marginTop: 8 }, savedHintIds.has(selectedHint.id) && { backgroundColor: "#edf6eb", borderColor: "#c5dfc0" }]}
+                      disabled={savingHintId === selectedHint.id || savedHintIds.has(selectedHint.id)}
+                      onPress={() => handleAddToMyHints(selectedHint)}
+                    >
+                      <Text style={[styles.groupTogetherText, savedHintIds.has(selectedHint.id) && { color: "#4a7a3a" }]}>
+                        {savedHintIds.has(selectedHint.id) ? "✓ Added to your hints" : savingHintId === selectedHint.id ? "Adding..." : "Add to my hints"}
+                      </Text>
                     </Pressable>
                   ) : null}
                 </View>

@@ -356,6 +356,8 @@ function HintPeekModal({ hint, onClose, currentUserId }) {
   const [claiming, setClaiming] = useState(false);
   const [groupHintOpen, setGroupHintOpen] = useState(false);
   const [inviteConfirmation, setInviteConfirmation] = useState(null);
+  const [savingToHints, setSavingToHints] = useState(false);
+  const [savedToHints, setSavedToHints] = useState(false);
 
   const isViewingOther = Boolean(currentUserId && hint?.ownerId && currentUserId !== hint.ownerId);
 
@@ -385,6 +387,36 @@ function HintPeekModal({ hint, onClose, currentUserId }) {
     setClaiming(false);
   }
 
+  // Same "Add to my hints" gap as web's HintDetailModal.jsx/
+  // ProfileClient.jsx - board_id always null, no board picker here.
+  async function handleAddToMyHints() {
+    if (!currentUserId || savingToHints || savedToHints) return;
+    setSavingToHints(true);
+    try {
+      const { error } = await supabase.from("hints").insert({
+        user_id: currentUserId,
+        board_id: null,
+        title: hint.title?.trim() || "Saved hint",
+        url: hint.url || "",
+        image_url: hint.image_url || "",
+        source: "shared_hint",
+        is_private: false,
+        retailer: hint.retailer || "",
+        price_text: hint.price_text || "",
+        numeric_price: hint.numeric_price ?? null,
+        currency: hint.currency || null,
+        starred: false,
+        position: 0,
+      });
+      if (error) throw error;
+      setSavedToHints(true);
+    } catch {
+      // Swallowed - button just reverts and can be tried again.
+    } finally {
+      setSavingToHints(false);
+    }
+  }
+
   return (
     <Modal visible={Boolean(hint)} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.hintPeekOverlay} onPress={onClose}>
@@ -408,6 +440,17 @@ function HintPeekModal({ hint, onClose, currentUserId }) {
                     <Text style={styles.groupTogetherText}>Get group together</Text>
                   </Pressable>
                 </View>
+              ) : null}
+              {isViewingOther ? (
+                <Pressable
+                  style={[styles.groupTogetherButton, { marginTop: 8 }, savedToHints && { backgroundColor: "#edf6eb", borderColor: "#c5dfc0" }]}
+                  disabled={savingToHints || savedToHints}
+                  onPress={handleAddToMyHints}
+                >
+                  <Text style={[styles.groupTogetherText, savedToHints && { color: "#4a7a3a" }]}>
+                    {savedToHints ? "✓ Added to your hints" : savingToHints ? "Adding..." : "Add to my hints"}
+                  </Text>
+                </Pressable>
               ) : null}
               {hint.url ? (
                 <Pressable style={styles.hintPeekOpenButton} onPress={() => Linking.openURL(hint.url)}>
