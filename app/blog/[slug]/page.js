@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import PublicShell from "../../components/PublicShell";
 import { BLOG_POSTS, getBlogPost } from "../../../lib/blogPosts";
+import { getTopProductsFor, filtersFromShopLink } from "../../../lib/blogProducts";
 
 // Static generation - this is content-marketing copy that doesn't
 // change per-visitor or per-request, so there's no reason to pay a
@@ -43,6 +44,21 @@ export default async function BlogPostPage({ params }) {
   const post = getBlogPost(slug);
   if (!post) notFound();
 
+  const { occasion, relationship } = filtersFromShopLink(post.shopLink);
+  const products = await getTopProductsFor({ occasion, relationship, limit: 20 });
+
+  // Cross-category related reads - an occasion post (e.g. Father's
+  // Day) surfaces relationship posts (Dad, Husband...) and vice
+  // versa, rather than only ever pointing within its own category.
+  // Contextual links like these carry real SEO weight (distributing
+  // authority between related pages, giving crawlers - and readers -
+  // an actual next step) beyond just the nav/footer links to the
+  // blog index itself.
+  const isOccasionPost = post.shopLink.includes("occasion=");
+  const relatedPosts = BLOG_POSTS
+    .filter((p) => p.slug !== post.slug && p.shopLink.includes(isOccasionPost ? "relationship=" : "occasion="))
+    .slice(0, 3);
+
   return (
     <PublicShell>
       <article className="mx-auto max-w-2xl px-5 py-14">
@@ -59,6 +75,40 @@ export default async function BlogPostPage({ params }) {
         >
           {post.shopLinkLabel}
         </Link>
+
+        {products.length > 0 && (() => {
+          const rawLabel = post.shopLinkLabel.replace(/^Browse /i, "").replace(/ gift ideas$/i, "");
+          const listLabel = rawLabel.charAt(0).toUpperCase() + rawLabel.slice(1);
+          return (
+          <div className="mt-12">
+            <h2 className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">
+              {products.length >= 12 ? `Top ${products.length} Gifts` : "Our Picks"} for {listLabel}
+            </h2>
+            <ol className="mt-6 space-y-5">
+              {products.map((product, i) => {
+                const outboundUrl = product.affiliate_url || product.product_url;
+                return (
+                  <li key={product.id} className="flex gap-4 rounded-[20px] border border-[#eadfd4] bg-white/80 p-4">
+                    <span className="shrink-0 text-lg font-bold text-[#c1846c]">{i + 1}</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={product.image_url} alt={product.title} loading="lazy" className="h-20 w-20 shrink-0 rounded-[14px] object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-slate-900">{product.title}</p>
+                      {product.price_text && <p className="text-sm text-[#df7b59] font-semibold">{product.price_text}</p>}
+                      {product.short_note && <p className="mt-1 text-sm text-slate-500">{product.short_note}</p>}
+                      {outboundUrl && (
+                        <a href={outboundUrl} target="_blank" rel="noopener noreferrer nofollow sponsored" className="mt-1 inline-block text-sm font-semibold text-[#df7b59] hover:underline">
+                          View this gift →
+                        </a>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+          );
+        })()}
 
         <div className="mt-10 space-y-8">
           {post.sections.map((section) => (
@@ -78,6 +128,23 @@ export default async function BlogPostPage({ params }) {
             {post.shopLinkLabel}
           </Link>
         </div>
+
+        {relatedPosts.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-lg font-semibold text-slate-900">You might also want</h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              {relatedPosts.map((related) => (
+                <Link
+                  key={related.slug}
+                  href={`/blog/${related.slug}`}
+                  className="block rounded-[18px] border border-[#eadfd4] bg-white/80 p-4 text-sm font-semibold text-slate-700 transition hover:border-[#f0c9b5] hover:text-[#df7b59]"
+                >
+                  {related.title}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </article>
     </PublicShell>
   );
