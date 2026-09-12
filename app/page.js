@@ -13,11 +13,26 @@ export const metadata = {
   // next to articles/other sites/tools, not an App Store listing
   // where "app" would be redundant - telling someone up front what
   // kind of thing this is is real information here, not filler.
-  title: { absolute: "HintDrop - Not Just a Wishlist. Social Gifting App." },
+  // Keyword-first, brand last - deliberately not "HintDrop - ..."
+  // despite the earlier drafts here doing exactly that. Researched
+  // this properly rather than going with instinct: title-tag studies
+  // consistently find keyword-first outperforms brand-first UNLESS
+  // the brand already has real recognition/branded search volume -
+  // at pre-1000-users stage, HintDrop doesn't yet, so keyword-first
+  // is the evidence-backed choice here, not a stylistic preference.
+  // "Wishlists" and "Group Gifts" lead because they're the only two
+  // terms in this space with actual demonstrated search demand
+  // (checked the real competitive landscape - GiftList, Giftster,
+  // Elfster, MyRegistry, Ouish all lead with "wishlist"; "social
+  // gifting" has no demonstrated search volume anywhere in the
+  // category). "for the People You Love" carries the others-focused
+  // framing research supports over self-focused framing in gifting
+  // contexts specifically.
+  title: { absolute: "Wishlists & Group Gifts for the People You Love | HintDrop" },
   description: "More than a wishlist or a notes app - never forget a birthday, take the guesswork out of gifting, and organise group gifts together with HintDrop.",
   keywords: ["social gifting", "wishlist app", "gift ideas", "group gifting", "birthday reminders", "hint list", "gift planning", "group pot", "pool money for gifts"],
   openGraph: {
-    title: "HintDrop - Not Just a Wishlist. Social Gifting App.",
+    title: "Wishlists & Group Gifts for the People You Love | HintDrop",
     description: "You craft the moments. We remember the details.",
     url: "https://hintdrop.app",
     siteName: "HintDrop",
@@ -26,7 +41,7 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "HintDrop - Not Just a Wishlist. Social Gifting App.",
+    title: "Wishlists & Group Gifts for the People You Love | HintDrop",
     description: "You craft the moments. We remember the details.",
     images: ["https://hintdrop.app/og-default-v2.png"],
   },
