@@ -101,7 +101,12 @@ export default async function sitemap() {
   const productEntries = await getProductEntries();
   const blogEntries = BLOG_POSTS.map((post) => ({
     url: `https://hintdrop.app/blog/${post.slug}`,
-    lastModified: new Date(post.publishedAt),
+    // updatedAt (when set) reflects an actual content revision, not
+    // just publish date - falls back to publishedAt for anything
+    // that's never been revised since it went live. Google does use
+    // this as a freshness signal, so it needs to mean something real
+    // rather than just being today's date on every build.
+    lastModified: new Date(post.updatedAt || post.publishedAt),
     changeFrequency: "monthly",
     priority: 0.7,
   }));
