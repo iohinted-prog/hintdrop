@@ -114,6 +114,20 @@ export async function proxy(request) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // Excludes Next.js's own static/image handling (unchanged), plus
+    // image file extensions (unchanged), and now also sitemap.xml,
+    // robots.txt, and manifest.json - these are public, crawler-
+    // facing metadata files with no per-user state at all, but were
+    // still running through this entire middleware: a full Supabase
+    // auth session check on every crawl, and Cache-Control: private,
+    // no-store forced onto the response below (the only place that
+    // header gets set - nothing else in this file touches it). A
+    // "private" cache directive on a sitemap is semantically wrong
+    // for a resource meant to be publicly shared/cached, and is very
+    // likely why Search Console rejected it as an invalid sitemap
+    // path - plus every unnecessary auth check is one more thing that
+    // can fail and break the response entirely instead of serving
+    // plain XML.
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
