@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import HomePageClient from "./components/HomePageClient";
-import { SOCIAL_LINKS } from "./components/SocialLinks";
 
 export const metadata = {
   // Title carries the real SEO weight via "wishlist" (an actual
@@ -79,29 +78,15 @@ export default async function Page() {
     redirect("/feed");
   }
 
+  // Organization/WebSite structured data now lives once, in
+  // app/layout.js (which wraps every page including this one) - was
+  // duplicated here too with a different logo URL and a stale
+  // description, meaning the homepage emitted two disagreeing copies
+  // of the same schema types. This @graph now only carries what's
+  // genuinely specific to the homepage: the SoftwareApplication entry.
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "Organization",
-        name: "HintDrop",
-        url: "https://hintdrop.app",
-        // Was pointing at the 64x64 favicon — using the new 192x192
-        // icon instead, since Google's Organization/Logo guidance wants
-        // a reasonably large square image (112x112 minimum).
-        logo: "https://hintdrop.app/icon-192-v3.png",
-        // Real, live social/entity profiles — the strongest signal for
-        // a Knowledge Panel, per the SocialLinks component (single
-        // source of truth, also used for the visible footer/homepage
-        // icon links).
-        sameAs: SOCIAL_LINKS.map((s) => s.href),
-      },
-      {
-        "@type": "WebSite",
-        name: "HintDrop",
-        url: "https://hintdrop.app",
-        description: "Save what you actually want. Remember who matters. Plan gifts together.",
-      },
       // Added now that the situation is genuinely different from when
       // this was first considered - deliberately skipped earlier this
       // session because the example being copied claimed iOS/Android

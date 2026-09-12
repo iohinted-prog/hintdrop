@@ -130,12 +130,25 @@ export default function RootLayout({ children }) {
   // is client-side filtering with no URL query pattern (?q=...) Google
   // could actually drive traffic through, so claiming one would
   // describe a capability that doesn't really work that way.
+  //
+  // This is the single source of truth for both blocks - a duplicate,
+  // conflicting copy of these same two types previously lived in
+  // app/page.js's own jsonLd (different logo URL, stale description
+  // left over from an old tagline), emitted a second time on top of
+  // this one since layout.js already wraps every page including the
+  // homepage. Two Organization/WebSite blocks disagreeing with each
+  // other on the same page is worse than one correct one - removed
+  // the duplicate from page.js, which now only carries its own
+  // homepage-specific SoftwareApplication block here.
   const organizationJsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "HintDrop",
     url: "https://hintdrop.app",
-    logo: "https://hintdrop.app/illustrations/giftbox-badge-coral.png",
+    // 192x192 - Google's Organization/Logo guidance wants a reasonably
+    // large square image (112x112 minimum); the old giftbox-badge-
+    // coral.png reference this replaced doesn't meet that on its own.
+    logo: "https://hintdrop.app/icon-192-v3.png",
     sameAs: SOCIAL_LINKS?.map((link) => link.href).filter(Boolean),
   };
   const websiteJsonLd = {
@@ -143,6 +156,7 @@ export default function RootLayout({ children }) {
     "@type": "WebSite",
     name: "HintDrop",
     url: "https://hintdrop.app",
+    description: "Save hints for yourself, and gift ideas for the people you love. Remember birthdays, share what matters, and pool money together with group pots.",
   };
 
   return (
