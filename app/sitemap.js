@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { BLOG_POSTS } from "@/lib/blogPosts";
 
 const STATIC_ENTRIES = [
   {
@@ -6,6 +7,12 @@ const STATIC_ENTRIES = [
     lastModified: new Date(),
     changeFrequency: "weekly",
     priority: 1.0,
+  },
+  {
+    url: "https://hintdrop.app/blog",
+    lastModified: new Date(),
+    changeFrequency: "weekly",
+    priority: 0.8,
   },
   {
     url: "https://hintdrop.app/about",
@@ -92,5 +99,11 @@ async function getProductEntries() {
 
 export default async function sitemap() {
   const productEntries = await getProductEntries();
-  return [...STATIC_ENTRIES, ...productEntries];
+  const blogEntries = BLOG_POSTS.map((post) => ({
+    url: `https://hintdrop.app/blog/${post.slug}`,
+    lastModified: new Date(post.publishedAt),
+    changeFrequency: "monthly",
+    priority: 0.7,
+  }));
+  return [...STATIC_ENTRIES, ...blogEntries, ...productEntries];
 }

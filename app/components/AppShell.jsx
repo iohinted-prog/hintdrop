@@ -98,6 +98,7 @@ export default function AppShell({ children }) {
   const alwaysHideChrome =
     pathname === "/" ||
     pathname === "/home" ||
+    pathname.startsWith("/blog") ||
     pathname === "/gift-shop" ||
     pathname === "/onboarding" ||
     pathname === "/auth/reset-password" ||

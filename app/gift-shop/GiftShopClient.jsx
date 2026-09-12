@@ -23,6 +23,20 @@ const RELATIONSHIP_OPTIONS = [
   "Brother", "Sister", "Sibling", "Son", "Child", "Friend", "Colleague", "Family", "For him", "For her",
 ];
 
+// Matches a url slug like "fathers-day" or "boyfriend" back to its
+// real option label ("Father's Day", "Boyfriend") - lets an external
+// link (a blog post, an email, a shared link) land a visitor on the
+// shop with a filter already applied via a plain, readable query
+// param instead of needing to know the exact display string.
+function slugify(label) {
+  return label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+function optionFromSlug(options, slug) {
+  if (!slug) return "";
+  const normalized = slugify(slug);
+  return options.find((opt) => slugify(opt) === normalized) || "";
+}
+
 const PRICE_BAND_OPTIONS = [
   { label: "Up to £25", max: 25 },
   { label: "Up to £50", max: 50 },
@@ -391,6 +405,28 @@ export default function GiftShopClient({ region = "uk" }) {
   const [selectedRelationship, setSelectedRelationship] = useState("");
   const [selectedPriceBand, setSelectedPriceBand] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Picks up ?occasion=fathers-day / ?relationship=boyfriend from the
+  // URL on first load (e.g. a blog post linking straight into a
+  // pre-filtered shop) - plain useEffect + window.location.search
+  // rather than next/navigation's useSearchParams specifically to
+  // avoid that hook's Suspense-boundary requirement, which would mean
+  // wrapping every page that renders this component, not just this
+  // one. Only ever applied once, on mount - doesn't fight the user if
+  // they then change filters themselves.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const occasionParam = params.get("occasion");
+    const relationshipParam = params.get("relationship");
+    if (occasionParam) {
+      const match = optionFromSlug(OCCASION_OPTIONS, occasionParam);
+      if (match) setSelectedOccasion(match);
+    }
+    if (relationshipParam) {
+      const match = optionFromSlug(RELATIONSHIP_OPTIONS, relationshipParam);
+      if (match) setSelectedRelationship(match);
+    }
+  }, []);
   // Mobile-only - the occasion/relationship/price/interest controls default
   // collapsed on narrow screens so search + this toggle is all that sits
   // above the product grid, instead of the full filter panel taking up the
