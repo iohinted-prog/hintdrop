@@ -5,19 +5,20 @@ import HomePageClient from "./components/HomePageClient";
 import { SOCIAL_LINKS } from "./components/SocialLinks";
 
 export const metadata = {
-  // Repositioned away from "wishlist" entirely per direct correction -
-  // HintDrop isn't a wishlist alternative, it's a social gifting
-  // platform: saving what you want for yourself AND saving gift ideas
-  // for other people, both directions. Title stays short (38 chars)
-  // and leads with that framing directly instead of a category
-  // comparison; description carries the "for yourself, for others"
-  // duality plus the group-pots differentiator.
-  title: { absolute: "HintDrop - The Social Gifting Platform" },
-  description: "Save hints for yourself, and gift ideas for the people you love. Remember birthdays, share what matters, and pool money together with group pots.",
-  keywords: ["social gifting", "gift ideas", "group gifting", "birthday reminders", "hint list", "gift planning", "group pot", "pool money for gifts"],
+  // Title carries the real SEO weight via "wishlist" (an actual
+  // search term, unlike "social gifting" which nobody searches for)
+  // while still leading into the brand identity right behind it,
+  // rather than choosing one or the other. "App" not "Platform" -
+  // concrete and specific, and this is a Google search result sitting
+  // next to articles/other sites/tools, not an App Store listing
+  // where "app" would be redundant - telling someone up front what
+  // kind of thing this is is real information here, not filler.
+  title: { absolute: "HintDrop - Not Just a Wishlist. Social Gifting App." },
+  description: "More than a wishlist or a notes app - never forget a birthday, take the guesswork out of gifting, and organise group gifts together with HintDrop.",
+  keywords: ["social gifting", "wishlist app", "gift ideas", "group gifting", "birthday reminders", "hint list", "gift planning", "group pot", "pool money for gifts"],
   openGraph: {
-    title: "HintDrop - The Social Gifting Platform",
-    description: "Save hints for yourself, and gift ideas for the people you love. Remember birthdays, share what matters, and pool money together with group pots.",
+    title: "HintDrop - Not Just a Wishlist. Social Gifting App.",
+    description: "You craft the moments. We remember the details.",
     url: "https://hintdrop.app",
     siteName: "HintDrop",
     type: "website",
@@ -25,8 +26,8 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "HintDrop - The Social Gifting Platform",
-    description: "Save hints for yourself, and gift ideas for the people you love. Remember birthdays, share what matters, and pool money together with group pots.",
+    title: "HintDrop - Not Just a Wishlist. Social Gifting App.",
+    description: "You craft the moments. We remember the details.",
     images: ["https://hintdrop.app/og-default-v2.png"],
   },
   alternates: {
