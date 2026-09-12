@@ -346,7 +346,7 @@ function AddContactModal({ visible, onClose, onSave, currentUserId, currentUserN
             </Pressable>
           </View>
 
-          <ScrollView style={{ flex: 1 }}>
+          <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.addShareBox}>
               <Text style={styles.addShareEyebrow}>FASTEST WAY</Text>
               <Text style={styles.addShareTitle}>Share your invite link</Text>
@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
   deleteButton: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
   deleteButtonText: { fontSize: 12, color: colors.textMuted },
   addOverlay: { flex: 1, justifyContent: "flex-end" },
-  addCard: { backgroundColor: colors.bg, borderTopLeftRadius: radii.xxl, borderTopRightRadius: radii.xxl, maxHeight: "90%", padding: 20 },
+  addCard: { backgroundColor: colors.bg, borderTopLeftRadius: radii.xxl, borderTopRightRadius: radii.xxl, maxHeight: "90%", padding: 20, overflow: "hidden" },
   addHeaderRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
   addEyebrow: { fontSize: 11, fontWeight: "700", color: colors.coralDeep, letterSpacing: 0.6 },
   addTitle: { fontSize: 22, fontWeight: "600", color: colors.textPrimary, marginTop: 4 },
