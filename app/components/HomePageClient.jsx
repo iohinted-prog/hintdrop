@@ -555,12 +555,15 @@ export default function HomePageClient() {
         <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pb-8 lg:flex-nowrap lg:grid lg:grid-cols-[auto_1fr_auto] lg:items-center lg:gap-8">
           <LandingLogo />
 
-          <nav className="hidden items-center justify-center gap-9 text-[15px] text-slate-600 lg:flex">
-            <Link href="/gift-shop" className="hover:text-slate-900 transition">Gift Shop</Link>
-            <Link href="/blog" className="hover:text-slate-900 transition">Blog</Link>
-          </nav>
+          <nav className="hidden items-center justify-center gap-9 text-[15px] text-slate-600 lg:flex" />
 
           <div className="flex shrink-0 items-center justify-end gap-2 whitespace-nowrap sm:gap-4">
+            <Link
+              href="/blog"
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-3.5 text-[13px] font-semibold text-slate-700 transition hover:bg-[#fff5f0] sm:h-12 sm:px-6 sm:text-[15px]"
+            >
+              Blog
+            </Link>
             <Link
               href="/gift-shop"
               className="inline-flex h-10 shrink-0 items-center justify-center rounded-full border border-[#ead8ce] bg-white px-3.5 text-[13px] font-semibold text-slate-700 transition hover:bg-[#fff5f0] sm:h-12 sm:px-6 sm:text-[15px]"
